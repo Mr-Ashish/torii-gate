@@ -12,6 +12,12 @@ Pack install seeds **`.torii/MEMORY.md`** on the target. After each review Torii
 
 **F30:** job summary includes **Memory health** (preload source + `LOCAL_PUBLISH=`). Failed default-branch push emits `::warning::` (branch protection / token) — review still posts; durable memory may be stale.
 
+## Merge gate
+
+After each review the workflow posts commit status **`torii/gate`** (security-aware open/closed via `torii_gate_status.py`). Prefer that context as the required branch-protection check. F22 still posts `torii/review` for the classic verdict signal.
+
+Pack mode also installs `scripts/run-torii-gate.sh`, `scripts/torii_gate_status.py`, and `scripts/smoke-torii-gate.sh`.
+
 ## Caller pin tip (F10)
 
 `torii-pr-review-caller.yml` uses `…/torii-review-reusable.yml@main` for free upgrades. For production fleets, **pin `uses:` to a commit SHA** so a broken hub `main` does not break every target at once.

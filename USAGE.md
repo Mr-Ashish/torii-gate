@@ -362,10 +362,10 @@ REPO=owner/name HERMES_HOME=/tmp/hh TORII_MEMORY_MODE=local bash scripts/preload
 - Installer output is entirely on stderr; capture it with `./scripts/install-torii.sh /path/to/repo 2>&1 | tee install.log` and grep for `exists (skip` / `WARN missing` before committing the pack.
 - Preview exactly what would be written (including the stamp) with `--dry-run`; lines are prefixed `DRY  <from> → <to>`.
 
-- No `torii/review` status on the PR head: check (1) repo variable `TORII_COMMIT_STATUS` is not `0` (that is the documented opt-out), (2) the caller workflow grants `statuses: write`.
+- No `torii/review` or `torii/gate` status on the PR head: check (1) repo variable `TORII_COMMIT_STATUS` is not `0` (that is the documented opt-out), (2) the caller workflow grants `statuses: write`.
 - A neutral 👀 reaction plus `success` means the verdict line was parsed as `UNKNOWN` (or the review was a genuine COMMENT); inspect `review.md` in the trace artifact for a line starting with `**Verdict:**` before blaming the status code path.
 
-- To make Torii gate merges, add `torii/review` as a required status check — `REQUEST CHANGES` reports `failure` while `APPROVE`/`COMMENT` report `success`, and any pipeline failure (`pipeline_rc != 0`) reports `error` with 👎 regardless of the parsed verdict.
+- To make Torii gate merges, add **`torii/gate`** as the required status check (security-aware: REQUEST CHANGES or a non-clean Security audit → `failure`). Keep `torii/review` as the F22 signal if you want both; prefer `torii/gate` for branch protection. Pipeline failures still report `error` on `torii/review` with 👎.
 
 - A review that comes back as a COMMENT failure stub with **no findings** is often an F36 timeout, not a bad model run: check the job summary for **Torii Gate review timeout (F36)** and the trace for `hermes-timeout.env` / `hermes-timeout-seconds.txt` before blaming the prompt or contract.
 - After a timeout there is intentionally no chat-fallback review body — do not read the missing fallback as a broken fallback path.
@@ -389,8 +389,25 @@ After each run Torii derives a **verdict signal** from the posted review body:
 | COMMENT | `eyes` | `success` | `COMMENT` |
 | Pipeline failed | `-1` | `error` | `COMMENT` (not REQUEST_CHANGES) |
 
+### Product gate (`torii/gate`)
+
+A second status context is posted from `scripts/torii_gate_status.py` (workflow step **Torii Gate status (torii/gate)**):
+
+| Condition | `torii/gate` state |
+|-----------|-------------------|
+| APPROVE + Security audit clean (`No` / empty / n/a) | `success` (open) |
+| REQUEST CHANGES | `failure` (closed) |
+| Security audit non-empty concern (any verdict) | `failure` (closed) |
+| COMMENT / advisory without security concern | `success` (advisory) |
+| Missing review artifact | `error` |
+
+- Prefer **`torii/gate`** as the required branch-protection check for a security merge gate.
+- CLI: `python3 scripts/torii_gate_status.py review.md --json --strict`
+- Optional hard job fail: repo var `TORII_GATE_STRICT=1`
+- Offline smoke (pack): `./scripts/smoke-torii-gate.sh`
+
 - CLI: `python3 scripts/parse-verdict.py review.md --pipeline-rc 0` (kv lines; includes `review_event=`)
-- Disable commit status: repo var `TORII_COMMIT_STATUS=0`
+- Disable commit status: repo var `TORII_COMMIT_STATUS=0` (turns off both `torii/review` and `torii/gate` posts)
 - Disable formal PR review: repo var `TORII_PR_REVIEW=0`
-- Status context override: `TORII_STATUS_CONTEXT` (default `torii/review`)
+- F22 status context override: `TORII_STATUS_CONTEXT` (default `torii/review`; does not change `torii/gate`)
 - Full Markdown stays on the **issue comment** (F12 replace). F23 posts a short Reviews-panel review with marker `<!-- torii-pr-review pr=N`.

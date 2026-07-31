@@ -126,8 +126,11 @@ RUNTIME_SCRIPTS=(
   report-verdict.sh
   review-local.sh
   run-hermes-review.sh
+  run-torii-gate.sh
   run-torii-review.sh
   run-with-timeout.py
+  smoke-torii-gate.sh
+  torii_gate_status.py
   max_turns.py
   mermaid_architecture.py
   model_tier.py
@@ -225,7 +228,8 @@ if [[ "$CALLER_MODE" == "1" ]]; then
   log "  2. Add secret OPENROUTER_API_KEY."
   log "  3. Memory defaults to repo-local .torii/ (F28). Optional hub: TORII_MEMORY_MODE=both|hub and/or TORII_HUB_PUBLISH=1 + TORII_HUB_TOKEN."
   log "  4. Optional vars: TORII_MODEL, TORII_HERMES_COMMIT, TORII_COOLDOWN_SECONDS, TORII_RUNNER_IMAGE, TORII_MEMORY_PATH."
-  log "  5. On a PR, comment: @torii review this pr"
+  log "  5. Branch protection: require status check context torii/gate (security-aware merge signal)."
+  log "  6. On a PR, comment: @torii review this pr"
   log "  Runtime agent/scripts are fetched from Mr-Ashish/torii-gate@main each run."
   log "  Tip: pin the uses: ref to a commit SHA (not @main) to avoid blast radius from hub main."
   log "  Tip: seed .torii/MEMORY.md on the target default branch (or re-install pack mode once)."
@@ -334,6 +338,8 @@ log "  1. Commit the installed pack + .torii/MEMORY.md and push to the default b
 log "  2. Add secret OPENROUTER_API_KEY."
 log "  3. Memory is repo-local (.torii/) by default (F28). Optional hub: vars TORII_MEMORY_MODE=both|hub and/or TORII_HUB_PUBLISH=1 + secret TORII_HUB_TOKEN."
 log "  4. Optional vars: TORII_MODEL / TORII_HERMES_COMMIT / TORII_COOLDOWN_SECONDS / TORII_RUNNER_IMAGE / TORII_MEMORY_PATH."
-log "  5. On a PR, comment: @torii review this pr"
+log "  5. Branch protection: require status check context torii/gate (security-aware merge signal)."
+log "  6. On a PR, comment: @torii review this pr"
+log "  Tip: offline smoke after install: bash scripts/smoke-torii-gate.sh (pack mode)."
 log "  Tip: for hub-managed installs (no local scripts), re-run with --caller."
 log "Done."

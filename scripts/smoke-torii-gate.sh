@@ -50,10 +50,11 @@ else
   fail "expected security pack, got: $PACK"
 fi
 
-# --- 2. Dogfood fixture still intentionally insecure ---
+# --- 2. Dogfood fixture still intentionally insecure (hub product tree only) ---
 log "[2/4] demo/insecure dogfood fixture"
 if [[ ! -f "$DEMO" ]]; then
-  fail "missing $DEMO"
+  # Pack installs on app repos omit demo/; skip rather than fail.
+  pass "skip (no $DEMO — pack/target install is fine)"
 else
   for needle in "f\"SELECT" "pickle.loads" "shell=True"; do
     if grep -qF "$needle" "$DEMO"; then

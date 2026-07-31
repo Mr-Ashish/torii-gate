@@ -59,6 +59,9 @@ class InstallToriiTests(unittest.TestCase):
             self.assertTrue((dest / "agent" / "SOUL.md").is_file())
             self.assertTrue((dest / "agent" / "config.yaml").is_file())
             self.assertTrue((dest / "scripts" / "run-torii-review.sh").is_file())
+            self.assertTrue((dest / "scripts" / "run-torii-gate.sh").is_file())
+            self.assertTrue((dest / "scripts" / "torii_gate_status.py").is_file())
+            self.assertTrue((dest / "scripts" / "smoke-torii-gate.sh").is_file())
             self.assertTrue((dest / "scripts" / "hermes-pin.sh").is_file())
             self.assertTrue((dest / "scripts" / "cooldown-check.sh").is_file())
             self.assertTrue((dest / "scripts" / "install-torii.sh").is_file())
@@ -73,6 +76,8 @@ class InstallToriiTests(unittest.TestCase):
             self.assertTrue((dest / "scripts" / "webhook_auth.py").is_file())
             self.assertTrue((dest / "scripts" / "post-inline-comments.py").is_file())
             self.assertTrue((dest / "scripts" / "ops_footer.py").is_file())
+            self.assertTrue(os.access(dest / "scripts" / "run-torii-gate.sh", os.X_OK))
+            self.assertTrue(os.access(dest / "scripts" / "smoke-torii-gate.sh", os.X_OK))
             # F28: seed repo-local memory
             self.assertTrue((dest / ".torii" / "MEMORY.md").is_file())
             self.assertTrue(
