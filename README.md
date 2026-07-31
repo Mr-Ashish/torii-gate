@@ -77,3 +77,8 @@ Full list: `.env.example`.
 ## License
 
 MIT (same lineage as the Luffy control-plane substrate).
+
+## Hub71 Access
+
+Application pack and decision materials: **[docs/hub71/](docs/hub71/)**  
+Paste-ready answers: **[docs/hub71/ACCESS-APPLY.md](docs/hub71/ACCESS-APPLY.md)**
