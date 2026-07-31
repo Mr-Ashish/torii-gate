@@ -185,9 +185,9 @@ REGISTRY: list[ToggleSpec] = [
         "lens_pack",
         "TORII_LENS_PACK",
         "str",
-        "auto",
+        "security",
         "product",
-        "Lens pack id or auto (default|security|docs|odoo|performance|milvus|go|cpp|auto)",
+        "Lens pack id (Torii Gate default: security) or auto|default|docs|…",
         "F63",
     ),
     ToggleSpec(
