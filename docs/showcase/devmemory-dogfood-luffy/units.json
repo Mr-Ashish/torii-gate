@@ -1,0 +1,46 @@
+{
+  "units": [
+    {
+      "kind": "dev",
+      "path": "agent",
+      "action": "merge",
+      "section": "Design decisions",
+      "content": "- F51 tool depth (H26) layers on top of the F49 soft re-prompt: F49 fixed whether the model used tools, F51 fixes how deeply it looked.\n- The re-prompt suffix and reviewer contract now require reading actual diff hunks plus `rg` and line-range reading of each changed symbol.\n- Head-only reads of large files (e.g., `head -80` on large modules) are explicitly forbidden.\n- This depth requirement is stated on three surfaces that must remain in sync: `build_reprompt_suffix` (F49 re-prompt text), the Workspace section of `agent/review-prompt.md`, and the Scope section of `agent/SOUL.md`.",
+      "evidence": [
+        "F51: tool-depth nudge after F49 soft re-prompt (H26)",
+        "Fix: build_reprompt_suffix + review-prompt Workspace + SOUL Scope require diff hunks / rg + line-range on changed symbols; forbid head-only large-file reads"
+      ],
+      "confidence": "high"
+    },
+    {
+      "kind": "dev",
+      "path": "agent",
+      "action": "merge",
+      "section": "Pitfalls",
+      "content": "- A non-zero tool-turn count is not evidence of real read: the F49 recovery case showed 0→1 tool turns, but the single call was `head -80` on a large module and the changed function was never read.\n- Treat \"tools used\" and \"changed symbol actually read\" as separate signals when triaging shallow reviews.",
+      "evidence": [
+        "odoo eval #6 F49 recovered 0→1 tools but only `head -80` on large misc.py; never read street_split ~L1925"
+      ],
+      "confidence": "high"
+    },
+    {
+      "kind": "dev",
+      "path": ".",
+      "action": "merge",
+      "section": "Patterns",
+      "content": "- Prompt/contract changes are motivated by rubric evidence, not intuition: a low per-dimension score for tool depth in the 6-PR `torii-eval` corpus on `Mr-Ashish/odoo` justified the F51 feature flag.\n- Each fix was validated by a live mini re-score of the same PR under the new build, illustrating an eval-driven tuning loop.",
+      "evidence": [
+        "score 34/50 D8=2",
+        "H27 live mini re-score #6 under F51",
+        "Corpus: 6 torii-eval PRs on Mr-Ashish/odoo all scored"
+      ],
+      "confidence": "medium"
+    }
+  ],
+  "summary": "The session delivered durable knowledge on the F51 tool-depth enhancement layered on F49's soft re-prompt, establishing a synchronized contract across three sources (build_reprompt_suffix, agent/review-prompt.md Workspace section, agent/SOUL.md Scope) that mandates deep inspection of diffs and changed symbols, forbidding shallow head-only file reads. It also emphasized distinguishing recovered tool turns from real inspection based on line coverage and confirmed the rubric-driven tuning approach for this contract via scored PR evals.",
+  "session_ids": [
+    "dogfood-torii-session"
+  ],
+  "model": "openai/gpt-4.1-mini",
+  "raw_path": "/Users/ashishmishra/Documents/experiments/pr-review-agent/.devmemory/out/run-20260731T231211-40a2c5/extract.raw.md"
+}

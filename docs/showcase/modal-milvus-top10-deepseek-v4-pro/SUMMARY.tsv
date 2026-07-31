@@ -1,0 +1,11 @@
+pr	upstream	verdict	score	tools	elapsed_s	url
+4	51785	COMMENT	78	31	382.6	https://github.com/Mr-Ashish/milvus/pull/4#issuecomment-5146724799
+5	51393	APPROVE	85	39	346.0	https://github.com/Mr-Ashish/milvus/pull/5#issuecomment-5146772574
+6	51886	APPROVE	78	24	327.2	https://github.com/Mr-Ashish/milvus/pull/6#issuecomment-5146814422
+7	51246	APPROVE	82	20	328.5	https://github.com/Mr-Ashish/milvus/pull/7#issuecomment-5146858609
+8	51431	APPROVE	82	35	291.2	https://github.com/Mr-Ashish/milvus/pull/8#issuecomment-5146899583
+9	51874	APPROVE	92	10	167.7	https://github.com/Mr-Ashish/milvus/pull/9#issuecomment-5146929158
+10	51845	REQUEST CHANGES	69	29	346.9	https://github.com/Mr-Ashish/milvus/pull/10#issuecomment-5146974756
+11	51694	APPROVE	92	11	262.0	https://github.com/Mr-Ashish/milvus/pull/11#issuecomment-5147009178
+12	51641	APPROVE	87	20	181.4	https://github.com/Mr-Ashish/milvus/pull/12#issuecomment-5147034062
+13	51441	APPROVE	92	21	273.9	https://github.com/Mr-Ashish/milvus/pull/13#issuecomment-5147069647

@@ -1,0 +1,22 @@
+{
+  "stats": {
+    "files": 2,
+    "lines_added": 8,
+    "lines_removed": 0,
+    "changes": 3
+  },
+  "files": [
+    {
+      "path": "DEV.md",
+      "is_new": false,
+      "lines_added": 2,
+      "lines_removed": 0
+    },
+    {
+      "path": "agent/DEV.md",
+      "is_new": false,
+      "lines_added": 6,
+      "lines_removed": 0
+    }
+  ]
+}
