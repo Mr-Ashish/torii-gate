@@ -38,7 +38,14 @@ Reusable workflow posts **two** commit statuses after a matched run (when `TORII
 Required checks for a hard merge gate should use **`torii/gate`**. Optional hard job fail: repo var `TORII_GATE_STRICT=1`.
 
 ## Dogfood
-Intentional insecure sample: `demo/insecure/app.py` (SQLi / pickle / shell). Point a PR at that path and `@torii review this pr`.
+Intentional insecure sample: `demo/insecure/` (SQLi / pickle / shell / secret leak). See `demo/insecure/README.md`.
+
+```bash
+./scripts/smoke-torii-gate.sh   # offline: pack default + gate map + workflow wire + fixture
+# Live: PR touching demo/insecure/app.py → @torii review this pr
+```
+
+Benchmark stub (Juice Shop eval plan): [docs/benchmarks/juice-shop-harness.md](benchmarks/juice-shop-harness.md).
 
 ## Roadmap hooks
 - **Trust:** ingest SARIF before agent; only validated findings block

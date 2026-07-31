@@ -33,10 +33,15 @@ cp .env.example .env   # set OPENROUTER_API_KEY
 # optional: copy keys from sibling Luffy checkout
 # cp ../pr-review-agent/.env .env
 
-# Local smoke (needs gh + PR access)
+# Offline product smoke (no API key)
+./scripts/smoke-torii-gate.sh
+
+# Local full review (needs gh + PR access + OPENROUTER_API_KEY)
 export REPO=owner/repo PR_NUMBER=1
-./scripts/run-torii-review.sh
+./scripts/run-torii-gate.sh
 ```
+
+Dogfood app with intentional vulns: [`demo/insecure/`](demo/insecure/). Gate contract: [`docs/GATE.md`](docs/GATE.md).
 
 Install on a **target** repo: copy workflow pack or point `torii_repository` at this hub (see `pack/`).
 
