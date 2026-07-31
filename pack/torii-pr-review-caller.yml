@@ -24,7 +24,7 @@ permissions:
   pull-requests: write
   issues: write
   actions: write
-  statuses: write  # F22 commit status context torii/review
+  statuses: write  # F22 torii/review + product torii/gate commit statuses
 
 concurrency:
   group: torii-${{ github.repository }}-${{ github.event.issue.number || github.event.inputs.pr_number || github.run_id }}

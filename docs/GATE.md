@@ -27,6 +27,19 @@
 python3 scripts/torii_gate_status.py .torii-out/review-1.md --json --strict
 ```
 
+## CI wiring
+Reusable workflow posts **two** commit statuses after a matched run (when `TORII_COMMIT_STATUS` is not `0`):
+
+| Context | Source | Merge signal |
+|---------|--------|--------------|
+| `torii/review` | `report-verdict.sh` / parse-verdict (F22) | Verdict-aware reaction + status |
+| `torii/gate` | `torii_gate_status.py` post-step | Security-aware open/closed |
+
+Required checks for a hard merge gate should use **`torii/gate`**. Optional hard job fail: repo var `TORII_GATE_STRICT=1`.
+
+## Dogfood
+Intentional insecure sample: `demo/insecure/app.py` (SQLi / pickle / shell). Point a PR at that path and `@torii review this pr`.
+
 ## Roadmap hooks
 - **Trust:** ingest SARIF before agent; only validated findings block
 - **Plane:** policy JSON for coding agents (tool allowlists, spend)

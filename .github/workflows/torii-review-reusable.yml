@@ -660,6 +660,99 @@ jobs:
           REVIEW_FILE="$(ls -t "$OUT_DIR"/review-*.md 2>/dev/null | grep -v '\.raw\.md$' | head -1 || true)"
           bash "$TORII_ROOT/scripts/report-verdict.sh" "${REVIEW_FILE:-}" "${PIPELINE_RC:-1}"
 
+      # Product gate: security-aware merge signal as commit status context torii/gate
+      # (distinct from F22 torii/review). Uses scripts/torii_gate_status.py decision map.
+      - name: Torii Gate status (torii/gate)
+        id: torii_gate
+        if: steps.gate.outputs.matched == 'true' && steps.cooldown.outputs.allowed == 'true' && steps.pathskip.outputs.allowed == 'true' && always()
+        continue-on-error: true
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GITHUB_TOKEN: ${{ github.token }}
+          REPO: ${{ github.repository }}
+          PR_NUMBER: ${{ steps.gate.outputs.pr_number }}
+          OUT_DIR: ${{ github.workspace }}/torii/.torii-out
+          TORII_ROOT: ${{ github.workspace }}/torii
+          TORII_COMMIT_STATUS: ${{ vars.TORII_COMMIT_STATUS || '1' }}
+          TORII_GATE_STRICT: ${{ vars.TORII_GATE_STRICT || '0' }}
+          GITHUB_RUN_ID: ${{ github.run_id }}
+          GITHUB_SERVER_URL: ${{ github.server_url }}
+        run: |
+          set -euo pipefail
+          STATUS_ON="${TORII_COMMIT_STATUS:-1}"
+          case "${STATUS_ON}" in
+            0|false|FALSE|off|OFF|no|NO) STATUS_ON=0 ;;
+            *) STATUS_ON=1 ;;
+          esac
+
+          REVIEW_FILE="$(ls -t "$OUT_DIR"/review-*.md 2>/dev/null | grep -v '\.raw\.md$' | head -1 || true)"
+          STATE="error"
+          CONTEXT="torii/gate"
+          DESC="Torii Gate: no review artifact"
+          BLOCK="true"
+          VERDICT="UNKNOWN"
+
+          if [[ -n "${REVIEW_FILE:-}" && -f "$REVIEW_FILE" && -f "$TORII_ROOT/scripts/torii_gate_status.py" ]]; then
+            DECISION="$(python3 "$TORII_ROOT/scripts/torii_gate_status.py" "$REVIEW_FILE" --json)"
+            STATE="$(python3 -c 'import json,sys; print(json.load(sys.stdin)["state"])' <<<"$DECISION")"
+            CONTEXT="$(python3 -c 'import json,sys; print(json.load(sys.stdin)["context"])' <<<"$DECISION")"
+            DESC="$(python3 -c 'import json,sys; print(json.load(sys.stdin)["description"])' <<<"$DECISION")"
+            BLOCK="$(python3 -c 'import json,sys; print("true" if json.load(sys.stdin).get("block") else "false")' <<<"$DECISION")"
+            VERDICT="$(python3 -c 'import json,sys; print(json.load(sys.stdin).get("verdict",""))' <<<"$DECISION")"
+          fi
+
+          {
+            echo "state=$STATE"
+            echo "context=$CONTEXT"
+            echo "block=$BLOCK"
+            echo "verdict=$VERDICT"
+          } >> "$GITHUB_OUTPUT"
+
+          if [[ -n "${GITHUB_STEP_SUMMARY:-}" ]]; then
+            {
+              echo "### Torii Gate (\`torii/gate\`)"
+              echo "- **State:** \`$STATE\`"
+              echo "- **Block:** \`$BLOCK\`"
+              echo "- **Verdict:** \`$VERDICT\`"
+              echo "- **Description:** $DESC"
+              echo
+            } >> "$GITHUB_STEP_SUMMARY"
+          fi
+
+          if [[ "$STATUS_ON" == "1" && -n "$REPO" && -n "${PR_NUMBER:-}" ]]; then
+            HEAD_SHA="$(
+              gh pr view "$PR_NUMBER" --repo "$REPO" --json headRefOid --jq '.headRefOid' 2>/dev/null || true
+            )"
+            if [[ -n "${HEAD_SHA:-}" ]]; then
+              TARGET="${GITHUB_SERVER_URL:-https://github.com}/${REPO}/actions/runs/${GITHUB_RUN_ID:-}"
+              DESC_TRIM="${DESC:0:140}"
+              gh api --method POST \
+                -H "Accept: application/vnd.github+json" \
+                "/repos/${REPO}/statuses/${HEAD_SHA}" \
+                -f state="$STATE" \
+                -f context="$CONTEXT" \
+                -f description="$DESC_TRIM" \
+                -f target_url="$TARGET" >/dev/null 2>&1 \
+                && echo "Posted $STATE status on ${HEAD_SHA:0:12} ($CONTEXT)" \
+                || echo "warn: torii/gate status post failed (sha=${HEAD_SHA:0:12})"
+            else
+              echo "Skip torii/gate status (no HEAD_SHA)"
+            fi
+          else
+            echo "Skip torii/gate status (disabled or missing REPO/PR)"
+          fi
+
+          # Optional hard fail for required-check workflows (default soft)
+          STRICT="${TORII_GATE_STRICT:-0}"
+          case "${STRICT}" in
+            1|true|TRUE|on|ON|yes|YES)
+              if [[ "$BLOCK" == "true" ]]; then
+                echo "::error::Torii Gate closed (strict) — $DESC"
+                exit 1
+              fi
+              ;;
+          esac
+
       - name: Ensure trace package exists
         if: steps.gate.outputs.matched == 'true' && steps.cooldown.outputs.allowed == 'true' && steps.pathskip.outputs.allowed == 'true' && always()
         env:
