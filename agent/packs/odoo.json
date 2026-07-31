@@ -1,0 +1,28 @@
+{
+  "id": "odoo",
+  "name": "Odoo / ORM",
+  "description": "Odoo-module oriented lenses (ACL, sudo, compute/onchange, RPC contracts).",
+  "lenses": [
+    {"id": "correctness", "hint": "ORM domain bugs, wrong defaults, missing inverse, onchange/compute side effects"},
+    {"id": "security", "hint": "sudo misuse, missing ir.model.access / record rules, public controllers, XSS in QWeb"},
+    {"id": "api_contracts", "hint": "RPC method signatures, XML-RPC/JSON-RPC payloads, field renames, view arch breaks"},
+    {"id": "tests", "hint": "TransactionCase/HttpCase for ACL and compute paths?"},
+    {"id": "concurrency", "hint": "multi-worker races, unique constraints, stock/quant-style contention"},
+    {"id": "performance", "hint": "N+1 search/read in loops, missing indexes on hot domains"},
+    {"id": "maintainability", "hint": "module dependency cycles, fragile inherit xpath (only if defect risk)"}
+  ],
+  "extra_focus": [
+    "Flag bare sudo() without a comment justifying why ACL must be bypassed.",
+    "New public routes must declare auth and csrf appropriately."
+  ],
+  "path_globs": [
+    "**/addons/**",
+    "**/odoo/**",
+    "**/*_module/**",
+    "**/security/*.xml",
+    "**/security/*.csv",
+    "**/models/*.py",
+    "**/controllers/*.py",
+    "**/views/*.xml"
+  ]
+}

@@ -1,0 +1,266 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Torii — Security gate for every pull request</title>
+<meta name="description" content="Torii is the PR/CI security gate for AI-written code. Evidence-backed findings, false-positive memory, merge protection. Built for teams that ship fast." />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Albert+Sans:wght@400;500;600&family=Alumni+Sans:wght@100;300;400&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet" />
+<style>
+:root{
+  --gold:oklch(84% 0.19 80.46);--gold-rich:oklch(77% 0.13 82);--pt:oklch(76% 0.088 190);
+  --lacquer:oklch(7% 0.006 95);--deep:oklch(4% 0.004 95);--raised:oklch(11% 0.006 95);
+  --champagne:oklch(91% 0 0);--warm:oklch(88% 0 0);--muted:oklch(72% 0 0);--faint:oklch(62% 0 0);
+  --hair:oklch(78% 0 0/.16);--hair-g:oklch(74% 0.09 82/.55);--verm:oklch(58% 0.15 35);
+  --fd:"Alumni Sans",system-ui,sans-serif;--fb:"Albert Sans",system-ui,sans-serif;--fm:"IBM Plex Mono",monospace;
+  --max:1120px;--r:4px;
+}
+*{box-sizing:border-box}html{scroll-behavior:smooth}
+body{margin:0;background:var(--lacquer);color:var(--warm);font:400 1rem/1.65 var(--fb);-webkit-font-smoothing:antialiased}
+a{color:var(--gold);text-decoration:none}a:hover{color:oklch(86% 0.07 84)}
+.wrap{max-width:var(--max);margin:0 auto;padding:0 24px}
+.nav{position:sticky;top:0;z-index:40;border-bottom:1px solid var(--hair);background:oklch(7% .006 95/.92);backdrop-filter:blur(12px)}
+.nav-in{max-width:var(--max);margin:0 auto;padding:14px 24px;display:flex;align-items:center;gap:20px;flex-wrap:wrap}
+.logo{font-family:var(--fd);letter-spacing:.16em;text-transform:uppercase;font-size:1rem;color:var(--champagne);display:flex;align-items:center;gap:10px}
+.mark{width:22px;height:22px;position:relative;border:1.5px solid var(--gold);background:linear-gradient(180deg,var(--gold) 0%,var(--gold) 18%,transparent 18%,transparent 42%,var(--gold) 42%,var(--gold) 48%,transparent 48%)}
+.mark::before{content:"";position:absolute;left:50%;top:0;bottom:0;width:1.5px;background:var(--gold);transform:translateX(-50%)}
+.nav a{font-family:var(--fm);font-size:.58rem;letter-spacing:.1em;text-transform:uppercase;color:var(--muted)}
+.nav .ml{margin-left:auto;display:flex;gap:14px;align-items:center;flex-wrap:wrap}
+.btn{display:inline-flex;align-items:center;justify-content:center;padding:12px 22px;font-family:var(--fb);font-weight:500;font-size:.9rem;border-radius:2px;border:1px solid transparent;cursor:pointer;transition:background .15s}
+.btn-p{background:var(--gold);color:oklch(14% .02 95)}.btn-p:hover{background:oklch(86% 0.07 84);color:oklch(14% .02 95)}
+.btn-s{background:transparent;color:var(--gold);border-color:var(--hair-g)}.btn-s:hover{border-color:var(--gold)}
+.hero{padding:88px 0 72px;border-bottom:1px solid var(--hair);position:relative}
+.hero::after{content:"";position:absolute;left:0;right:0;bottom:0;height:1px;background:linear-gradient(90deg,transparent,var(--hair-g),transparent)}
+.ey{font-family:var(--fm);font-size:.62rem;letter-spacing:.18em;text-transform:uppercase;color:var(--gold);margin:0 0 20px}
+.h1{font-family:var(--fd);font-weight:100;font-size:clamp(2.6rem,6vw,4.4rem);line-height:1.02;color:var(--champagne);margin:0 0 20px;max-width:16ch}
+.h1 em{font-style:normal;color:var(--gold)}
+.lede{font-size:1.1rem;color:var(--muted);max-width:48ch;margin:0 0 28px;line-height:1.7}
+.cta-row{display:flex;flex-wrap:wrap;gap:12px;margin-bottom:36px}
+.stats{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;max-width:520px}
+.stat{border:1px solid var(--hair);background:var(--raised);padding:16px;border-radius:var(--r)}
+.stat b{display:block;font-family:var(--fd);font-weight:300;font-size:1.75rem;color:var(--champagne)}
+.stat span{font-family:var(--fm);font-size:.55rem;letter-spacing:.12em;text-transform:uppercase;color:var(--faint)}
+.sec{padding:72px 0;border-bottom:1px solid var(--hair)}
+.sh{margin-bottom:36px;max-width:560px}
+.sh h2{font-family:var(--fd);font-weight:300;font-size:clamp(1.9rem,3.5vw,2.6rem);color:var(--champagne);margin:0 0 12px;line-height:1.08}
+.sh p{margin:0;color:var(--muted)}
+.grid3{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.card{background:var(--raised);border:1px solid var(--hair);border-radius:var(--r);padding:22px}
+.card h3{margin:0 0 8px;font-size:1.02rem;font-weight:500;color:var(--champagne)}
+.card p{margin:0;font-size:.9rem;color:var(--muted);line-height:1.55}
+.num{font-family:var(--fm);font-size:.55rem;letter-spacing:.14em;text-transform:uppercase;color:var(--gold);margin-bottom:10px}
+.pipeline{display:flex;flex-wrap:wrap;gap:6px;margin:24px 0}
+.pipe{font-family:var(--fm);font-size:.65rem;letter-spacing:.08em;text-transform:uppercase;padding:10px 14px;border:1px solid var(--hair-g);color:var(--gold);background:var(--deep);border-radius:var(--r)}
+.pipe.on{background:oklch(78% .12 82/.12);border-color:var(--gold)}
+.tw{overflow-x:auto;border:1px solid var(--hair);border-radius:var(--r);background:var(--raised)}
+table{width:100%;border-collapse:collapse;font-size:.82rem}
+th{text-align:left;font-family:var(--fm);font-size:.52rem;letter-spacing:.1em;text-transform:uppercase;color:var(--faint);padding:12px;background:var(--deep);border-bottom:1px solid var(--hair)}
+td{padding:12px;border-bottom:1px solid var(--hair);color:var(--warm);vertical-align:top}
+tr:last-child td{border-bottom:0}
+.yes{color:var(--pt)}.no{color:var(--faint)}
+.banner{border:1px solid var(--hair-g);background:linear-gradient(135deg,oklch(78% .12 82/.1),transparent 55%),var(--raised);padding:40px 32px;border-radius:var(--r);text-align:center}
+.banner h2{font-family:var(--fd);font-weight:300;font-size:clamp(1.8rem,3vw,2.4rem);color:var(--champagne);margin:0 0 12px}
+.banner p{color:var(--muted);max-width:42ch;margin:0 auto 24px}
+.note{font-size:.8rem;color:var(--faint);margin-top:12px;line-height:1.5}
+.foot{padding:40px 0 56px;font-size:.8rem;color:var(--faint);border-top:1px solid var(--hair);margin-top:0}
+.foot .grid{display:grid;grid-template-columns:2fr 1fr 1fr;gap:24px}
+.foot h4{font-family:var(--fm);font-size:.55rem;letter-spacing:.12em;text-transform:uppercase;color:var(--muted);margin:0 0 10px}
+.foot a{display:block;color:var(--faint);margin:4px 0}.foot a:hover{color:var(--gold)}
+.pill{display:inline-block;font-family:var(--fm);font-size:.55rem;letter-spacing:.12em;text-transform:uppercase;padding:6px 10px;border:1px solid var(--hair-g);color:var(--gold);border-radius:2px;margin-bottom:16px}
+@media(max-width:800px){
+  .stats,.grid3,.grid2,.foot .grid{grid-template-columns:1fr}
+  .hero{padding:56px 0 48px}
+}
+</style>
+</head>
+<body>
+<nav class="nav"><div class="nav-in">
+  <div class="logo"><span class="mark" aria-hidden="true"></span>Torii</div>
+  <div class="ml">
+    <a href="#product">Product</a>
+    <a href="#problem">Problem</a>
+    <a href="#how">How it works</a>
+    <a href="#roadmap">Roadmap</a>
+    <a href="#compare">Compare</a>
+    <a href="#demo" class="btn btn-p" style="padding:8px 14px;font-size:.8rem">Book a demo</a>
+  </div>
+</div></nav>
+
+<header class="hero"><div class="wrap">
+  <p class="ey">PR / CI security gate · AI-written code</p>
+  <h1 class="h1">Nothing ships<br/>without crossing<br/>the <em>gate</em>.</h1>
+  <p class="lede"><strong style="color:var(--champagne);font-weight:500">Torii</strong> is the security gate for every pull request. Agent-powered review, path-evidenced findings, merge protection — so AI and humans ship fast without shipping risk.</p>
+  <div class="cta-row">
+    <a class="btn btn-p" href="#demo">Book a demo</a>
+    <a class="btn btn-s" href="#how">See how it works</a>
+  </div>
+  <div class="stats">
+    <div class="stat"><b>Gate</b><span>Every PR · every CI</span></div>
+    <div class="stat"><b>Evidence</b><span>Path · line · tool</span></div>
+    <div class="stat"><b>Memory</b><span>FP↓ each run</span></div>
+  </div>
+  <p class="note">Torii = the threshold gate. Product you install first: <strong style="color:var(--muted)">Torii Gate</strong>. Engineering control plane remains internal; customers never need the codename.</p>
+</div></header>
+
+<section class="sec" id="product"><div class="wrap">
+  <div class="sh">
+    <p class="ey">What we build</p>
+    <h2>Torii Gate — v1 product.</h2>
+    <p>This is the top-ranked idea. This is what ships.</p>
+  </div>
+  <div class="grid2">
+    <div class="card" style="border-color:var(--hair-g)">
+      <span class="pill">Ship now · Hub71 lock</span>
+      <h3>Torii Gate</h3>
+      <p>GitHub PR comments + required checks. Security pack (injection, authz, secrets, SSRF, unsafe crypto). Tool-backed findings. Labels that block merge on high severity. Org memory of false positives so the same noise dies twice.</p>
+    </div>
+    <div class="card">
+      <div class="num">Who buys</div>
+      <h3>Eng + AppSec</h3>
+      <p>Platform teams who already run CI. AppSec teams drowning in scanner noise. Anyone shipping AI-generated code without a security owner on every PR.</p>
+      <p style="margin-top:14px" class="note">Install → first PR comment in minutes. No annual pentest theater to get value.</p>
+    </div>
+  </div>
+</div></section>
+
+<section class="sec" id="problem"><div class="wrap">
+  <div class="sh">
+    <p class="ey">The problem</p>
+    <h2>AI ships every hour. Security still ships yearly.</h2>
+    <p>Code volume exploded. Review and SAST did not. The gate is the only place left that still has authority.</p>
+  </div>
+  <div class="grid3">
+    <div class="card"><div class="num">01</div><h3>AI code without a gate</h3><p>Agents and copilots open PRs at machine speed. Human security review does not scale. Breach windows shrink to a single merge.</p></div>
+    <div class="card"><div class="num">02</div><h3>Scanner noise</h3><p>SAST floods the backlog. Engineers mute alerts. Real bugs hide inside 60–90% false positives.</p></div>
+    <div class="card"><div class="num">03</div><h3>Point-in-time theater</h3><p>Annual pentests age out before the next sprint. Attackers and your monorepo do not wait.</p></div>
+  </div>
+</div></section>
+
+<section class="sec" id="how"><div class="wrap">
+  <div class="sh">
+    <p class="ey">How Torii Gate works</p>
+    <h2>Control plane, not a chat box.</h2>
+    <p>Deterministic orchestration. Agentic analysis. Durable memory. Audit traces.</p>
+  </div>
+  <div class="pipeline">
+    <span class="pipe on">1 PR / CI trigger</span>
+    <span class="pipe on">2 Gate open</span>
+    <span class="pipe">3 Scope + tools</span>
+    <span class="pipe">4 Agent loop</span>
+    <span class="pipe">5 Validate</span>
+    <span class="pipe">6 Normalize</span>
+    <span class="pipe on">7 Verdict</span>
+    <span class="pipe">8 Memory + report</span>
+  </div>
+  <div class="grid2">
+    <div class="card"><div class="num">Surfaces</div><h3>Where the gate sits</h3><p>Pull requests · required status checks · optional bot comments · security labels · branch protection. Later: SARIF ingest from Semgrep / CodeQL / peers.</p></div>
+    <div class="card"><div class="num">Honesty</div><h3>Evidence over slogans</h3><p>No “zero false positives.” No “95% ATT&amp;CK autonomous exploit.” We measure confirmed findings, FP rate, time-to-signal, gated PRs — and improve memory every run.</p></div>
+  </div>
+</div></section>
+
+<section class="sec" id="roadmap"><div class="wrap">
+  <div class="sh">
+    <p class="ey">Roadmap (same brand)</p>
+    <h2>One company. Three modules.</h2>
+    <p>Only Gate is build-now. Trust and Plane are the path to platform ACV.</p>
+  </div>
+  <div class="grid3">
+    <div class="card" style="border-color:var(--hair-g)">
+      <div class="num">#1 · Now</div>
+      <h3>Torii Gate</h3>
+      <p>PR/CI security gate agent. Comment, check, block. This is the product.</p>
+    </div>
+    <div class="card">
+      <div class="num">#2 · Next</div>
+      <h3>Torii Trust</h3>
+      <p>Hybrid SAST → agent validator. SARIF in, high-confidence findings out. Kill the triage tax.</p>
+    </div>
+    <div class="card">
+      <div class="num">#3 · Vision</div>
+      <h3>Torii Plane</h3>
+      <p>Control plane for coding agents: tool allowlists, spend, policy, audit. Sovereign AI story for AD.</p>
+    </div>
+  </div>
+</div></section>
+
+<section class="sec" id="compare"><div class="wrap">
+  <div class="sh">
+    <p class="ey">Compare</p>
+    <h2>Where Torii sits.</h2>
+  </div>
+  <div class="tw"><table>
+    <thead>
+      <tr><th>Capability</th><th>CodeRabbit / AI review</th><th>Snyk / SAST</th><th>AI red team platforms</th><th>Torii Gate</th></tr>
+    </thead>
+    <tbody>
+      <tr><td>Primary job</td><td>Code quality comments</td><td>Detect vulns / deps</td><td>Exploit / continuous offense</td><td class="yes">Security merge authority</td></tr>
+      <tr><td>Every PR</td><td class="yes">Yes</td><td>Often</td><td class="no">No (after-the-fact)</td><td class="yes">Yes — gate first</td></tr>
+      <tr><td>Security depth</td><td class="no">Secondary</td><td class="yes">High (noisy)</td><td class="yes">Exploit proof</td><td class="yes">High + evidence</td></tr>
+      <tr><td>False positives</td><td>N/A quality</td><td class="no">Often 60–90%</td><td>Varies</td><td class="yes">Measured memory loop</td></tr>
+      <tr><td>Time to value</td><td>Minutes</td><td>Days of triage</td><td>Enterprise sales</td><td class="yes">Minutes on first PR</td></tr>
+      <tr><td>Legal load</td><td class="yes">Low</td><td class="yes">Low</td><td class="no">High (offense)</td><td class="yes">Low (pipeline)</td></tr>
+    </tbody>
+  </table></div>
+</div></section>
+
+<section class="sec" id="brand"><div class="wrap">
+  <div class="sh">
+    <p class="ey">Name</p>
+    <h2>Why Torii.</h2>
+  </div>
+  <div class="grid2">
+    <div class="card">
+      <div class="num">Meaning</div>
+      <h3>The threshold gate</h3>
+      <p>A torii marks the passage from ordinary ground to sacred ground. We mark the passage from change to production. Nothing important crosses without intent.</p>
+    </div>
+    <div class="card">
+      <div class="num">Usage</div>
+      <h3>Brand system</h3>
+      <p><strong style="color:var(--champagne)">Torii</strong> — company &amp; brand<br/>
+      <strong style="color:var(--champagne)">Torii Gate</strong> — product you build now<br/>
+      <strong style="color:var(--champagne)">Torii Trust / Plane</strong> — roadmap modules<br/>
+      Internal eng stack may keep a private codename; customers only see Torii.</p>
+    </div>
+  </div>
+</div></section>
+
+<section class="sec" id="demo"><div class="wrap">
+  <div class="banner">
+    <p class="ey" style="margin-bottom:12px">Hub71 · Access + AI</p>
+    <h2>Stop guessing. Start gating.</h2>
+    <p>Torii Gate finds what annual pentests and noisy scanners miss — on every PR, with metrics you can defend.</p>
+    <div class="cta-row" style="justify-content:center;margin-bottom:0">
+      <a class="btn btn-p" href="https://www.hub71.com/program/access-programme/apply" target="_blank" rel="noopener">Apply Hub71 Access</a>
+      <a class="btn btn-s" href="https://github.com/Mr-Ashish/luffy-pr-review-agent" target="_blank" rel="noopener">Control plane (eng)</a>
+    </div>
+    <p class="note">Replace demo CTA with Calendly when live. Positioning: global SaaS from Abu Dhabi — pipeline-native AI AppSec.</p>
+  </div>
+</div></section>
+
+<footer class="foot"><div class="wrap">
+  <div class="grid">
+    <div>
+      <div class="logo" style="margin-bottom:12px"><span class="mark" aria-hidden="true"></span>Torii</div>
+      <p style="margin:0;max-width:36ch;line-height:1.55">The security gate for AI-written code. Evidence, memory, merge authority — not theater.</p>
+    </div>
+    <div>
+      <h4>Products</h4>
+      <a href="#product">Torii Gate</a>
+      <a href="#roadmap">Torii Trust</a>
+      <a href="#roadmap">Torii Plane</a>
+    </div>
+    <div>
+      <h4>Company</h4>
+      <a href="founder-collation.html">Founder brief</a>
+      <a href="idea-scores-hub71-summary.md">Idea scores</a>
+      <a href="#demo">Contact</a>
+    </div>
+  </div>
+  <p style="margin:28px 0 0;font-family:var(--fm);font-size:.55rem;letter-spacing:.1em;text-transform:uppercase">© 2026 Torii · Authorized testing only · Product brand (not legal entity name)</p>
+</div></footer>
+</body>
+</html>

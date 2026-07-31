@@ -1,0 +1,67 @@
+# F8: Build & publish prebaked Hermes runner image to GHCR.
+# Speeds Torii PR review jobs when vars.TORII_RUNNER_IMAGE points at this image.
+name: Build Torii Hermes runner
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - "docker/torii-runner/**"
+      - "scripts/hermes-pin.sh"
+      - "scripts/build-torii-runner-image.sh"
+      - ".github/workflows/build-torii-runner.yml"
+
+permissions:
+  contents: read
+  packages: write
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    # F25: no hardcoded pin — empty var → scripts/hermes-pin.sh default (single SoT)
+    env:
+      TORII_HERMES_COMMIT: ${{ vars.TORII_HERMES_COMMIT }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Resolve pin
+        id: pin
+        run: |
+          set -euo pipefail
+          chmod +x scripts/hermes-pin.sh scripts/build-torii-runner-image.sh
+          # Empty GHA var: use baked default (not float). Explicit latest|main|floating → resolve empty then default for image builds.
+          PIN="$(TORII_HERMES_COMMIT="${TORII_HERMES_COMMIT:-}" scripts/hermes-pin.sh resolve | tr -d '\n')"
+          if [[ -z "$PIN" ]]; then
+            PIN="$(scripts/hermes-pin.sh default | tr -d '\n')"
+            echo "::notice::F25 image build pin from hermes-pin.sh default=$PIN"
+          else
+            echo "::notice::F25 image build pin=$PIN"
+          fi
+          SHORT="${PIN:0:12}"
+          echo "pin=$PIN" >> "$GITHUB_OUTPUT"
+          echo "short=$SHORT" >> "$GITHUB_OUTPUT"
+          echo "image=ghcr.io/${{ github.repository_owner }}/torii-hermes-runner" >> "$GITHUB_OUTPUT"
+          # Propagate so child scripts see the same pin
+          echo "TORII_HERMES_COMMIT=$PIN" >> "$GITHUB_ENV"
+
+      - name: Log in to GHCR
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build and push
+        env:
+          HERMES_COMMIT: ${{ steps.pin.outputs.pin }}
+          TORII_RUNNER_IMAGE_BASE: ${{ steps.pin.outputs.image }}
+          PUSH: "1"
+        run: |
+          set -euo pipefail
+          # owner may be mixed case; GHCR wants lowercase
+          BASE="$(echo "${TORII_RUNNER_IMAGE_BASE}" | tr '[:upper:]' '[:lower:]')"
+          export TORII_RUNNER_IMAGE_BASE="$BASE"
+          export HERMES_COMMIT
+          ./scripts/build-torii-runner-image.sh

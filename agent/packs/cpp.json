@@ -1,0 +1,30 @@
+{
+  "id": "cpp",
+  "name": "C / C++",
+  "description": "Memory safety, ABI, concurrency, and build-sensitive C/C++ changes.",
+  "lenses": [
+    {"id": "correctness", "hint": "PRIMARY: UB, lifetime/use-after-free, integer overflow, wrong ownership (unique/shared), off-by-one buffers"},
+    {"id": "concurrency", "hint": "PRIMARY: data races, lock order, atomics misuse, async callback lifetime"},
+    {"id": "security", "hint": "buffer overflows, format strings, unsafe casts, command injection, secret material in logs"},
+    {"id": "api_contracts", "hint": "ABI/header breaks, exported C API, protobuf/flatbuffer layout, version macros"},
+    {"id": "tests", "hint": "unit/gtest for new branches; ASan/TSan-relevant cases when concurrency/memory surface changes"},
+    {"id": "performance", "hint": "unbounded copies, hot-path allocations, cache unfriendly loops (only with evidence)"},
+    {"id": "maintainability", "hint": "header pollution / macro footguns only if defect risk"}
+  ],
+  "extra_focus": [
+    "Prefer findings tied to ownership/lifetime or concurrency with a concrete trigger.",
+    "Build system-only PRs (CMakeLists) may mark concurrency n/a; still check for insecure flags."
+  ],
+  "path_globs": [
+    "**/*.c",
+    "**/*.cc",
+    "**/*.cpp",
+    "**/*.cxx",
+    "**/*.h",
+    "**/*.hh",
+    "**/*.hpp",
+    "**/*.hxx",
+    "**/CMakeLists.txt",
+    "**/*.cmake"
+  ]
+}

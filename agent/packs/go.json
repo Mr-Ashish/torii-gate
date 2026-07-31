@@ -1,0 +1,23 @@
+{
+  "id": "go",
+  "name": "Go services",
+  "description": "Idiomatic Go review focus: errors, concurrency, interfaces, tests.",
+  "lenses": [
+    {"id": "correctness", "hint": "PRIMARY: nil deref, wrong error wrap/return, off-by-one slices, context ignored, deferred close order"},
+    {"id": "concurrency", "hint": "PRIMARY: data races, waitgroup misuse, channel close, mutex copy, leaking goroutines"},
+    {"id": "tests", "hint": "table-driven tests for new branches; race detector-friendly; omit only if pure docs"},
+    {"id": "api_contracts", "hint": "exported API / interface breaks, JSON/protobuf tags, HTTP status contracts"},
+    {"id": "performance", "hint": "unbounded buffers, O(n^2) on request path, unnecessary allocations (only with evidence)"},
+    {"id": "security", "hint": "command injection, path traversal, TLS skip-verify, secret in logs"},
+    {"id": "maintainability", "hint": "interface bloat only if it causes real future defect risk"}
+  ],
+  "extra_focus": [
+    "Flag ignored errors (`_ =`) on I/O and unlock paths when they can fail closed incorrectly.",
+    "Prefer findings with package path + symbol; cite Go test file gaps when production code changes."
+  ],
+  "path_globs": [
+    "**/*.go",
+    "**/go.mod",
+    "**/go.sum"
+  ]
+}

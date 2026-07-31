@@ -1,0 +1,12 @@
+{
+  "fixit_prompts": true,
+  "issue_context": true,
+  "inline_comments": true,
+  "inline_suggestions": true,
+  "pr_labels": true,
+  "hub_publish": false,
+  "fp_resolve": true,
+  "fp_resolve_max": 24,
+  "inline_max": 6,
+  "issue_context_max": 3
+}

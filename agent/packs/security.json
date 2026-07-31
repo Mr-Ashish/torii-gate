@@ -1,0 +1,18 @@
+{
+  "id": "security",
+  "name": "Security-first",
+  "description": "Security + correctness + api_contracts first; other lenses still required but may be n/a with note.",
+  "lenses": [
+    {"id": "security", "hint": "PRIMARY: injection, authz, secrets, XSS, CSRF, SSRF, path traversal, unsafe deserialize, crypto misuse"},
+    {"id": "correctness", "hint": "authz bypass via logic bugs; fail-open defaults"},
+    {"id": "api_contracts", "hint": "auth headers, permission bits, public surface exposure"},
+    {"id": "tests", "hint": "negative tests for authz/injection paths?"},
+    {"id": "concurrency", "hint": "TOCTOU, session races (n/a if none)"},
+    {"id": "performance", "hint": "only if DoS-relevant (unbounded work)"},
+    {"id": "maintainability", "hint": "n/a unless secret-handling footguns"}
+  ],
+  "extra_focus": [
+    "Prefer REQUEST CHANGES when a security concern has a concrete trigger.",
+    "Never invent vulns — require path evidence from the diff/workspace."
+  ]
+}

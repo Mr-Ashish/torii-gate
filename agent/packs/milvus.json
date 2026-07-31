@@ -1,0 +1,31 @@
+{
+  "id": "milvus",
+  "name": "Milvus / vector DB (Go-heavy)",
+  "description": "Milvus-oriented lenses: write path, streaming, meta, credentials, shard/WAL.",
+  "lenses": [
+    {"id": "correctness", "hint": "PRIMARY: writebuffer/flush/insert path regressions; nil schema/function branches; skip-parse conditions; wrong error return on hot RPC"},
+    {"id": "concurrency", "hint": "PRIMARY: shard interceptor races, channel close order, WAL/sync, singleflight vs mutex, context cancel leaks"},
+    {"id": "performance", "hint": "PRIMARY: unbounded decode of insert body, bloom/filter rebuild cost, N+1 meta lookups, allocs on streaming hot path"},
+    {"id": "security", "hint": "credential/token handling, cloud broker secrets, authn bypass on proxy/gateway, log leakage of secrets"},
+    {"id": "api_contracts", "hint": "gRPC/protobuf field contracts, client SDK surface, config YAML keys, cross-version wire compatibility"},
+    {"id": "tests", "hint": "Go table tests for new branches; write_buffer / function manager / interceptor coverage; negative empty-schema cases"},
+    {"id": "maintainability", "hint": "only if package boundary / interface break creates real defect risk"}
+  ],
+  "extra_focus": [
+    "Prefer path:line findings on internal/flushcommon, streamingnode, proxy, util/function, distributed — not style nits.",
+    "Empty Key findings is OK for pure config PRs; for insert/WAL/auth paths require at least one concrete trigger or explicit n/a reason.",
+    "Do not re-raise author FP/resolved patterns (F62) without new evidence in this diff."
+  ],
+  "path_globs": [
+    "**/milvus*/**",
+    "**/writebuffer/**",
+    "**/streamingnode/**",
+    "**/flushcommon/**",
+    "**/util/function/**",
+    "**/distributed/**",
+    "**/rootcoord/**",
+    "**/datanode/**",
+    "**/querynode/**",
+    "**/proxy/**"
+  ]
+}

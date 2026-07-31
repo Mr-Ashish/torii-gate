@@ -1,0 +1,21 @@
+{
+  "benchmark": "torii-hermes-startup",
+  "at": "2026-07-31T12:31:41Z",
+  "hermes_pin": "53559aaf86b84dadae83cd9bb605ca476f9a0606",
+  "runner_image": "ghcr.io/mr-ashish/torii-hermes-runner:53559aaf86b8",
+  "tarball_bytes": 526956495,
+  "host": "macos-aarch64-local",
+  "seconds": {
+    "warm_present": 0.373,
+    "tarball_restore": 22.004,
+    "docker_prebake": "n/a (image not built locally; use build-torii-runner-image.sh / GH Actions)",
+    "cold_install": 118.674
+  },
+  "notes": {
+    "warm_present": "hermes --version when already installed (CI cache hit / prebake)",
+    "tarball_restore": "unpack pre-packed hermes-agent tree (proxy for Actions cache of ~/.hermes)",
+    "docker_prebake": "F8 prebaked runner image hermes --version",
+    "cold_install": "isolated HOME full install.sh at pin (CI cold miss)",
+    "speedup_vs_cold": "warm ~318x faster than cold; tarball restore avoids reinstall"
+  }
+}

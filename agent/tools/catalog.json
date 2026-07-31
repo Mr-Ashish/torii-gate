@@ -1,0 +1,341 @@
+{
+  "schema_version": 1,
+  "feature": "F68",
+  "description": "Torii agent tool catalog \u2014 research \u2192 eval \u2192 adopt pipeline",
+  "updated_at": "2026-07-31T19:23:47Z",
+  "tools": [
+    {
+      "id": "terminal",
+      "name": "Hermes terminal toolset",
+      "status": "adopted",
+      "source": "shipped",
+      "toolset": "terminal",
+      "evidence": [
+        "default TORII_TOOLSETS",
+        "F49/F51 tool depth"
+      ],
+      "safety": "workspace-scoped shell via Hermes",
+      "adopted_at": "2026-07-30"
+    },
+    {
+      "id": "diff-hunk-reader",
+      "name": "Diff hunk reader (prefer pr.diff over head)",
+      "status": "adopted",
+      "source": "run_evidence",
+      "kind": "workflow_tool",
+      "toolset": "terminal",
+      "rationale": "Zero/one-tool first passes need forced diff-hunk inspection (H26/F51)",
+      "eval": {
+        "scored_at": "2026-07-31T19:23:38Z",
+        "dims": {
+          "signal": 5,
+          "safety": 5,
+          "effort": 4,
+          "torii_fit": 5,
+          "cost": 4
+        },
+        "total": 23,
+        "max": 25,
+        "recommend": "adopt",
+        "notes": "zero_tool_runs=23 deep_tool_runs=10 evidence_n=40 kind=workflow_tool"
+      },
+      "adopted_at": "2026-07-31T19:23:46Z",
+      "feature": "F68"
+    },
+    {
+      "id": "test-gap-scanner",
+      "name": "Test-gap scanner for claim-to-fix PRs",
+      "status": "adopted",
+      "source": "run_evidence",
+      "kind": "workflow_tool",
+      "toolset": "terminal",
+      "rationale": "F50 severity calibration needs evidence of missing tests near changed paths",
+      "eval": {
+        "scored_at": "2026-07-31T19:23:38Z",
+        "dims": {
+          "signal": 5,
+          "safety": 5,
+          "effort": 4,
+          "torii_fit": 5,
+          "cost": 4
+        },
+        "total": 23,
+        "max": 25,
+        "recommend": "adopt",
+        "notes": "zero_tool_runs=23 deep_tool_runs=10 evidence_n=40 kind=workflow_tool"
+      },
+      "adopted_at": "2026-07-31T19:23:47Z",
+      "feature": "F68"
+    },
+    {
+      "id": "symbol-range-reader",
+      "name": "Symbol + line-range reader (rg + sed)",
+      "status": "adopted",
+      "source": "run_evidence",
+      "kind": "workflow_tool",
+      "toolset": "terminal",
+      "rationale": "Successful deep runs use rg/sed ranges \u2014 codify as preferred tool pattern",
+      "eval": {
+        "scored_at": "2026-07-31T19:23:38Z",
+        "dims": {
+          "signal": 5,
+          "safety": 5,
+          "effort": 4,
+          "torii_fit": 5,
+          "cost": 4
+        },
+        "total": 23,
+        "max": 25,
+        "recommend": "adopt",
+        "notes": "zero_tool_runs=23 deep_tool_runs=10 evidence_n=40 kind=workflow_tool"
+      },
+      "adopted_at": "2026-07-31T19:23:47Z",
+      "feature": "F68"
+    }
+  ],
+  "candidates": [
+    {
+      "id": "roi-h3",
+      "name": "H3: Skill-file evolution (GEPA/DSPy) for review-prompt / SOUL",
+      "source": "hermes_roi_backlog",
+      "evidence": [
+        "docs/experiments/hermes-inspired-roi.md:H3"
+      ],
+      "rationale": "Skill-file evolution (GEPA/DSPy) for review-prompt / SOUL",
+      "kind": "research_pattern",
+      "status": "evaluated",
+      "toolset_hint": "terminal",
+      "eval": {
+        "scored_at": "2026-07-31T19:23:38Z",
+        "dims": {
+          "signal": 2,
+          "safety": 5,
+          "effort": 2,
+          "torii_fit": 5,
+          "cost": 3
+        },
+        "total": 17,
+        "max": 25,
+        "recommend": "design",
+        "notes": "zero_tool_runs=0 deep_tool_runs=0 evidence_n=1 kind=research_pattern"
+      },
+      "researched_at": "2026-07-31T19:23:38Z"
+    },
+    {
+      "id": "roi-h4",
+      "name": "H4: Context compressor / history budget for huge monorepos",
+      "source": "hermes_roi_backlog",
+      "evidence": [
+        "docs/experiments/hermes-inspired-roi.md:H4"
+      ],
+      "rationale": "Context compressor / history budget for huge monorepos",
+      "kind": "research_pattern",
+      "status": "evaluated",
+      "toolset_hint": "terminal",
+      "eval": {
+        "scored_at": "2026-07-31T19:23:38Z",
+        "dims": {
+          "signal": 2,
+          "safety": 5,
+          "effort": 2,
+          "torii_fit": 5,
+          "cost": 3
+        },
+        "total": 17,
+        "max": 25,
+        "recommend": "design",
+        "notes": "zero_tool_runs=0 deep_tool_runs=0 evidence_n=1 kind=research_pattern"
+      },
+      "researched_at": "2026-07-31T19:23:38Z"
+    },
+    {
+      "id": "roi-h5",
+      "name": "H5: Session/search memory over past PR traces (FTS5 pattern)",
+      "source": "hermes_roi_backlog",
+      "evidence": [
+        "docs/experiments/hermes-inspired-roi.md:H5"
+      ],
+      "rationale": "Session/search memory over past PR traces (FTS5 pattern)",
+      "kind": "research_pattern",
+      "status": "evaluated",
+      "toolset_hint": "terminal",
+      "eval": {
+        "scored_at": "2026-07-31T19:23:38Z",
+        "dims": {
+          "signal": 2,
+          "safety": 5,
+          "effort": 2,
+          "torii_fit": 5,
+          "cost": 3
+        },
+        "total": 17,
+        "max": 25,
+        "recommend": "design",
+        "notes": "zero_tool_runs=0 deep_tool_runs=0 evidence_n=1 kind=research_pattern"
+      },
+      "researched_at": "2026-07-31T19:23:38Z"
+    },
+    {
+      "id": "roi-h8",
+      "name": "H8: Subagent fan-out for multi-file PRs",
+      "source": "hermes_roi_backlog",
+      "evidence": [
+        "docs/experiments/hermes-inspired-roi.md:H8"
+      ],
+      "rationale": "Subagent fan-out for multi-file PRs",
+      "kind": "research_pattern",
+      "status": "evaluated",
+      "toolset_hint": "terminal",
+      "eval": {
+        "scored_at": "2026-07-31T19:23:38Z",
+        "dims": {
+          "signal": 2,
+          "safety": 5,
+          "effort": 2,
+          "torii_fit": 5,
+          "cost": 3
+        },
+        "total": 17,
+        "max": 25,
+        "recommend": "design",
+        "notes": "zero_tool_runs=0 deep_tool_runs=0 evidence_n=1 kind=research_pattern"
+      },
+      "researched_at": "2026-07-31T19:23:38Z"
+    },
+    {
+      "id": "roi-h9",
+      "name": "H9: Trajectory packaging for offline eval datasets",
+      "source": "hermes_roi_backlog",
+      "evidence": [
+        "docs/experiments/hermes-inspired-roi.md:H9"
+      ],
+      "rationale": "Trajectory packaging for offline eval datasets",
+      "kind": "research_pattern",
+      "status": "evaluated",
+      "toolset_hint": "terminal",
+      "eval": {
+        "scored_at": "2026-07-31T19:23:38Z",
+        "dims": {
+          "signal": 2,
+          "safety": 5,
+          "effort": 2,
+          "torii_fit": 5,
+          "cost": 3
+        },
+        "total": 17,
+        "max": 25,
+        "recommend": "design",
+        "notes": "zero_tool_runs=0 deep_tool_runs=0 evidence_n=1 kind=research_pattern"
+      },
+      "researched_at": "2026-07-31T19:23:38Z"
+    },
+    {
+      "id": "roi-h10",
+      "name": "H10: Soft skill nudge mid-loop (\u201cprefer fewer tools\u201d)",
+      "source": "hermes_roi_backlog",
+      "evidence": [
+        "docs/experiments/hermes-inspired-roi.md:H10"
+      ],
+      "rationale": "Soft skill nudge mid-loop (\u201cprefer fewer tools\u201d)",
+      "kind": "research_pattern",
+      "status": "evaluated",
+      "toolset_hint": "terminal",
+      "eval": {
+        "scored_at": "2026-07-31T19:23:38Z",
+        "dims": {
+          "signal": 2,
+          "safety": 5,
+          "effort": 2,
+          "torii_fit": 5,
+          "cost": 3
+        },
+        "total": 17,
+        "max": 25,
+        "recommend": "design",
+        "notes": "zero_tool_runs=0 deep_tool_runs=0 evidence_n=1 kind=research_pattern"
+      },
+      "researched_at": "2026-07-31T19:23:38Z"
+    },
+    {
+      "id": "roi-h18",
+      "name": "H18: Hard tool nudge / require \u22651 workspace read on multi-file code PRs",
+      "source": "hermes_roi_backlog",
+      "evidence": [
+        "docs/experiments/hermes-inspired-roi.md:H18"
+      ],
+      "rationale": "Hard tool nudge / require \u22651 workspace read on multi-file code PRs",
+      "kind": "research_pattern",
+      "status": "evaluated",
+      "toolset_hint": "terminal",
+      "eval": {
+        "scored_at": "2026-07-31T19:23:38Z",
+        "dims": {
+          "signal": 2,
+          "safety": 5,
+          "effort": 2,
+          "torii_fit": 5,
+          "cost": 3
+        },
+        "total": 17,
+        "max": 25,
+        "recommend": "design",
+        "notes": "zero_tool_runs=0 deep_tool_runs=0 evidence_n=1 kind=research_pattern"
+      },
+      "researched_at": "2026-07-31T19:23:38Z"
+    },
+    {
+      "id": "roi-h25",
+      "name": "H25: Source 7th+ complex odoo/odoo PR \u2192 torii-eval corpus",
+      "source": "hermes_roi_backlog",
+      "evidence": [
+        "docs/experiments/hermes-inspired-roi.md:H25"
+      ],
+      "rationale": "Source 7th+ complex odoo/odoo PR \u2192 torii-eval corpus",
+      "kind": "research_pattern",
+      "status": "evaluated",
+      "toolset_hint": "terminal",
+      "eval": {
+        "scored_at": "2026-07-31T19:23:38Z",
+        "dims": {
+          "signal": 2,
+          "safety": 5,
+          "effort": 2,
+          "torii_fit": 5,
+          "cost": 3
+        },
+        "total": 17,
+        "max": 25,
+        "recommend": "design",
+        "notes": "zero_tool_runs=0 deep_tool_runs=0 evidence_n=1 kind=research_pattern"
+      },
+      "researched_at": "2026-07-31T19:23:38Z"
+    },
+    {
+      "id": "roi-h29",
+      "name": "H29: Structured findings schema (severity+confidence+hunk cite)",
+      "source": "hermes_roi_backlog",
+      "evidence": [
+        "docs/experiments/hermes-inspired-roi.md:H29"
+      ],
+      "rationale": "Structured findings schema (severity+confidence+hunk cite)",
+      "kind": "research_pattern",
+      "status": "evaluated",
+      "toolset_hint": "terminal",
+      "eval": {
+        "scored_at": "2026-07-31T19:23:38Z",
+        "dims": {
+          "signal": 2,
+          "safety": 5,
+          "effort": 2,
+          "torii_fit": 5,
+          "cost": 3
+        },
+        "total": 17,
+        "max": 25,
+        "recommend": "design",
+        "notes": "zero_tool_runs=0 deep_tool_runs=0 evidence_n=1 kind=research_pattern"
+      },
+      "researched_at": "2026-07-31T19:23:38Z"
+    }
+  ]
+}

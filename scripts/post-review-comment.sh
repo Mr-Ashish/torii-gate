@@ -1,0 +1,97 @@
+#!/usr/bin/env bash
+# Post Torii's Markdown review as a GitHub PR comment.
+# Soft-deletes prior Torii comments on the same PR (marker: <!-- torii-review pr=N)
+# so re-runs replace noise instead of stacking.
+#
+# Usage:
+#   ./scripts/post-review-comment.sh [review.md] [pr_number]
+#
+# Env:
+#   REPO / GITHUB_REPOSITORY
+#   GH_TOKEN / GITHUB_TOKEN
+#   TORII_REPLACE_PREVIOUS=1 (default) — delete prior marker comments before post
+#   TORII_OPS_FOOTER=1 (default) — F35 append Actions run + run-bundle tip
+set -euo pipefail
+
+ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+OUT_DIR="${OUT_DIR:-$ROOT/.torii-out}"
+OPS_FOOTER="$ROOT/scripts/ops_footer.py"
+
+log() { echo "$*" >&2; }
+die() { echo "::error::$*" >&2; exit 1; }
+
+REVIEW_FILE="${1:-${REVIEW_FILE:-}}"
+PR_NUMBER="${2:-${PR_NUMBER:-}}"
+REPO="${REPO:-${GITHUB_REPOSITORY:-}}"
+REPLACE="${TORII_REPLACE_PREVIOUS:-1}"
+
+if [[ -z "$REVIEW_FILE" ]]; then
+  if compgen -G "$OUT_DIR/review-*.md" >/dev/null; then
+    REVIEW_FILE="$(ls -t "$OUT_DIR"/review-*.md | grep -v '\.raw\.md$' | head -1)"
+  else
+    die "REVIEW_FILE not set and no review-*.md found"
+  fi
+fi
+
+[[ -f "$REVIEW_FILE" ]] || die "Review file not found: $REVIEW_FILE"
+[[ -n "$REPO" ]] || die "REPO or GITHUB_REPOSITORY must be set"
+
+if [[ -z "$PR_NUMBER" ]]; then
+  base="$(basename "$REVIEW_FILE")"
+  if [[ "$base" =~ review-([0-9]+)\.md ]]; then
+    PR_NUMBER="${BASH_REMATCH[1]}"
+  elif [[ -n "${GITHUB_EVENT_PATH:-}" && -f "${GITHUB_EVENT_PATH}" ]]; then
+    PR_NUMBER="$(python3 -c 'import json,os; e=json.load(open(os.environ["GITHUB_EVENT_PATH"])); print(e["issue"]["number"])')"
+  else
+    die "PR_NUMBER must be set"
+  fi
+fi
+
+export GH_REPO="$REPO"
+export GH_TOKEN="${GH_TOKEN:-${GITHUB_TOKEN:-}}"
+command -v gh >/dev/null 2>&1 || die "gh CLI is required"
+
+# ---------------------------------------------------------------------------
+# F12: replace previous Torii Gate review comments (same PR marker)
+# ---------------------------------------------------------------------------
+if [[ "$REPLACE" == "1" || "$REPLACE" == "true" ]]; then
+  marker="<!-- torii-review pr=${PR_NUMBER}"
+  log "Looking for prior Torii comments with marker: ${marker}"
+  # List issue comments; delete any containing the pr-specific HTML marker.
+  # Soft-fail: never block posting the new review.
+  set +e
+  # jq env.* reads process env (gh uses gojq)
+  ids="$(
+    MARKER="$marker" gh api --paginate "repos/${REPO}/issues/${PR_NUMBER}/comments" \
+      --jq '.[] | select(.body != null and (.body | contains(env.MARKER))) | .id' 2>/dev/null
+  )"
+  if [[ -n "${ids:-}" ]]; then
+    while IFS= read -r cid; do
+      [[ -z "$cid" ]] && continue
+      log "Deleting prior Torii comment id=$cid"
+      gh api --method DELETE "repos/${REPO}/issues/comments/${cid}" >/dev/null 2>&1 \
+        || log "warn: could not delete comment $cid"
+    done <<<"$ids"
+  else
+    log "No prior Torii comments to replace"
+  fi
+  set -e
+fi
+
+# ---------------------------------------------------------------------------
+# F35: ops deep-link footer (Actions run + run-bundle / console tip) — soft
+# ---------------------------------------------------------------------------
+if [[ -f "$OPS_FOOTER" ]]; then
+  set +e
+  python3 "$OPS_FOOTER" append --review "$REVIEW_FILE" 2>/dev/null \
+    || log "warn: F35 ops-footer soft-failed"
+  if [[ -n "${GITHUB_STEP_SUMMARY:-}" ]]; then
+    python3 "$OPS_FOOTER" step-summary >>"$GITHUB_STEP_SUMMARY" 2>/dev/null \
+      || true
+  fi
+  set -e
+fi
+
+log "Posting review to $REPO#$PR_NUMBER from $REVIEW_FILE"
+gh pr comment "$PR_NUMBER" --repo "$REPO" --body-file "$REVIEW_FILE"
+log "Posted PR comment on #$PR_NUMBER"

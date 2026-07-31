@@ -1,0 +1,25 @@
+.env
+.env.*
+!.env.example
+.torii-hermes-home/
+.torii-out/
+.torii-out-*/
+__pycache__/
+.venv/
+venv/
+node_modules/
+.DS_Store
+*.pyc
+.pytest_cache/
+/branding/
+.devmemory/
+ui/review-console/node_modules/
+ui/review-console/dist/
+ui/review-console/tsconfig.tsbuildinfo
+agent/tools/candidates/research-*.json
+memory/evolution/trajectories/**
+!memory/evolution/trajectories/.gitkeep
+# local only
+.luffy/
+.luffy-out/
+.luffy-hermes-home/

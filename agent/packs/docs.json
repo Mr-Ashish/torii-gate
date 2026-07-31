@@ -1,0 +1,25 @@
+{
+  "id": "docs",
+  "name": "Docs / non-code",
+  "description": "Lightweight pass for documentation-only or config-comment PRs.",
+  "lenses": [
+    {"id": "correctness", "hint": "factual accuracy, broken links, wrong commands"},
+    {"id": "maintainability", "hint": "misleading docs that cause future defects"},
+    {"id": "security", "hint": "leaked secrets/tokens in docs (else n/a)"},
+    {"id": "tests", "hint": "usually n/a for pure docs"},
+    {"id": "performance", "hint": "n/a"},
+    {"id": "api_contracts", "hint": "n/a unless public API docs mismatch code"},
+    {"id": "concurrency", "hint": "n/a"}
+  ],
+  "extra_focus": [
+    "Prefer APPROVE or COMMENT; REQUEST CHANGES only for secrets or clearly wrong dangerous instructions."
+  ],
+  "path_globs": [
+    "**/*.md",
+    "**/*.rst",
+    "**/*.txt",
+    "**/docs/**",
+    "**/documentation/**",
+    "**/README*"
+  ]
+}

@@ -1,0 +1,47 @@
+# Torii — comment-triggered PR review (thin caller, F10)
+#
+# Triggers live here; implementation is .github/workflows/torii-review-reusable.yml
+# Pack install (default): uses this repo as torii_repository (agent/scripts on default branch).
+# For hub-managed multi-repo installs see pack/torii-pr-review-caller.yml (--caller).
+
+name: Torii Gate
+
+on:
+  issue_comment:
+    types: [created]
+  workflow_dispatch:
+    inputs:
+      pr_number:
+        description: PR number to review
+        required: true
+        type: string
+
+permissions:
+  contents: write
+  pull-requests: write
+  issues: write
+  actions: write
+  statuses: write  # F22 commit status context torii/review
+
+concurrency:
+  group: torii-${{ github.repository }}-${{ github.event.issue.number || github.event.inputs.pr_number || github.run_id }}
+  cancel-in-progress: true
+
+jobs:
+  torii-review:
+    name: Torii Gate review
+    if: >
+      github.event_name == 'workflow_dispatch' ||
+      (
+        github.event.issue.pull_request &&
+        (
+          contains(github.event.comment.body, '@torii review this pr') ||
+          contains(github.event.comment.body, '@torii review')
+        )
+      )
+    uses: ./.github/workflows/torii-review-reusable.yml
+    secrets: inherit
+    with:
+      # Pack / self: load agent+scripts from the repo that owns this workflow file
+      torii_repository: ${{ github.repository }}
+      torii_ref: ${{ github.event.repository.default_branch }}

@@ -1,0 +1,24 @@
+{
+  "name": "torii-review-console",
+  "private": true,
+  "version": "0.2.0",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview",
+    "pack-fixture": "python3 ../../scripts/pack-run-for-ui.py --dir ../../docs/showcase/e2e-odoo-pr3-opus5-agentic-loop --host gha --comment-url https://github.com/Mr-Ashish/odoo/pull/3 -o public/fixtures/run-bundle.json",
+    "copy-fixture": "npm run pack-fixture"
+  },
+  "dependencies": {
+    "react": "^19.0.0",
+    "react-dom": "^19.0.0"
+  },
+  "devDependencies": {
+    "@types/react": "^19.0.0",
+    "@types/react-dom": "^19.0.0",
+    "@vitejs/plugin-react": "^4.3.4",
+    "typescript": "~5.7.2",
+    "vite": "^6.0.0"
+  }
+}

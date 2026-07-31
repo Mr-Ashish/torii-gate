@@ -1,0 +1,101 @@
+{
+  "schema_version": 1,
+  "feature": "F69",
+  "trajectories": [
+    {
+      "trajectory_id": "prdemo-20260731_235256_01b7f6",
+      "path": "memory/evolution/trajectories/prdemo-20260731_235256_01b7f6",
+      "repo": "Mr-Ashish/torii-gate",
+      "pr_number": "demo",
+      "tool_call_turns": 24,
+      "signals": [
+        "deep_tools",
+        "f49_recovered"
+      ],
+      "ingested_at": "2026-07-31T19:23:40Z"
+    },
+    {
+      "trajectory_id": "pr2-20260731_221752_851ba1",
+      "path": "memory/evolution/trajectories/pr2-20260731_221752_851ba1",
+      "repo": "Mr-Ashish/odoo",
+      "pr_number": "2",
+      "tool_call_turns": 23,
+      "signals": [
+        "deep_tools",
+        "f49_recovered",
+        "verdict_approve"
+      ],
+      "ingested_at": "2026-07-31T19:23:47Z"
+    }
+  ],
+  "proposals": [],
+  "adopted": [
+    {
+      "id": "skill-preserve-deep-tools",
+      "title": "Preserve deep tool patterns that worked",
+      "path": "agent/skills/active/skill-preserve-deep-tools.md",
+      "adopted_at": "2026-07-31T19:23:47Z",
+      "eval": {
+        "scored_at": "2026-07-31T19:23:47Z",
+        "dims": {
+          "structure": 5,
+          "actionability": 5,
+          "evidence": 3,
+          "safety": 5,
+          "size": 5
+        },
+        "total": 23,
+        "max": 25,
+        "recommend": "adopt",
+        "words": 51,
+        "bullets": 3
+      },
+      "feature": "F69"
+    },
+    {
+      "id": "skill-soft-tool-nudge",
+      "title": "Soft mid-review tool nudge",
+      "path": "agent/skills/active/skill-soft-tool-nudge.md",
+      "adopted_at": "2026-07-31T19:23:47Z",
+      "eval": {
+        "scored_at": "2026-07-31T19:23:47Z",
+        "dims": {
+          "structure": 5,
+          "actionability": 5,
+          "evidence": 3,
+          "safety": 5,
+          "size": 5
+        },
+        "total": 23,
+        "max": 25,
+        "recommend": "adopt",
+        "words": 64,
+        "bullets": 3
+      },
+      "feature": "F69"
+    },
+    {
+      "id": "skill-tool-depth-hunks",
+      "title": "Tool depth: prefer diff hunks over file heads",
+      "path": "agent/skills/active/skill-tool-depth-hunks.md",
+      "adopted_at": "2026-07-31T19:23:47Z",
+      "eval": {
+        "scored_at": "2026-07-31T19:23:47Z",
+        "dims": {
+          "structure": 3,
+          "actionability": 2,
+          "evidence": 3,
+          "safety": 5,
+          "size": 5
+        },
+        "total": 18,
+        "max": 25,
+        "recommend": "adopt",
+        "words": 80,
+        "bullets": 0
+      },
+      "feature": "F69"
+    }
+  ],
+  "updated_at": "2026-07-31T19:23:47Z"
+}

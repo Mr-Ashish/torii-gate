@@ -1,0 +1,746 @@
+# Torii reusable review job (F10)
+#
+# Called by thin trigger workflows in this repo or any target repo.
+# Does not listen to events itself — caller owns issue_comment / workflow_dispatch.
+#
+# Inputs:
+#   torii_repository — where agent/ + scripts/ live (hub or target pack)
+#   torii_ref        — git ref for that pack (empty = default branch of torii_repository)
+#
+# Secrets (caller passes via secrets: inherit or explicit map):
+#   OPENROUTER_API_KEY (required for paid runs)
+#   TORII_HUB_TOKEN (optional; falls back to GITHUB_TOKEN)
+#
+# Caller must grant: contents, pull-requests, issues, actions (write as needed).
+
+name: Torii Gate review (reusable)
+
+on:
+  workflow_call:
+    inputs:
+      torii_repository:
+        description: "Repo that provides agent/ + scripts/ (hub or installed pack)"
+        type: string
+        required: false
+        default: "Mr-Ashish/torii-gate"
+      torii_ref:
+        description: "Git ref for torii_repository (branch/tag/SHA)"
+        type: string
+        required: false
+        default: "main"
+    # Prefer caller `secrets: inherit` so OPENROUTER_API_KEY / TORII_HUB_TOKEN flow through.
+    secrets:
+      OPENROUTER_API_KEY:
+        required: false
+      TORII_HUB_TOKEN:
+        required: false
+
+# Permissions come from the caller workflow/job.
+
+jobs:
+  torii-review:
+    name: Torii Gate review
+    if: >
+      github.event_name == 'workflow_dispatch' ||
+      (
+        github.event.issue.pull_request &&
+        (
+          contains(github.event.comment.body, '@torii review this pr') ||
+          contains(github.event.comment.body, '@torii review')
+        )
+      )
+    runs-on: ubuntu-latest
+    # F8: optional prebaked container (null when var unset/empty → host runner + Hermes cache)
+    container: ${{ vars.TORII_RUNNER_IMAGE != '' && vars.TORII_RUNNER_IMAGE || null }}
+    timeout-minutes: 90
+    # F7/F25: pin Hermes for repro. Pass-through repo var only — no hardcoded SHA here.
+    # Empty/unset → resolved after pack checkout from scripts/hermes-pin.sh default (single SoT).
+    # Explicit latest|main|floating → float on install.sh tip. F8: optional TORII_RUNNER_IMAGE.
+    env:
+      TORII_HERMES_COMMIT: ${{ vars.TORII_HERMES_COMMIT }}
+
+    steps:
+      - name: Resolve PR number & gate
+        id: gate
+        env:
+          EVENT_NAME: ${{ github.event_name }}
+          COMMENT_BODY: ${{ github.event.comment.body }}
+          IS_PR: ${{ github.event.issue.pull_request != null }}
+          INPUT_PR: ${{ github.event.inputs.pr_number }}
+          ISSUE_NUMBER: ${{ github.event.issue.number }}
+          # F11 cost control: who may trigger paid OpenRouter reviews
+          AUTHOR_ASSOCIATION: ${{ github.event.comment.author_association }}
+          # Comma list; override via repo var TORII_ALLOWED_ASSOCIATIONS if needed
+          ALLOWED_ASSOCIATIONS: ${{ vars.TORII_ALLOWED_ASSOCIATIONS || 'OWNER,MEMBER,COLLABORATOR,CONTRIBUTOR' }}
+        run: |
+          set -euo pipefail
+          if [[ "$EVENT_NAME" == "workflow_dispatch" ]]; then
+            echo "matched=true" >> "$GITHUB_OUTPUT"
+            echo "pr_number=${INPUT_PR}" >> "$GITHUB_OUTPUT"
+            echo "trigger_comment=workflow_dispatch" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          echo "denied=false" >> "$GITHUB_OUTPUT"
+          if [[ "${IS_PR}" != "true" ]]; then
+            echo "matched=false" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          if ! printf '%s' "${COMMENT_BODY:-}" | grep -Eiq '@torii[[:space:]]+review([[:space:]]+this[[:space:]]+pr)?\b'; then
+            echo "matched=false" >> "$GITHUB_OUTPUT"
+            echo "Comment did not match @torii review pattern; skipping."
+            exit 0
+          fi
+          # Author association allowlist (case-insensitive). Empty ALLOWED = no gate.
+          assoc="$(printf '%s' "${AUTHOR_ASSOCIATION:-NONE}" | tr '[:lower:]' '[:upper:]')"
+          allowed="$(printf '%s' "${ALLOWED_ASSOCIATIONS:-}" | tr '[:lower:]' '[:upper:]' | tr -d ' ')"
+          if [[ -n "$allowed" ]]; then
+            ok=false
+            IFS=',' read -ra parts <<<"$allowed"
+            for a in "${parts[@]}"; do
+              [[ -n "$a" && "$a" == "$assoc" ]] && ok=true && break
+            done
+            if [[ "$ok" != "true" ]]; then
+              echo "matched=false" >> "$GITHUB_OUTPUT"
+              echo "denied=true" >> "$GITHUB_OUTPUT"
+              echo "::notice::Skipping Torii: author_association=$assoc not in allowlist ($allowed)"
+              exit 0
+            fi
+          fi
+          echo "matched=true" >> "$GITHUB_OUTPUT"
+          echo "pr_number=${ISSUE_NUMBER}" >> "$GITHUB_OUTPUT"
+          {
+            echo "trigger_comment<<EOF"
+            printf '%s\n' "${COMMENT_BODY:-}"
+            echo "EOF"
+          } >> "$GITHUB_OUTPUT"
+
+      # F11 deny UX: visible signal without spending OpenRouter tokens
+      - name: React denied (association)
+        if: steps.gate.outputs.denied == 'true' && github.event_name == 'issue_comment'
+        continue-on-error: true
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh api --method POST \
+            -H "Accept: application/vnd.github+json" \
+            "/repos/${{ github.repository }}/issues/comments/${{ github.event.comment.id }}/reactions" \
+            -f content='confused' || true
+
+      # F10: Torii pack source — hub (caller mode) or target pack (local scripts)
+      - name: Checkout Torii system (agent + scripts)
+        if: steps.gate.outputs.matched == 'true'
+        uses: actions/checkout@v4
+        with:
+          repository: ${{ inputs.torii_repository }}
+          ref: ${{ inputs.torii_ref }}
+          path: torii
+          fetch-depth: 1
+          sparse-checkout: |
+            agent
+            scripts
+          sparse-checkout-cone-mode: true
+
+      # F25: single-source Hermes pin — empty GHA var must not float; fill from hermes-pin.sh default
+      - name: Resolve Hermes pin (F25)
+        if: steps.gate.outputs.matched == 'true'
+        run: |
+          set -euo pipefail
+          PIN_HELPER="${{ github.workspace }}/torii/scripts/hermes-pin.sh"
+          if [[ ! -x "$PIN_HELPER" && -f "$PIN_HELPER" ]]; then
+            chmod +x "$PIN_HELPER" || true
+          fi
+          RAW="${TORII_HERMES_COMMIT:-}"
+          if [[ -z "$RAW" ]]; then
+            if [[ -x "$PIN_HELPER" || -f "$PIN_HELPER" ]]; then
+              PIN="$(bash "$PIN_HELPER" default | tr -d '\n')"
+            else
+              echo "::warning::F25 hermes-pin.sh missing; leave TORII_HERMES_COMMIT empty (floating)"
+              PIN=""
+            fi
+            if [[ -n "$PIN" ]]; then
+              echo "TORII_HERMES_COMMIT=$PIN" >> "$GITHUB_ENV"
+              echo "::notice::F25 Hermes pin from hermes-pin.sh default=$PIN"
+            fi
+          else
+            echo "::notice::F25 Hermes pin from vars.TORII_HERMES_COMMIT=$RAW"
+          fi
+
+      # F19: skip paid OpenRouter run if a successful Torii Gate review landed recently on this PR
+      - name: Cooldown gate
+        if: steps.gate.outputs.matched == 'true'
+        id: cooldown
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPO: ${{ github.repository }}
+          PR_NUMBER: ${{ steps.gate.outputs.pr_number }}
+          TORII_ROOT: ${{ github.workspace }}/torii
+          TORII_COOLDOWN_SECONDS: ${{ vars.TORII_COOLDOWN_SECONDS || '900' }}
+          EVENT_NAME: ${{ github.event_name }}
+          COMMENT_BODY: ${{ github.event.comment.body }}
+        run: |
+          set -euo pipefail
+          # Defaults: allow (fail-open if anything unexpected)
+          echo "allowed=true" >> "$GITHUB_OUTPUT"
+          echo "reason=default" >> "$GITHUB_OUTPUT"
+          echo "remaining_s=0" >> "$GITHUB_OUTPUT"
+
+          if [[ "$EVENT_NAME" == "workflow_dispatch" ]]; then
+            echo "reason=workflow_dispatch" >> "$GITHUB_OUTPUT"
+            echo "::notice::F19 cooldown: bypassed (workflow_dispatch)"
+            exit 0
+          fi
+          # Force: @torii review force | @torii review this pr force | body contains "force"
+          if printf '%s' "${COMMENT_BODY:-}" | grep -Eiq '@torii[[:space:]]+review([[:space:]]+this[[:space:]]+pr)?[[:space:]]+force\b|[[:space:]]force[[:space:]]*$'; then
+            echo "reason=force_comment" >> "$GITHUB_OUTPUT"
+            echo "::notice::F19 cooldown: bypassed (@torii … force)"
+            exit 0
+          fi
+
+          SCRIPT="$TORII_ROOT/scripts/cooldown-check.sh"
+          if [[ ! -x "$SCRIPT" ]]; then
+            chmod +x "$SCRIPT" 2>/dev/null || true
+          fi
+          if [[ ! -f "$SCRIPT" ]]; then
+            echo "::warning::F19 cooldown-check.sh missing; allowing run"
+            echo "reason=missing_script" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+
+          set +e
+          OUT="$(bash "$SCRIPT" "$PR_NUMBER" 2>/tmp/torii-cooldown.err)"
+          RC=$?
+          set -e
+          if [[ -s /tmp/torii-cooldown.err ]]; then
+            cat /tmp/torii-cooldown.err >&2 || true
+          fi
+          # Parse key=value from script stdout into GITHUB_OUTPUT (last write wins for allowed/reason)
+          while IFS= read -r line; do
+            [[ -z "$line" || "$line" != *=* ]] && continue
+            echo "$line" >> "$GITHUB_OUTPUT"
+          done <<<"$OUT"
+
+          if [[ $RC -eq 2 ]]; then
+            # Ensure allowed=false is set even if parse missed
+            echo "allowed=false" >> "$GITHUB_OUTPUT"
+            REM="$(printf '%s\n' "$OUT" | awk -F= '/^remaining_s=/{print $2}' | tail -1)"
+            echo "::notice::F19 cooldown active — skipping paid review (retry in ~${REM:-?}s, or comment '@torii review force')"
+            {
+              echo "### Torii cooldown (F19)"
+              echo "- Skipped paid OpenRouter review: recent successful Torii comment on PR #${PR_NUMBER}"
+              echo "- Remaining: ~${REM:-?}s (override: \`vars.TORII_COOLDOWN_SECONDS\`, or \`@torii review force\`)"
+            } >> "$GITHUB_STEP_SUMMARY"
+            exit 0
+          fi
+          if [[ $RC -ne 0 ]]; then
+            echo "::warning::F19 cooldown check failed (rc=$RC); fail-open allow"
+            echo "allowed=true" >> "$GITHUB_OUTPUT"
+            echo "reason=check_error" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          echo "::notice::F19 cooldown: allow ($(printf '%s\n' "$OUT" | awk -F= '/^reason=/{print $2}' | tail -1))"
+
+      - name: React cooldown skip
+        if: steps.gate.outputs.matched == 'true' && steps.cooldown.outputs.allowed == 'false' && github.event_name == 'issue_comment'
+        continue-on-error: true
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          # No hourglass reaction on GitHub — "eyes" would imply work started; use laugh? better: rocket = acknowledged
+          gh api --method POST \
+            -H "Accept: application/vnd.github+json" \
+            "/repos/${{ github.repository }}/issues/comments/${{ github.event.comment.id }}/reactions" \
+            -f content='rocket' || true
+
+      # List changed files via API BEFORE cloning the monorepo (no checkout needed)
+      - name: Resolve PR sparse paths
+        if: steps.gate.outputs.matched == 'true' && steps.cooldown.outputs.allowed == 'true'
+        id: sparse
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPO: ${{ github.repository }}
+          PR_NUMBER: ${{ steps.gate.outputs.pr_number }}
+          TORII_ROOT: ${{ github.workspace }}/torii
+        run: |
+          set -euo pipefail
+          PATHS_FILE="${{ github.workspace }}/pr-paths.txt"
+          # Prefer shared script (leading slash for git sparse --no-cone)
+          if [[ -x "$TORII_ROOT/scripts/sparse-pr-paths.sh" ]]; then
+            "$TORII_ROOT/scripts/sparse-pr-paths.sh" > "$PATHS_FILE" || true
+          else
+            gh pr view "$PR_NUMBER" --repo "$REPO" --json files \
+              --jq '.files[].path' | head -200 | sed 's|^|/|' > "$PATHS_FILE" || true
+          fi
+          # F13: never use `grep -c || echo 0` — grep -c prints 0 AND exits 1 on empty,
+          # which produces "0\n0" and breaks integer compare / forces full monorepo clone.
+          COUNT="$(grep -c . "$PATHS_FILE" 2>/dev/null || true)"
+          COUNT="${COUNT:-0}"
+          echo "PR changed files: $COUNT"
+          if [[ "$COUNT" -ge 1 && "$COUNT" -le 200 ]]; then
+            {
+              echo "sparse<<EOF"
+              cat "$PATHS_FILE"
+              echo "EOF"
+            } >> "$GITHUB_OUTPUT"
+            echo "use_sparse=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "use_sparse=false" >> "$GITHUB_OUTPUT"
+            echo "sparse=" >> "$GITHUB_OUTPUT"
+          fi
+
+      # F38: skip paid OpenRouter when every changed path matches skip globs (opt-in)
+      - name: Path skip gate (F38)
+        if: steps.gate.outputs.matched == 'true' && steps.cooldown.outputs.allowed == 'true'
+        id: pathskip
+        env:
+          TORII_ROOT: ${{ github.workspace }}/torii
+          TORII_SKIP_PATH_GLOBS: ${{ vars.TORII_SKIP_PATH_GLOBS }}
+          PR_NUMBER: ${{ steps.gate.outputs.pr_number }}
+          COMMENT_BODY: ${{ github.event.comment.body }}
+          EVENT_NAME: ${{ github.event_name }}
+        run: |
+          set -euo pipefail
+          echo "allowed=true" >> "$GITHUB_OUTPUT"
+          echo "reason=default" >> "$GITHUB_OUTPUT"
+          # Force: @torii review force (same as F19)
+          if [[ "$EVENT_NAME" == "workflow_dispatch" ]]; then
+            echo "reason=workflow_dispatch" >> "$GITHUB_OUTPUT"
+            echo "::notice::F38 path-skip: bypassed (workflow_dispatch)"
+            exit 0
+          fi
+          if printf '%s' "${COMMENT_BODY:-}" | grep -Eiq '@torii[[:space:]]+review([[:space:]]+this[[:space:]]+pr)?[[:space:]]+force\b|[[:space:]]force[[:space:]]*$'; then
+            echo "reason=force_comment" >> "$GITHUB_OUTPUT"
+            echo "::notice::F38 path-skip: bypassed (@torii … force)"
+            exit 0
+          fi
+          # Empty var → disabled (fail-open paid)
+          if [[ -z "${TORII_SKIP_PATH_GLOBS:-}" ]]; then
+            echo "reason=disabled" >> "$GITHUB_OUTPUT"
+            echo "::notice::F38 path-skip: disabled (set vars.TORII_SKIP_PATH_GLOBS=docs to enable)"
+            exit 0
+          fi
+          SCRIPT="$TORII_ROOT/scripts/path-skip-check.py"
+          PATHS_FILE="${{ github.workspace }}/pr-paths.txt"
+          if [[ ! -f "$SCRIPT" ]]; then
+            echo "::warning::F38 path-skip-check.py missing; allowing paid run"
+            echo "reason=missing_script" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          set +e
+          OUT="$(python3 "$SCRIPT" --paths-file "$PATHS_FILE" 2>/tmp/torii-pathskip.err)"
+          RC=$?
+          set -e
+          if [[ -s /tmp/torii-pathskip.err ]]; then
+            cat /tmp/torii-pathskip.err >&2 || true
+          fi
+          while IFS= read -r line; do
+            [[ -z "$line" || "$line" != *=* ]] && continue
+            echo "$line" >> "$GITHUB_OUTPUT"
+          done <<<"$OUT"
+          if [[ $RC -eq 2 ]]; then
+            echo "allowed=false" >> "$GITHUB_OUTPUT"
+            SAMPLE="$(printf '%s\n' "$OUT" | awk -F= '/^sample=/{print $2}' | tail -1)"
+            echo "::notice::F38 path-skip — all changed paths match globs; skipping paid review (sample: ${SAMPLE:-?})"
+            {
+              echo "### Torii path skip (F38)"
+              echo "- Skipped paid OpenRouter review: every changed path matched \`TORII_SKIP_PATH_GLOBS\`"
+              echo "- Sample: \`${SAMPLE:-n/a}\`"
+              echo "- Override: comment \`@torii review force\`, or clear \`vars.TORII_SKIP_PATH_GLOBS\`"
+            } >> "$GITHUB_STEP_SUMMARY"
+            exit 0
+          fi
+          if [[ $RC -ne 0 ]]; then
+            echo "::warning::F38 path-skip check failed (rc=$RC); fail-open allow"
+            echo "allowed=true" >> "$GITHUB_OUTPUT"
+            echo "reason=check_error" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          echo "::notice::F38 path-skip: allow ($(printf '%s\n' "$OUT" | awk -F= '/^reason=/{print $2}' | tail -1))"
+
+      - name: React path-skip
+        if: steps.gate.outputs.matched == 'true' && steps.cooldown.outputs.allowed == 'true' && steps.pathskip.outputs.allowed == 'false' && github.event_name == 'issue_comment'
+        continue-on-error: true
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh api --method POST \
+            -H "Accept: application/vnd.github+json" \
+            "/repos/${{ github.repository }}/issues/comments/${{ github.event.comment.id }}/reactions" \
+            -f content='rocket' || true
+
+      - name: Path-skip stub review (F38)
+        if: steps.gate.outputs.matched == 'true' && steps.cooldown.outputs.allowed == 'true' && steps.pathskip.outputs.allowed == 'false'
+        continue-on-error: true
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GITHUB_TOKEN: ${{ github.token }}
+          REPO: ${{ github.repository }}
+          PR_NUMBER: ${{ steps.gate.outputs.pr_number }}
+          TORII_ROOT: ${{ github.workspace }}/torii
+          OUT_DIR: ${{ github.workspace }}/torii/.torii-out
+          TORII_PR_LABELS: ${{ vars.TORII_PR_LABELS || '1' }}
+          TORII_LABEL_PREFIX: ${{ vars.TORII_LABEL_PREFIX || 'torii' }}
+          TORII_COMMIT_STATUS: ${{ vars.TORII_COMMIT_STATUS || '1' }}
+          TORII_PR_REVIEW: ${{ vars.TORII_PR_REVIEW || '1' }}
+          TORII_INLINE_COMMENTS: '0'
+          REACTION_COMMENT_ID: ${{ github.event_name == 'issue_comment' && github.event.comment.id || '' }}
+        run: |
+          set -euo pipefail
+          mkdir -p "$OUT_DIR"
+          SAMPLE="${{ steps.pathskip.outputs.sample }}"
+          GLOBS="${{ steps.pathskip.outputs.globs }}"
+          # F40: durable signal for Run Console pack
+          {
+            echo "PATH_SKIP=1"
+            echo "sample=${SAMPLE:-}"
+            echo "globs=${GLOBS:-}"
+          } >"$OUT_DIR/ops-signals.env"
+          bash "$TORII_ROOT/scripts/write-failure-review.sh" "$PR_NUMBER" "$OUT_DIR" \
+            "Path-skip (F38): every changed file matched skip globs (\`${GLOBS:-docs}\`) — no OpenRouter spend. Sample: ${SAMPLE:-n/a}. Re-run with \`@torii review force\` to review anyway." \
+            "None — intentional free skip for docs/filtered paths. Use \`@torii review force\` to pay for a full review."
+          # Rewrite verdict-friendly stub: write-failure is COMMENT — good for labels
+          REVIEW="$(ls -t "$OUT_DIR"/review-*.md 2>/dev/null | head -1 || true)"
+          if [[ -n "$REVIEW" && -f "$TORII_ROOT/scripts/post-review-comment.sh" ]]; then
+            POST_COMMENT=1 bash "$TORII_ROOT/scripts/post-review-comment.sh" "$REVIEW" || true
+          fi
+          chmod +x "$TORII_ROOT/scripts/report-verdict.sh" 2>/dev/null || true
+          bash "$TORII_ROOT/scripts/report-verdict.sh" "${REVIEW:-}" 0 || true
+
+      # F1: shallow PR head + sparse from the start (avoid downloading whole monorepo)
+      - name: Checkout PR head (sparse shallow)
+        if: steps.gate.outputs.matched == 'true' && steps.cooldown.outputs.allowed == 'true' && steps.pathskip.outputs.allowed == 'true' && steps.sparse.outputs.use_sparse == 'true'
+        uses: actions/checkout@v4
+        with:
+          path: workspace
+          fetch-depth: 1
+          ref: refs/pull/${{ steps.gate.outputs.pr_number }}/head
+          sparse-checkout: ${{ steps.sparse.outputs.sparse }}
+          sparse-checkout-cone-mode: false
+
+      - name: Checkout PR head (full shallow fallback)
+        if: steps.gate.outputs.matched == 'true' && steps.cooldown.outputs.allowed == 'true' && steps.pathskip.outputs.allowed == 'true' && steps.sparse.outputs.use_sparse != 'true'
+        uses: actions/checkout@v4
+        with:
+          path: workspace
+          fetch-depth: 1
+          ref: refs/pull/${{ steps.gate.outputs.pr_number }}/head
+
+      # F8: skip Hermes install cache when runner image already has hermes
+      - name: Detect prebaked Hermes
+        if: steps.gate.outputs.matched == 'true' && steps.cooldown.outputs.allowed == 'true' && steps.pathskip.outputs.allowed == 'true'
+        id: prebaked
+        run: |
+          set -euo pipefail
+          export PATH="${HOME}/.local/bin:${HOME}/.hermes/bin:${PATH}"
+          if { [[ "${TORII_HERMES_PREBAKED:-}" == "1" ]] || [[ -f /root/.hermes-pin ]] || [[ -f "${HOME}/.hermes-pin" ]]; } \
+            && command -v hermes >/dev/null 2>&1; then
+            echo "yes=true" >> "$GITHUB_OUTPUT"
+            echo "::notice::F8 prebaked Hermes detected ($(command -v hermes)); skipping install cache"
+            hermes --version 2>/dev/null || true
+          else
+            echo "yes=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      # F2/F14/F7/F25: cache Hermes install keyed by pin (save only on miss)
+      - name: Resolve Hermes cache suffix
+        if: steps.gate.outputs.matched == 'true' && steps.cooldown.outputs.allowed == 'true' && steps.pathskip.outputs.allowed == 'true' && steps.prebaked.outputs.yes != 'true'
+        id: hermes_pin
+        run: |
+          set -euo pipefail
+          # Prefer pack helper when torii/ is checked out; else mirror hermes-pin.sh
+          # F25: if still empty after Resolve Hermes pin, treat as baked default (not float)
+          if [[ -z "${TORII_HERMES_COMMIT:-}" && -f torii/scripts/hermes-pin.sh ]]; then
+            export TORII_HERMES_COMMIT="$(bash torii/scripts/hermes-pin.sh default | tr -d '\n')"
+          fi
+          if [[ -x torii/scripts/hermes-pin.sh || -f torii/scripts/hermes-pin.sh ]]; then
+            SUF="$(TORII_HERMES_COMMIT="${TORII_HERMES_COMMIT:-}" bash torii/scripts/hermes-pin.sh cache-suffix | tr -d '\n')"
+          else
+            RAW="${TORII_HERMES_COMMIT:-}"
+            if [[ -z "$RAW" || "$RAW" == "latest" || "$RAW" == "main" || "$RAW" == "floating" ]]; then
+              SUF="latest"
+            else
+              SUF="${RAW:0:12}"
+            fi
+          fi
+          echo "suffix=$SUF" >> "$GITHUB_OUTPUT"
+          echo "::notice::Hermes cache pin suffix=$SUF commit=${TORII_HERMES_COMMIT:-default}"
+
+      - name: Restore Hermes install cache
+        if: steps.gate.outputs.matched == 'true' && steps.cooldown.outputs.allowed == 'true' && steps.pathskip.outputs.allowed == 'true' && steps.prebaked.outputs.yes != 'true'
+        id: hermes_cache
+        uses: actions/cache@v4
+        continue-on-error: true
+        with:
+          path: |
+            ~/.local
+            ~/.hermes
+          key: torii-hermes-bin-${{ runner.os }}-v4-${{ steps.hermes_pin.outputs.suffix }}
+          restore-keys: |
+            torii-hermes-bin-${{ runner.os }}-v4-
+            torii-hermes-bin-${{ runner.os }}-
+
+      - name: React eyes
+        if: steps.gate.outputs.matched == 'true' && steps.cooldown.outputs.allowed == 'true' && steps.pathskip.outputs.allowed == 'true' && github.event_name == 'issue_comment'
+        continue-on-error: true
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh api --method POST \
+            -H "Accept: application/vnd.github+json" \
+            "/repos/${{ github.repository }}/issues/comments/${{ github.event.comment.id }}/reactions" \
+            -f content='eyes' || true
+
+      - name: Run Torii pipeline
+        if: steps.gate.outputs.matched == 'true' && steps.cooldown.outputs.allowed == 'true' && steps.pathskip.outputs.allowed == 'true'
+        id: review
+        env:
+          OPENROUTER_API_KEY: ${{ secrets.OPENROUTER_API_KEY }}
+          GITHUB_TOKEN: ${{ github.token }}
+          REPO: ${{ github.repository }}
+          PR_NUMBER: ${{ steps.gate.outputs.pr_number }}
+          TRIGGER_COMMENT: ${{ steps.gate.outputs.trigger_comment }}
+          TORII_MODEL: ${{ vars.TORII_MODEL }}
+          TORII_ROOT: ${{ github.workspace }}/torii
+          WORKSPACE_ROOT: ${{ github.workspace }}/workspace
+          HERMES_HOME: ${{ github.workspace }}/.torii-hermes-home
+          OUT_DIR: ${{ github.workspace }}/torii/.torii-out
+          TRACE_ROOT: ${{ github.workspace }}/torii/.torii-out/traces
+          GITHUB_EVENT_NAME: ${{ github.event_name }}
+          TORII_HUB_TOKEN: ${{ secrets.TORII_HUB_TOKEN }}
+          TORII_HUB_REPO: ${{ vars.TORII_HUB_REPO }}
+          TORII_HUB_PUBLISH: ${{ vars.TORII_HUB_PUBLISH }}
+          # F28: repo-local .torii/ memory (default); hub only when mode/hub publish set
+          TORII_MEMORY_MODE: ${{ vars.TORII_MEMORY_MODE }}
+          TORII_MEMORY_PATH: ${{ vars.TORII_MEMORY_PATH }}
+          # F29: soft max OpenRouter spend (USD) for PR footer during hermes stage
+          TORII_MAX_COST_USD: ${{ vars.TORII_MAX_COST_USD }}
+          # F36: hermes wall-clock timeout seconds (default 1500 in run-with-timeout.py)
+          TORII_REVIEW_TIMEOUT_SECONDS: ${{ vars.TORII_REVIEW_TIMEOUT_SECONDS }}
+          # F41: Hermes max_turns (default 40 in max_turns.py / agent/config.yaml)
+          TORII_MAX_TURNS: ${{ vars.TORII_MAX_TURNS }}
+          # F42: auto model tier (off|auto|cheap|full; default off)
+          TORII_MODEL_TIER: ${{ vars.TORII_MODEL_TIER }}
+          TORII_MODEL_CHEAP: ${{ vars.TORII_MODEL_CHEAP }}
+          TORII_MODEL_FULL: ${{ vars.TORII_MODEL_FULL }}
+          # F43: hard preflight cost (uses TORII_MAX_COST_USD when set)
+          TORII_PREFLIGHT_COST: ${{ vars.TORII_PREFLIGHT_COST }}
+          TORII_PREFLIGHT_ACTION: ${{ vars.TORII_PREFLIGHT_ACTION }}
+          # F7: job-level env already sets default; re-export for pipeline scripts
+          TORII_HERMES_COMMIT: ${{ env.TORII_HERMES_COMMIT }}
+        run: |
+          set -euo pipefail
+          if [[ -z "${TORII_HUB_TOKEN:-}" ]]; then
+            export TORII_HUB_TOKEN="${GITHUB_TOKEN}"
+          fi
+          export TORII_HUB_REPO="${TORII_HUB_REPO:-Mr-Ashish/torii-gate}"
+          # F28: default memory mode local; hub publish off unless explicitly enabled
+          export TORII_MEMORY_MODE="${TORII_MEMORY_MODE:-local}"
+          export TORII_MEMORY_PATH="${TORII_MEMORY_PATH:-.torii}"
+          # Empty GHA var → treat as unset so scripts apply mode-based defaults
+          if [[ -z "${TORII_HUB_PUBLISH:-}" ]]; then
+            unset TORII_HUB_PUBLISH || true
+          fi
+          # F26: empty vars.TORII_MODEL → run-hermes-review.sh DEFAULT_TORII_MODEL (SoT)
+          # Do not hardcode a second default here; leave unset when var empty.
+          if [[ -z "${TORII_MODEL:-}" ]]; then
+            unset TORII_MODEL || true
+          fi
+          # F29: empty budget var → disabled
+          if [[ -z "${TORII_MAX_COST_USD:-}" ]]; then
+            unset TORII_MAX_COST_USD || true
+          fi
+          # F36: empty timeout var → script default (1500s); 0/off disables
+          if [[ -z "${TORII_REVIEW_TIMEOUT_SECONDS:-}" ]]; then
+            unset TORII_REVIEW_TIMEOUT_SECONDS || true
+          fi
+          # F41: empty max-turns var → script default (40); 0/off disables
+          if [[ -z "${TORII_MAX_TURNS:-}" ]]; then
+            unset TORII_MAX_TURNS || true
+          fi
+          # F42: empty tier vars → script defaults (tier off; cheap/full product defaults)
+          if [[ -z "${TORII_MODEL_TIER:-}" ]]; then
+            unset TORII_MODEL_TIER || true
+          fi
+          if [[ -z "${TORII_MODEL_CHEAP:-}" ]]; then
+            unset TORII_MODEL_CHEAP || true
+          fi
+          if [[ -z "${TORII_MODEL_FULL:-}" ]]; then
+            unset TORII_MODEL_FULL || true
+          fi
+          if [[ -z "${TORII_PREFLIGHT_COST:-}" ]]; then
+            unset TORII_PREFLIGHT_COST || true
+          fi
+          if [[ -z "${TORII_PREFLIGHT_ACTION:-}" ]]; then
+            unset TORII_PREFLIGHT_ACTION || true
+          fi
+          export PATH="${HOME}/.local/bin:${HOME}/.hermes/bin:${PATH}"
+          chmod +x "$TORII_ROOT/scripts/"*.sh "$TORII_ROOT/scripts/"*.py 2>/dev/null || true
+          chmod +x "$TORII_ROOT/scripts/"*.sh
+          if [[ -z "${OPENROUTER_API_KEY:-}" ]]; then
+            echo "::error::Secret OPENROUTER_API_KEY is not set"
+            "$TORII_ROOT/scripts/write-failure-review.sh" "$PR_NUMBER" "$OUT_DIR" \
+              "Configuration error: OPENROUTER_API_KEY secret is missing." \
+              "Add repository secret OPENROUTER_API_KEY and re-run."
+            export TORII_STATUS=config_error
+            export TORII_STARTED_AT="$(date -u +%Y-%m-%dT%H:%M:%SZ)"
+            "$TORII_ROOT/scripts/save-trace.sh" || true
+            "$TORII_ROOT/scripts/publish-run-local.sh" || true
+            "$TORII_ROOT/scripts/publish-run-to-hub.sh" || true
+            # F15: non-zero so React result shows ❌ not ✅
+            echo "pipeline_rc=1" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          set +e
+          "$TORII_ROOT/scripts/run-torii-review.sh"
+          RC=$?
+          echo "pipeline_rc=$RC" >> "$GITHUB_OUTPUT"
+          set -e
+
+      - name: Post review comment (always if matched)
+        if: steps.gate.outputs.matched == 'true' && steps.cooldown.outputs.allowed == 'true' && steps.pathskip.outputs.allowed == 'true' && always()
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+          REPO: ${{ github.repository }}
+          PR_NUMBER: ${{ steps.gate.outputs.pr_number }}
+          OUT_DIR: ${{ github.workspace }}/torii/.torii-out
+          TORII_ROOT: ${{ github.workspace }}/torii
+        run: |
+          set -euo pipefail
+          chmod +x "$TORII_ROOT/scripts/"*.sh
+          mkdir -p "$OUT_DIR"
+          REVIEW_FILE="$(ls -t "$OUT_DIR"/review-*.md 2>/dev/null | grep -v '\.raw\.md$' | head -1 || true)"
+          if [[ -z "${REVIEW_FILE:-}" || ! -f "$REVIEW_FILE" ]]; then
+            REVIEW_FILE="$("$TORII_ROOT/scripts/write-failure-review.sh" "$PR_NUMBER" "$OUT_DIR" \
+              "Torii job ended without a review artifact. Check Actions logs." \
+              "Re-run after fixing the workflow failure.")"
+            export TORII_STATUS=missing_review
+            export TORII_STARTED_AT="$(date -u +%Y-%m-%dT%H:%M:%SZ)"
+            export TRACE_ROOT="$OUT_DIR/traces"
+            "$TORII_ROOT/scripts/save-trace.sh" || true
+          fi
+          "$TORII_ROOT/scripts/post-review-comment.sh" "$REVIEW_FILE" "$PR_NUMBER"
+
+      # F22: verdict-aware reaction + commit status on PR head + job-summary section.
+      # Replaces pipeline-only +1/-1 so REQUEST CHANGES no longer looks like "success".
+      - name: Report verdict (F22)
+        id: verdict
+        if: steps.gate.outputs.matched == 'true' && steps.cooldown.outputs.allowed == 'true' && steps.pathskip.outputs.allowed == 'true' && always()
+        continue-on-error: true
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GITHUB_TOKEN: ${{ github.token }}
+          REPO: ${{ github.repository }}
+          PR_NUMBER: ${{ steps.gate.outputs.pr_number }}
+          OUT_DIR: ${{ github.workspace }}/torii/.torii-out
+          TORII_ROOT: ${{ github.workspace }}/torii
+          PIPELINE_RC: ${{ steps.review.outputs.pipeline_rc }}
+          # Only react on the trigger comment for issue_comment events
+          REACTION_COMMENT_ID: ${{ github.event_name == 'issue_comment' && github.event.comment.id || '' }}
+          TORII_COMMIT_STATUS: ${{ vars.TORII_COMMIT_STATUS || '1' }}
+          TORII_STATUS_CONTEXT: ${{ vars.TORII_STATUS_CONTEXT || 'torii/review' }}
+          # F23: formal PR Review event (APPROVE/REQUEST_CHANGES/COMMENT); 0 disables
+          TORII_PR_REVIEW: ${{ vars.TORII_PR_REVIEW || '1' }}
+          # F9: path-anchored inline comments on first changed line (critical/high default)
+          TORII_INLINE_COMMENTS: ${{ vars.TORII_INLINE_COMMENTS || '1' }}
+          TORII_INLINE_SEVERITY: ${{ vars.TORII_INLINE_SEVERITY || 'critical,high,blocking' }}
+          TORII_INLINE_MAX: ${{ vars.TORII_INLINE_MAX || '6' }}
+          TORII_INLINE_DIFF: ${{ github.workspace }}/torii/.torii-out/pr.diff
+          # F9c: GitHub apply-suggestion blocks from ### Code suggestions
+          TORII_INLINE_SUGGESTIONS: ${{ vars.TORII_INLINE_SUGGESTIONS || '1' }}
+          TORII_SUGGESTION_MAX: ${{ vars.TORII_SUGGESTION_MAX || '3' }}
+          # F37: verdict PR labels (torii:approve|request-changes|comment|error)
+          TORII_PR_LABELS: ${{ vars.TORII_PR_LABELS || '1' }}
+          TORII_LABEL_PREFIX: ${{ vars.TORII_LABEL_PREFIX || 'torii' }}
+          GITHUB_RUN_ID: ${{ github.run_id }}
+          GITHUB_SERVER_URL: ${{ github.server_url }}
+        run: |
+          set -euo pipefail
+          chmod +x "$TORII_ROOT/scripts/report-verdict.sh" 2>/dev/null || true
+          chmod +x "$TORII_ROOT/scripts/"*.sh 2>/dev/null || true
+          chmod +x "$TORII_ROOT/scripts/apply-verdict-labels.py" 2>/dev/null || true
+          REVIEW_FILE="$(ls -t "$OUT_DIR"/review-*.md 2>/dev/null | grep -v '\.raw\.md$' | head -1 || true)"
+          bash "$TORII_ROOT/scripts/report-verdict.sh" "${REVIEW_FILE:-}" "${PIPELINE_RC:-1}"
+
+      - name: Ensure trace package exists
+        if: steps.gate.outputs.matched == 'true' && steps.cooldown.outputs.allowed == 'true' && steps.pathskip.outputs.allowed == 'true' && always()
+        env:
+          TORII_ROOT: ${{ github.workspace }}/torii
+          OUT_DIR: ${{ github.workspace }}/torii/.torii-out
+          HERMES_HOME: ${{ github.workspace }}/.torii-hermes-home
+          TRACE_ROOT: ${{ github.workspace }}/torii/.torii-out/traces
+          REPO: ${{ github.repository }}
+          PR_NUMBER: ${{ steps.gate.outputs.pr_number }}
+          TORII_MODEL: ${{ vars.TORII_MODEL }}
+          # F29: soft max OpenRouter spend (USD); empty/0 = disabled
+          TORII_MAX_COST_USD: ${{ vars.TORII_MAX_COST_USD }}
+          GITHUB_EVENT_NAME: ${{ github.event_name }}
+        run: |
+          set -euo pipefail
+          chmod +x "$TORII_ROOT/scripts/save-trace.sh"
+          export TORII_STATUS="${TORII_STATUS:-complete}"
+          export TORII_STARTED_AT="${TORII_STARTED_AT:-$(date -u +%Y-%m-%dT%H:%M:%SZ)}"
+          "$TORII_ROOT/scripts/save-trace.sh"
+          # F21/F29: cost/token summary + soft budget alert (ops visibility without artifact download)
+          if [[ -f "$TORII_ROOT/scripts/usage-summary.py" ]]; then
+            python3 "$TORII_ROOT/scripts/usage-summary.py" step-summary \
+              --usage "$OUT_DIR/hermes-usage.json" \
+              --timings "$OUT_DIR/timings.json" \
+              --max-usd "${TORII_MAX_COST_USD:-}" >> "$GITHUB_STEP_SUMMARY" || true
+            python3 "$TORII_ROOT/scripts/usage-summary.py" budget \
+              --usage "$OUT_DIR/hermes-usage.json" \
+              --max-usd "${TORII_MAX_COST_USD:-}" || true
+          fi
+          # F30: memory health (preload source + local/hub publish) — not silent on failure
+          if [[ -f "$OUT_DIR/memory-health.md" ]]; then
+            cat "$OUT_DIR/memory-health.md" >> "$GITHUB_STEP_SUMMARY" || true
+          elif [[ -f "$TORII_ROOT/scripts/memory-health.sh" ]]; then
+            OUT_DIR="$OUT_DIR" bash "$TORII_ROOT/scripts/memory-health.sh" summary >> "$GITHUB_STEP_SUMMARY" || true
+            OUT_DIR="$OUT_DIR" bash "$TORII_ROOT/scripts/memory-health.sh" warn-if-bad || true
+          fi
+          echo "### Torii trace" >> "$GITHUB_STEP_SUMMARY"
+          if [[ -f "$OUT_DIR/latest-trace-dir.txt" ]]; then
+            TRACE_DIR="$(cat "$OUT_DIR/latest-trace-dir.txt")"
+            echo "- **trace dir:** \`$TRACE_DIR\`" >> "$GITHUB_STEP_SUMMARY"
+            if [[ -f "$TRACE_DIR/meta.json" ]]; then
+              echo '```json' >> "$GITHUB_STEP_SUMMARY"
+              head -c 4000 "$TRACE_DIR/meta.json" >> "$GITHUB_STEP_SUMMARY"
+              echo >> "$GITHUB_STEP_SUMMARY"
+              echo '```' >> "$GITHUB_STEP_SUMMARY"
+            fi
+          fi
+
+      - name: Upload run trace artifact
+        if: steps.gate.outputs.matched == 'true' && steps.cooldown.outputs.allowed == 'true' && steps.pathskip.outputs.allowed == 'true' && always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: torii-trace-pr${{ steps.gate.outputs.pr_number }}-run${{ github.run_id }}
+          path: torii/.torii-out/traces/
+          if-no-files-found: warn
+          retention-days: 90
+
+      - name: Upload full out bundle (debug)
+        if: steps.gate.outputs.matched == 'true' && steps.cooldown.outputs.allowed == 'true' && steps.pathskip.outputs.allowed == 'true' && always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: torii-out-pr${{ steps.gate.outputs.pr_number }}-run${{ github.run_id }}
+          path: |
+            torii/.torii-out/
+            .torii-hermes-home/memories/
+          if-no-files-found: ignore
+          retention-days: 14
+
+      # F14/F7: only write cache on miss (pin-keyed). Exact hits skip save.
+      - name: Save Hermes install cache
+        if: >
+          steps.gate.outputs.matched == 'true' &&
+          steps.cooldown.outputs.allowed == 'true' &&
+          steps.pathskip.outputs.allowed == 'true' &&
+          steps.prebaked.outputs.yes != 'true' &&
+          always() &&
+          steps.hermes_cache.outputs.cache-hit != 'true'
+        continue-on-error: true
+        uses: actions/cache/save@v4
+        with:
+          path: |
+            ~/.local
+            ~/.hermes
+          key: torii-hermes-bin-${{ runner.os }}-v4-${{ steps.hermes_pin.outputs.suffix }}

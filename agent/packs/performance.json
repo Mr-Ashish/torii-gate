@@ -1,0 +1,17 @@
+{
+  "id": "performance",
+  "name": "Performance-first",
+  "description": "Hot-path and scale-sensitive changes.",
+  "lenses": [
+    {"id": "performance", "hint": "PRIMARY: N+1, O(n^2), unbounded allocations, sync I/O on request path, cache stampede"},
+    {"id": "correctness", "hint": "wrong results under pagination/batching changes"},
+    {"id": "tests", "hint": "load/regression tests or benchmarks mentioned?"},
+    {"id": "concurrency", "hint": "lock contention, thundering herd"},
+    {"id": "api_contracts", "hint": "pagination/cursor contract breaks"},
+    {"id": "security", "hint": "only if DoS amplification"},
+    {"id": "maintainability", "hint": "n/a unless algorithmic footgun"}
+  ],
+  "extra_focus": [
+    "Require evidence (diff shows loop over query, missing limit, etc.) — no speculative perf nits."
+  ]
+}

@@ -1,0 +1,15 @@
+{
+  "id": "default",
+  "name": "Default multi-lens",
+  "description": "Full F52 seven-lens pass for general code PRs.",
+  "lenses": [
+    {"id": "correctness", "hint": "regressions, edge cases, wrong defaults, off-by-one, null/empty paths"},
+    {"id": "security", "hint": "injection, authz, secrets, XSS, unsafe deserialize, SSRF"},
+    {"id": "tests", "hint": "risky production paths covered? claim-to-fix without tests?"},
+    {"id": "performance", "hint": "N+1, unbounded loops, cache misuse, heavy work on hot path (only if evidence)"},
+    {"id": "api_contracts", "hint": "public API / payload / RPC / ORM field contract breaks"},
+    {"id": "concurrency", "hint": "races, double-submit, lock order (only if concurrent surface)"},
+    {"id": "maintainability", "hint": "only if it causes real future defect risk (not style laundry)"}
+  ],
+  "extra_focus": []
+}
