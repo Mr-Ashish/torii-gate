@@ -30,15 +30,28 @@ scripts/bench-juice-shop-gate.py   # offline: score review.md vs cases.json
 | js-authz | Broken access control | authz fail-open / IDOR |
 | js-secret | Hardcoded token / weak crypto | secrets / crypto lens |
 
-## Offline path (today)
+## Offline path (today) — F70 labeled bench
 
-Until cases land, use the in-repo dogfood:
+In-repo ground truth + dual-pass critic + TP signature compound memory:
 
 ```bash
+# Offline e2e: good vs weak review fixtures scored against demo/insecure cases
+python3 scripts/bench_security_gate.py fixture
+# → .torii-out/bench-f70/bench-metrics.json (recall, delta_recall, fixture_pass)
+# → tp-signatures.json promoted from confirmed TPs
+
+python3 scripts/bench_security_gate.py score \
+  --review docs/benchmarks/fixtures/insecure-demo-good-review.md \
+  --cases docs/benchmarks/cases/insecure-demo.json --json
+
 ./scripts/smoke-torii-gate.sh          # gate decision + fixture integrity
 # Live PR path:
 # open PR touching demo/insecure/app.py → @torii review this pr
+# Optional live agent bench (needs OPENROUTER_API_KEY):
+# python3 scripts/bench_security_gate.py live --timeout 180
 ```
+
+Cases pack: `docs/benchmarks/cases/insecure-demo.json` (SQLi, pickle, cmdi, secrets).
 
 ## Live path (later)
 
@@ -57,4 +70,5 @@ Until cases land, use the in-repo dogfood:
 
 ## Status
 
-**Stub only** — no Juice Shop checkout or scorer in-tree yet. Ship gate smoke + `demo/insecure` first.
+**F70 scorer live** for `demo/insecure` labeled cases (`scripts/bench_security_gate.py`).
+Juice Shop vendor checkout still deferred; use insecure-demo pack as the measured e2e path.

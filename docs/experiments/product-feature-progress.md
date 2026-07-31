@@ -1,6 +1,6 @@
 # Product feature progress
 
-**Updated:** 2026-08-01 (F68 agent tools + F69 self-evolution)  
+**Updated:** 2026-08-01 (F70 labeled bench + dual critic + TP memory)  
 **Loop:** continuous product backlog
 
 ## SHIPPED
@@ -16,30 +16,31 @@
 | F67 | Modal live Hermes/orch log streaming | product, ops | MERGED `0.8.0-f67` |
 | F68 | Agent tools research→eval→adopt | product, agent_quality | **shipping** |
 | F69 | Torii-native self-evolution (skills) | product, memory | **shipping** |
+| F70 | Labeled vuln bench + dual critic + TP sigs | agent_quality, memory, bench | **shipping** |
 
 ## IN_PROGRESS
 
 | ID | Feature | Notes |
 |----|---------|-------|
-| — | — | named product backlog complete |
+| — | — | open: Juice Shop vendor corpus, live dual-agent critic LLM |
 
 ## LEFT
 
-— (named product backlog empty; future fires = corpus/e2e or new research)
+— Juice Shop full cases; federated TP aggregate across tenants; LLM critic pass
 
 ## Counts
 
-- **features_built_count:** 26 (F44–F69)
-- **types_built:** agent_quality, product, memory, ops
-- **left_count:** 0 named
-- **progress_pct:** ~100% of listed backlog
+- **features_built_count:** 27 (F44–F70)
+- **types_built:** agent_quality, product, memory, ops, bench
+- **left_count:** open research
+- **progress_pct:** n/a (open research loop)
 - **eta:** open research only
 - **active_worktrees:** none
-- **federated_memory_note:** F65 tenant path
-- **agent_design_note:** F68/F69 pure code I/O; judgment stays in model + human adopt gates
-- **meta_loop_note:** research→eval→adopt + trajectory skills close Hermes-pattern gaps natively
+- **federated_memory_note:** F65 tenant path; F70 TP local (federation of TP next)
+- **agent_design_note:** F70 dual-pass offline critic; live LLM critic optional
+- **meta_loop_note:** bench metrics close the measure→promote→inject loop
 - **milvus_corpus:** 3 + complex #6 F67 e2e
 
 ## Status line
 
-`features_built_count=26 types_built=agent_quality,product,memory,ops left_count=0 progress_pct=100 active_worktrees=0 f68=tools_pipeline f69=self_evolve`
+`features_built_count=27 types_built=agent_quality,product,memory,ops,bench f70=bench_dual_critic_tp`

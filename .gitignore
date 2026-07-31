@@ -4,6 +4,8 @@
 .torii-hermes-home/
 .torii-out/
 .torii-out-*/
+# F70 local compound TP memory (promoted by bench; do not commit host-specific hits)
+.torii/tp-signatures.json
 __pycache__/
 .venv/
 venv/

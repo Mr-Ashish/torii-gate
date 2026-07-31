@@ -1,0 +1,82 @@
+{
+  "schema_version": 1,
+  "feature": "F70",
+  "id": "insecure-demo",
+  "description": "Ground truth for demo/insecure/app.py intentional vulns (Torii Gate dogfood).",
+  "source_paths": ["demo/insecure/app.py"],
+  "expected_verdict": "REQUEST_CHANGES",
+  "cases": [
+    {
+      "id": "sqli-search",
+      "theme": "sql_injection",
+      "cwe": ["CWE-89"],
+      "tags": ["sqli", "injection", "security"],
+      "path_substrings": ["demo/insecure/app.py", "insecure/app.py", "app.py"],
+      "must_match_any": [
+        "sql injection",
+        "sqli",
+        "f-string",
+        "f\"select",
+        "string-formatted",
+        "execute(f",
+        "cur.execute(f",
+        "cwe-89"
+      ],
+      "severity_floor": "high",
+      "required": true
+    },
+    {
+      "id": "pickle-load",
+      "theme": "insecure_deserialization",
+      "cwe": ["CWE-502"],
+      "tags": ["pickle", "deserialize", "security"],
+      "path_substrings": ["demo/insecure/app.py", "insecure/app.py", "app.py"],
+      "must_match_any": [
+        "pickle",
+        "deserialize",
+        "deserialization",
+        "unsafe load",
+        "cwe-502",
+        "pickle.loads"
+      ],
+      "severity_floor": "high",
+      "required": true
+    },
+    {
+      "id": "cmdi-run",
+      "theme": "command_injection",
+      "cwe": ["CWE-78"],
+      "tags": ["command_injection", "rce", "shell", "security"],
+      "path_substrings": ["demo/insecure/app.py", "insecure/app.py", "app.py"],
+      "must_match_any": [
+        "command injection",
+        "shell=true",
+        "os command",
+        "rce",
+        "subprocess",
+        "cwe-78",
+        "shell injection"
+      ],
+      "severity_floor": "high",
+      "required": true
+    },
+    {
+      "id": "secret-exposure",
+      "theme": "secrets_exposure",
+      "cwe": ["CWE-200", "CWE-798"],
+      "tags": ["secrets", "api_key", "security"],
+      "path_substrings": ["demo/insecure/app.py", "insecure/app.py", "app.py"],
+      "must_match_any": [
+        "secret",
+        "api key",
+        "api_key",
+        "openrouter",
+        "credential",
+        "exposes",
+        "exposure"
+      ],
+      "severity_floor": "medium",
+      "required": true
+    }
+  ]
+}

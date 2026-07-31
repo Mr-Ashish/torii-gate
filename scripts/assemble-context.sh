@@ -284,6 +284,26 @@ try:
 except Exception:
     skills_injected = "0"
 
+# F70: inject compound TP signatures (confirmed true-positive patterns)
+tp_sigs_injected = "0"
+try:
+    import sys as _sys_tp
+    _sys_tp.path.insert(0, str(torii_root / "scripts"))
+    from bench_security_gate import (  # type: ignore
+        load_tp_signatures,
+        inject_tp_into_prompt,
+        default_tp_path,
+    )
+
+    _tp_path = default_tp_path(torii_root)
+    _sigs = load_tp_signatures(_tp_path)
+    if _sigs:
+        inject_tp_into_prompt(Path(os.environ["PROMPT_PATH"]), _sigs)
+        tp_sigs_injected = "1"
+        prompt = Path(os.environ["PROMPT_PATH"]).read_text(encoding="utf-8")
+except Exception:
+    tp_sigs_injected = "0"
+
 # F57: Mermaid architecture from changed files (soft)
 mermaid_on = "0"
 mermaid_nodes = "0"
@@ -438,6 +458,7 @@ meta = {
     "FP_RESOLVE": fp_resolve_on,
     "FP_RESOLVE_COUNT": fp_resolve_count,
     "SELF_EVOLVE_SKILLS": skills_injected,
+    "TP_SIGNATURES": tp_sigs_injected,
 }
 with open(os.environ["META_PATH"], "w") as fh:
     for k, v in meta.items():
