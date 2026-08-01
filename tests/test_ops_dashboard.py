@@ -69,6 +69,9 @@ class OpsDashboardTests(unittest.TestCase):
         self.assertEqual(data.get("feature"), "OPS")
         self.assertIn("fail_closed", data)
         self.assertIn("cost_per_pr", data)
+        products = data.get("product_surfaces") or {}
+        self.assertTrue(products.get("ok"), products)
+        self.assertGreaterEqual(int(products.get("ok_n") or 0), 8)
         dash = ROOT / "docs" / "ops" / "DASHBOARD.md"
         cost = ROOT / "docs" / "ops" / "cost-pr-dashboard.md"
         self.assertTrue(dash.is_file())
@@ -77,6 +80,8 @@ class OpsDashboardTests(unittest.TestCase):
         self.assertIn("Fail-closed", body)
         self.assertIn("Cost / PR", body)
         self.assertIn("torii/gate", body)
+        self.assertIn("Product surfaces", body)
+        self.assertIn("QUIETER.md", body)
 
     def test_tool_turns_default_on(self):
         # Ensure product default remains fail-closed for tool turns

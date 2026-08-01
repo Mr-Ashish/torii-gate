@@ -258,6 +258,51 @@ def smoke_status(root: Path, *, run: bool) -> dict[str, Any]:
     return out
 
 
+def product_surfaces_inventory(root: Path) -> dict[str, Any]:
+    """Post-queue + core product docs/scripts operators open from ops day-2."""
+    surfaces = [
+        ("install", "docs/INSTALL.md", "scripts/install_ux_check.py", "torii.py doctor"),
+        ("golden_path", "docs/GOLDEN-PATH.md", "scripts/golden_path_metrics.py", "torii.py golden-path -- status"),
+        ("certificate", "docs/GATE.md", "scripts/gate_certificate.py", "torii.py certificate -- fixture"),
+        ("quieter", "docs/QUIETER.md", "scripts/quieter_over_time.py", "torii.py quieter -- status"),
+        ("tool_use", "docs/TOOL-USE.md", "scripts/tool_use_quality.py", "torii.py tool-use -- status"),
+        ("workflows", "docs/WORKFLOWS.md", "scripts/workflow_as_code.py", "torii.py workflow -- scorecard"),
+        ("memory", "docs/MEMORY.md", "scripts/torii_memory.py", "torii.py memory -- doctor"),
+        ("federation", "docs/FEDERATION.md", "scripts/federated_hub_ingest.py", "torii.py federation -- status"),
+        ("self_evolve", "docs/SELF-EVOLVE.md", "scripts/self_evolve.py", "torii.py self-evolve -- status"),
+        ("commercial", "docs/benchmarks/commercial-scorecard.md", "scripts/commercial_scorecard.py", "torii.py commercial -- status"),
+    ]
+    rows: list[dict[str, Any]] = []
+    ok_n = 0
+    for sid, doc_rel, script_rel, cmd in surfaces:
+        doc = root / doc_rel
+        script = root / script_rel
+        doc_ok = doc.is_file()
+        script_ok = script.is_file()
+        ok = doc_ok and script_ok
+        if ok:
+            ok_n += 1
+        rows.append(
+            {
+                "id": sid,
+                "doc": doc_rel,
+                "doc_ok": doc_ok,
+                "script": script_rel,
+                "script_ok": script_ok,
+                "cli": cmd,
+                "ok": ok,
+            }
+        )
+    total = len(rows)
+    return {
+        "surfaces": rows,
+        "ok_n": ok_n,
+        "total": total,
+        "ok": ok_n == total and total >= 8,
+        "one_liner": "Product surface docs + scripts present for day-2 ops",
+    }
+
+
 def build_report(root: Path | None = None, *, run_smoke: bool = False) -> dict[str, Any]:
     root = root or _root()
     fc = fail_closed_inventory()
@@ -275,15 +320,17 @@ def build_report(root: Path | None = None, *, run_smoke: bool = False) -> dict[s
     cost = cost_pr_table(root)
     smoke = smoke_status(root, run=run_smoke)
     last_cert = last_gate_certificate(root)
+    products = product_surfaces_inventory(root)
 
     report = {
         "feature": FEATURE,
         "schema": SCHEMA,
         "scorecard_target": "ops",
-        "dim_lift": "reliability/ops (dim 8) + merge-authority certificate wire",
+        "dim_lift": "reliability/ops (dim 8) + certificate + product surface map",
         "scored_at": _now(),
         "one_liner": (
-            "Fail-closed defaults · cost/PR · gate certificate · smoke CI · torii/gate"
+            "Fail-closed defaults · cost/PR · gate certificate · smoke CI · "
+            "product surfaces · torii/gate"
         ),
         "fail_closed": fc,
         "fail_closed_safe_defaults": all(safe_bits) if safe_bits else False,
@@ -291,6 +338,7 @@ def build_report(root: Path | None = None, *, run_smoke: bool = False) -> dict[s
         "cost_per_pr": cost,
         "smoke": smoke,
         "last_gate_certificate": last_cert,
+        "product_surfaces": products,
         "paths": {
             "dashboard_md": str(OUT_DIR / "DASHBOARD.md"),
             "cost_md": str(OUT_DIR / "cost-pr-dashboard.md"),
@@ -303,8 +351,8 @@ def build_report(root: Path | None = None, *, run_smoke: bool = False) -> dict[s
         and req.get("ok")
         and smoke.get("script_present")
         and smoke.get("ci_workflow_present")
+        and products.get("ok")
         and (not run_smoke or smoke.get("pass"))
-        # soft: certificate wire preferred but not hard-fail ops_ok until fixtures assert wire_ok
     )
     return report
 
@@ -410,11 +458,36 @@ def render_dashboard(report: dict[str, Any]) -> str:
         "python3 scripts/gate_certificate.py emit --review .torii-out/review-1.md --write .torii-out",
         "```",
         "",
+    ]
+    products = report.get("product_surfaces") or {}
+    lines += [
+        "## Product surfaces (day-2 ops map)",
+        "",
+        f"Docs + scripts ready: **{products.get('ok_n')}/{products.get('total')}** · "
+        f"product_surfaces_ok=**{products.get('ok')}**",
+        "",
+        "Operators should not hunt research logs — each surface has one CLI.",
+        "",
+        "| Surface | Doc | Script | CLI | Ok |",
+        "|---------|-----|--------|-----|:--:|",
+    ]
+    for row in products.get("surfaces") or []:
+        mark = "yes" if row.get("ok") else "**no**"
+        lines.append(
+            f"| `{row.get('id')}` | `{row.get('doc')}` | `{row.get('script')}` | "
+            f"`{row.get('cli')}` | {mark} |"
+        )
+    lines += [
+        "",
+        "Hub map: [README product surfaces](../../README.md#product-surfaces-one-cli) · "
+        "commercial: `python3 scripts/torii.py commercial -- status`",
+        "",
         "## Refresh",
         "",
         "```bash",
         "python3 scripts/ops_dashboard.py report --smoke",
         "python3 scripts/torii.py ops -- report",
+        "python3 scripts/golden_path_metrics.py report",
         "```",
         "",
     ]
@@ -543,6 +616,10 @@ def cmd_fixture(args: argparse.Namespace) -> int:
     (out / "cost-pr-dashboard.md").write_text(render_cost_md(report), encoding="utf-8")
 
     cert = report.get("last_gate_certificate") or {}
+    dash_body = (root / OUT_DIR / "DASHBOARD.md").read_text(
+        encoding="utf-8", errors="replace"
+    )
+    products = report.get("product_surfaces") or {}
     checks = {
         "fail_closed_safe": bool(report.get("fail_closed_safe_defaults")),
         "required_check_docs": bool((report.get("required_check") or {}).get("ok")),
@@ -555,12 +632,10 @@ def cmd_fixture(args: argparse.Namespace) -> int:
         "gate_cert_script": bool(cert.get("script_present")),
         "gate_cert_save_trace_wired": bool(cert.get("save_trace_wired")),
         "gate_cert_workflow_wired": bool(cert.get("workflow_wired")),
-        "dashboard_mentions_certificate": "gate certificate" in (
-            root / OUT_DIR / "DASHBOARD.md"
-        ).read_text(encoding="utf-8", errors="replace").lower()
-        or "Last gate certificate" in (root / OUT_DIR / "DASHBOARD.md").read_text(
-            encoding="utf-8", errors="replace"
-        ),
+        "dashboard_mentions_certificate": "gate certificate" in dash_body.lower()
+        or "Last gate certificate" in dash_body,
+        "product_surfaces_ok": bool(products.get("ok")),
+        "dashboard_mentions_product_surfaces": "Product surfaces" in dash_body,
     }
     # Also require tool_turns gate source default on
     tt = root / "scripts" / "tool_turns_gate.py"

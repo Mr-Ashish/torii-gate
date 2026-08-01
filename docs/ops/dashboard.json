@@ -2,9 +2,9 @@
   "feature": "OPS",
   "schema": 1,
   "scorecard_target": "ops",
-  "dim_lift": "reliability/ops (dim 8) + merge-authority certificate wire",
-  "scored_at": "2026-08-01T15:05:15Z",
-  "one_liner": "Fail-closed defaults \u00b7 cost/PR \u00b7 gate certificate \u00b7 smoke CI \u00b7 torii/gate",
+  "dim_lift": "reliability/ops (dim 8) + certificate + product surface map",
+  "scored_at": "2026-08-01T16:08:35Z",
+  "one_liner": "Fail-closed defaults \u00b7 cost/PR \u00b7 gate certificate \u00b7 smoke CI \u00b7 product surfaces \u00b7 torii/gate",
   "fail_closed": [
     {
       "name": "TORII_TOOL_TURNS_GATE",
@@ -97,25 +97,26 @@
   },
   "cost_per_pr": {
     "source": "docs/benchmarks/traces vault",
-    "runs": 52,
+    "runs": 61,
     "time_to_signal_s": {
-      "n": 47,
-      "mean": 97.813,
-      "p50": 84.3,
+      "n": 56,
+      "mean": 99.486,
+      "p50": 91.95,
       "min": 39.2,
       "max": 262.0
     },
     "cost_usd": {
-      "n": 9,
+      "n": 18,
       "mean": 0.017,
       "p50": 0.012,
       "min": 0.008,
       "max": 0.058
     },
     "verdicts": {
-      "REQUEST_CHANGES": 19,
+      "REQUEST_CHANGES": 23,
       "UNKNOWN": 26,
-      "COMMENT": 7
+      "COMMENT": 7,
+      "APPROVE": 5
     }
   },
   "smoke": {
@@ -129,8 +130,8 @@
     "script_present": true,
     "save_trace_wired": true,
     "workflow_wired": true,
-    "path": "docs/benchmarks/traces/20260801-1502-pytorch-pytorch-PR191840-modal-gate-cert-wire/gate-certificate.json",
-    "certificate_id": "gc-95888668ca0a313d",
+    "path": "docs/benchmarks/traces/20260801-1605-pytorch-pytorch-PR191840-modal-ops-surfaces/gate-certificate.json",
+    "certificate_id": "gc-f0613e3b4d162c10",
     "verdict": "REQUEST_CHANGES",
     "block": true,
     "state": "failure",
@@ -141,10 +142,108 @@
     ],
     "path_evidence_score": 1.0,
     "human_summary": "CLOSED \u2014 REQUEST_CHANGES (verdict_request_changes, strong_path_evidence, blocking_with_paths); path_evidence=1.00",
-    "at": "2026-08-01T15:05:15Z",
+    "at": "2026-08-01T16:07:23Z",
     "repo": "pytorch/pytorch",
     "pr": "191840",
     "wire_ok": true
+  },
+  "product_surfaces": {
+    "surfaces": [
+      {
+        "id": "install",
+        "doc": "docs/INSTALL.md",
+        "doc_ok": true,
+        "script": "scripts/install_ux_check.py",
+        "script_ok": true,
+        "cli": "torii.py doctor",
+        "ok": true
+      },
+      {
+        "id": "golden_path",
+        "doc": "docs/GOLDEN-PATH.md",
+        "doc_ok": true,
+        "script": "scripts/golden_path_metrics.py",
+        "script_ok": true,
+        "cli": "torii.py golden-path -- status",
+        "ok": true
+      },
+      {
+        "id": "certificate",
+        "doc": "docs/GATE.md",
+        "doc_ok": true,
+        "script": "scripts/gate_certificate.py",
+        "script_ok": true,
+        "cli": "torii.py certificate -- fixture",
+        "ok": true
+      },
+      {
+        "id": "quieter",
+        "doc": "docs/QUIETER.md",
+        "doc_ok": true,
+        "script": "scripts/quieter_over_time.py",
+        "script_ok": true,
+        "cli": "torii.py quieter -- status",
+        "ok": true
+      },
+      {
+        "id": "tool_use",
+        "doc": "docs/TOOL-USE.md",
+        "doc_ok": true,
+        "script": "scripts/tool_use_quality.py",
+        "script_ok": true,
+        "cli": "torii.py tool-use -- status",
+        "ok": true
+      },
+      {
+        "id": "workflows",
+        "doc": "docs/WORKFLOWS.md",
+        "doc_ok": true,
+        "script": "scripts/workflow_as_code.py",
+        "script_ok": true,
+        "cli": "torii.py workflow -- scorecard",
+        "ok": true
+      },
+      {
+        "id": "memory",
+        "doc": "docs/MEMORY.md",
+        "doc_ok": true,
+        "script": "scripts/torii_memory.py",
+        "script_ok": true,
+        "cli": "torii.py memory -- doctor",
+        "ok": true
+      },
+      {
+        "id": "federation",
+        "doc": "docs/FEDERATION.md",
+        "doc_ok": true,
+        "script": "scripts/federated_hub_ingest.py",
+        "script_ok": true,
+        "cli": "torii.py federation -- status",
+        "ok": true
+      },
+      {
+        "id": "self_evolve",
+        "doc": "docs/SELF-EVOLVE.md",
+        "doc_ok": true,
+        "script": "scripts/self_evolve.py",
+        "script_ok": true,
+        "cli": "torii.py self-evolve -- status",
+        "ok": true
+      },
+      {
+        "id": "commercial",
+        "doc": "docs/benchmarks/commercial-scorecard.md",
+        "doc_ok": true,
+        "script": "scripts/commercial_scorecard.py",
+        "script_ok": true,
+        "cli": "torii.py commercial -- status",
+        "ok": true
+      }
+    ],
+    "ok_n": 10,
+    "total": 10,
+    "ok": true,
+    "one_liner": "Product surface docs + scripts present for day-2 ops"
   },
   "paths": {
     "dashboard_md": "docs/ops/DASHBOARD.md",

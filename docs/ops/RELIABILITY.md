@@ -30,7 +30,7 @@ python3 scripts/ops_dashboard.py report --smoke
 # → docs/ops/DASHBOARD.md · docs/ops/cost-pr-dashboard.md
 ```
 
-Day-2: `python3 scripts/torii.py doctor` · `python3 scripts/torii.py ops -- status`
+Day-2: `python3 scripts/torii.py doctor` · `python3 scripts/torii.py ops -- status` · product map on `docs/ops/DASHBOARD.md`
 
 ## Links
 

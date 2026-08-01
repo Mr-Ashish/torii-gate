@@ -1,0 +1,20 @@
+{
+  "feature": "OPS_SURFACES",
+  "schema_version": 1,
+  "repo": "pytorch/pytorch",
+  "pr": "191840",
+  "model": "deepseek/deepseek-v4-pro",
+  "host": "modal",
+  "bit3": true,
+  "elapsed_s": 141.6,
+  "log_streaming": true,
+  "tool_call_turns": 8,
+  "post_comment": 0,
+  "verdict": "REQUEST_CHANGES",
+  "block": true,
+  "certificate_id": "gc-f0613e3b4d162c10",
+  "notes": "OPS product surfaces map on dashboard + refreshed cost/PR vault stats",
+  "scored_at": "2026-08-01T16:08:35Z",
+  "modal_run": "https://modal.com/apps/mr-ashish/main/ap-UcUv77K3HowCVPqi829eeA",
+  "cost_usd": 0.022070682
+}

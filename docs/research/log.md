@@ -1,4 +1,36 @@
 
+## 2026-08-01 — OPS_SURFACES: product map on ops dashboard (dim 8)
+
+### Papers / posts
+- Loop Engineering: day-2 ops habit needs one map of product surfaces, not only fail-closed env.
+- Ops dim 8: cost/PR vault was live; post-queue docs were not inventoried on DASHBOARD.md.
+- Simplicity: ops + README both point at the same surface set.
+
+### Decide / copy / skip
+- **Copy:** product_surfaces_inventory (10 docs+scripts) into ops_dashboard report.
+- **Copy:** DASHBOARD.md section + fixture checks product_surfaces_ok.
+- **Copy:** refresh cost/PR + golden-path metrics from vault.
+- **Skip:** F185+; no new compound loops.
+
+### Feature shipped (OPS_SURFACES)
+- ops_dashboard product_surfaces · dashboard table · fixture 15 checks
+- golden-path metrics refresh · RELIABILITY day-2 note
+
+### Metric
+- Offline: ops fixture_pass · product 10/10 · ops_ok · cost_n≥16
+- Live Modal: pytorch#191840 BIT3_OK ~141.6s tools=8 POST_COMMENT=0
+- Traces: docs/benchmarks/traces/20260801-1605-pytorch-pytorch-PR191840-modal-ops-surfaces/
+
+### scorecard_target
+ops (#8) · simplicity (#12)
+
+### dim_lift
+ops dashboard inventorizes buyer product surfaces + live cost/PR
+
+### SHA
+_pending_
+
+
 ## 2026-08-01 — GTM_README: product surfaces map on GitHub front door
 
 ### Papers / posts

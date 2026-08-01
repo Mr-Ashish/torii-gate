@@ -2,9 +2,9 @@
 
 # Torii ops dashboard
 
-_Generated: `2026-08-01T15:05:15Z` · **ops_ok=True** · target **ops / dim 8**_
+_Generated: `2026-08-01T16:08:35Z` · **ops_ok=True** · target **ops / dim 8**_
 
-Fail-closed defaults · cost/PR · gate certificate · smoke CI · torii/gate
+Fail-closed defaults · cost/PR · gate certificate · smoke CI · product surfaces · torii/gate
 
 ## Fail-closed defaults
 
@@ -39,13 +39,13 @@ python3 scripts/ops_dashboard.py report --smoke
 
 | Stat | time-to-signal (s) | cost USD |
 |------|-------------------:|---------:|
-| n | 47 | 9 |
-| mean | 97.813 | 0.017 |
-| p50 | 84.3 | 0.012 |
+| n | 56 | 18 |
+| mean | 99.486 | 0.017 |
+| p50 | 91.95 | 0.012 |
 | min | 39.2 | 0.008 |
 | max | 262.0 | 0.058 |
 
-Runs: **52** · source: `docs/benchmarks/traces vault`
+Runs: **61** · source: `docs/benchmarks/traces vault`
 
 Detail: [cost-pr-dashboard.md](cost-pr-dashboard.md) · Reliability one-pager: [RELIABILITY.md](RELIABILITY.md)
 
@@ -57,12 +57,12 @@ Deterministic reason codes + path evidence for the latest dogfood gate decision 
 
 | Field | Value |
 |-------|------:|
-| certificate_id | `gc-95888668ca0a313d` |
+| certificate_id | `gc-f0613e3b4d162c10` |
 | block | True |
 | verdict | REQUEST_CHANGES |
 | path_evidence | 1.0 |
 | reason_codes | `verdict_request_changes`, `strong_path_evidence`, `blocking_with_paths` |
-| vault path | `docs/benchmarks/traces/20260801-1502-pytorch-pytorch-PR191840-modal-gate-cert-wire/gate-certificate.json` |
+| vault path | `docs/benchmarks/traces/20260801-1605-pytorch-pytorch-PR191840-modal-ops-surfaces/gate-certificate.json` |
 | wire_ok | True |
 
 ```bash
@@ -70,9 +70,31 @@ python3 scripts/torii.py certificate -- fixture
 python3 scripts/gate_certificate.py emit --review .torii-out/review-1.md --write .torii-out
 ```
 
+## Product surfaces (day-2 ops map)
+
+Docs + scripts ready: **10/10** · product_surfaces_ok=**True**
+
+Operators should not hunt research logs — each surface has one CLI.
+
+| Surface | Doc | Script | CLI | Ok |
+|---------|-----|--------|-----|:--:|
+| `install` | `docs/INSTALL.md` | `scripts/install_ux_check.py` | `torii.py doctor` | yes |
+| `golden_path` | `docs/GOLDEN-PATH.md` | `scripts/golden_path_metrics.py` | `torii.py golden-path -- status` | yes |
+| `certificate` | `docs/GATE.md` | `scripts/gate_certificate.py` | `torii.py certificate -- fixture` | yes |
+| `quieter` | `docs/QUIETER.md` | `scripts/quieter_over_time.py` | `torii.py quieter -- status` | yes |
+| `tool_use` | `docs/TOOL-USE.md` | `scripts/tool_use_quality.py` | `torii.py tool-use -- status` | yes |
+| `workflows` | `docs/WORKFLOWS.md` | `scripts/workflow_as_code.py` | `torii.py workflow -- scorecard` | yes |
+| `memory` | `docs/MEMORY.md` | `scripts/torii_memory.py` | `torii.py memory -- doctor` | yes |
+| `federation` | `docs/FEDERATION.md` | `scripts/federated_hub_ingest.py` | `torii.py federation -- status` | yes |
+| `self_evolve` | `docs/SELF-EVOLVE.md` | `scripts/self_evolve.py` | `torii.py self-evolve -- status` | yes |
+| `commercial` | `docs/benchmarks/commercial-scorecard.md` | `scripts/commercial_scorecard.py` | `torii.py commercial -- status` | yes |
+
+Hub map: [README product surfaces](../../README.md#product-surfaces-one-cli) · commercial: `python3 scripts/torii.py commercial -- status`
+
 ## Refresh
 
 ```bash
 python3 scripts/ops_dashboard.py report --smoke
 python3 scripts/torii.py ops -- report
+python3 scripts/golden_path_metrics.py report
 ```
