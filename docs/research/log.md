@@ -30,7 +30,7 @@ Checker code without doctor/scorecard and paper demote_rate does not compound in
 **Doctor + scorecard habit** — demote path is install-day and paper-day visible.
 
 ### SHA
-`PENDING`
+`c5e08df161a0bb8ebbfe449994bbe38c882589b4`
 
 ## 2026-08-01 — F127 hub gap critic + hub_ingested attribution
 
