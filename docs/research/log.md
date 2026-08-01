@@ -28,7 +28,7 @@ Proposals do not inject. Highest ROI: dual-gate cycle-adopt into always budget s
 **Propose → dual-gate adopt → always inject** — recovery skills ship under budget.
 
 ### SHA
-`PENDING`
+`e2ee4a11aa8f99d435c649621843d05211ed25aa`
 
 
 ## 2026-08-01 — F153 hub-archival skill self-evolve from F152
