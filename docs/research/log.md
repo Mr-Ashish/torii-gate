@@ -31,7 +31,7 @@ Detection quality (F70–F72) was measurable; **agent procedure quality** and **
 - pytest: 457 passed
 
 ### SHA
-`86526364d531620a7c66fa8acb6eccb009eada28`
+`3f82f0370411fa85880cb6992ab8187b5922988b`
 
 ## 2026-08-01 — F72 full-chain revalidation (maker/checker)
 
