@@ -164,6 +164,8 @@ budget always → compact body → score tool_hit → util gap? → budgeted re-
 
 **One-liner (AppSec):** *The gate teaches tools, measures use, and recovers once — under budget.*
 
+**Federate + doctor (F124):** privacy-safe recovery util themes (skill id + util bins + tenant hash only) federate to the hub; `torii.py doctor` fails closed unless recovery skills are active (`recovery_ok`).
+
 **Ops:** `python3 scripts/memory_loop_status.py scorecard` → L0–L3. Smoke requires L3 on the hub tree. CI job summary annotates readiness; optional advisory `torii/memory-loop` via `TORII_MEMORY_LOOP_STATUS_COMMIT=1`.
 
 ---

@@ -347,11 +347,14 @@ def cmd_scorecard(args: argparse.Namespace) -> int:
         json.dumps(
             {
                 "feature": FEATURE,
+                "feature_recovery": report.get("feature_recovery") or "F123",
                 "level": report["level"],
                 "pct": report["pct"],
                 "ready": report["ready"],
                 "stages_ok": f"{report['stages_ok']}/{report['stages_total']}",
                 "skills_n": report["active_skills_n"],
+                "recovery_ok": report.get("recovery_ok"),
+                "recovery_active": report.get("recovery_active"),
                 "wiring_ok": report["wiring_ok"],
                 "deep_ok": report.get("deep_ok"),
                 "loop": report["loop"],

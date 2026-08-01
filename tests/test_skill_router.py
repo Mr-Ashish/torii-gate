@@ -333,5 +333,49 @@ class SkillRouterTests(unittest.TestCase):
             self.assertIn("zero_tools_defer_f49", r2.stdout)
 
 
+    def test_f124_federate_util(self):
+        """F124: util federate emits privacy-safe recovery themes."""
+        with tempfile.TemporaryDirectory() as td:
+            od = Path(td)
+            (od / "skill-router.json").write_text(
+                json.dumps(
+                    {
+                        "selected": ["skill-prefer-memory-cli-early"],
+                        "always_selected": ["skill-prefer-memory-cli-early"],
+                        "inject_chars": 1200,
+                        "f120_chars_saved": 400,
+                    }
+                ),
+                encoding="utf-8",
+            )
+            (od / "skill-hits.json").write_text(
+                json.dumps(
+                    {
+                        "hits": [
+                            {
+                                "id": "skill-prefer-memory-cli-early",
+                                "tool_hit": True,
+                                "hit": True,
+                            }
+                        ]
+                    }
+                ),
+                encoding="utf-8",
+            )
+            env = {**os.environ, "TORII_ROOT": str(ROOT), "TORII_MEMORY_TENANT": "tenant-z"}
+            r = _run(["util", "--out-dir", str(od)], env=env)
+            # util may return 0 when ok
+            data = json.loads(r.stdout)
+            self.assertIn("federate", data)
+            self.assertTrue(data["federate"].get("privacy_ok"), data)
+            self.assertGreaterEqual(int(data["federate"].get("fed_n") or 0), 1)
+            fed_path = Path(data["federate"]["fed_path"])
+            self.assertTrue(fed_path.is_file())
+            fed = json.loads(fed_path.read_text(encoding="utf-8"))
+            blob = json.dumps(fed)
+            self.assertNotIn("/Users/", blob)
+            self.assertNotIn("tenant-z", blob)
+
+
 if __name__ == "__main__":
     unittest.main()

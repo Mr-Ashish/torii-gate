@@ -1,0 +1,102 @@
+{
+  "feature": "F124",
+  "fed_path": "/Users/ashishmishra/Documents/experiments/torii/memory/federation/recovery-util-signals.json",
+  "fed_n": 3,
+  "privacy_ok": true,
+  "hub": {
+    "feature": "F77",
+    "global_path": "/Users/ashishmishra/Documents/experiments/torii/memory/federation/federated-signals.json",
+    "global_count": 9,
+    "privacy_ok": true,
+    "privacy_issues": [],
+    "tenant_path": "/Users/ashishmishra/Documents/experiments/torii/memory/tenants/demo-tenant/federation/federated-signals.json",
+    "tenant_count": 3,
+    "index": "/Users/ashishmishra/Documents/experiments/torii/memory/federation/INDEX.md",
+    "top_themes": [
+      "recovery-util-ok",
+      "skill-prefer-memory-cli-early",
+      "sql_injection",
+      "command_injection",
+      "insecure_deserialization"
+    ]
+  },
+  "signals": [
+    {
+      "id": "recovery-util-hit-skill-prefer-memory-cli-early",
+      "theme": "skill-prefer-memory-cli-early",
+      "cwe": [],
+      "tags": [
+        "recovery_util",
+        "tool_outcome",
+        "f124",
+        "federated_skill"
+      ],
+      "keywords": [
+        "prefer-memory-cli-early",
+        "recovery-util",
+        "tool-hit"
+      ],
+      "path_basenames": [],
+      "hits": 1,
+      "tool_hits": 1,
+      "source": "recovery_skill_util",
+      "tenants": 1,
+      "util_rate_bin": "hit",
+      "tenant_hashes": [
+        "40f9e71e83d3"
+      ],
+      "tenant_hash": "40f9e71e83d3"
+    },
+    {
+      "id": "recovery-util-hit-skill-prefer-product-cli",
+      "theme": "skill-prefer-product-cli",
+      "cwe": [],
+      "tags": [
+        "recovery_util",
+        "tool_outcome",
+        "f124",
+        "federated_skill"
+      ],
+      "keywords": [
+        "prefer-product-cli",
+        "recovery-util",
+        "tool-hit"
+      ],
+      "path_basenames": [],
+      "hits": 1,
+      "tool_hits": 1,
+      "source": "recovery_skill_util",
+      "tenants": 1,
+      "util_rate_bin": "hit",
+      "tenant_hashes": [
+        "40f9e71e83d3"
+      ],
+      "tenant_hash": "40f9e71e83d3"
+    },
+    {
+      "id": "recovery-util-ok",
+      "theme": "recovery-util-ok",
+      "cwe": [],
+      "tags": [
+        "recovery_util",
+        "util_ok",
+        "f124",
+        "federated_skill"
+      ],
+      "keywords": [
+        "recovery-util-ok"
+      ],
+      "path_basenames": [],
+      "hits": 2,
+      "source": "recovery_skill_util",
+      "tenants": 1,
+      "tool_hit_n": 2,
+      "util_rate_bin": "full",
+      "f120_saved_bucket": "gte500",
+      "tenant_hashes": [
+        "40f9e71e83d3"
+      ],
+      "tenant_hash": "40f9e71e83d3"
+    }
+  ]
+}

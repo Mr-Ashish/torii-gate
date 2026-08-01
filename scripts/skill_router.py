@@ -1418,8 +1418,166 @@ def score_recovery_util(
     return report
 
 
+def federate_recovery_util(
+    util: dict[str, Any],
+    *,
+    root: Path | None = None,
+    tenant: str = "",
+    dest: Path | None = None,
+) -> dict[str, Any]:
+    """F124: privacy-safe federate of recovery util themes (ids + rates only).
+
+    Never includes paths, prompts, or tool command strings — skill_id + counters.
+    """
+    import hashlib
+    import re as _re
+
+    root = root or _root()
+    tenant = tenant or (os.environ.get("TORII_MEMORY_TENANT") or "").strip()
+    th = ""
+    if tenant:
+        th = hashlib.sha256(tenant.encode("utf-8")).hexdigest()[:12]
+
+    signals: list[dict[str, Any]] = []
+    tool_ids = list(util.get("tool_hit_ids") or [])
+    idle_ids = list(util.get("idle_ids") or [])
+    util_rate = float(util.get("util_rate") or 0)
+    inject_chars = int(util.get("inject_chars") or 0)
+    f120_saved = int(util.get("f120_chars_saved") or 0)
+
+    def _slug(sid: str) -> str:
+        return _re.sub(r"[^a-z0-9._-]+", "-", sid.lower())[:64]
+
+    for sid in tool_ids:
+        if "/" in sid or ".." in sid:
+            continue
+        sig: dict[str, Any] = {
+            "id": _slug(f"recovery-util-hit-{sid}"),
+            "theme": _slug(sid),
+            "cwe": [],
+            "tags": ["recovery_util", "tool_outcome", "f124", "federated_skill"],
+            "keywords": [sid.replace("skill-", "")[:48], "recovery-util", "tool-hit"],
+            "path_basenames": [],
+            "hits": 1,
+            "tool_hits": 1,
+            "source": "recovery_skill_util",
+            "tenants": 1,
+            "util_rate_bin": "hit",
+        }
+        if th:
+            sig["tenant_hashes"] = [th]
+            sig["tenant_hash"] = th
+        signals.append(sig)
+
+    # Aggregate gap signal (no skill list leakage beyond counts if idle empty)
+    if util.get("utilization_gap"):
+        gap_sig: dict[str, Any] = {
+            "id": "recovery-util-gap",
+            "theme": "recovery-util-gap",
+            "cwe": [],
+            "tags": ["recovery_util", "utilization_gap", "f124", "federated_skill"],
+            "keywords": ["recovery-util-gap", "idle-recovery"],
+            "path_basenames": [],
+            "hits": 1,
+            "source": "recovery_skill_util",
+            "tenants": 1,
+            "idle_n": len(idle_ids),
+            "injected_n": int(util.get("recovery_injected_n") or 0),
+            # bucketed only — not raw char counts that could fingerprint tenants
+            "inject_chars_bucket": (
+                "0"
+                if inject_chars <= 0
+                else "lt2k"
+                if inject_chars < 2000
+                else "2k-4k"
+                if inject_chars < 4000
+                else "gte4k"
+            ),
+            "util_rate_bin": "gap",
+        }
+        if th:
+            gap_sig["tenant_hashes"] = [th]
+            gap_sig["tenant_hash"] = th
+        signals.append(gap_sig)
+    elif tool_ids:
+        # healthy util summary (no paths)
+        ok_sig: dict[str, Any] = {
+            "id": "recovery-util-ok",
+            "theme": "recovery-util-ok",
+            "cwe": [],
+            "tags": ["recovery_util", "util_ok", "f124", "federated_skill"],
+            "keywords": ["recovery-util-ok"],
+            "path_basenames": [],
+            "hits": max(1, len(tool_ids)),
+            "source": "recovery_skill_util",
+            "tenants": 1,
+            "tool_hit_n": len(tool_ids),
+            "util_rate_bin": (
+                "full" if util_rate >= 0.99 else "partial" if util_rate >= 0.34 else "low"
+            ),
+            "f120_saved_bucket": (
+                "0"
+                if f120_saved <= 0
+                else "lt500"
+                if f120_saved < 500
+                else "gte500"
+            ),
+        }
+        if th:
+            ok_sig["tenant_hashes"] = [th]
+            ok_sig["tenant_hash"] = th
+        signals.append(ok_sig)
+
+    dest = dest or (root / "memory" / "federation" / "recovery-util-signals.json")
+    dest.parent.mkdir(parents=True, exist_ok=True)
+    blob = json.dumps(signals)
+    privacy_ok = "/Users/" not in blob and "/home/" not in blob and "C:\\\\Users" not in blob
+    # strip any accidental absolute paths
+    clean = []
+    for s in signals:
+        sb = json.dumps(s)
+        if "/Users/" in sb or "/home/" in sb:
+            continue
+        clean.append(s)
+    doc = {
+        "schema_version": SCHEMA,
+        "feature": "F124",
+        "scope": "recovery_skill_util",
+        "updated_at": _now(),
+        "count": len(clean),
+        "privacy": "skill_id_util_bins_tenant_hash_only",
+        "privacy_ok": privacy_ok and len(clean) == len(signals),
+        "signals": clean,
+    }
+    dest.write_text(json.dumps(doc, indent=2) + "\n", encoding="utf-8")
+
+    hub = None
+    try:
+        sys.path.insert(0, str(Path(__file__).resolve().parent))
+        from federated_hub_ingest import ingest as hub_ingest  # type: ignore
+
+        hub = hub_ingest(
+            root,
+            clean,
+            tenant=tenant,
+            source_repo="recovery_skill_util",
+            write_tenant=bool(tenant),
+        )
+    except Exception as exc:
+        hub = {"soft_error": str(exc)[:120]}
+
+    return {
+        "feature": "F124",
+        "fed_path": str(dest),
+        "fed_n": len(clean),
+        "privacy_ok": doc["privacy_ok"],
+        "hub": hub,
+        "signals": clean,
+    }
+
+
 def cmd_util(args: argparse.Namespace) -> int:
-    """F121: score recovery skill tool utilization for a run dir."""
+    """F121: score recovery skill tool utilization for a run dir (+ F124 federate)."""
     od = Path(args.out_dir) if args.out_dir else None
     if od is None and (os.environ.get("OUT_DIR") or "").strip():
         od = Path(os.environ["OUT_DIR"])
@@ -1427,6 +1585,20 @@ def cmd_util(args: argparse.Namespace) -> int:
         print(json.dumps({"feature": "F121", "error": "need --out-dir", "ok": False}))
         return 2
     report = score_recovery_util(od, root=_root())
+    fed = None
+    do_fed = True
+    if getattr(args, "no_federate", False):
+        do_fed = False
+    raw_fed = (os.environ.get("TORII_RECOVERY_UTIL_FEDERATE") or "1").strip().lower()
+    if raw_fed in _FALSEY:
+        do_fed = False
+    if do_fed:
+        fed = federate_recovery_util(report, root=_root())
+        report["federate"] = {
+            "fed_n": fed.get("fed_n"),
+            "privacy_ok": fed.get("privacy_ok"),
+            "fed_path": fed.get("fed_path"),
+        }
     print(json.dumps(report, indent=2))
     return 0 if report.get("ok") else 1
 
@@ -1538,6 +1710,24 @@ def write_recovery_reprompt_prompt(
     prompt_out.parent.mkdir(parents=True, exist_ok=True)
     prompt_out.write_text(text, encoding="utf-8")
     return prompt_out
+
+
+def cmd_federate_util(args: argparse.Namespace) -> int:
+    """F124: federate from out_dir recovery-skill-util.json or --util-json."""
+    root = _root()
+    util: dict[str, Any] = {}
+    if args.util_json and Path(args.util_json).is_file():
+        util = json.loads(Path(args.util_json).read_text(encoding="utf-8"))
+    else:
+        od = Path(args.out_dir) if args.out_dir else Path(os.environ.get("OUT_DIR") or ".")
+        up = od / "recovery-skill-util.json"
+        if up.is_file():
+            util = json.loads(up.read_text(encoding="utf-8"))
+        else:
+            util = score_recovery_util(od, root=root)
+    fed = federate_recovery_util(util, root=root)
+    print(json.dumps(fed, indent=2))
+    return 0 if fed.get("privacy_ok") else 1
 
 
 def cmd_reprompt_decide(args: argparse.Namespace) -> int:
@@ -1944,6 +2134,16 @@ Verdict: REQUEST_CHANGES
             and util_gap.get("ok") is False
             and int(util_good.get("inject_chars") or 0) >= 1
         )
+        # F124: privacy-safe federate recovery util themes
+        fed_ok_doc = federate_recovery_util(util_good, root=root, tenant="fixture-tenant-a")
+        fed_gap_doc = federate_recovery_util(util_gap, root=root, tenant="fixture-tenant-a")
+        fed_ok = (
+            bool(fed_ok_doc.get("privacy_ok"))
+            and int(fed_ok_doc.get("fed_n") or 0) >= 1
+            and bool(fed_gap_doc.get("privacy_ok"))
+            and "/Users/" not in json.dumps(fed_ok_doc.get("signals") or [])
+            and "fixture-tenant-a" not in json.dumps(fed_ok_doc.get("signals") or [])
+        )
 
         fixture_pass = all(
             [
@@ -1967,6 +2167,7 @@ Verdict: REQUEST_CHANGES
                 compact_ok,
                 smaller_ok,
                 util_ok,
+                fed_ok,
             ]
         )
         payload = {
@@ -2011,6 +2212,10 @@ Verdict: REQUEST_CHANGES
             "util_rate_good": util_good.get("util_rate"),
             "util_gap": util_gap.get("utilization_gap"),
             "util_inject_chars": util_good.get("inject_chars"),
+            "f124": True,
+            "fed_ok": fed_ok,
+            "fed_n": fed_ok_doc.get("fed_n"),
+            "fed_privacy_ok": fed_ok_doc.get("privacy_ok"),
         }
         print(json.dumps(payload, indent=2))
         return 0 if fixture_pass else 1
@@ -2031,7 +2236,19 @@ def main(argv: list[str] | None = None) -> int:
         "util", help="F121 recovery skill tool utilization score for a run"
     )
     pu.add_argument("--out-dir", default="")
+    pu.add_argument(
+        "--no-federate",
+        action="store_true",
+        help="F124: skip privacy-safe recovery util federation",
+    )
     pu.set_defaults(func=cmd_util)
+
+    pfed = sub.add_parser(
+        "federate-util", help="F124 federate recovery util themes (privacy-safe)"
+    )
+    pfed.add_argument("--out-dir", default="")
+    pfed.add_argument("--util-json", default="", help="path to recovery-skill-util.json")
+    pfed.set_defaults(func=cmd_federate_util)
 
     prd = sub.add_parser(
         "reprompt-decide", help="F122 soft re-prompt decide on recovery util gap"

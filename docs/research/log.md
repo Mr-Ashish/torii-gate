@@ -1,6 +1,37 @@
 # Torii research → product log
 
 
+## 2026-08-01 — F124 recovery util federate + doctor recovery_ok
+
+### Papers / posts
+- FederatedSkill / F77/F116: share skill themes not trajectories.
+- Multi-tenant privacy: tenant hash + util bins only.
+- Loop-eng doctor: day-2 habit must surface recovery readiness (F123 scorecard).
+
+### OSS design patterns stolen
+1. federate_recovery_util: skill_id + util_rate_bin + inject_chars_bucket + tenant_hash.
+2. util --federate default on; recovery-util-signals.json under memory/federation.
+3. torii.py doctor requires skill_loop.recovery_ok (memory/product/critic active).
+4. save-trace archives federated recovery util signals.
+
+### Insight
+Util without federation does not compound across tenants; doctor without recovery_ok hides missing always skills. Highest ROI: privacy-safe util themes + doctor fail-closed.
+
+### Feature shipped (F124)
+- `skill_router.py` federate_recovery_util + util --no-federate
+- `torii.py` doctor recovery_ok / feature_recovery F124
+- skill_loop_status scorecard recovery fields; PRODUCT + research note
+- traces `f124-recovery-util-federate/`
+
+### Metric
+- Offline: fed_ok privacy_ok; doctor recovery_ok; pytest 602
+- smoke PASS; Modal pytorch#191813 BIT3_OK ~61s log_streaming=true POST_COMMENT=0
+
+### Loop-engineering / Hermes practice used
+**Doctor + federated scorecard** — recovery readiness is install-day and hub-day habit.
+
+### SHA
+`1a6c33df0d1a1aba0da6a5ecdeadf8bc02755d18`
 ## 2026-08-01 — F123 recovery skill loop packaging (traces + brand + scorecard)
 
 ### Papers / posts

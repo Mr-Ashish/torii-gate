@@ -70,5 +70,16 @@ class ToriiProductCliTests(unittest.TestCase):
             self.assertTrue((dest / "scripts" / "torii.py").is_file())
 
 
+    def test_doctor_recovery_ok(self):
+        """F124: product doctor requires recovery_ok from skill loop."""
+        r = _run(["doctor"])
+        self.assertEqual(r.returncode, 0, r.stderr + r.stdout)
+        data = json.loads(r.stdout)
+        self.assertTrue(data.get("doctor_pass"), data)
+        self.assertTrue(data.get("recovery_ok"), data)
+        self.assertEqual(data.get("feature_recovery"), "F124")
+        self.assertIn("skill-prefer-product-cli", data.get("recovery_active") or [])
+
+
 if __name__ == "__main__":
     unittest.main()

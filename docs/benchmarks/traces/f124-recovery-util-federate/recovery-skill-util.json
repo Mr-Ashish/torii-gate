@@ -1,0 +1,28 @@
+{
+  "feature": "F121",
+  "schema": 1,
+  "scored_at": "2026-08-01T06:26:09Z",
+  "recovery_ids": [
+    "skill-prefer-critic-early",
+    "skill-prefer-memory-cli-early",
+    "skill-prefer-product-cli"
+  ],
+  "recovery_injected": [
+    "skill-prefer-memory-cli-early",
+    "skill-prefer-product-cli"
+  ],
+  "recovery_injected_n": 2,
+  "tool_hit_ids": [
+    "skill-prefer-memory-cli-early",
+    "skill-prefer-product-cli"
+  ],
+  "prose_only_ids": [],
+  "idle_ids": [],
+  "tool_hit_n": 2,
+  "util_rate": 1.0,
+  "utilization_gap": false,
+  "inject_chars": 3057,
+  "f120_chars_saved": 671,
+  "ok": true,
+  "score": 1.0
+}

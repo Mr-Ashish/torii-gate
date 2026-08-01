@@ -1,0 +1,40 @@
+{
+  "feature": "F110",
+  "feature_recovery": "F124",
+  "doctor_pass": true,
+  "recovery_ok": true,
+  "recovery_active": [
+    "skill-prefer-memory-cli-early",
+    "skill-prefer-product-cli",
+    "skill-prefer-critic-early"
+  ],
+  "results": [
+    {
+      "check": "memory",
+      "ok": true,
+      "rc": 0
+    },
+    {
+      "check": "memory_loop",
+      "ok": true,
+      "rc": 0
+    },
+    {
+      "check": "budget",
+      "ok": true,
+      "rc": 0
+    },
+    {
+      "check": "skill_loop",
+      "ok": true,
+      "rc": 0,
+      "recovery_ok": true,
+      "recovery_active": [
+        "skill-prefer-memory-cli-early",
+        "skill-prefer-product-cli",
+        "skill-prefer-critic-early"
+      ]
+    }
+  ],
+  "scored_at": "2026-08-01T06:26:09Z"
+}

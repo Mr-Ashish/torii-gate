@@ -85,6 +85,11 @@ copy_if "$OUT_DIR/skill-hits.json" "$TRACE_DIR/skill-hits.json"
 copy_if "$OUT_DIR/skill-attribution.json" "$TRACE_DIR/skill-attribution.json"
 copy_if "$OUT_DIR/recovery-skill-util.json" "$TRACE_DIR/recovery-skill-util.json"
 copy_if "$OUT_DIR/recovery-skill-reprompt.env" "$TRACE_DIR/recovery-skill-reprompt.env"
+# F124: privacy-safe federated recovery util themes (also under memory/federation)
+copy_if "$OUT_DIR/recovery-util-signals.json" "$TRACE_DIR/recovery-util-signals.json"
+if [[ -f "$TORII_ROOT/memory/federation/recovery-util-signals.json" ]]; then
+  copy_if "$TORII_ROOT/memory/federation/recovery-util-signals.json" "$TRACE_DIR/recovery-util-signals.fed.json"
+fi
 copy_if "$OUT_DIR/memory-tool-reprompt.env" "$TRACE_DIR/memory-tool-reprompt.env"
 copy_if "$OUT_DIR/memory-tool-audit.json" "$TRACE_DIR/memory-tool-audit.json"
 copy_if "$OUT_DIR/reprompt-budget.json" "$TRACE_DIR/reprompt-budget.json"

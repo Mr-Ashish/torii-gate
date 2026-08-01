@@ -66,7 +66,7 @@ GROUPS: dict[str, dict[str, Any]] = {
     },
     "budget": {
         "script": "reprompt_budget.py",
-        "help": "Shared soft-re-prompt budget F49+F106 (F108)",
+        "help": "Shared soft-re-prompt budget F49+F106+F122 (F108)",
         "examples": ["budget -- status", "budget -- fixture"],
     },
     "skill-loop": {
@@ -277,10 +277,12 @@ def cmd_status(args: argparse.Namespace) -> int:
 
 
 def cmd_doctor(args: argparse.Namespace) -> int:
-    """Cheap product doctor: memory doctor soft + budget fixture + loop shallow."""
+    """Cheap product doctor: memory + loops + budget + recovery skill readiness."""
     root = _root()
     results = []
     all_ok = True
+    recovery_ok: bool | None = None
+    recovery_active: list[str] = []
 
     checks: list[tuple[str, list[str]]] = [
         ("memory", [sys.executable, str(_scripts_dir(root) / "torii_memory.py"), "status"]),
@@ -332,9 +334,22 @@ def cmd_doctor(args: argparse.Namespace) -> int:
                     ok = ok and bool(data["all_present"])
                 if name.endswith("loop") and "level" in data:
                     ok = ok and data.get("level") in ("L2", "L3")
+                # F124: skill loop must report recovery_ok (memory/product/critic active)
+                if name == "skill_loop":
+                    if "recovery_ok" in data:
+                        recovery_ok = bool(data.get("recovery_ok"))
+                        recovery_active = list(data.get("recovery_active") or [])
+                        ok = ok and recovery_ok
+                    else:
+                        recovery_ok = False
+                        ok = False
             except (json.JSONDecodeError, TypeError):
                 pass
-            results.append({"check": name, "ok": ok, "rc": r.returncode})
+            entry: dict[str, Any] = {"check": name, "ok": ok, "rc": r.returncode}
+            if name == "skill_loop":
+                entry["recovery_ok"] = recovery_ok
+                entry["recovery_active"] = recovery_active
+            results.append(entry)
             if not ok:
                 all_ok = False
         except Exception as exc:
@@ -345,7 +360,10 @@ def cmd_doctor(args: argparse.Namespace) -> int:
         json.dumps(
             {
                 "feature": FEATURE,
+                "feature_recovery": "F124",
                 "doctor_pass": all_ok,
+                "recovery_ok": recovery_ok,
+                "recovery_active": recovery_active,
                 "results": results,
                 "scored_at": _now(),
             },
