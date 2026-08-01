@@ -27,7 +27,7 @@ Package the full measured loop — revive gates + hub×GEPA compound + re-prompt
 - Live Modal: pytorch#191836 BIT3_OK ~39.7s POST_COMMENT=0 log_streaming=true
 
 ### SHA
-`b4a9343d3e4d1886aeff31bbcbb10643780943a1`
+`fd885c468ee1d9030dcceeebe7e30ec0e7dbf98f`
 
 ## 2026-08-01 — F183 hub×GEPA compound re-prompt budget
 
