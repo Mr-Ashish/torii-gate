@@ -63,6 +63,16 @@ def check(root: Path) -> dict[str, Any]:
         "install_md_deeper_self_evolve": "SELF-EVOLVE" in im,
         "install_md_deeper_federation": "FEDERATION" in im,
         "install_md_deeper_memory": "MEMORY.md" in im,
+        # LANDING_COST / day-2 cost visibility (dim 7 + ops)
+        "install_md_cost_pr_day2": bool(
+            re.search(r"Cost\s*/\s*PR|cost/PR", im, re.I)
+            and (
+                "cost-pr-dashboard" in im
+                or "ops_dashboard" in im
+                or "ops -- status" in im
+                or "torii.py ops" in im
+            )
+        ),
         "install_sh_minimal": "--minimal" in sh and "MINIMAL_EXCLUDE" in sh,
         "install_sh_next_steps_one_cli": "One CLI" in sh or "torii.py help|doctor" in sh,
         "install_sh_no_dual_tip": "torii_memory.py help &&" not in sh,

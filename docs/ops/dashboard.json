@@ -3,7 +3,7 @@
   "schema": 1,
   "scorecard_target": "ops",
   "dim_lift": "reliability/ops (dim 8) + certificate + product surface map",
-  "scored_at": "2026-08-01T16:21:40Z",
+  "scored_at": "2026-08-01T16:27:49Z",
   "one_liner": "Fail-closed defaults \u00b7 measured cost/PR \u00b7 gate certificate \u00b7 smoke CI \u00b7 product surfaces \u00b7 torii/gate",
   "fail_closed": [
     {
@@ -97,39 +97,28 @@
   },
   "cost_per_pr": {
     "source": "docs/benchmarks/traces vault",
-    "runs": 63,
+    "runs": 64,
     "time_to_signal_s": {
-      "n": 58,
-      "mean": 98.624,
-      "p50": 91.5,
+      "n": 59,
+      "mean": 98.936,
+      "p50": 91.7,
       "min": 39.2,
       "max": 262.0
     },
     "cost_usd": {
-      "n": 20,
-      "mean": 0.017,
+      "n": 21,
+      "mean": 0.018,
       "p50": 0.013,
       "min": 0.008,
       "max": 0.058
     },
     "verdicts": {
-      "REQUEST_CHANGES": 24,
+      "REQUEST_CHANGES": 25,
       "UNKNOWN": 26,
       "COMMENT": 7,
       "APPROVE": 6
     },
     "recent_rows": [
-      {
-        "trace_id": "20260801-1502-pytorch-pytorch-PR191840-modal-gate-cert-wire",
-        "repo": "pytorch/pytorch",
-        "pr": "191840",
-        "verdict": "REQUEST CHANGES",
-        "time_to_signal_s": 146.0,
-        "cost_usd": 0.013437352999999999,
-        "certificate_id": "gc-95888668ca0a313d",
-        "model": "deepseek/deepseek-v4-pro",
-        "host": "modal"
-      },
       {
         "trace_id": "20260801-1511-pytorch-pytorch-PR191840-modal-quieter",
         "repo": "pytorch/pytorch",
@@ -250,10 +239,21 @@
         "certificate_id": "gc-089fed34e9eb71c5",
         "model": "deepseek/deepseek-v4-pro",
         "host": "modal"
+      },
+      {
+        "trace_id": "20260801-1624-pytorch-pytorch-PR191840-modal-landing-cost",
+        "repo": "pytorch/pytorch",
+        "pr": "191840",
+        "verdict": "REQUEST CHANGES",
+        "time_to_signal_s": 117.0,
+        "cost_usd": 0.023839971999999997,
+        "certificate_id": "gc-c9f317b2365e7643",
+        "model": "deepseek/deepseek-v4-pro",
+        "host": "modal"
       }
     ],
     "cost_ok": true,
-    "cost_n": 20,
+    "cost_n": 21,
     "one_liner": "Measured cost/PR + time-to-signal from live Modal dogfood (hermes-usage) with gate certificate ids \u2014 not a stub."
   },
   "smoke": {
@@ -267,19 +267,19 @@
     "script_present": true,
     "save_trace_wired": true,
     "workflow_wired": true,
-    "path": "docs/benchmarks/traces/20260801-1618-pytorch-pytorch-PR191840-modal-cost-pr/gate-certificate.json",
-    "certificate_id": "gc-089fed34e9eb71c5",
-    "verdict": "APPROVE",
-    "block": false,
-    "state": "success",
+    "path": "docs/benchmarks/traces/20260801-1624-pytorch-pytorch-PR191840-modal-landing-cost/gate-certificate.json",
+    "certificate_id": "gc-c9f317b2365e7643",
+    "verdict": "REQUEST_CHANGES",
+    "block": true,
+    "state": "failure",
     "reason_codes": [
-      "verdict_approve_open",
+      "verdict_request_changes",
       "strong_path_evidence",
       "blocking_with_paths"
     ],
     "path_evidence_score": 1.0,
-    "human_summary": "OPEN \u2014 APPROVE (verdict_approve_open, strong_path_evidence, blocking_with_paths); path_evidence=1.00",
-    "at": "2026-08-01T16:20:33Z",
+    "human_summary": "CLOSED \u2014 REQUEST_CHANGES (verdict_request_changes, strong_path_evidence, blocking_with_paths); path_evidence=1.00",
+    "at": "2026-08-01T16:27:06Z",
     "repo": "pytorch/pytorch",
     "pr": "191840",
     "wire_ok": true

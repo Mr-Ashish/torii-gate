@@ -51,6 +51,8 @@ A **torii** is the gate at a threshold — ordinary ground on one side, what mat
 
 **Buyer diagram (canonical):** [`BUYER-DIAGRAM.md`](BUYER-DIAGRAM.md) · landing collapses A–E into three beats; F-IDs only under Advanced / `docs/research/`.
 
+**Measured dogfood (buyer honesty):** landing hero shows approximate p50 time-to-signal (~90s) and cost/PR (~$0.01) from Modal pytorch vault — audit tables at [`../ops/cost-pr-dashboard.md`](../ops/cost-pr-dashboard.md) · [`../benchmarks/golden-path-metrics.md`](../benchmarks/golden-path-metrics.md).
+
 ---
 
 ## ICP (lock)

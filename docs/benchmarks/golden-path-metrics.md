@@ -2,7 +2,7 @@
 
 # Golden path metrics
 
-_Generated: `2026-08-01T16:21:40Z` · feature **GOLDEN** · target **7.5/10 commercial**_
+_Generated: `2026-08-01T16:27:49Z` · feature **GOLDEN** · target **7.5/10 commercial**_
 
 **One-liner:** install → required check torii/gate → real PR dogfood → FP/TP chart
 
@@ -22,9 +22,9 @@ Buyer doc: [`docs/GOLDEN-PATH.md`](../GOLDEN-PATH.md) · Gate contract: [`docs/G
 
 | Stat | seconds |
 |------|--------:|
-| n | 58 |
-| mean | 98.624 |
-| p50 | 91.5 |
+| n | 59 |
+| mean | 98.936 |
+| p50 | 91.7 |
 | min | 39.2 |
 | max | 262.0 |
 
@@ -32,8 +32,8 @@ Buyer doc: [`docs/GOLDEN-PATH.md`](../GOLDEN-PATH.md) · Gate contract: [`docs/G
 
 | Stat | USD |
 |------|----:|
-| n | 20 |
-| mean | 0.017 |
+| n | 21 |
+| mean | 0.018 |
 | p50 | 0.013 |
 | min | 0.008 |
 | max | 0.058 |
@@ -44,7 +44,7 @@ Buyer doc: [`docs/GOLDEN-PATH.md`](../GOLDEN-PATH.md) · Gate contract: [`docs/G
 |---------|------:|
 | APPROVE | 6 |
 | COMMENT | 7 |
-| REQUEST_CHANGES | 24 |
+| REQUEST_CHANGES | 25 |
 | UNKNOWN | 26 |
 
 ## FP / TP chart (labeled offline)
@@ -72,7 +72,6 @@ TP = required cases caught on good (vulnerable) harness. FP proxy = weak harness
 
 | trace | repo | pr | verdict | t_s | cost_usd | cert | model | host |
 |-------|------|---:|---------|----:|---------:|------|-------|------|
-| `20260801-1413-pytorch-pytorch-PR191840-m` | pytorch/pytorch | 191840 | COMMENT | 48.0 | None |  | deepseek/deepseek-chat-v4-pr | modal |
 | `20260801-1418-pytorch-pytorch-PR191831-m` | pytorch/pytorch | 191831 | COMMENT | 50.3 | None |  | deepseek/deepseek-chat-v4-pr | modal |
 | `20260801-1424-pytorch-pytorch-PR191840-m` | pytorch/pytorch | 191840 | COMMENT | 52.8 | None |  | deepseek/deepseek-chat-v4-pr | modal |
 | `20260801-1431-pytorch-pytorch-PR191831-m` | pytorch/pytorch | 191831 | COMMENT | 59.9 | None |  | deepseek/deepseek-chat-v4-pr | modal |
@@ -92,6 +91,7 @@ TP = required cases caught on good (vulnerable) harness. FP proxy = weak harness
 | `20260801-1605-pytorch-pytorch-PR191840-m` | pytorch/pytorch | 191840 | REQUEST CHANGES | 117.0 | 0.022070682 | `gc-f0613e3b4d162c10` | deepseek/deepseek-v4-pro | modal |
 | `20260801-1610-pytorch-pytorch-PR191840-m` | pytorch/pytorch | 191840 | REQUEST CHANGES | 73.0 | 0.018905854 | `gc-966d68ed6c5808da` | deepseek/deepseek-v4-pro | modal |
 | `20260801-1618-pytorch-pytorch-PR191840-m` | pytorch/pytorch | 191840 | APPROVE | 76.0 | 0.018294679 | `gc-089fed34e9eb71c5` | deepseek/deepseek-v4-pro | modal |
+| `20260801-1624-pytorch-pytorch-PR191840-m` | pytorch/pytorch | 191840 | REQUEST CHANGES | 117.0 | 0.023839971999999997 | `gc-c9f317b2365e7643` | deepseek/deepseek-v4-pro | modal |
 
 ## Required check
 

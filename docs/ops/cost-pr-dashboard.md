@@ -2,7 +2,7 @@
 
 # Cost / PR dashboard
 
-_Generated: `2026-08-01T16:21:41Z` · cost_ok=**True** · from dogfood vault_
+_Generated: `2026-08-01T16:27:49Z` · cost_ok=**True** · from dogfood vault_
 
 Measured cost/PR + time-to-signal from live Modal dogfood (hermes-usage) with gate certificate ids — not a stub.
 
@@ -10,12 +10,12 @@ Buyer/ops: open this page instead of Modal run artifacts for p50 cost and signal
 
 | Metric | Value |
 |--------|------:|
-| dogfood runs | 63 |
-| cost samples (hermes-usage) | 20 |
-| time-to-signal p50 (s) | 91.5 |
-| time-to-signal mean (s) | 98.624 |
+| dogfood runs | 64 |
+| cost samples (hermes-usage) | 21 |
+| time-to-signal p50 (s) | 91.7 |
+| time-to-signal mean (s) | 98.936 |
 | cost/PR p50 (USD) | 0.013 |
-| cost/PR mean (USD) | 0.017 |
+| cost/PR mean (USD) | 0.018 |
 | cost/PR min–max | 0.008 – 0.058 |
 | cost_ok (≥5 samples + p50) | True |
 
@@ -25,14 +25,13 @@ Buyer/ops: open this page instead of Modal run artifacts for p50 cost and signal
 |---------|------:|
 | APPROVE | 6 |
 | COMMENT | 7 |
-| REQUEST_CHANGES | 24 |
+| REQUEST_CHANGES | 25 |
 | UNKNOWN | 26 |
 
 ### Recent dogfood (cost × certificate)
 
 | trace | pr | verdict | t_s | cost_usd | certificate | host |
 |-------|---:|---------|----:|---------:|-------------|------|
-| `20260801-1502-pytorch-pytorch-PR1918` | 191840 | REQUEST CHANGES | 146.0 | 0.013437352999999999 | `gc-95888668ca0a313d` | modal |
 | `20260801-1511-pytorch-pytorch-PR1918` | 191840 | APPROVE | 120.0 | 0.013640527 | `gc-8284cb3b1acf87c9` | modal |
 | `20260801-1519-pytorch-pytorch-PR1918` | 191840 | REQUEST CHANGES | 130.0 | 0.011048217 | `gc-c32714dc2a1f620e` | modal |
 | `20260801-1527-pytorch-pytorch-PR1918` | 191840 | APPROVE | 93.0 | 0.009592533 | `gc-8145e70dec5ab02f` | modal |
@@ -44,6 +43,7 @@ Buyer/ops: open this page instead of Modal run artifacts for p50 cost and signal
 | `20260801-1605-pytorch-pytorch-PR1918` | 191840 | REQUEST CHANGES | 117.0 | 0.022070682 | `gc-f0613e3b4d162c10` | modal |
 | `20260801-1610-pytorch-pytorch-PR1918` | 191840 | REQUEST CHANGES | 73.0 | 0.018905854 | `gc-966d68ed6c5808da` | modal |
 | `20260801-1618-pytorch-pytorch-PR1918` | 191840 | APPROVE | 76.0 | 0.018294679 | `gc-089fed34e9eb71c5` | modal |
+| `20260801-1624-pytorch-pytorch-PR1918` | 191840 | REQUEST CHANGES | 117.0 | 0.023839971999999997 | `gc-c9f317b2365e7643` | modal |
 
 Soft budget (GHA): set repo var `TORII_MAX_COST_USD` for over-budget warnings (does not fail the run by default).
 

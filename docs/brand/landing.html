@@ -98,11 +98,11 @@ tr:last-child td{border-bottom:0}
     <a class="btn btn-s" href="#how">See how it works</a>
   </div>
   <div class="stats">
-    <div class="stat"><b>Gate</b><span>Every PR · every CI</span></div>
-    <div class="stat"><b>Evidence</b><span>Path · line · tool</span></div>
-    <div class="stat"><b>Compounds</b><span>Skills + memory loops</span></div>
+    <div class="stat"><b>~90s</b><span>Time-to-signal p50</span></div>
+    <div class="stat"><b>~$0.01</b><span>Cost / PR p50</span></div>
+    <div class="stat"><b>torii/gate</b><span>Required check</span></div>
   </div>
-  <p class="note">Torii = the threshold gate. Product you install first: <strong style="color:var(--muted)">Torii Gate</strong>. AppSec fatigue: <strong style="color:var(--muted)">stricter and quieter</strong>. Memory: <strong style="color:var(--muted)">false positives die twice — true positives stay sharp.</strong></p>
+  <p class="note">Measured on live Modal dogfood (pytorch PRs, no PR comment). Full tables: <a href="../benchmarks/golden-path-metrics.md">golden-path metrics</a> · <a href="../ops/cost-pr-dashboard.md">cost/PR dashboard</a>. Torii = the threshold gate. AppSec fatigue: <strong style="color:var(--muted)">stricter and quieter</strong>.</p>
 </div></header>
 
 <section class="sec" id="product"><div class="wrap">
@@ -173,7 +173,19 @@ tr:last-child td{border-bottom:0}
 
   <div class="grid2">
     <div class="card"><div class="num">Surfaces</div><h3>Where the gate sits</h3><p>Pull requests · required status checks · security labels · branch protection. Later: SARIF ingest from Semgrep / CodeQL / peers.</p></div>
-    <div class="card"><div class="num">Honesty</div><h3>Evidence over slogans</h3><p>No “zero false positives.” We measure time-to-signal, labeled TP/FP, cost/PR, and gated PRs — see golden-path metrics.</p></div>
+    <div class="card"><div class="num">Honesty</div><h3>Evidence over slogans</h3><p>No “zero false positives.” Dogfood p50: <strong style="color:var(--champagne)">~90s</strong> time-to-signal · <strong style="color:var(--champagne)">~$0.01</strong> cost/PR · labeled TP/FP offline · gate certificates with reason codes. Not slogans — vault numbers.</p></div>
+  </div>
+
+  <div class="card" id="measured-dogfood" style="margin-top:16px;border-color:var(--hair-g)">
+    <div class="num">Measured dogfood</div>
+    <h3 style="margin-bottom:10px">Cost &amp; latency buyers can audit</h3>
+    <p>Live Modal + Hermes runs on open-source PRs (<code style="color:var(--gold)">POST_COMMENT=0</code>). Operators open the cost dashboard instead of hunting Modal artifacts.</p>
+    <div class="stats" style="max-width:100%;margin-top:16px">
+      <div class="stat"><b>~90s</b><span>Time-to-signal p50</span></div>
+      <div class="stat"><b>~$0.01</b><span>Cost / PR p50 (USD)</span></div>
+      <div class="stat"><b>20+</b><span>Cost samples · hermes-usage</span></div>
+    </div>
+    <p class="note" style="margin:14px 0 0"><code style="color:var(--gold)">torii.py ops -- status</code> · <code style="color:var(--gold)">torii.py golden-path -- status</code> · <a href="../ops/cost-pr-dashboard.md">cost-pr-dashboard.md</a> · <a href="../benchmarks/golden-path-metrics.md">golden-path-metrics.md</a> · certificates on every close/open of <code style="color:var(--gold)">torii/gate</code>.</p>
   </div>
 
   <div class="card" style="margin-top:16px;border-color:var(--hair-g)">

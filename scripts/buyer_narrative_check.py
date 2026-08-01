@@ -97,6 +97,19 @@ def check_surfaces(root: Path) -> dict[str, Any]:
     results["checks"]["landing_has_advanced"] = bool(
         re.search(r"<details|id=[\"']advanced|Advanced", land)
     )
+    # LANDING_COST: measured dogfood p50 cost / time-to-signal (buyer honesty)
+    results["checks"]["landing_measured_cost"] = bool(
+        re.search(r"cost\s*/\s*PR|cost/PR", land, re.I)
+        and re.search(r"time-to-signal", land, re.I)
+        and (
+            re.search(r"p50|~\$0\.0|~90s|measured dogfood", land, re.I)
+        )
+        and (
+            "cost-pr-dashboard" in land
+            or "golden-path-metrics" in land
+            or "ops -- status" in land
+        )
+    )
 
     # PRODUCT: buyer section first, Advanced section exists
     results["checks"]["product_buyer_section"] = bool(

@@ -109,6 +109,21 @@ python3 scripts/torii.py doctor
 python3 scripts/torii.py memory -- doctor
 python3 scripts/torii.py quieter -- status
 python3 scripts/torii.py self-evolve -- status
+python3 scripts/torii.py ops -- status
+python3 scripts/torii.py golden-path -- status
 ```
+
+### Cost / PR visibility (day-2)
+
+Operators should not open Modal run pages to answer “what does a PR cost?”:
+
+```bash
+python3 scripts/ops_dashboard.py report
+# → docs/ops/cost-pr-dashboard.md  (p50 cost + time-to-signal + cert ids)
+python3 scripts/golden_path_metrics.py report
+# → docs/benchmarks/golden-path-metrics.md
+```
+
+Dogfood vault (Modal + Hermes, `POST_COMMENT=0`) feeds measured p50 cost/PR and time-to-signal. Soft budget: repo var `TORII_MAX_COST_USD` warns without failing by default. See [`ops/cost-pr-dashboard.md`](ops/cost-pr-dashboard.md) · [`ops/RELIABILITY.md`](ops/RELIABILITY.md).
 
 Memory keeps the next PR quieter (path-evidenced FP/TP store). Self-evolution proposes skills from measured gaps; adopt stays dual-gated. Details: [`MEMORY.md`](MEMORY.md) · [`SELF-EVOLVE.md`](SELF-EVOLVE.md).

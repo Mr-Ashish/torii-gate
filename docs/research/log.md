@@ -1,4 +1,38 @@
 
+## 2026-08-01 — LANDING_COST: measured dogfood p50 on landing + install day-2
+
+### Papers / posts
+- Loop Engineering: scorecards buyers can open without Modal archaeology.
+- Simplicity #12: hero stats were slogans (Gate/Evidence/Compounds); buyers want latency + USD.
+- COST_PR shipped ops surface; GTM/install still under-surfaced measured numbers.
+
+### Decide / copy / skip
+- **Copy:** landing hero ~90s p50 TTS · ~$0.01 cost/PR · measured-dogfood card + links.
+- **Copy:** INSTALL day-2 cost/PR visibility + ops/golden-path status.
+- **Copy:** buyer_narrative `landing_measured_cost` · install_ux `install_md_cost_pr_day2`.
+- **Skip:** F185+; no new compound loops; numbers are rounded vault p50s not live JS.
+
+### Feature shipped (LANDING_COST)
+- landing.html measured dogfood strip + honesty card
+- INSTALL.md day-2 cost visibility
+- buyer + install_ux fixture checks; TORII.md pointer
+
+### Metric
+- Offline: buyer 20/20 · install_ux 18/18 · commercial 10/10 · overall_est 8.5
+- Live Modal: pytorch#191840 BIT3_OK ~144s tools=6 POST_COMMENT=0 cost from hermes-usage cert in vault
+- Traces: docs/benchmarks/traces/20260801-1624-pytorch-pytorch-PR191840-modal-landing-cost/
+- Modal: https://modal.com/apps/mr-ashish/main/ap-fIofB0moB4qWjNXI9EaO3z
+
+### scorecard_target
+simplicity (#12) · install (#7) · JTBD honesty
+
+### dim_lift
+buyers see measured cost/latency on first surface; install day-2 finds cost dashboard
+
+### SHA
+`(pending push)`
+
+
 ## 2026-08-01 — COST_PR: measured cost/PR product surface (post-queue dogfood)
 
 ### Papers / posts

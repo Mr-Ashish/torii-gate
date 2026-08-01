@@ -1,0 +1,20 @@
+{
+  "feature": "LANDING_COST",
+  "schema_version": 1,
+  "repo": "pytorch/pytorch",
+  "pr": "191840",
+  "model": "deepseek/deepseek-v4-pro",
+  "host": "modal",
+  "bit3": true,
+  "elapsed_s": 144.0,
+  "log_streaming": true,
+  "tool_call_turns": 6,
+  "post_comment": 0,
+  "verdict": "REQUEST_CHANGES",
+  "block": true,
+  "certificate_id": "gc-c9f317b2365e7643",
+  "notes": "LANDING_COST measured dogfood p50 on landing + install day-2 cost visibility",
+  "scored_at": "2026-08-01T16:27:49Z",
+  "modal_run": "https://modal.com/apps/mr-ashish/main/ap-fIofB0moB4qWjNXI9EaO3z",
+  "cost_usd": 0.023839971999999997
+}
