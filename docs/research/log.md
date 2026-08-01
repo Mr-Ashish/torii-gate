@@ -33,7 +33,7 @@ F165 mutates skill text; without dual-gate stamp + LOO floor, free-rider demote 
 **Mutate → gate → floor → shield** — GEPA dual-gate compounds into attribution/fitness.
 
 ### SHA
-`(pending)`
+`ec2f6fb5da41a831ee890715afdc09ad283e946d`
 
 
 ## 2026-08-01 — F165 GEPA-lite skill refine-from-util
