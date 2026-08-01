@@ -30,7 +30,7 @@ Always budget without body compaction still wastes context. Highest ROI: SkillRe
 **Token budget constraint on always inject** — compact before ship.
 
 ### SHA
-`f5f13679e72f542703fddbae961953708b70f801`
+`cd24b3ca8bc90c3300e5782f72566a1977d53c95`
 ## 2026-08-01 — F119 always-on skill budget with recovery priority
 
 ### Papers / posts
