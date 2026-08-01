@@ -28,7 +28,7 @@ Local reconsolidation without federation leaves multi-tenant retrieval heat sile
 **Privacy-safe multi-tenant compound** — retrieval heat federates as themes only.
 
 ### SHA
-`PENDING`
+`6b94884ff91e87f032247e18e02c806ae92c5269`
 
 
 ## 2026-08-01 — F147 recon-warm → core tier promote
