@@ -1,5 +1,36 @@
 # Torii research → product log
 
+## 2026-08-01 — F151 recon-warm hub demote-eval + doctor surface
+
+### Papers / posts
+- F128 demote-eval paper path for hub gap critics.
+- F150 recon-warm hub critic without offline demote pack / doctor surface.
+- Loop-eng observability: demote rates must be measured, not only panel-local.
+
+### OSS design patterns stolen
+1. demote-eval case recon_warm_hub_idle_approve + paper recon_warm_hub_idle_demoted.
+2. skill_loop recon_warm_hub_ok wire (f150 + demote-eval case strings).
+3. doctor soft surface recon_warm_hub_ok; product scorecard metrics F151.
+4. fixture skill-loop requires recon_warm_hub_ok.
+
+### Insight
+Panel demote without paper metric leaves EVAL vault blind. Highest ROI: F151 demote-eval + doctor/scorecard surface for recon-warm hub.
+
+### Feature shipped (F151)
+- demote-eval recon-warm case; skill_loop/doctor/scorecard surface
+- PRODUCT/research/brand; traces
+
+### Metric
+- Offline: demote-eval eval_pass; recon_warm_hub_ok; pytest 620
+- Live: Modal pytorch#191813 BIT3_OK ~48s REQUEST_CHANGES POST_COMMENT=0 log_streaming=true
+
+### Loop-engineering / Hermes practice used
+**Measured demote rate** — paper metric next to critic panel.
+
+### SHA
+`PENDING`
+
+
 ## 2026-08-01 — F150 recon-warm hub critic demote
 
 ### Papers / posts

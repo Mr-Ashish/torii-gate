@@ -218,6 +218,8 @@ budget always → compact body → score tool_hit → util gap? → budgeted re-
 
 **Recon-warm hub critic (F150):** second-agent checker `f150_recon_warm_hub` **demotes APPROVE** when multi-tenant retrieval-hot themes are present but this run ignored hub archival boost (`TORII_RECON_WARM_HUB_CRITIC=1`) — closed-loop federation enforced by maker/checker, not dashboards alone.
 
+**Recon-warm hub demote-eval + doctor (F151):** `second_agent_critic demote-eval` paper metric `recon_warm_hub_idle_demoted`; skill-loop/doctor surface `recon_warm_hub_ok`; product scorecard lists recon-warm demote next to hub_gap demote — paper-ready, not slogans.
+
 **Ops:** `python3 scripts/memory_loop_status.py scorecard` → L0–L3. Smoke requires L3 on the hub tree. CI job summary annotates readiness; optional advisory `torii/memory-loop` via `TORII_MEMORY_LOOP_STATUS_COMMIT=1`.
 
 ---

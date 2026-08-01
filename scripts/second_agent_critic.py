@@ -2189,6 +2189,14 @@ def demote_eval(
             ),
             None,
         )
+        rwh = next(
+            (
+                c
+                for c in (rep.get("checkers") or [])
+                if c.get("id") == "f150_recon_warm_hub"
+            ),
+            None,
+        )
         return {
             "name": name,
             "maker": rep.get("maker_verdict"),
@@ -2206,6 +2214,11 @@ def demote_eval(
             "f139_score": None if sch is None else sch.get("score"),
             "scorecard_hub_gap_reason": (sch or {}).get("detail", {}).get("reason")
             if isinstance((sch or {}).get("detail"), dict)
+            else None,
+            "f150_ok": None if rwh is None else bool(rwh.get("ok")),
+            "f150_score": None if rwh is None else rwh.get("score"),
+            "recon_warm_hub_reason": (rwh or {}).get("detail", {}).get("reason")
+            if isinstance((rwh or {}).get("detail"), dict)
             else None,
         }
 
@@ -2352,6 +2365,90 @@ def demote_eval(
                 os.environ["TORII_ROOT"] = prev_root
             os.environ.pop("TORII_SECOND_CRITIC_MIN_PATH", None)
 
+    # F151: recon-warm hub heat ignore + APPROVE (paper demote metric)
+    with tempfile.TemporaryDirectory() as td_rw:
+        od = Path(td_rw)
+        fed = od / "memory" / "federation"
+        fed.mkdir(parents=True)
+        (fed / "recon-warm-signals.json").write_text(
+            json.dumps(
+                {
+                    "schema_version": 1,
+                    "feature": "F148",
+                    "privacy_ok": True,
+                    "signals": [
+                        {
+                            "id": "recon-warm-ok",
+                            "theme": "recon-warm-ok",
+                            "tags": ["recon_warm", "f148"],
+                            "hits": 6,
+                            "tenants": 3,
+                            "tenant_hashes": ["a1", "b2", "c3"],
+                            "path_basenames": [],
+                        },
+                        {
+                            "id": "recon-warm-theme-sql-injection",
+                            "theme": "sql_injection",
+                            "tags": ["recon_warm", "warm_theme", "f148"],
+                            "hits": 4,
+                            "tenants": 2,
+                            "tenant_hashes": ["a1", "b2"],
+                            "path_basenames": [],
+                        },
+                    ],
+                }
+            )
+            + "\n",
+            encoding="utf-8",
+        )
+        (od / "archival-search.json").write_text(
+            json.dumps(
+                {
+                    "mode": "auto",
+                    "hit_count": 2,
+                    "hub_boost_n": 0,
+                    "hub_themes": [],
+                    "hub_query": {"enabled": False, "themes": []},
+                    "feature_hub_query": None,
+                }
+            )
+            + "\n",
+            encoding="utf-8",
+        )
+        rw_review = od / "approve-recon-warm-idle.md"
+        rw_review.write_text(
+            "## Review\n**Verdict:** APPROVE\n\n### Summary\nok\n\n"
+            "### Blocking\nnone\n\n### What I checked\n`app.py:1` path ok\n",
+            encoding="utf-8",
+        )
+        prev_rw_thr = os.environ.get("TORII_RECON_WARM_HUB_THR")
+        prev_root_rw = os.environ.get("TORII_ROOT")
+        os.environ["TORII_RECON_WARM_HUB_CRITIC"] = "1"
+        os.environ["TORII_RECON_WARM_HUB_THR"] = "0.2"
+        os.environ["TORII_RECON_WARM_FEDERATE"] = "1"
+        os.environ["TORII_RECON_WARM_HUB_QUERY"] = "1"
+        os.environ["TORII_ROOT"] = str(od)
+        os.environ["TORII_SECOND_CRITIC_MIN_PATH"] = "0.1"
+        try:
+            cases.append(
+                _case(
+                    "recon_warm_hub_idle_approve",
+                    rw_review,
+                    od,
+                    case_root=od,
+                )
+            )
+        finally:
+            if prev_rw_thr is None:
+                os.environ.pop("TORII_RECON_WARM_HUB_THR", None)
+            else:
+                os.environ["TORII_RECON_WARM_HUB_THR"] = prev_rw_thr
+            if prev_root_rw is None:
+                os.environ.pop("TORII_ROOT", None)
+            else:
+                os.environ["TORII_ROOT"] = prev_root_rw
+            os.environ.pop("TORII_SECOND_CRITIC_MIN_PATH", None)
+
     # metrics
     approve_cases = [c for c in cases if c.get("maker") == "APPROVE"]
     demoted_n = sum(1 for c in approve_cases if c.get("demoted"))
@@ -2362,6 +2459,9 @@ def demote_eval(
     schc = next(
         (c for c in cases if c["name"] == "scorecard_hub_gap_idle_approve"), {}
     )
+    rwc = next(
+        (c for c in cases if c["name"] == "recon_warm_hub_idle_approve"), {}
+    )
     goodc = next((c for c in cases if c["name"] == "good_insecure"), {})
     weak_demote_ok = bool(weak.get("demoted") or weak.get("recommended") != "APPROVE")
     hub_demote_ok = bool(hubc.get("demoted")) or (
@@ -2370,6 +2470,10 @@ def demote_eval(
     )
     sc_hub_demote_ok = bool(schc.get("demoted")) or (
         schc.get("f139_ok") is True and float(schc.get("f139_score") or 0) >= 0.5
+    )
+    rw_hub_demote_ok = bool(rwc.get("demoted")) or (
+        rwc.get("f150_ok") is False
+        and any("recon_warm" in str(r) for r in (rwc.get("reasons") or []))
     )
     # good should not be demoted from REQUEST_CHANGES to worse without reason;
     # typically maker is REQUEST_CHANGES already
@@ -2380,6 +2484,8 @@ def demote_eval(
         "feature_panel": FEATURE,
         "feature_hub_gap": FEATURE_HUB_GAP,
         "feature_scorecard_hub_gap": FEATURE_SCORECARD_HUB_GAP,
+        "feature_recon_warm_hub": FEATURE_RECON_WARM_HUB,
+        "feature_demote_eval_recon": "F151",
         "scored_at": _now(),
         "cases": cases,
         "approve_n": len(approve_cases),
@@ -2390,6 +2496,8 @@ def demote_eval(
         "hub_gap_soft_ok": hub_demote_ok,
         "scorecard_hub_gap_demote_ok": bool(schc.get("demoted")),
         "scorecard_hub_gap_soft_ok": sc_hub_demote_ok,
+        "recon_warm_hub_demote_ok": bool(rwc.get("demoted")),
+        "recon_warm_hub_soft_ok": rw_hub_demote_ok,
         "good_stable": good_stable,
         "paper": {
             "metric": "critic_approve_demote_rate",
@@ -2397,12 +2505,14 @@ def demote_eval(
             "weak_approve_demoted": weak_demote_ok,
             "hub_gap_idle_demoted": bool(hubc.get("demoted")),
             "scorecard_hub_gap_idle_demoted": bool(schc.get("demoted")),
-            "notes": "demote_rate = demoted APPROVE / APPROVE cases in offline pack",
+            "recon_warm_hub_idle_demoted": bool(rwc.get("demoted")),
+            "notes": "demote_rate = demoted APPROVE / APPROVE cases in offline pack; F151 adds recon-warm hub",
         },
         "eval_pass": weak_demote_ok
         and good_stable
         and (bool(hubc.get("demoted")) or hub_demote_ok)
-        and (bool(schc.get("demoted")) or sc_hub_demote_ok),
+        and (bool(schc.get("demoted")) or sc_hub_demote_ok)
+        and (bool(rwc.get("demoted")) or rw_hub_demote_ok),
     }
     if out_dir:
         try:

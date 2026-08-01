@@ -357,6 +357,7 @@ def cmd_doctor(args: argparse.Namespace) -> int:
     recovery_ok: bool | None = None
     recovery_active: list[str] = []
     recovery_hub_gap_ok: bool | None = None
+    recon_warm_hub_ok: bool | None = None
 
     checks: list[tuple[str, list[str]]] = [
         ("memory", [sys.executable, str(_scripts_dir(root) / "torii_memory.py"), "status"]),
@@ -425,13 +426,17 @@ def cmd_doctor(args: argparse.Namespace) -> int:
                         # fail closed if scorecard too old for F128
                         recovery_hub_gap_ok = False
                         ok = False
+                    # F151: recon_warm_hub_ok soft on doctor (surfaces; demote-eval is hard gate)
+                    recon_warm_hub_ok = data.get("recon_warm_hub_ok")
             except (json.JSONDecodeError, TypeError):
                 recovery_hub_gap_ok = None
+                recon_warm_hub_ok = None
             entry: dict[str, Any] = {"check": name, "ok": ok, "rc": r.returncode}
             if name == "skill_loop":
                 entry["recovery_ok"] = recovery_ok
                 entry["recovery_active"] = recovery_active
                 entry["recovery_hub_gap_ok"] = recovery_hub_gap_ok
+                entry["recon_warm_hub_ok"] = recon_warm_hub_ok
             results.append(entry)
             if not ok:
                 all_ok = False
@@ -439,11 +444,14 @@ def cmd_doctor(args: argparse.Namespace) -> int:
             results.append({"check": name, "ok": False, "error": str(exc)[:120]})
             all_ok = False
 
-    # surface last recovery_hub_gap_ok if set on skill_loop entry
+    # surface last recovery_hub_gap_ok / recon_warm_hub_ok if set on skill_loop entry
     hub_gap = None
+    recon_warm = None
     for e in results:
         if e.get("check") == "skill_loop" and "recovery_hub_gap_ok" in e:
             hub_gap = e.get("recovery_hub_gap_ok")
+        if e.get("check") == "skill_loop" and "recon_warm_hub_ok" in e:
+            recon_warm = e.get("recon_warm_hub_ok")
     # F135: scorecard ops fitness panel (informational — does not fail doctor)
     sc_panel = _scorecard_ops_panel(root)
     print(
@@ -451,11 +459,13 @@ def cmd_doctor(args: argparse.Namespace) -> int:
             {
                 "feature": FEATURE,
                 "feature_recovery": "F128",
+                "feature_recon_warm_hub": "F151",
                 "feature_scorecard_ops": "F135",
                 "doctor_pass": all_ok,
                 "recovery_ok": recovery_ok,
                 "recovery_active": recovery_active,
                 "recovery_hub_gap_ok": hub_gap,
+                "recon_warm_hub_ok": recon_warm,
                 "scorecard_ops": sc_panel,
                 "scorecard_ops_ok": sc_panel.get("scorecard_ops_ok"),
                 "results": results,
@@ -597,6 +607,14 @@ def product_scorecard(
         "critic_approve_demote_rate": demote_rate,
         "weak_approve_demoted": demote.get("weak_demote_ok"),
         "hub_gap_idle_demoted": demote.get("hub_gap_demote_ok"),
+        "recon_warm_hub_idle_demoted": demote.get("recon_warm_hub_demote_ok")
+        if demote
+        else None,
+        "recon_warm_hub_ok": bool(
+            doctor.get("recon_warm_hub_ok")
+            if doctor.get("recon_warm_hub_ok") is not None
+            else skill.get("recon_warm_hub_ok")
+        ),
         "demote_eval_pass": demote_pass,
         "memory_tool_util_delta": mem_util_delta,
         "memory_tool_util_good": mem_util.get("good_score") if mem_util else None,
@@ -761,11 +779,13 @@ def product_scorecard(
             f"| critic_approve_demote_rate | {metrics['critic_approve_demote_rate']} |",
             f"| weak_approve_demoted | {metrics['weak_approve_demoted']} |",
             f"| hub_gap_idle_demoted | {metrics['hub_gap_idle_demoted']} |",
+            f"| recon_warm_hub_idle_demoted | {metrics.get('recon_warm_hub_idle_demoted')} |",
+            f"| recon_warm_hub_ok | {metrics.get('recon_warm_hub_ok')} |",
             f"| memory_tool_util_delta | {metrics['memory_tool_util_delta']} |",
             f"| memory_tool_util_good | {metrics['memory_tool_util_good']} |",
             f"| memory_tool_util_weak | {metrics['memory_tool_util_weak']} |",
             "",
-            "Source: `python3 scripts/torii.py scorecard` · workflow F131 · demote F128 · util F130.",
+            "Source: `python3 scripts/torii.py scorecard` · workflow F131 · demote F128/F151 · util F130.",
             "",
             "These are **measured** offline/ops metrics — not marketing pass rates.",
             "",

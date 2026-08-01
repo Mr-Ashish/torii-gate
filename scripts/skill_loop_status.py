@@ -321,6 +321,21 @@ def assess(root: Path | None = None, *, deep: bool = True) -> dict[str, Any]:
             if (root / "scripts" / "second_agent_critic.py").is_file()
             else ""
         ),
+        # F151: recon-warm hub critic + demote-eval paper path
+        "critic_recon_warm_hub": "f150_recon_warm_hub" in (
+            (root / "scripts" / "second_agent_critic.py").read_text(
+                encoding="utf-8", errors="replace"
+            )
+            if (root / "scripts" / "second_agent_critic.py").is_file()
+            else ""
+        ),
+        "demote_eval_recon_warm": "recon_warm_hub_idle_approve" in (
+            (root / "scripts" / "second_agent_critic.py").read_text(
+                encoding="utf-8", errors="replace"
+            )
+            if (root / "scripts" / "second_agent_critic.py").is_file()
+            else ""
+        ),
     }
     wire_ok = all(wire.values())
 
@@ -380,6 +395,9 @@ def assess(root: Path | None = None, *, deep: bool = True) -> dict[str, Any]:
         and bool(wire.get("router_hub_score_cmd")),
         "recovery_hub_gap_ok": bool(wire.get("critic_hub_gap"))
         and bool(wire.get("critic_demote_eval")),
+        "recon_warm_hub_ok": bool(wire.get("critic_recon_warm_hub"))
+        and bool(wire.get("demote_eval_recon_warm")),
+        "feature_recon_warm_hub": "F151",
         "feature_scorecard_ops": "F135",
         "scorecard_active": scorecard_active,
         "scorecard_ops_ok": scorecard_ops_ok,
@@ -427,6 +445,7 @@ def to_markdown(report: dict[str, Any]) -> str:
             f"- Recovery skills (memory/product/critic): **{'ok' if report.get('recovery_ok') else 'gap'}** "
             f"({', '.join(report.get('recovery_active') or []) or 'none'})",
             f"- Recovery hub gap critic/demote-eval (F128): **{'ok' if report.get('recovery_hub_gap_ok') else 'gap'}**",
+            f"- Recon-warm hub critic/demote-eval (F151): **{'ok' if report.get('recon_warm_hub_ok') else 'gap'}**",
             f"- Wiring (assemble/run/hermes/save-trace): **{'ok' if report.get('wiring_ok') else 'gap'}**",
             f"- Deep fixtures: **{'ok' if report.get('deep_ok') else 'skipped/fail'}**",
             f"- Ready: **{report.get('ready')}**",
@@ -459,6 +478,8 @@ def cmd_scorecard(args: argparse.Namespace) -> int:
                 "recovery_active": report.get("recovery_active"),
                 "recovery_hub_ok": report.get("recovery_hub_ok"),
                 "recovery_hub_gap_ok": report.get("recovery_hub_gap_ok"),
+                "recon_warm_hub_ok": report.get("recon_warm_hub_ok"),
+                "feature_recon_warm_hub": report.get("feature_recon_warm_hub"),
                 "feature_scorecard_ops": report.get("feature_scorecard_ops"),
                 "scorecard_ops_ok": report.get("scorecard_ops_ok"),
                 "scorecard_active": report.get("scorecard_active"),
@@ -493,6 +514,7 @@ def cmd_fixture(args: argparse.Namespace) -> int:
         and report.get("deep_ok")
         and report.get("recovery_ok")
         and report.get("recovery_hub_gap_ok")
+        and report.get("recon_warm_hub_ok")
         and report.get("level") in ("L2", "L3")
     )
     print(
@@ -510,6 +532,8 @@ def cmd_fixture(args: argparse.Namespace) -> int:
                 "recovery_active": report.get("recovery_active"),
                 "recovery_hub_ok": report.get("recovery_hub_ok"),
                 "recovery_hub_gap_ok": report.get("recovery_hub_gap_ok"),
+                "recon_warm_hub_ok": report.get("recon_warm_hub_ok"),
+                "feature_recon_warm_hub": report.get("feature_recon_warm_hub"),
                 "wiring_ok": report["wiring_ok"],
                 "deep_ok": report["deep_ok"],
                 "ready": report["ready"],

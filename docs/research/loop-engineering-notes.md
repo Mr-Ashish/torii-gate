@@ -45,3 +45,4 @@ Also mirrored from LOOP.md budget/observability: each fire records metrics (reca
 - F148: recon-warm theme federate + hub post-score (multi-tenant retrieval heat)
 - F149: hub warm themes expand archival auto-query + hit boost (cross-tenant page)
 - F150: recon-warm hub critic demotes APPROVE when multi-tenant heat ignored
+- F151: recon-warm hub demote-eval paper metric + doctor/scorecard surface
