@@ -159,6 +159,11 @@ class MemoryItem:
     tenant: str = ""
     provenance: str = ""
     raw_id: str = ""
+    # F94 consolidation annotations (optional)
+    importance_score: float | None = None
+    decay_weight: float | None = None
+    effective_score: float | None = None
+    last_seen: str = ""
 
     def to_dict(self) -> dict[str, Any]:
         return asdict(self)
@@ -227,6 +232,14 @@ def load_tp_items(
             cwe = [cwe]
         kws = [str(k) for k in (s.get("keywords") or [])][:24]
         globs = [str(g) for g in (s.get("path_globs") or [])][:16]
+        def _f(v: Any) -> float | None:
+            if v is None:
+                return None
+            try:
+                return float(v)
+            except (TypeError, ValueError):
+                return None
+
         out.append(
             MemoryItem(
                 id=_item_id("tp", scope, raw_id, theme),
@@ -242,6 +255,10 @@ def load_tp_items(
                 tenant=tenant,
                 provenance=_safe_provenance(provenance or path),
                 raw_id=raw_id,
+                importance_score=_f(s.get("importance_score")),
+                decay_weight=_f(s.get("decay_weight")),
+                effective_score=_f(s.get("effective_score")),
+                last_seen=str(s.get("last_seen") or s.get("updated_at") or ""),
             )
         )
     return out
@@ -500,6 +517,14 @@ def load_store(path: Path | None = None, root: Path | None = None) -> list[Memor
     for d in data.get("items") or []:
         if not isinstance(d, dict):
             continue
+        def _f(v: Any) -> float | None:
+            if v is None:
+                return None
+            try:
+                return float(v)
+            except (TypeError, ValueError):
+                return None
+
         out.append(
             MemoryItem(
                 id=str(d.get("id") or ""),
@@ -517,6 +542,10 @@ def load_store(path: Path | None = None, root: Path | None = None) -> list[Memor
                 tenant=str(d.get("tenant") or ""),
                 provenance=str(d.get("provenance") or ""),
                 raw_id=str(d.get("raw_id") or ""),
+                importance_score=_f(d.get("importance_score")),
+                decay_weight=_f(d.get("decay_weight")),
+                effective_score=_f(d.get("effective_score")),
+                last_seen=str(d.get("last_seen") or ""),
             )
         )
     return out
@@ -557,10 +586,22 @@ def rank_score(item: MemoryItem, changed_paths: list[str]) -> float:
     pm = path_match(item, changed_paths)
     scope_w = SCOPE_RANK.get(item.scope, 0) / 50.0
     hits_w = min(1.0, (item.hits or 1) / 10.0)
+    # F94: when consolidation annotated effective_score, blend into rank
+    eff_w = 0.0
+    try:
+        raw_eff = getattr(item, "effective_score", None)
+        if raw_eff is None and hasattr(item, "to_dict"):
+            raw_eff = (item.to_dict() or {}).get("effective_score")
+        if raw_eff is not None:
+            eff_w = max(0.0, min(1.0, float(raw_eff)))
+    except (TypeError, ValueError):
+        eff_w = 0.0
     # path match dominates; theme-only items still rank via scope+hits but lower
     if pm > 0:
-        return 0.55 * pm + 0.25 * scope_w + 0.20 * hits_w
-    return 0.15 * scope_w + 0.10 * hits_w + (0.05 if item.kind == "tp" else 0.0)
+        base = 0.50 * pm + 0.22 * scope_w + 0.18 * hits_w
+        return base + 0.10 * eff_w if eff_w else base + 0.02 * hits_w
+    base = 0.15 * scope_w + 0.10 * hits_w + (0.05 if item.kind == "tp" else 0.0)
+    return base + (0.08 * eff_w if eff_w else 0.0)
 
 
 @dataclass

@@ -1,0 +1,7 @@
+{
+  "id": "memory-consolidate",
+  "feature": "F94",
+  "script": "scripts/memory_consolidate.py",
+  "status": "adopted",
+  "one_liner": "Importance \u00d7 half-life decay, merge near-dup themes, evict stale TP/FP"
+}

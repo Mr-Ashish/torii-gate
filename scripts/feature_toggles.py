@@ -553,6 +553,15 @@ REGISTRY: list[ToggleSpec] = [
         "F93",
     ),
     ToggleSpec(
+        "memory_consolidate",
+        "TORII_MEMORY_CONSOLIDATE",
+        "bool",
+        True,
+        "product",
+        "F94 importance/merge/decay/eviction consolidation on TP/FP stores",
+        "F94",
+    ),
+    ToggleSpec(
         "trace_vault",
         "TORII_TRACE_VAULT",
         "bool",

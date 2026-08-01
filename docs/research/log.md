@@ -1,5 +1,38 @@
 # Torii research → product log
 
+
+## 2026-08-01 — F94 memory consolidation (importance · merge · decay · eviction)
+
+### Papers / posts / OSS
+- **Hindsight consolidation framework (2026):** four levers — importance, merge, decay, eviction.
+- **Mem0** ECAI 2025 / state-of-memory 2026: write-time events + consolidation; high-hit staleness is hard.
+- **Zep:** temporal edge strength / age as retrieval signal.
+- Prior Torii F93 write events + F75 scoped recall lacked temporal maintenance.
+
+### OSS / eng patterns
+1. Deterministic `importance × half-life_decay` → `effective_score` on each TP/FP item.
+2. Near-dup MERGE (theme + keyword Jaccard) then EVICT below threshold.
+3. Soft-wire after F93 merge + post-review stage; F75 rank blends effective_score.
+
+### Insight
+Write-path events without maintenance still bloat recall. Highest ROI: **tools-as-code consolidation** so stale low-value themes leave the budget.
+
+### Feature shipped (F94)
+- `scripts/memory_consolidate.py` plan/apply/run/score/inject/fixture/status
+- `merge_tp_signatures` → `_maybe_consolidate_tp`; run-torii-review stage
+- F75 MemoryItem + rank_score annotations; toggle `TORII_MEMORY_CONSOLIDATE`
+- pack install + catalog adopted tool; PRODUCT compound memory note
+
+### Loop-engineering practice used
+**Verifier-style maintenance loop** — consolidation is a separate deterministic pass (not the writer), with measurable fixture ops (merge/evict/decay rank).
+
+### Metric
+- Offline: fixture_pass (merge+decay+evict); bench fixture_pass=1; 534 pytest; smoke PASS
+- Live: **Modal** pytorch#191813 deepseek/deepseek-v4-pro BIT3_OK ~79s; log_streaming=true; tool_call_turns=4; POST_COMMENT=0
+
+### SHA
+PENDING
+
 ## 2026-08-01 — F93 Mem0-style ADD/UPDATE/DELETE/NONE memory write policy
 
 ### Papers / posts / OSS

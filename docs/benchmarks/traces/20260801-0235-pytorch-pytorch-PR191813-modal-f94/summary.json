@@ -1,0 +1,15 @@
+{
+  "feature": "F94",
+  "repo": "pytorch/pytorch",
+  "pr": 191813,
+  "model": "deepseek/deepseek-v4-pro",
+  "host": "modal",
+  "outcome": "BIT3_OK",
+  "elapsed_s": 78.7,
+  "log_streaming": true,
+  "post_comment": 0,
+  "tool_call_turns": 4,
+  "verdict_preview": "REQUEST_CHANGES (test gap calibration)",
+  "memory_consolidate": true,
+  "captured_at": "2026-08-01T02:41:04Z"
+}

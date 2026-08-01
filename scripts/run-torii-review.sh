@@ -311,6 +311,17 @@ if [[ -f "$SCRIPTS/federated_hub_ingest.py" ]]; then
   esac
 fi
 
+# F94: memory consolidation — importance · merge · decay · eviction (soft)
+if [[ -f "$SCRIPTS/memory_consolidate.py" ]]; then
+  case "${TORII_MEMORY_CONSOLIDATE:-1}" in
+    0|false|no|off) ;;
+    *)
+      stage memory_consolidate \
+        python3 "$SCRIPTS/memory_consolidate.py" run --kind both || true
+      ;;
+  esac
+fi
+
 # F68: research tool candidates from this tree's loops (soft; opt-in)
 case "${TORII_AGENT_TOOLS_RESEARCH:-0}" in
   1|true|yes|on)

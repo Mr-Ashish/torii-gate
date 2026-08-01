@@ -364,6 +364,34 @@ def _sig_key(s: dict[str, Any]) -> str:
     return str(s.get("id") or "") or f"{s.get('theme')}|{','.join(s.get('keywords') or [])}"
 
 
+def _maybe_consolidate_tp(items: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    """F94: soft consolidate after write merge (importance/merge/decay/evict)."""
+    try:
+        import importlib.util
+
+        if (os.environ.get("TORII_MEMORY_CONSOLIDATE") or "1").strip().lower() in (
+            "0",
+            "false",
+            "off",
+            "no",
+        ):
+            return items
+        pol = Path(__file__).resolve().parent / "memory_consolidate.py"
+        if not pol.is_file():
+            return items
+        spec = importlib.util.spec_from_file_location("memory_consolidate", pol)
+        if not spec or not spec.loader:
+            return items
+        mod = importlib.util.module_from_spec(spec)
+        sys.modules["memory_consolidate"] = mod
+        spec.loader.exec_module(mod)
+        if not mod.enabled():
+            return items
+        return mod.consolidate_items(items)
+    except Exception:
+        return items
+
+
 def merge_tp_signatures(
     existing: list[dict[str, Any]], incoming: list[dict[str, Any]]
 ) -> list[dict[str, Any]]:
@@ -390,11 +418,12 @@ def merge_tp_signatures(
                             s.setdefault("kind", "tp")
                     events = mod.plan_events(existing, incoming, candidate_kind="tp")
                     store = mod.apply_events({"items": list(existing), "history": []}, events)
-                    return [
+                    merged = [
                         i
                         for i in (store.get("items") or [])
                         if isinstance(i, dict) and not i.get("deleted")
                     ]
+                    return _maybe_consolidate_tp(merged)
     except Exception:
         pass
     best: dict[str, dict[str, Any]] = {}
@@ -415,7 +444,7 @@ def merge_tp_signatures(
         old["keywords"] = kws[:24]
         if s.get("cwe") and not old.get("cwe"):
             old["cwe"] = s.get("cwe")
-    return list(best.values())
+    return _maybe_consolidate_tp(list(best.values()))
 
 
 def signatures_from_score(
