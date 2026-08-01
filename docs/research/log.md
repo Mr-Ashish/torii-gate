@@ -31,7 +31,7 @@ Refine + promote without chronic decay freezes bad skills in always slots. Highe
 **Longitudinal scorecard demote** — zombies leave always budget.
 
 ### SHA
-`(pending)`
+`fa8002c988d68a9085dfb0091eddacdcebc3b732`
 
 
 ## 2026-08-01 — F170 GEPA refine brand + paper EVAL pack
