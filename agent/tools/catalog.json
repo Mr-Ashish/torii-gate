@@ -443,7 +443,7 @@
     },
     {
       "id": "archival-memory-search",
-      "name": "MemGPT archival search + promote (F98/F144/F145/F146)",
+      "name": "MemGPT archival search + promote (F98\u2013F148)",
       "status": "adopted",
       "script": "scripts/archival_memory_search.py",
       "feature": "F98",

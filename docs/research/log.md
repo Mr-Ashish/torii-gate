@@ -1,5 +1,36 @@
 # Torii research → product log
 
+## 2026-08-01 — F148 recon-warm theme federate + hub post-score
+
+### Papers / posts
+- Mem0 multi-tenant: share theme/util signals not raw memory content.
+- F141/F142 memory util federate + hub post-score pattern.
+- F146/F147 local recon-warm without multi-tenant heat export.
+
+### OSS design patterns stolen
+1. federate_recon_warm: themes + warm_bin + tenant_hash only.
+2. recon-warm-signals.json merge hits across tenants.
+3. post_score_recon_warm_hub priority themes for next inject.
+4. TORII_RECON_WARM_FEDERATE; fixture f148_ok privacy.
+
+### Insight
+Local reconsolidation without federation leaves multi-tenant retrieval heat silent. Highest ROI: privacy-safe warm-theme hub signals after F146 promote.
+
+### Feature shipped (F148)
+- archival_memory_search federate_recon_warm + hub post-score on reconsolidate
+- fixture f148_ok; PRODUCT/research
+
+### Metric
+- Offline: fixture f148_ok; pytest 619 passed
+- Live: Modal pytorch#191813 BIT3_OK ~54s REQUEST_CHANGES POST_COMMENT=0 log_streaming=true
+
+### Loop-engineering / Hermes practice used
+**Privacy-safe multi-tenant compound** — retrieval heat federates as themes only.
+
+### SHA
+`PENDING`
+
+
 ## 2026-08-01 — F147 recon-warm → core tier promote
 
 ### Papers / posts

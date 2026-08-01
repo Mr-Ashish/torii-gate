@@ -212,6 +212,8 @@ budget always → compact body → score tool_hit → util gap? → budgeted re-
 
 **Recon-warm → core tier (F147):** Letta-style tiers promote items with recent `last_retrieved_at` / F146 reconsolidation into **core** inject (`TORII_MEMORY_RECON_CORE=1`, window `TORII_MEMORY_RECON_CORE_HOURS=168`). Stale or superseded retrieves stay archival — retrieval warm compounds into always-attend budget.
 
+**Recon-warm federate (F148):** privacy-safe multi-tenant signals of **retrieval-hot themes** (`memory/federation/recon-warm-signals.json`, `TORII_RECON_WARM_FEDERATE=1`) — themes/warm bins + tenant hash only; hub post-score ranks multi-tenant warm themes for next inject. No paths, signature ids, or snippets leave the tenant.
+
 **Ops:** `python3 scripts/memory_loop_status.py scorecard` → L0–L3. Smoke requires L3 on the hub tree. CI job summary annotates readiness; optional advisory `torii/memory-loop` via `TORII_MEMORY_LOOP_STATUS_COMMIT=1`.
 
 ---

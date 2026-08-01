@@ -51,6 +51,13 @@ class ArchivalMemorySearchTests(unittest.TestCase):
             any("sqli" in str(i) for i in (data.get("f146_recon_ids") or [])),
             data.get("f146_recon_ids"),
         )
+        # F148 recon-warm federate
+        self.assertTrue(data.get("f148") or data.get("feature_recon_fed") == "F148")
+        self.assertTrue(data.get("f148_ok"), data)
+        self.assertTrue(
+            any("sql" in str(t) for t in (data.get("f148_themes") or [])),
+            data.get("f148_themes"),
+        )
 
     def test_status(self):
         r = _run(["status"])

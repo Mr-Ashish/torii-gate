@@ -14,12 +14,15 @@ Research drivers (patterns only — no vendored Letta/MemGPT/Zep runtime):
   - Human-inspired reconsolidation on retrieval: successful promote should
     strengthen durable TP (hits / last_retrieved / soft effective) not be write-only inject
   - F146: non-superseded archival hits reconsolidate into tp-signatures on promote
+  - F147: recon-warm promotes into core tier inject
+  - F148: multi-tenant federate of recon-warm **themes only** (no paths/ids/snippets)
 
 Product thesis:
   Highest ROI agentic-memory slice: **deterministic archival search** over
   TP/FP/federated stores + MEMORY.md, optionally **expanded by temporal graph
   multi-hop themes**, **promote** only **temporally-active** hits into core, then
-  **reconsolidate** successful retrieves so next PR ranks warm evidence higher.
+  **reconsolidate** successful retrieves and **federate warm themes** so multi-tenant
+  hubs share retrieval heat without raw memory content.
 
 Commands:
   search    — query archival + recall stores (JSON hits)
@@ -35,6 +38,8 @@ Env:
   TORII_ARCHIVAL_GRAPH_HOPS    default 2 (0/off disables F144 multi-hop expand)
   TORII_ARCHIVAL_SUPERSEDE_FILTER  1 (default) | 0  — F145 temporal faithfulness
   TORII_ARCHIVAL_RECONSOLIDATE     1 (default) | 0  — F146 reconsolidation on promote
+  TORII_RECON_WARM_FEDERATE        1 (default) | 0  — F148 federate recon-warm themes
+  TORII_MEMORY_TENANT              optional tenant id (hashed only for hub)
   TORII_TP_SIGNATURES_FILE / TORII_FP_RULES_FILE / TORII_FEDERATED_SIGNALS_FILE
   TORII_MEMORY_MD              path to MEMORY.md (else hermes home / agent seed)
 """
@@ -55,9 +60,11 @@ FEATURE = "F98"
 FEATURE_GRAPH = "F144"
 FEATURE_SUPERSEDE = "F145"
 FEATURE_RECON = "F146"
+FEATURE_RECON_FED = "F148"
 SCHEMA = 1
 MARKER = "<!-- torii-f98-archival-search -->"
 RECON_LEDGER = "archival-reconsolidation.json"
+RECON_FED_NAME = "recon-warm-signals.json"
 RECON_EFF_BUMP = 0.03
 RECON_EFF_CAP = 0.95
 
@@ -431,6 +438,20 @@ def render_promote_section(result: dict[str, Any]) -> str:
             "signature(s) on successful retrieve "
             f"({', '.join(f'`{i}`' for i in ids[:6]) or '—'})."
         )
+        lines.append("")
+    fed = result.get("recon_federate") or {}
+    fed_n = int(fed.get("fed_n") or 0)
+    hub_themes = list((result.get("recon_hub") or {}).get("themes") or fed.get("themes") or [])
+    if fed_n > 0 or result.get("feature_recon_fed") == FEATURE_RECON_FED:
+        lines.append(
+            f"**F148 recon-warm federate:** **{fed_n}** privacy-safe theme signal(s) "
+            "shared to hub (themes/bins only — no paths/snippets)."
+        )
+        if hub_themes:
+            lines.append(
+                "  multi-tenant warm themes: "
+                + ", ".join(f"`{t}`" for t in hub_themes[:8])
+            )
         lines.append("")
     if not hits:
         lines.append("_No archival hits for this query._")
@@ -823,6 +844,7 @@ def reconsolidate_hits(
             by_theme.setdefault(th, []).append(s)
 
     updated: list[str] = []
+    themes_warm: list[str] = []
     now = _now()
     for h in tp_hits:
         hid = str(h.get("id") or "")
@@ -851,13 +873,19 @@ def reconsolidate_hits(
         tid = str(target.get("id") or rid or hid)
         if tid not in updated:
             updated.append(tid)
+        tth = _theme_norm(str(target.get("theme") or th or ""))
+        if tth and tth not in themes_warm and "/" not in tth:
+            themes_warm.append(tth)
         # reflect in promote hit row for section/debug
         h["reconsolidated"] = True
         h["hits"] = target["hits"]
         h["effective_score"] = target["effective_score"]
+        if tth:
+            h["theme"] = tth.replace(" ", "_")[:48]
 
     meta["updated_n"] = len(updated)
     meta["ids"] = updated[:16]
+    meta["themes"] = themes_warm[:12]
     blob = json.dumps(meta)
     meta["privacy_ok"] = "/Users/" not in blob and "/home/" not in blob and "sk-" not in blob
 
@@ -869,6 +897,7 @@ def reconsolidate_hits(
                 "feature": FEATURE_RECON,
                 "at": now,
                 "ids": updated[:16],
+                "themes": themes_warm[:12],
                 "n": len(updated),
             }
             tp_path.parent.mkdir(parents=True, exist_ok=True)
@@ -886,6 +915,7 @@ def reconsolidate_hits(
             "feature": FEATURE_RECON,
             "query": str(result.get("query") or "")[:200],
             "ids": updated[:16],
+            "themes": themes_warm[:12],
             "n": len(updated),
             "superseded_filtered": int(result.get("superseded_filtered") or 0),
         }
@@ -900,7 +930,308 @@ def reconsolidate_hits(
 
     out["reconsolidation"] = meta
     out["reconsolidated_n"] = len(updated)
+    # F148: soft federate recon-warm themes (privacy-safe) after successful write-back
+    if write and updated and recon_warm_federate_enabled():
+        try:
+            fed = federate_recon_warm(
+                out,
+                root=root,
+                themes=themes_warm,
+            )
+            out["feature_recon_fed"] = FEATURE_RECON_FED
+            out["recon_federate"] = fed
+            hub = post_score_recon_warm_hub(root=root)
+            out["recon_hub"] = hub
+        except Exception as exc:
+            out["recon_federate"] = {
+                "enabled": True,
+                "soft_error": str(exc)[:120],
+                "fed_n": 0,
+            }
     return out
+
+
+def recon_warm_federate_enabled() -> bool:
+    """F148: federate recon-warm themes to multi-tenant hub."""
+    raw = (os.environ.get("TORII_RECON_WARM_FEDERATE") or "1").strip().lower()
+    return raw not in _FALSEY
+
+
+def default_recon_fed_path(root: Path | None = None) -> Path:
+    return (root or _root()) / "memory" / "federation" / RECON_FED_NAME
+
+
+def federate_recon_warm(
+    result: dict[str, Any],
+    *,
+    root: Path | None = None,
+    themes: list[str] | None = None,
+    tenant: str = "",
+    dest: Path | None = None,
+) -> dict[str, Any]:
+    """F148: privacy-safe federate of recon-warm themes (no paths/ids/snippets).
+
+    Multi-tenant hub learns *which vulnerability themes are hot from retrieval*,
+    never which files or raw signature ids.
+    """
+    import hashlib
+
+    root = root or _root()
+    tenant = tenant or (os.environ.get("TORII_MEMORY_TENANT") or "").strip()
+    th = ""
+    if tenant:
+        th = hashlib.sha256(tenant.encode("utf-8")).hexdigest()[:12]
+
+    recon = result.get("reconsolidation") or {}
+    themes_in = list(themes or recon.get("themes") or [])
+    # also harvest from hit rows (theme only)
+    for h in result.get("hits") or []:
+        if not isinstance(h, dict) or not h.get("reconsolidated"):
+            continue
+        t = _theme_norm(str(h.get("theme") or ""))
+        if t and t not in themes_in and "/" not in t and ".." not in t:
+            themes_in.append(t)
+    # sanitize themes: no paths, no secrets, short (underscore form)
+    clean_themes: list[str] = []
+    for t in themes_in:
+        t = _theme_norm(str(t))
+        if not t or len(t) < 3:
+            continue
+        if "/" in t or "\\" in t or ".." in t:
+            continue
+        if _PRIVATE_RX.search(t):
+            continue
+        slug = re.sub(r"[^a-z0-9._-]+", "_", t.replace(" ", "_"))[:48].strip("_")
+        if slug and slug not in clean_themes:
+            clean_themes.append(slug)
+
+    n = int(result.get("reconsolidated_n") or recon.get("updated_n") or len(clean_themes))
+    hit_bucket = "1" if n == 1 else "2-3" if n <= 3 else "gte4"
+    signals: list[dict[str, Any]] = []
+
+    def _attach(sig: dict[str, Any]) -> None:
+        if th:
+            sig["tenant_hashes"] = [th]
+            sig["tenant_hash"] = th
+        signals.append(sig)
+
+    if clean_themes or n >= 1:
+        _attach(
+            {
+                "id": "recon-warm-ok",
+                "theme": "recon-warm-ok",
+                "cwe": [],
+                "tags": [
+                    "recon_warm",
+                    "archival_retrieve",
+                    "f148",
+                    "federated_memory",
+                ],
+                "keywords": ["recon-warm", "archival-promote", hit_bucket],
+                "path_basenames": [],
+                "hits": max(1, n),
+                "source": "archival_reconsolidation",
+                "tenants": 1,
+                "warm_bin": hit_bucket,
+            }
+        )
+    for theme in clean_themes[:8]:
+        slug = re.sub(r"[^a-z0-9._-]+", "-", theme.lower())[:48]
+        _attach(
+            {
+                "id": f"recon-warm-theme-{slug}"[:64],
+                "theme": theme[:64],
+                "cwe": [],
+                "tags": [
+                    "recon_warm",
+                    "warm_theme",
+                    "f148",
+                    "federated_memory",
+                ],
+                "keywords": [theme[:32], "recon-warm"],
+                "path_basenames": [],
+                "hits": 1,
+                "source": "archival_reconsolidation",
+                "tenants": 1,
+                "warm_bin": "theme",
+            }
+        )
+
+    dest = dest or default_recon_fed_path(root)
+    dest.parent.mkdir(parents=True, exist_ok=True)
+    # merge with existing signals by id (compound hits)
+    prev = _load_json(dest)
+    by_id: dict[str, dict[str, Any]] = {}
+    if isinstance(prev, dict):
+        for s in prev.get("signals") or []:
+            if isinstance(s, dict) and s.get("id"):
+                by_id[str(s["id"])] = dict(s)
+    for s in signals:
+        sid = str(s.get("id") or "")
+        if not sid:
+            continue
+        if sid in by_id:
+            old = by_id[sid]
+            old["hits"] = int(old.get("hits") or 1) + int(s.get("hits") or 1)
+            ths = list(old.get("tenant_hashes") or [])
+            for x in s.get("tenant_hashes") or []:
+                if x not in ths:
+                    ths.append(x)
+            if ths:
+                old["tenant_hashes"] = ths[:16]
+                old["tenants"] = len(ths)
+            by_id[sid] = old
+        else:
+            by_id[sid] = s
+    merged = list(by_id.values())[:64]
+    blob = json.dumps(merged)
+    privacy_ok = (
+        "/Users/" not in blob
+        and "/home/" not in blob
+        and "C:\\\\Users" not in blob
+        and (not tenant or tenant not in blob)
+    )
+    clean = []
+    for s in merged:
+        sb = json.dumps(s)
+        if "/Users/" in sb or "/home/" in sb:
+            continue
+        if tenant and tenant in sb:
+            continue
+        # no absolute ids that look like paths
+        if any("/" in str(s.get(k) or "") for k in ("theme", "id", "keywords")):
+            # keywords list may be ok without slash
+            if "/" in str(s.get("theme") or "") or "/" in str(s.get("id") or ""):
+                continue
+        clean.append(s)
+    doc = {
+        "schema_version": SCHEMA,
+        "feature": FEATURE_RECON_FED,
+        "scope": "recon_warm",
+        "updated_at": _now(),
+        "count": len(clean),
+        "privacy": "themes_warm_bins_tenant_hash_only",
+        "privacy_ok": privacy_ok and len(clean) == len(merged),
+        "signals": clean,
+    }
+    dest.write_text(json.dumps(doc, indent=2) + "\n", encoding="utf-8")
+
+    hub = None
+    try:
+        sys.path.insert(0, str(Path(__file__).resolve().parent))
+        from federated_hub_ingest import ingest as hub_ingest  # type: ignore
+
+        hub_raw = hub_ingest(
+            root,
+            clean,
+            tenant=tenant,
+            source_repo="archival_recon_warm",
+            write_tenant=bool(tenant),
+        )
+        if isinstance(hub_raw, dict):
+            hub = {
+                "feature": hub_raw.get("feature"),
+                "global_count": hub_raw.get("global_count"),
+                "privacy_ok": hub_raw.get("privacy_ok"),
+            }
+        else:
+            hub = {"ok": True}
+    except Exception as exc:
+        hub = {"soft_error": str(exc)[:120]}
+
+    return {
+        "feature": FEATURE_RECON_FED,
+        "fed_path": f"memory/federation/{RECON_FED_NAME}",
+        "fed_n": len(clean),
+        "privacy_ok": doc["privacy_ok"],
+        "hub": hub,
+        "themes": clean_themes[:12],
+        "signals": [
+            {"id": s.get("id"), "theme": s.get("theme"), "hits": s.get("hits")}
+            for s in clean[:12]
+        ],
+    }
+
+
+def load_recon_warm_hub_signals(root: Path | None = None) -> list[dict[str, Any]]:
+    """Load privacy-safe F148 recon-warm signals from federation store."""
+    root = root or _root()
+    paths = [default_recon_fed_path(root)]
+    od = (os.environ.get("OUT_DIR") or "").strip()
+    if od:
+        paths.insert(0, Path(od) / RECON_FED_NAME)
+    out: list[dict[str, Any]] = []
+    seen: set[str] = set()
+    for p in paths:
+        if not p.is_file():
+            continue
+        data = _load_json(p)
+        if not isinstance(data, dict):
+            continue
+        for s in data.get("signals") or []:
+            if not isinstance(s, dict):
+                continue
+            tags = [str(t).lower() for t in (s.get("tags") or [])]
+            theme = str(s.get("theme") or s.get("id") or "").lower()
+            if (
+                "recon_warm" not in tags
+                and "f148" not in tags
+                and not theme.startswith("recon-warm")
+            ):
+                continue
+            blob = json.dumps(s)
+            if "/Users/" in blob or "/home/" in blob:
+                continue
+            key = str(s.get("id") or theme)
+            if key in seen:
+                continue
+            seen.add(key)
+            out.append(dict(s))
+    return out
+
+
+def post_score_recon_warm_hub(
+    signals: list[dict[str, Any]] | None = None,
+    *,
+    root: Path | None = None,
+) -> dict[str, Any]:
+    """F148: post-score multi-tenant recon-warm themes for next inject priority.
+
+    Privacy: theme + hits + tenant counts only.
+    """
+    root = root or _root()
+    sigs = signals if signals is not None else load_recon_warm_hub_signals(root)
+    themes: list[str] = []
+    scored: list[dict[str, Any]] = []
+    for s in sigs:
+        theme = str(s.get("theme") or "").strip()
+        if not theme or theme == "recon-warm-ok":
+            continue
+        if "/" in theme or _PRIVATE_RX.search(theme):
+            continue
+        hits = int(s.get("hits") or 1)
+        tenants = int(s.get("tenants") or len(s.get("tenant_hashes") or []) or 1)
+        score = round(min(1.0, 0.4 + 0.1 * hits + 0.15 * min(3, tenants)), 3)
+        scored.append(
+            {
+                "theme": theme[:48],
+                "hits": hits,
+                "tenants": tenants,
+                "priority": score,
+            }
+        )
+        if theme not in themes:
+            themes.append(theme[:48])
+    scored.sort(key=lambda x: (-float(x.get("priority") or 0), -int(x.get("hits") or 0)))
+    return {
+        "feature": FEATURE_RECON_FED,
+        "enabled": recon_warm_federate_enabled(),
+        "signal_n": len(sigs),
+        "theme_n": len(themes),
+        "themes": themes[:12],
+        "top": scored[:8],
+        "privacy_ok": all("/" not in str(t) for t in themes),
+    }
 
 
 def auto_from_paths(
@@ -919,6 +1250,7 @@ def auto_from_paths(
     F144 folds Zep multi-hop themes into the archival query before promote.
     F145 filters multi-hop-superseded cold hits so resolved FPs do not re-page.
     F146 reconsolidates surviving TP hits into durable store (warm on retrieve).
+    F148 federates recon-warm themes (privacy-safe) to multi-tenant hub.
     """
     root = root or _root()
     bases = []
@@ -1077,6 +1409,9 @@ def cmd_auto(args: argparse.Namespace) -> int:
         "superseded_filtered": result.get("superseded_filtered") or 0,
         "reconsolidated_n": result.get("reconsolidated_n") or 0,
         "reconsolidation": result.get("reconsolidation"),
+        "feature_recon_fed": result.get("feature_recon_fed"),
+        "recon_federate": result.get("recon_federate"),
+        "recon_hub": result.get("recon_hub"),
         "graph_themes": result.get("graph_themes") or [],
         "graph": result.get("graph"),
         "supersede": result.get("supersede"),
@@ -1177,6 +1512,8 @@ def cmd_fixture(args: argparse.Namespace) -> int:
             "TORII_ARCHIVAL_RECONSOLIDATE": os.environ.get(
                 "TORII_ARCHIVAL_RECONSOLIDATE"
             ),
+            "TORII_RECON_WARM_FEDERATE": os.environ.get("TORII_RECON_WARM_FEDERATE"),
+            "TORII_MEMORY_TENANT": os.environ.get("TORII_MEMORY_TENANT"),
         }
         try:
             os.environ["TORII_ROOT"] = str(td_path)
@@ -1186,6 +1523,7 @@ def cmd_fixture(args: argparse.Namespace) -> int:
             os.environ["TORII_ARCHIVAL_SEARCH"] = "1"
             # keep early fixture stages free of recon writes until F146 block
             os.environ["TORII_ARCHIVAL_RECONSOLIDATE"] = "0"
+            os.environ["TORII_RECON_WARM_FEDERATE"] = "0"
 
             r = search("sql injection db.py", root=td_path, limit=5)
             ids = {h.get("id") for h in r.get("hits") or []}
@@ -1586,8 +1924,11 @@ def cmd_fixture(args: argparse.Namespace) -> int:
                 graph_themes = [str(exc)[:80]]
 
             # F146: reconsolidation — successful promote warms durable TP hits
+            # F148: federate recon-warm themes (same try block)
             f146_ok = False
+            f148_ok = False
             f146_ids: list[str] = []
+            f148_themes: list[str] = []
             try:
                 # clean active TP store (no superseded pickle) with known hits
                 (torii / "tp-signatures.json").write_text(
@@ -1633,6 +1974,8 @@ def cmd_fixture(args: argparse.Namespace) -> int:
                 os.environ["TORII_ARCHIVAL_RECONSOLIDATE"] = "1"
                 os.environ["TORII_ARCHIVAL_SUPERSEDE_FILTER"] = "0"
                 os.environ["TORII_ARCHIVAL_GRAPH_HOPS"] = "0"
+                os.environ["TORII_RECON_WARM_FEDERATE"] = "1"
+                os.environ["TORII_MEMORY_TENANT"] = "fixture-tenant-recon"
                 before = _load_json(torii / "tp-signatures.json") or {}
                 before_hits = 0
                 for s in before.get("signatures") or []:
@@ -1772,9 +2115,61 @@ def cmd_fixture(args: argparse.Namespace) -> int:
                     and privacy_r
                     and recon_run.get("feature_recon") == FEATURE_RECON
                 )
+                # F148: recon-warm federate (themes only, tenant hashed)
+                fed = recon_run.get("recon_federate") or {}
+                hub = recon_run.get("recon_hub") or {}
+                fed_path = default_recon_fed_path(td_path)
+                fed_doc = _load_json(fed_path) if fed_path.is_file() else {}
+                fed_blob = json.dumps(fed_doc)
+                privacy_fed = (
+                    "/Users/" not in fed_blob
+                    and "fixture-tenant-recon" not in fed_blob
+                    and bool(fed.get("privacy_ok", True))
+                )
+                fed_n_ok = int(fed.get("fed_n") or 0) >= 1
+                theme_sig = any(
+                    "sql" in str(s.get("theme") or "").lower()
+                    or "recon-warm" in str(s.get("id") or "")
+                    for s in (fed.get("signals") or fed_doc.get("signals") or [])
+                    if isinstance(s, dict)
+                )
+                section_fed_ok = "F148" in section_r or "recon-warm federate" in section_r.lower()
+                hub_ok = int(hub.get("signal_n") or hub.get("theme_n") or 0) >= 0 and bool(
+                    hub.get("privacy_ok", True)
+                )
+                # second tenant compounds hits without leaking tenant string
+                os.environ["TORII_MEMORY_TENANT"] = "other-tenant-b"
+                federate_recon_warm(
+                    recon_run,
+                    root=td_path,
+                    themes=["sql_injection"],
+                    tenant="other-tenant-b",
+                )
+                fed2 = _load_json(fed_path) or {}
+                multi_tenant = any(
+                    isinstance(s, dict)
+                    and int(s.get("tenants") or len(s.get("tenant_hashes") or [])) >= 2
+                    for s in (fed2.get("signals") or [])
+                    if str(s.get("id") or "") == "recon-warm-ok"
+                    or "sql" in str(s.get("theme") or "")
+                )
+                hub2 = post_score_recon_warm_hub(root=td_path)
+                f148_ok = (
+                    fed_n_ok
+                    and privacy_fed
+                    and theme_sig
+                    and section_fed_ok
+                    and hub_ok
+                    and recon_run.get("feature_recon_fed") == FEATURE_RECON_FED
+                    and "fixture-tenant" not in json.dumps(fed2)
+                    and bool(hub2.get("privacy_ok", True))
+                )
+                f148_themes = list(fed.get("themes") or hub.get("themes") or [])
             except Exception as exc:
                 f146_ok = False
+                f148_ok = False
                 f146_ids = [str(exc)[:80]]
+                f148_themes = [str(exc)[:80]]
 
             fixture_pass = all(
                 [
@@ -1788,6 +2183,7 @@ def cmd_fixture(args: argparse.Namespace) -> int:
                     f144_ok,
                     f145_ok,
                     f146_ok,
+                    f148_ok,
                 ]
             )
             print(
@@ -1797,9 +2193,11 @@ def cmd_fixture(args: argparse.Namespace) -> int:
                         "feature_graph": FEATURE_GRAPH,
                         "feature_supersede": FEATURE_SUPERSEDE,
                         "feature_recon": FEATURE_RECON,
+                        "feature_recon_fed": FEATURE_RECON_FED,
                         "f144": True,
                         "f145": True,
                         "f146": True,
+                        "f148": True,
                         "fixture_pass": fixture_pass,
                         "hit_tp": hit_tp,
                         "hit_fp": hit_fp,
@@ -1811,9 +2209,11 @@ def cmd_fixture(args: argparse.Namespace) -> int:
                         "f144_ok": f144_ok,
                         "f145_ok": f145_ok,
                         "f146_ok": f146_ok,
+                        "f148_ok": f148_ok,
                         "f144_graph_themes": graph_themes,
                         "f145_filtered_ids": f145_filtered,
                         "f146_recon_ids": f146_ids,
+                        "f148_themes": f148_themes,
                         "hit_ids": sorted(ids),
                         "auto_hits": auto.get("hit_count"),
                     },

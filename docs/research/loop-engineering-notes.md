@@ -42,3 +42,4 @@ Also mirrored from LOOP.md budget/observability: each fire records metrics (reca
 - F145: supersede-aware archival promote (MemoTime temporal faithfulness on F144 paging)
 - F146: archival reconsolidation on promote (retrieval warms durable TP store)
 - F147: recon-warm → core tier promote (F146 timestamps compound into F97 core budget)
+- F148: recon-warm theme federate + hub post-score (multi-tenant retrieval heat)
