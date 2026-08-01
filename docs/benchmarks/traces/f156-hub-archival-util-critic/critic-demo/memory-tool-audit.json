@@ -1,0 +1,21 @@
+{
+  "feature": "F105",
+  "schema": 1,
+  "score": 0.35,
+  "level": "L1",
+  "hit_count": 0,
+  "tools_used": [],
+  "by_tool": {},
+  "cli_subcmds": {},
+  "inject_offered": false,
+  "utilization_gap": false,
+  "tool_call_turns": 0,
+  "feedback": [
+    "no_memory_tool_hits (inject not detected or optional)"
+  ],
+  "scored_at": "2026-08-01T10:07:10Z",
+  "hits_detail": [],
+  "out_dir": "docs/benchmarks/traces/f156-hub-archival-util-critic/critic-demo",
+  "loop_path": null,
+  "enabled": true
+}

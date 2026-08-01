@@ -35,6 +35,7 @@ Env:
   TORII_MEMORY_HUB_GAP_THR      default 0.34 — multi-tenant memory util gap thr
   TORII_RECON_WARM_HUB_CRITIC   1 (default) | 0 — F150 recon-warm hub ignore demote
   TORII_RECON_WARM_HUB_THR      default 0.34 — multi-tenant recon-warm heat thr
+  TORII_HUB_ARCHIVAL_UTIL_CRITIC 1 (default) | 0 — F156 hub-archival util gap demote
 """
 
 from __future__ import annotations
@@ -55,6 +56,7 @@ FEATURE_SCORECARD_HUB_GAP = "F139"
 FEATURE_MEMORY_UTIL = "F141"
 FEATURE_MEMORY_HUB_GAP = "F143"
 FEATURE_RECON_WARM_HUB = "F150"
+FEATURE_HUB_ARCHIVAL_UTIL = "F156"
 SCHEMA = 1
 MARKER = "<!-- torii-f78-second-agent-critic -->"
 
@@ -350,6 +352,12 @@ def run_f75_memory(out_dir: Path | None, root: Path) -> CheckerResult:
         )
 
 
+def hub_archival_util_critic_enabled() -> bool:
+    """F156: demote APPROVE when hub-archival skill inject ≠ hub_boost tools."""
+    raw = (os.environ.get("TORII_HUB_ARCHIVAL_UTIL_CRITIC") or "1").strip().lower()
+    return raw not in _FALSEY
+
+
 def run_f121_recovery_util(out_dir: Path | None) -> CheckerResult:
     """F121: recovery always skills must fire tool CLIs (inject ≠ utilization)."""
     if out_dir is None:
@@ -384,6 +392,10 @@ def run_f121_recovery_util(out_dir: Path | None) -> CheckerResult:
                 "idle_ids": report.get("idle_ids"),
                 "inject_chars": report.get("inject_chars"),
                 "f120_chars_saved": report.get("f120_chars_saved"),
+                # F155/F156 surface (partial util still demotes via f156)
+                "hub_archival_util_gap": report.get("hub_archival_util_gap"),
+                "hub_archival_injected": report.get("hub_archival_injected"),
+                "hub_archival_tool_hit": report.get("hub_archival_tool_hit"),
             },
         )
     except Exception as e:
@@ -391,6 +403,90 @@ def run_f121_recovery_util(out_dir: Path | None) -> CheckerResult:
             id="f121_recovery_util",
             name="Recovery skill utilization (F121)",
             ok=True,  # soft — do not block panel if artifact missing
+            score=0.5,
+            error=str(e)[:200],
+            detail={"soft_fail": True},
+        )
+
+
+def run_f156_hub_archival_util(
+    out_dir: Path | None,
+    root: Path | None = None,
+) -> CheckerResult:
+    """F156: hub-archival always skill inject ≠ hub_boost tools → demote signal.
+
+    F121 only flags full recovery utilization_gap (all recovery idle). Live runs
+    often hit memory CLI while hub-archival stays idle (util_rate=0.5) — F155
+    measures that slice; F156 demotes APPROVE for it (Assay: not all skills help).
+    """
+    if not hub_archival_util_critic_enabled():
+        return CheckerResult(
+            id="f156_hub_archival_util",
+            name="Hub-archival util gap (F156)",
+            ok=True,
+            score=1.0,
+            detail={"enabled": False, "reason": "critic_off"},
+        )
+    if out_dir is None:
+        return CheckerResult(
+            id="f156_hub_archival_util",
+            name="Hub-archival util gap (F156)",
+            ok=True,
+            score=0.5,
+            detail={"soft_skip": True, "reason": "no_out_dir"},
+        )
+    _ensure_path()
+    try:
+        from skill_router import (  # type: ignore
+            HUB_ARCHIVAL_SKILL_ID,
+            score_recovery_util,
+        )
+
+        report = score_recovery_util(Path(out_dir), root=root)
+        injected = bool(report.get("hub_archival_injected"))
+        tool_hit = bool(report.get("hub_archival_tool_hit"))
+        gap = bool(report.get("hub_archival_util_gap"))
+        # not injected → neutral pass (skill optional this run)
+        if not injected:
+            return CheckerResult(
+                id="f156_hub_archival_util",
+                name="Hub-archival util gap (F156)",
+                ok=True,
+                score=1.0,
+                detail={
+                    "enabled": True,
+                    "hub_archival_injected": False,
+                    "hub_archival_util_gap": False,
+                    "reason": "hub_archival_not_injected",
+                    "skill_id": HUB_ARCHIVAL_SKILL_ID,
+                },
+            )
+        ok = not gap
+        score = 1.0 if tool_hit else 0.15
+        return CheckerResult(
+            id="f156_hub_archival_util",
+            name="Hub-archival util gap (F156)",
+            ok=ok,
+            score=round(score, 4),
+            detail={
+                "enabled": True,
+                "feature": FEATURE_HUB_ARCHIVAL_UTIL,
+                "skill_id": HUB_ARCHIVAL_SKILL_ID,
+                "hub_archival_injected": injected,
+                "hub_archival_tool_hit": tool_hit,
+                "hub_archival_util_gap": gap,
+                "hub_archival_ok": bool(report.get("hub_archival_ok")),
+                "util_rate": report.get("util_rate"),
+                "idle_ids": report.get("idle_ids"),
+                "tool_hit_ids": report.get("tool_hit_ids"),
+                "reason": "hub_archival_util_gap" if gap else "hub_archival_tool_ok",
+            },
+        )
+    except Exception as e:
+        return CheckerResult(
+            id="f156_hub_archival_util",
+            name="Hub-archival util gap (F156)",
+            ok=True,
             score=0.5,
             error=str(e)[:200],
             detail={"soft_fail": True},
@@ -1159,6 +1255,7 @@ def composite_panel(checkers: list[CheckerResult]) -> dict[str, Any]:
         "f141_memory_util": 0.07,  # F141 Mem0/Letta tools-must-be-called
         "f143_memory_hub_gap": 0.07,  # F143 multi-tenant memory util gap
         "f150_recon_warm_hub": 0.07,  # F150 multi-tenant recon-warm ignore
+        "f156_hub_archival_util": 0.08,  # F156 hub-archival inject ≠ hub_boost
         "structure": 0.12,
         "f70_dual_critic": 0.20,
         "f72_chain": 0.16,
@@ -1302,6 +1399,14 @@ def decide_verdict(
                     f"({detail.get('heat')}>={detail.get('thr')};"
                     f"{detail.get('reason')})"
                 )
+        # F156: hub-archival skill injected but no hub_boost tools (partial util)
+        hau = next((c for c in checkers if c.id == "f156_hub_archival_util"), None)
+        if hau and not hau.ok:
+            detail = hau.detail or {}
+            if detail.get("hub_archival_util_gap"):
+                recommended = "COMMENT"
+                demoted = True
+                reasons.append("hub_archival_util_gap_idle_no_hub_boost")
     elif maker == "UNKNOWN":
         recommended = "COMMENT"
         demoted = True
@@ -1340,6 +1445,7 @@ def run_panel(
         run_f141_memory_util(out_dir, root),
         run_f143_memory_hub_gap(out_dir, root),
         run_f150_recon_warm_hub(out_dir, root),
+        run_f156_hub_archival_util(out_dir, root),
     ]
     # F81: optional LLM checker after deterministic panel draft
     panel_draft = {
@@ -1442,6 +1548,7 @@ def render_inject() -> str:
             "10. **F141 memory util** — memory inject offered but unused tools → demote APPROVE",
             "11. **F143 memory hub gap** — multi-tenant memory util gap + local idle → demote APPROVE",
             "12. **F150 recon-warm hub** — multi-tenant retrieval-hot themes ignored (no hub archival boost) → demote APPROVE",
+            "13. **F156 hub-archival util** — hub-archival always skill inject ≠ hub_boost tools → demote APPROVE",
             "",
             "**Default stance:** weak APPROVE without path evidence will be **demoted**.",
             "Prefer REQUEST CHANGES with path:line over narrative-only APPROVE.",
@@ -1449,6 +1556,7 @@ def render_inject() -> str:
             "Call scorecard ops CLIs (doctor/scorecard/demote-eval) when scorecard hub gap is elevated.",
             "Call memory CLIs (`torii.py memory -- search`) when memory inject was offered or hub memory gap is elevated.",
             "Honor multi-tenant recon-warm hub themes (F149 archival auto hub query) when F150 heat is elevated.",
+            "When hub-archival skill is always-injected (F154/F155), call archival with hub warm themes so hub_boost evidence appears (F156).",
             "",
             "<!-- /torii-f78-second-agent-critic -->",
             "",
@@ -1795,6 +1903,9 @@ def cmd_fixture(args: argparse.Namespace) -> int:
     has_f150 = any(
         c.get("id") == "f150_recon_warm_hub" for c in (g.get("checkers") or [])
     )
+    has_f156 = any(
+        c.get("id") == "f156_hub_archival_util" for c in (g.get("checkers") or [])
+    )
     # F141: memory inject unused + APPROVE demote
     f141_ok = False
     try:
@@ -2075,6 +2186,78 @@ def cmd_fixture(args: argparse.Namespace) -> int:
     except Exception:
         f150_ok = False
 
+    # F156: hub-archival inject ≠ hub_boost tools (partial recovery util) → demote
+    f156_ok = False
+    try:
+        with tempfile.TemporaryDirectory() as td7:
+            root_ha = Path(td7)
+            od = root_ha / "out"
+            od.mkdir()
+            ha_sid = "skill-prefer-hub-archival-early"
+            # partial util: memory hit, hub-archival idle (live F155 pattern)
+            (od / "skill-router.json").write_text(
+                json.dumps(
+                    {
+                        "selected": [ha_sid, "skill-prefer-memory-cli-early"],
+                        "always_selected": [ha_sid, "skill-prefer-memory-cli-early"],
+                        "inject_chars": 720,
+                    }
+                ),
+                encoding="utf-8",
+            )
+            (od / "skill-hits.json").write_text(
+                json.dumps(
+                    {
+                        "hits": [
+                            {
+                                "id": ha_sid,
+                                "tool_hit": False,
+                                "hit": True,
+                                "prose_hit": True,
+                            },
+                            {
+                                "id": "skill-prefer-memory-cli-early",
+                                "tool_hit": True,
+                                "hit": True,
+                            },
+                        ],
+                        "tool_hit_n": 1,
+                    }
+                ),
+                encoding="utf-8",
+            )
+            approve_ha = od / "approve-hub-archival-idle.md"
+            approve_ha.write_text(
+                "## Review\n**Verdict:** APPROVE\n\n### Summary\nok\n\n"
+                "### Blocking\nnone\n\n### What I checked\n`app.py:1` path ok\n",
+                encoding="utf-8",
+            )
+            prev_root = os.environ.get("TORII_ROOT")
+            os.environ["TORII_ROOT"] = str(root_ha)
+            os.environ["TORII_HUB_ARCHIVAL_UTIL_CRITIC"] = "1"
+            os.environ["TORII_SECOND_CRITIC_MIN_PATH"] = "0.1"
+            try:
+                chk_ha = run_f156_hub_archival_util(od, root=root_ha)
+                rep_ha = run_panel(approve_ha, out_dir=od, root=root_ha)
+                dec_ha = rep_ha.get("decision") or {}
+                f156_ok = (
+                    not chk_ha.ok
+                    and bool((chk_ha.detail or {}).get("hub_archival_util_gap"))
+                    and bool(dec_ha.get("demoted"))
+                    and any(
+                        "hub_archival_util_gap" in str(r)
+                        for r in (dec_ha.get("reasons") or [])
+                    )
+                )
+            finally:
+                if prev_root is None:
+                    os.environ.pop("TORII_ROOT", None)
+                else:
+                    os.environ["TORII_ROOT"] = prev_root
+                os.environ.pop("TORII_SECOND_CRITIC_MIN_PATH", None)
+    except Exception:
+        f156_ok = False
+
     fixture_pass = (
         good_ok
         and weak_ok
@@ -2090,6 +2273,8 @@ def cmd_fixture(args: argparse.Namespace) -> int:
         and has_f143
         and f150_ok
         and has_f150
+        and f156_ok
+        and has_f156
     )
     print(
         json.dumps(
@@ -2100,6 +2285,7 @@ def cmd_fixture(args: argparse.Namespace) -> int:
                 "feature_memory_util": FEATURE_MEMORY_UTIL,
                 "feature_memory_hub_gap": FEATURE_MEMORY_HUB_GAP,
                 "feature_recon_warm_hub": FEATURE_RECON_WARM_HUB,
+                "feature_hub_archival_util": FEATURE_HUB_ARCHIVAL_UTIL,
                 "fixture_pass": fixture_pass,
                 "f139_ok": f139_ok,
                 "has_f139": has_f139,
@@ -2109,6 +2295,8 @@ def cmd_fixture(args: argparse.Namespace) -> int:
                 "has_f143": has_f143,
                 "f150_ok": f150_ok,
                 "has_f150": has_f150,
+                "f156_ok": f156_ok,
+                "has_f156": has_f156,
                 "good_composite": g_comp,
                 "weak_composite": w_comp,
                 "delta": round(delta, 4),
@@ -2197,6 +2385,14 @@ def demote_eval(
             ),
             None,
         )
+        hau = next(
+            (
+                c
+                for c in (rep.get("checkers") or [])
+                if c.get("id") == "f156_hub_archival_util"
+            ),
+            None,
+        )
         return {
             "name": name,
             "maker": rep.get("maker_verdict"),
@@ -2219,6 +2415,11 @@ def demote_eval(
             "f150_score": None if rwh is None else rwh.get("score"),
             "recon_warm_hub_reason": (rwh or {}).get("detail", {}).get("reason")
             if isinstance((rwh or {}).get("detail"), dict)
+            else None,
+            "f156_ok": None if hau is None else bool(hau.get("ok")),
+            "f156_score": None if hau is None else hau.get("score"),
+            "hub_archival_util_reason": (hau or {}).get("detail", {}).get("reason")
+            if isinstance((hau or {}).get("detail"), dict)
             else None,
         }
 
@@ -2449,6 +2650,67 @@ def demote_eval(
                 os.environ["TORII_ROOT"] = prev_root_rw
             os.environ.pop("TORII_SECOND_CRITIC_MIN_PATH", None)
 
+    # F156: hub-archival inject ≠ hub_boost (partial recovery) + APPROVE
+    with tempfile.TemporaryDirectory() as td_ha:
+        od = Path(td_ha)
+        ha_sid = "skill-prefer-hub-archival-early"
+        (od / "skill-router.json").write_text(
+            json.dumps(
+                {
+                    "selected": [ha_sid, "skill-prefer-memory-cli-early"],
+                    "always_selected": [ha_sid, "skill-prefer-memory-cli-early"],
+                    "inject_chars": 720,
+                }
+            ),
+            encoding="utf-8",
+        )
+        (od / "skill-hits.json").write_text(
+            json.dumps(
+                {
+                    "hits": [
+                        {
+                            "id": ha_sid,
+                            "tool_hit": False,
+                            "hit": True,
+                            "prose_hit": True,
+                        },
+                        {
+                            "id": "skill-prefer-memory-cli-early",
+                            "tool_hit": True,
+                            "hit": True,
+                        },
+                    ],
+                    "tool_hit_n": 1,
+                }
+            ),
+            encoding="utf-8",
+        )
+        ha_review = od / "approve-hub-archival-idle.md"
+        ha_review.write_text(
+            "## Review\n**Verdict:** APPROVE\n\n### Summary\nok\n\n"
+            "### Blocking\nnone\n\n### What I checked\n`app.py:1` path ok\n",
+            encoding="utf-8",
+        )
+        prev_root_ha = os.environ.get("TORII_ROOT")
+        os.environ["TORII_ROOT"] = str(od)
+        os.environ["TORII_HUB_ARCHIVAL_UTIL_CRITIC"] = "1"
+        os.environ["TORII_SECOND_CRITIC_MIN_PATH"] = "0.1"
+        try:
+            cases.append(
+                _case(
+                    "hub_archival_util_idle_approve",
+                    ha_review,
+                    od,
+                    case_root=od,
+                )
+            )
+        finally:
+            if prev_root_ha is None:
+                os.environ.pop("TORII_ROOT", None)
+            else:
+                os.environ["TORII_ROOT"] = prev_root_ha
+            os.environ.pop("TORII_SECOND_CRITIC_MIN_PATH", None)
+
     # metrics
     approve_cases = [c for c in cases if c.get("maker") == "APPROVE"]
     demoted_n = sum(1 for c in approve_cases if c.get("demoted"))
@@ -2461,6 +2723,9 @@ def demote_eval(
     )
     rwc = next(
         (c for c in cases if c["name"] == "recon_warm_hub_idle_approve"), {}
+    )
+    hac = next(
+        (c for c in cases if c["name"] == "hub_archival_util_idle_approve"), {}
     )
     goodc = next((c for c in cases if c["name"] == "good_insecure"), {})
     weak_demote_ok = bool(weak.get("demoted") or weak.get("recommended") != "APPROVE")
@@ -2475,6 +2740,10 @@ def demote_eval(
         rwc.get("f150_ok") is False
         and any("recon_warm" in str(r) for r in (rwc.get("reasons") or []))
     )
+    ha_util_demote_ok = bool(hac.get("demoted")) or (
+        hac.get("f156_ok") is False
+        and any("hub_archival_util_gap" in str(r) for r in (hac.get("reasons") or []))
+    )
     # good should not be demoted from REQUEST_CHANGES to worse without reason;
     # typically maker is REQUEST_CHANGES already
     good_stable = goodc.get("maker") in ("REQUEST_CHANGES", "COMMENT", "APPROVE")
@@ -2486,6 +2755,8 @@ def demote_eval(
         "feature_scorecard_hub_gap": FEATURE_SCORECARD_HUB_GAP,
         "feature_recon_warm_hub": FEATURE_RECON_WARM_HUB,
         "feature_demote_eval_recon": "F151",
+        "feature_hub_archival_util": FEATURE_HUB_ARCHIVAL_UTIL,
+        "feature_demote_eval_hub_archival": "F156",
         "scored_at": _now(),
         "cases": cases,
         "approve_n": len(approve_cases),
@@ -2498,6 +2769,8 @@ def demote_eval(
         "scorecard_hub_gap_soft_ok": sc_hub_demote_ok,
         "recon_warm_hub_demote_ok": bool(rwc.get("demoted")),
         "recon_warm_hub_soft_ok": rw_hub_demote_ok,
+        "hub_archival_util_demote_ok": bool(hac.get("demoted")),
+        "hub_archival_util_soft_ok": ha_util_demote_ok,
         "good_stable": good_stable,
         "paper": {
             "metric": "critic_approve_demote_rate",
@@ -2506,13 +2779,18 @@ def demote_eval(
             "hub_gap_idle_demoted": bool(hubc.get("demoted")),
             "scorecard_hub_gap_idle_demoted": bool(schc.get("demoted")),
             "recon_warm_hub_idle_demoted": bool(rwc.get("demoted")),
-            "notes": "demote_rate = demoted APPROVE / APPROVE cases in offline pack; F151 adds recon-warm hub",
+            "hub_archival_util_idle_demoted": bool(hac.get("demoted")),
+            "notes": (
+                "demote_rate = demoted APPROVE / APPROVE cases; "
+                "F156 adds hub-archival util gap (partial recovery idle)"
+            ),
         },
         "eval_pass": weak_demote_ok
         and good_stable
         and (bool(hubc.get("demoted")) or hub_demote_ok)
         and (bool(schc.get("demoted")) or sc_hub_demote_ok)
-        and (bool(rwc.get("demoted")) or rw_hub_demote_ok),
+        and (bool(rwc.get("demoted")) or rw_hub_demote_ok)
+        and (bool(hac.get("demoted")) or ha_util_demote_ok),
     }
     if out_dir:
         try:

@@ -1,0 +1,15 @@
+{
+  "eval_pass": true,
+  "demote_rate": 1.0,
+  "hub_archival_util_demote_ok": true,
+  "paper": {
+    "metric": "critic_approve_demote_rate",
+    "value": 1.0,
+    "weak_approve_demoted": true,
+    "hub_gap_idle_demoted": true,
+    "scorecard_hub_gap_idle_demoted": true,
+    "recon_warm_hub_idle_demoted": true,
+    "hub_archival_util_idle_demoted": true,
+    "notes": "demote_rate = demoted APPROVE / APPROVE cases; F156 adds hub-archival util gap (partial recovery idle)"
+  }
+}

@@ -2653,3 +2653,30 @@ Maker/Checker: adopt (F154) is maker; recovery util (F155) is checker that alway
 ### SHA
 `6357b5e8c1d5fc02e69c12f498feca7915d83903`
 
+## 2026-08-01 — F156 hub-archival util gap critic demote + LOO floor
+
+### Papers / posts
+- **Assay** (arXiv 2606.15390): skills with negative/zero effect must be suppressed — idle always skills are free-riders.
+- **Agent skill evaluation survey** (arXiv 2606.11435): dual-rollout contribution = with/without skill gap.
+- Live F155: util_rate=0.5 with hub_archival_util_gap while memory CLI hit — F121 full-gap demote missed the slice.
+
+### Insight
+F155 measured hub-archival inject≠hub_boost; F121 only demotes when *all* recovery tools idle. Highest ROI: dedicated F156 checker demotes APPROVE on hub_archival_util_gap (partial util), plus LOO floor when multi-tenant recovery-util federate proves hub_archival tool hits.
+
+### Feature shipped (F156)
+- `run_f156_hub_archival_util` checker + composite weight 0.08
+- decide_verdict: APPROVE → COMMENT on hub_archival_util_gap_idle_no_hub_boost
+- demote-eval case `hub_archival_util_idle_approve` + paper metric
+- skill_attribution LOO floor from recovery-util hub_archival federate hits
+- skill_loop/doctor soft `hub_archival_util_critic_ok`
+
+### Loop-engineering
+Maker/Checker: agent may APPROVE; F156 checker recomputes util slice offline and demotes without LLM.
+
+### Metric
+- Offline fixture f156_ok; demote-eval hub_archival_util_idle_demoted; eval_pass
+- Live insecure-demo: recall=1.0 tp=4
+- Modal pytorch#191831 BIT3_OK ~117.5s log_streaming
+
+### SHA
+`pending`

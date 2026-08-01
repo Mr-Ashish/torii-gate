@@ -1,0 +1,168 @@
+{
+  "feature": "F84",
+  "schema": 1,
+  "f114": true,
+  "tool_outcome": true,
+  "scored_at": "2026-08-01T10:04:30Z",
+  "selected_n": 10,
+  "hit_n": 10,
+  "hit_rate": 1.0,
+  "prose_hit_n": 10,
+  "tool_hit_n": 2,
+  "tool_hit_rate": 0.2,
+  "hits": [
+    {
+      "id": "skill-archival-memory-search",
+      "hit": true,
+      "matched": [
+        "not",
+        "core",
+        "path:line",
+        "archival",
+        "memory",
+        "search"
+      ],
+      "n_matched": 6,
+      "prose_hit": true,
+      "tool_hit": false,
+      "tool_matched": []
+    },
+    {
+      "id": "skill-f74-exploit-scenario",
+      "hit": true,
+      "matched": [
+        "source",
+        "attacker",
+        "pickle",
+        "trigger",
+        "request changes"
+      ],
+      "n_matched": 5,
+      "prose_hit": true,
+      "tool_hit": false,
+      "tool_matched": []
+    },
+    {
+      "id": "skill-f74-prefer-chain-json",
+      "hit": true,
+      "matched": [
+        "chain",
+        "source",
+        "json"
+      ],
+      "n_matched": 3,
+      "prose_hit": true,
+      "tool_hit": false,
+      "tool_matched": []
+    },
+    {
+      "id": "skill-prefer-critic-early",
+      "hit": true,
+      "matched": [
+        "path:line",
+        "chain",
+        "critic"
+      ],
+      "n_matched": 3,
+      "prose_hit": true,
+      "tool_hit": false,
+      "tool_matched": []
+    },
+    {
+      "id": "skill-prefer-hub-archival-early",
+      "hit": true,
+      "matched": [
+        "not",
+        "path:line",
+        "archival"
+      ],
+      "n_matched": 3,
+      "prose_hit": true,
+      "tool_hit": false,
+      "tool_matched": []
+    },
+    {
+      "id": "skill-prefer-memory-cli-early",
+      "hit": true,
+      "matched": [
+        "path:line",
+        "pickle",
+        "memory"
+      ],
+      "n_matched": 3,
+      "prose_hit": true,
+      "tool_hit": true,
+      "tool_matched": [
+        "torii_memory.py",
+        "archival_memory_search.py",
+        "memory_temporal_graph.py"
+      ]
+    },
+    {
+      "id": "skill-prefer-product-cli",
+      "hit": true,
+      "matched": [
+        "path:line",
+        "product"
+      ],
+      "n_matched": 2,
+      "prose_hit": true,
+      "tool_hit": false,
+      "tool_matched": []
+    },
+    {
+      "id": "skill-preserve-deep-tools",
+      "hit": true,
+      "matched": [
+        "patterns"
+      ],
+      "n_matched": 1,
+      "prose_hit": true,
+      "tool_hit": false,
+      "tool_matched": []
+    },
+    {
+      "id": "skill-soft-tool-nudge",
+      "hit": true,
+      "matched": [
+        "find",
+        "diff",
+        "blocking"
+      ],
+      "n_matched": 3,
+      "prose_hit": true,
+      "tool_hit": false,
+      "tool_matched": []
+    },
+    {
+      "id": "skill-tool-depth-hunks",
+      "hit": true,
+      "matched": [
+        "diff"
+      ],
+      "n_matched": 1,
+      "prose_hit": true,
+      "tool_hit": true,
+      "tool_matched": [
+        "Diff"
+      ]
+    }
+  ],
+  "review": "docs/benchmarks/traces/f156-hub-archival-util-critic/live/review-bench-f70.raw.md",
+  "federated_skill_themes": [
+    "skill-archival-memory-search",
+    "skill-f74-exploit-scenario",
+    "skill-f74-prefer-chain-json",
+    "skill-prefer-critic-early",
+    "skill-prefer-hub-archival-early",
+    "skill-prefer-memory-cli-early",
+    "skill-prefer-product-cli",
+    "skill-preserve-deep-tools",
+    "skill-soft-tool-nudge",
+    "skill-tool-depth-hunks"
+  ],
+  "tool_outcome_skills": [
+    "skill-prefer-memory-cli-early",
+    "skill-tool-depth-hunks"
+  ]
+}

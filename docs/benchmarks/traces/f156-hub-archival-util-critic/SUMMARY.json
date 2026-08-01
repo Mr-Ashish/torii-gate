@@ -1,0 +1,25 @@
+{
+  "feature": "F156",
+  "title": "hub-archival util gap critic demote + LOO floor",
+  "scored_at": "2026-08-01T10:07:10Z",
+  "live": {
+    "recall": 1.0,
+    "tp": 4,
+    "fn": 0,
+    "verdict": "REQUEST_CHANGES",
+    "passed": 1,
+    "model": "deepseek/deepseek-v4-pro"
+  },
+  "modal": {
+    "repo": "pytorch/pytorch",
+    "pr": 191831,
+    "outcome": "BIT3_OK",
+    "elapsed_s": 117.5,
+    "log_streaming": true,
+    "modal_url": "https://modal.com/apps/mr-ashish/main/ap-YAtf3NY1k4y1MhJPtUL9xj"
+  },
+  "offline": {
+    "critic_fixture_f156_ok": true,
+    "demote_eval_hub_archival_util_idle_demoted": true
+  }
+}

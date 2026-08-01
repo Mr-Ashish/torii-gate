@@ -1,0 +1,16 @@
+{
+  "hits": [
+    {
+      "id": "skill-prefer-hub-archival-early",
+      "tool_hit": false,
+      "hit": true,
+      "prose_hit": true
+    },
+    {
+      "id": "skill-prefer-memory-cli-early",
+      "tool_hit": true,
+      "hit": true
+    }
+  ],
+  "tool_hit_n": 1
+}

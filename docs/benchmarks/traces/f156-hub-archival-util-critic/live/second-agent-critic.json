@@ -1,0 +1,270 @@
+{
+  "schema_version": 1,
+  "feature": "F78",
+  "at": "2026-08-01T10:04:38Z",
+  "review": "docs/benchmarks/traces/f156-hub-archival-util-critic/live/review-bench-f70.md",
+  "out_dir": "docs/benchmarks/traces/f156-hub-archival-util-critic/live",
+  "maker_verdict": "REQUEST_CHANGES",
+  "panel": {
+    "composite": 0.8013,
+    "level": "L2",
+    "checkers_ok": 13,
+    "checkers_total": 14,
+    "pass_rate": 0.9286
+  },
+  "decision": {
+    "maker_verdict": "REQUEST_CHANGES",
+    "recommended_verdict": "REQUEST_CHANGES",
+    "demoted": false,
+    "reasons": [],
+    "path_evidence": 0.75,
+    "composite": 0.8013,
+    "applied_demote": false
+  },
+  "checkers": [
+    {
+      "id": "structure",
+      "name": "Verdict structure",
+      "ok": true,
+      "score": 1.0,
+      "level": "",
+      "detail": {
+        "verdict": "REQUEST_CHANGES",
+        "has_summary": true,
+        "has_blocking": true,
+        "has_checked": true,
+        "path_mentions": 13
+      },
+      "error": ""
+    },
+    {
+      "id": "f70_dual_critic",
+      "name": "Dual-pass path/FP/TP critic (F70+F95+F101 graph)",
+      "ok": false,
+      "score": 0.3333,
+      "level": "",
+      "detail": {
+        "precision_proxy": 0.3333,
+        "effective_precision": 0.2696,
+        "effective_aware": true,
+        "graph_supersede_aware": true,
+        "graph_supersede_edges": 0,
+        "effective_floor": 0.25,
+        "weak_evidence": 14,
+        "confirmed_tp": 7,
+        "stale_tp_match": 0,
+        "superseded_tp": 0,
+        "likely_fp": 0,
+        "chunk_count": 21
+      },
+      "error": ""
+    },
+    {
+      "id": "f72_chain",
+      "name": "Full-chain revalidation (F72)",
+      "ok": true,
+      "score": 0.8571,
+      "level": "",
+      "detail": {
+        "full_chain_rate": 0.8571,
+        "scorecard_pct": 60.7,
+        "verdict_checker": "REQUEST_CHANGES",
+        "finding_count": 21,
+        "unvalidated": 0
+      },
+      "error": ""
+    },
+    {
+      "id": "f73_fitness",
+      "name": "Trajectory fitness (F73)",
+      "ok": true,
+      "score": 0.7829,
+      "level": "L2",
+      "detail": {
+        "composite": 0.7829,
+        "path_evidence": 0.75,
+        "procedure": 0.9675,
+        "tool_use": 0.68,
+        "chain_quality": 0.7,
+        "verdict": "REQUEST_CHANGES"
+      },
+      "error": ""
+    },
+    {
+      "id": "f75_memory",
+      "name": "Scoped memory conflicts (F75)",
+      "ok": true,
+      "score": 1.0,
+      "level": "",
+      "detail": {
+        "conflict_count": 0,
+        "suppress_count": 0,
+        "item_count": 8
+      },
+      "error": ""
+    },
+    {
+      "id": "f121_recovery_util",
+      "name": "Recovery skill utilization (F121)",
+      "ok": true,
+      "score": 1.0,
+      "level": "",
+      "detail": {
+        "utilization_gap": false,
+        "util_rate": 1.0,
+        "recovery_injected": [],
+        "tool_hit_ids": [],
+        "idle_ids": [],
+        "inject_chars": 0,
+        "f120_chars_saved": 0,
+        "hub_archival_util_gap": false,
+        "hub_archival_injected": false,
+        "hub_archival_tool_hit": false
+      },
+      "error": ""
+    },
+    {
+      "id": "f136_scorecard_util",
+      "name": "Scorecard skill utilization (F136)",
+      "ok": true,
+      "score": 1.0,
+      "level": "",
+      "detail": {
+        "utilization_gap": false,
+        "util_rate": 1.0,
+        "scorecard_injected": [],
+        "scorecard_injected_n": 0,
+        "tool_hit_ids": [],
+        "idle_ids": [],
+        "inject_chars": 0
+      },
+      "error": ""
+    },
+    {
+      "id": "f127_hub_gap",
+      "name": "Hub gap recovery pressure (F127)",
+      "ok": true,
+      "score": 0.7,
+      "level": "",
+      "detail": {
+        "gap_pressure": 0.4756,
+        "thr": 0.34,
+        "high": true,
+        "reason": "no_recovery_injected",
+        "privacy_ok": true
+      },
+      "error": ""
+    },
+    {
+      "id": "f139_scorecard_hub_gap",
+      "name": "Scorecard hub gap pressure (F139)",
+      "ok": true,
+      "score": 1.0,
+      "level": "",
+      "detail": {
+        "gap_pressure": 0.0,
+        "thr": 0.34,
+        "high": false,
+        "reason": "no_scorecard_injected",
+        "privacy_ok": true,
+        "hub_skill_n": 0
+      },
+      "error": ""
+    },
+    {
+      "id": "f141_memory_util",
+      "name": "Memory tool utilization (F141)",
+      "ok": true,
+      "score": 1.0,
+      "level": "",
+      "detail": {
+        "feature": "F141",
+        "utilization_gap": false,
+        "util_score": 1.0,
+        "hit_count": 23,
+        "inject_offered": true,
+        "tool_call_turns": 2,
+        "tools_used": [
+          "archival_search",
+          "memory_compound",
+          "memory_consolidate",
+          "memory_events",
+          "memory_graph",
+          "memory_loop",
+          "memory_tiers",
+          "scoped_recall"
+        ],
+        "reason": "memory_tools_used"
+      },
+      "error": ""
+    },
+    {
+      "id": "f143_memory_hub_gap",
+      "name": "Memory hub gap pressure (F143)",
+      "ok": true,
+      "score": 1.0,
+      "level": "",
+      "detail": {
+        "feature": "F143",
+        "gap_pressure": 0.0,
+        "thr": 0.34,
+        "high": false,
+        "util_score": 1.0,
+        "hit_count": 23,
+        "local_gap": false,
+        "inject_offered": true,
+        "hub_skill_n": 1,
+        "privacy_ok": true,
+        "reason": "memory_hub_gap_below_thr"
+      },
+      "error": ""
+    },
+    {
+      "id": "f150_recon_warm_hub",
+      "name": "Recon-warm hub heat (F150)",
+      "ok": true,
+      "score": 0.85,
+      "level": "",
+      "detail": {
+        "feature": "F150",
+        "heat": 0.0,
+        "thr": 0.34,
+        "high": false,
+        "theme_n": 0,
+        "max_tenants": 0,
+        "hub_boost_n": 0,
+        "used_hub": false,
+        "privacy_ok": true,
+        "reason": "recon_warm_heat_below_thr"
+      },
+      "error": ""
+    },
+    {
+      "id": "f156_hub_archival_util",
+      "name": "Hub-archival util gap (F156)",
+      "ok": true,
+      "score": 1.0,
+      "level": "",
+      "detail": {
+        "enabled": true,
+        "hub_archival_injected": false,
+        "hub_archival_util_gap": false,
+        "reason": "hub_archival_not_injected",
+        "skill_id": "skill-prefer-hub-archival-early"
+      },
+      "error": ""
+    },
+    {
+      "id": "f81_llm",
+      "name": "LLM checker (F81, skipped)",
+      "ok": true,
+      "score": 0.5,
+      "level": "",
+      "detail": {
+        "skipped": true,
+        "reason": "TORII_LLM_CRITIC disabled"
+      },
+      "error": ""
+    }
+  ]
+}

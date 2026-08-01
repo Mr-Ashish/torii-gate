@@ -52,6 +52,8 @@ FEATURE = "F88"
 FEATURE_TOOL = "F115"
 FEATURE_HUB = "F127"
 FEATURE_SCORECARD = "F140"
+FEATURE_HUB_ARCHIVAL = "F156"
+HUB_ARCHIVAL_SKILL_ID = "skill-prefer-hub-archival-early"
 SCHEMA = 1
 LEDGER_NAME = "skill-attribution.json"
 
@@ -193,10 +195,81 @@ def hub_attr_enabled() -> bool:
     return raw not in _FALSEY
 
 
+def hub_archival_attr_enabled() -> bool:
+    """F156: LOO floor for hub-archival when recovery-util federate has tool hits."""
+    raw = (os.environ.get("TORII_SKILL_ATTR_HUB_ARCHIVAL") or "1").strip().lower()
+    return raw not in _FALSEY
+
+
 def scorecard_attr_enabled() -> bool:
     """F140: floor contribution for scorecard hub / scorecard_ops fitness skills."""
     raw = (os.environ.get("TORII_SKILL_ATTR_SCORECARD") or "1").strip().lower()
     return raw not in _FALSEY
+
+
+def _load_hub_archival_util_skills(root: Path) -> dict[str, dict[str, Any]]:
+    """F156: hub-archival skill → multi-tenant recovery util tool evidence.
+
+    Privacy-safe: skill ids + bins/hits only from recovery-util-signals.
+    Floors LOO so dual-gate does not free-ride-reject a skill with hub tool proof.
+    """
+    out: dict[str, dict[str, Any]] = {}
+    if not hub_archival_attr_enabled():
+        return out
+    paths = [
+        root / "memory" / "federation" / "recovery-util-signals.json",
+    ]
+    od = (os.environ.get("OUT_DIR") or "").strip()
+    if od:
+        paths.insert(0, Path(od) / "recovery-util-signals.json")
+    hits = 0
+    tenants = 0
+    tool_hits = 0
+    for p in paths:
+        if not p.is_file():
+            continue
+        try:
+            data = json.loads(p.read_text(encoding="utf-8"))
+        except (OSError, json.JSONDecodeError):
+            continue
+        sigs = data.get("signals") if isinstance(data, dict) else data
+        if not isinstance(sigs, list):
+            continue
+        for s in sigs:
+            if not isinstance(s, dict):
+                continue
+            tags = [str(t).lower() for t in (s.get("tags") or [])]
+            theme = str(s.get("theme") or s.get("id") or "").lower()
+            is_ha = (
+                "hub_archival" in tags
+                or "f155" in tags
+                or "f156" in tags
+                or HUB_ARCHIVAL_SKILL_ID in theme
+                or "prefer-hub-archival" in theme
+            )
+            if not is_ha:
+                continue
+            util_bin = str(s.get("util_rate_bin") or "").lower()
+            if util_bin == "gap" or "utilization_gap" in tags:
+                # gap signals do not floor contribution (idle evidence)
+                continue
+            hits += max(1, int(s.get("hits") or 1))
+            tool_hits += max(1, int(s.get("tool_hits") or s.get("hits") or 1))
+            tenants = max(
+                tenants,
+                int(s.get("tenants") or len(s.get("tenant_hashes") or []) or 1),
+            )
+        if hits:
+            break
+    if hits >= 1:
+        out[HUB_ARCHIVAL_SKILL_ID] = {
+            "hub_ingested_n": hits,
+            "tool_hit_n": tool_hits,
+            "hub_priority_delta": min(40, 5 + 8 * min(4, tenants) + 3 * min(6, tool_hits)),
+            "kind": "hub_archival_util",
+            "tenants": tenants,
+        }
+    return out
 
 
 def _load_hub_ingested_skills(root: Path) -> dict[str, dict[str, Any]]:
@@ -327,7 +400,7 @@ def attribute(
     log_path: Path | None = None,
     out_dir: Path | None = None,
 ) -> dict[str, Any]:
-    """Leave-one-out + unique keyword + tool-outcome + F127/F140 hub floors."""
+    """Leave-one-out + unique keyword + tool-outcome + F127/F140/F156 hub floors."""
     root = root or _root()
     sr = _import_mod("skill_router")
     paths = paths or list(DEMO_PATHS)
@@ -335,6 +408,7 @@ def attribute(
     by_id = {c.id: c for c in cards}
     hub_skills = _load_hub_ingested_skills(root)
     sc_hub_skills = _load_scorecard_hub_skills(root)
+    ha_skills = _load_hub_archival_util_skills(root)
 
     if selected is None:
         sel = sr.select_skills(cards, paths)
@@ -422,6 +496,20 @@ def attribute(
             if score < floor:
                 score = floor
                 hub_floored.append(sid)
+        # F156: hub-archival recovery-util federate tool hits → LOO floor
+        ha_ent = ha_skills.get(sid)
+        ha_floor = False
+        if ha_ent and hub_archival_attr_enabled():
+            ha_floor = True
+            floor_ha = 0.8 + min(
+                0.5, float(ha_ent.get("hub_priority_delta") or 0) / 80.0
+            )
+            if int(ha_ent.get("tool_hit_n") or 0) >= 1:
+                floor_ha = max(floor_ha, 1.0)
+            if score < floor_ha:
+                score = floor_ha
+                if sid not in hub_floored:
+                    hub_floored.append(sid)
         # F140: scorecard hub / scorecard_ops fitness themes get LOO floor
         sc_ent = sc_hub_skills.get(sid)
         sc_floor = False
@@ -444,6 +532,7 @@ def attribute(
             and (len(tool_unique) == 0)
             and not getattr(card, "always", False)
             and not hub_floor
+            and not ha_floor
             and not sc_floor
         )
         rows.append(
@@ -463,8 +552,9 @@ def attribute(
                 "contribution": round(score, 3),
                 "free_rider": free_rider,
                 "always": bool(getattr(card, "always", False)),
-                "hub_ingested": bool(hub_ent),
-                "hub_floor": hub_floor and sid in hub_floored,
+                "hub_ingested": bool(hub_ent) or bool(ha_ent),
+                "hub_floor": (hub_floor or ha_floor) and sid in hub_floored,
+                "hub_archival_floor": ha_floor and sid in hub_floored,
                 "scorecard_hub": bool(sc_ent),
                 "scorecard_floor": sc_floor and sid in scorecard_floored,
             }
@@ -484,6 +574,9 @@ def attribute(
         "feature": FEATURE,
         "feature_tool": FEATURE_TOOL if use_tools else None,
         "feature_hub": FEATURE_HUB if hub_attr_enabled() else None,
+        "feature_hub_archival": FEATURE_HUB_ARCHIVAL
+        if hub_archival_attr_enabled()
+        else None,
         "feature_scorecard": FEATURE_SCORECARD if scorecard_attr_enabled() else None,
         "schema": SCHEMA,
         "scored_at": _now(),
