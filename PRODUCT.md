@@ -186,6 +186,8 @@ budget always → compact body → score tool_hit → util gap? → budgeted re-
 
 **Scorecard skill federate + fitness blend (F134):** adopted scorecard-gap skills federate as privacy-safe themes (`scorecard-skill-signals.json`); trajectory fitness soft-blends brand_ready / scorecard skill presence into procedure+tool dims so ops readiness compounds into run quality scores.
 
+**Scorecard fitness ingest + doctor panel (F135):** F134 themes enter the skill fitness ledger (`ingest-scorecard` / cycle) with tool-hit shield + router boost; doctor and product scorecard surface `scorecard_ops_ok` (soft metric). Adopted ops skills no longer rot as zombies before live hits.
+
 **Ops:** `python3 scripts/memory_loop_status.py scorecard` → L0–L3. Smoke requires L3 on the hub tree. CI job summary annotates readiness; optional advisory `torii/memory-loop` via `TORII_MEMORY_LOOP_STATUS_COMMIT=1`.
 
 ---

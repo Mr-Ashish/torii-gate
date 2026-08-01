@@ -1,0 +1,33 @@
+{
+  "feature": "F85",
+  "feature_tool": "F116",
+  "feature_scorecard": "F135",
+  "f116": true,
+  "f135": true,
+  "fixture_pass": true,
+  "zombie_demoted": true,
+  "good_not_demoted": true,
+  "good_boost": 2.0,
+  "zombie_boost": -2.0,
+  "privacy_ok": true,
+  "good_in_fed": true,
+  "zombie_not_fed": true,
+  "tool_shielded": true,
+  "tool_boost_ok": true,
+  "tool_in_fed": true,
+  "tool_outcome_fed_n": 1,
+  "tool_skills": [
+    "skill-prefer-memory-cli-early"
+  ],
+  "f135_sc_shielded": true,
+  "f135_sc_boost": 1.0,
+  "f135_sc_ops_ok": true,
+  "f135_sc_privacy_ok": true,
+  "f135_sc_ingested_n": 2,
+  "f135_sc_in_fed": true,
+  "demoted": [
+    "skill-zombie-docs"
+  ],
+  "cycle_fed_n": 2,
+  "ledger": "/var/folders/2b/l8r1b38n75jd77wtd44p4ycr0000gn/T/tmpoxxz41_b/.torii/skill-fitness.json"
+}

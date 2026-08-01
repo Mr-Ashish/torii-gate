@@ -42,6 +42,14 @@ class SkillFitnessTests(unittest.TestCase):
         self.assertTrue(data.get("tool_shielded"), data)
         self.assertTrue(data.get("tool_in_fed"), data)
         self.assertTrue(data.get("tool_boost_ok"), data)
+        # F135 scorecard skill fitness ingest
+        self.assertEqual(data.get("feature_scorecard"), "F135")
+        self.assertTrue(data.get("f135"), data)
+        self.assertTrue(data.get("f135_sc_shielded"), data)
+        self.assertTrue(data.get("f135_sc_ops_ok"), data)
+        self.assertTrue(data.get("f135_sc_privacy_ok"), data)
+        self.assertGreaterEqual(int(data.get("f135_sc_ingested_n") or 0), 1)
+        self.assertTrue(data.get("f135_sc_in_fed"), data)
 
     def test_status(self):
         r = _run(["status"])
@@ -96,6 +104,75 @@ class SkillFitnessTests(unittest.TestCase):
         self.assertIn("tool_outcome", mem.get("tags") or [])
         self.assertIn("f116", mem.get("tags") or [])
         self.assertNotIn("/Users/", json.dumps(sigs))
+
+    def test_f135_scorecard_ingest_unit(self):
+        """F135: federated scorecard skill themes shield + boost fitness ledger."""
+        import importlib.util
+
+        path = ROOT / "scripts" / "skill_fitness.py"
+        spec = importlib.util.spec_from_file_location("skill_fitness", path)
+        mod = importlib.util.module_from_spec(spec)
+        assert spec and spec.loader
+        spec.loader.exec_module(mod)
+        prev_root = os.environ.get("TORII_ROOT")
+        prev_sc = os.environ.get("TORII_SKILL_FITNESS_SCORECARD")
+        try:
+            with tempfile.TemporaryDirectory() as td:
+                root = Path(td)
+                os.environ["TORII_ROOT"] = str(root)
+                os.environ["TORII_SKILL_FITNESS_SCORECARD"] = "1"
+                fed = root / "memory" / "federation"
+                fed.mkdir(parents=True)
+                sc = "skill-prefer-product-scorecard"
+                doc = {
+                    "privacy_ok": True,
+                    "skill_ids": [sc],
+                    "signals": [
+                        {
+                            "id": "scorecard-skill-product",
+                            "theme": sc,
+                            "tags": ["scorecard_ops", "f134", "tool_outcome"],
+                            "keywords": ["product-scorecard"],
+                            "path_basenames": [],
+                        }
+                    ],
+                }
+                (fed / "scorecard-skill-signals.json").write_text(
+                    json.dumps(doc), encoding="utf-8"
+                )
+                ledger = mod.empty_ledger()
+                # pre-demote as if zombie
+                ent = mod._skill_entry(ledger, sc)
+                ent["selected_n"] = 5
+                ent["hit_n"] = 0
+                ent["hit_rate"] = 0.0
+                ent["demoted"] = True
+                ledger["skills"][sc] = ent
+                rep = mod.ingest_scorecard_skills(doc, ledger, root=root, save=True)
+                self.assertGreaterEqual(rep["ingested_n"], 1)
+                self.assertTrue(rep["scorecard_ops_ok"])
+                self.assertTrue(rep["privacy_ok"])
+                ledger = mod.apply_demotions(mod.load_ledger(mod.ledger_path(root)))
+                self.assertNotIn(sc, mod.demoted_set(ledger))
+                self.assertGreater(mod.fitness_boosts(ledger).get(sc, 0), 0)
+                sigs = mod.federate_signals(ledger, tenant="tenant-secret-xyz")
+                blob = json.dumps(sigs)
+                self.assertNotIn("/Users/", blob)
+                self.assertNotIn("tenant-secret-xyz", blob)
+                sc_sig = next(
+                    s for s in sigs if sc in str(s.get("id") or s.get("theme") or "")
+                )
+                self.assertIn("scorecard_ops", sc_sig.get("tags") or [])
+                self.assertIn("f135", sc_sig.get("tags") or [])
+        finally:
+            if prev_root is None:
+                os.environ.pop("TORII_ROOT", None)
+            else:
+                os.environ["TORII_ROOT"] = prev_root
+            if prev_sc is None:
+                os.environ.pop("TORII_SKILL_FITNESS_SCORECARD", None)
+            else:
+                os.environ["TORII_SKILL_FITNESS_SCORECARD"] = prev_sc
 
     def test_install_ships_script(self):
         with tempfile.TemporaryDirectory() as td:

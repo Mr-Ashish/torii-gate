@@ -812,10 +812,20 @@ def cycle_scorecard(
     except Exception as exc:
         fed = {"soft_error": str(exc)[:120]}
 
+    # F135: fold federated scorecard themes into skill fitness ledger
+    sc_fit = None
+    try:
+        from skill_fitness import ingest_scorecard_skills  # type: ignore
+
+        sc_fit = ingest_scorecard_skills(None, root=root, save=True)
+    except Exception as exc:
+        sc_fit = {"soft_error": str(exc)[:120]}
+
     return {
         "feature": FEATURE_SCORECARD,
         "feature_base": FEATURE,
         "feature_federate": "F134",
+        "feature_fitness": "F135",
         "f87": True,
         "f118": True,
         "ok": True,
@@ -827,6 +837,7 @@ def cycle_scorecard(
         "gates_post": post_gates,
         "dual_contribution_pp": (gates or {}).get("dual_contribution_pp"),
         "federate": fed,
+        "scorecard_fitness": sc_fit,
         "active_scorecard": list_active_scorecard_skills(root),
     }
 

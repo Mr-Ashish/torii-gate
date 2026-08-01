@@ -1,5 +1,37 @@
 # Torii research → product log
 
+## 2026-08-01 — F135 scorecard skill fitness ingest + doctor panel
+
+### Papers / posts
+- FederatedSkill (arXiv 2606.03143): themes need local fitness compound, not export-only.
+- CoEvoSkills / EvoSkills: adopted skills without fitness feedback rot (zombie demote).
+- F134 federated scorecard skills; F126 hub recovery already ingested into fitness — scorecard did not.
+
+### OSS design patterns stolen
+1. skill_fitness.ingest_scorecard_skills → tool_hit shield + router boost.
+2. cycle: hits → hub recovery → scorecard → demote → federate.
+3. doctor/product scorecard soft scorecard_ops panel (not brand_ready gate).
+4. cycle-scorecard post-federate fitness ingest; CLI ingest-scorecard.
+
+### Insight
+Federated ops themes that never enter the fitness ledger still demote as zombies. Highest ROI: same F126 compound path for scorecard skills + doctor surface.
+
+### Feature shipped (F135)
+- skill_fitness F135 ingest + fixture + federate tags f135/scorecard_ops
+- torii doctor/scorecard scorecard_ops metrics; skill_loop_status soft fields
+- PRODUCT + research pattern; traces f135-scorecard-fitness-doctor/
+
+### Metric
+- Offline: fixture f135_sc_shielded privacy; pytest skill_fitness
+- Live: Modal pytorch e2e POST_COMMENT=0
+
+### Loop-engineering / Hermes practice used
+**Measure → federate → fitness → doctor surface** — scorecard ops mirror recovery F124/F126.
+
+### SHA
+`PENDING`
+
+
 ## 2026-08-01 — F134 federate scorecard skills + trajectory fitness blend
 
 ### Papers / posts

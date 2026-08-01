@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""F85/F116: Skill fitness ledger — demote zombies + tool-hit shield + federate.
+"""F85/F116/F126/F135: Skill fitness ledger — demote zombies + tool/scorecard shields.
 
 Research drivers (2026):
   - FederatedSkill (arXiv 2606.03143): skill library as federation unit; share
@@ -13,15 +13,19 @@ Research drivers (2026):
   - SigLeak / contrastive skill signatures: tool-outcome themes are portable
     skill evidence without raw trajectories.
   - MUSE-Autoskill: skill lifecycle create → evaluate → refine/demote.
+  - CoEvoSkills / EvoSkills: adopted skills need fitness feedback or they rot.
   - Prior Torii F84: skill-hits.json per run — no durable ledger, no demote,
     no hub federation of skill themes.
+  - F134: scorecard skills federate themes but never entered the fitness ledger
+    (recovery hub had F126; scorecard ops did not).
 
 Product thesis:
   Measure (F84) without action is theater. Highest ROI: compound hit rates into
   a local fitness ledger, **soft-demote** chronically low-hit skills from full
   progressive inject (index-only), **shield tool-effective recovery skills**
-  (F116), boost high-hit + tool-hit skills in the router, and emit F77-compatible
-  federated skill themes (id + hits + tool_outcome tags only).
+  (F116), **ingest F134 scorecard skill themes into fitness** (F135), boost
+  high-hit + tool-hit skills in the router, and emit F77-compatible federated
+  skill themes (id + hits + tool_outcome tags only).
 
 Commands:
   ingest   — fold skill-hits.json into .torii/skill-fitness.json
@@ -29,8 +33,9 @@ Commands:
   demote   — mark low hit_rate skills after min samples (tool-shielded)
   boosts   — per-skill score deltas for skill_router (+ tool bonus)
   federate — write privacy-safe skill theme signals → hub ingest path
-  cycle    — ingest → demote → federate (soft post-run)
-  fixture  — hermetic: hit skill boosts; zombie demotes; tool shield; privacy_ok
+  cycle    — ingest → hub recovery → scorecard skills → demote → federate
+  ingest-scorecard — F135 fold scorecard-skill-signals into ledger
+  fixture  — hermetic: hit skill boosts; zombie demotes; tool+scorecard shield
   apply    — print demoted + boosts JSON for assemble/router
 
 Env:
@@ -42,6 +47,7 @@ Env:
   TORII_SKILL_FITNESS_BOOST     default 2.0 max path-score bonus
   TORII_SKILL_FITNESS_TOOL      1 (default) | 0 — F116 tool_hit shield/boost/federate
   TORII_SKILL_FITNESS_HUB       1 (default) | 0 — F126 ingest hub recovery-util deltas
+  TORII_SKILL_FITNESS_SCORECARD 1 (default) | 0 — F135 ingest scorecard skill themes
   TORII_MEMORY_TENANT           optional for federate tenant hash
 """
 
@@ -61,8 +67,10 @@ from typing import Any
 FEATURE = "F85"
 FEATURE_TOOL = "F116"
 FEATURE_HUB = "F126"
+FEATURE_SCORECARD = "F135"
 SCHEMA = 1
 LEDGER_NAME = "skill-fitness.json"
+SCORECARD_FED_REL = "memory/federation/scorecard-skill-signals.json"
 
 _FALSEY = frozenset({"0", "false", "no", "off", "disabled", "n", "none", ""})
 _PATH_RX = re.compile(r"(?:/Users/|/home/|C:\\\\Users\\\\)", re.I)
@@ -94,6 +102,166 @@ def hub_fitness_enabled() -> bool:
     """F126: fold hub recovery-util post-score into local fitness ledger."""
     raw = (os.environ.get("TORII_SKILL_FITNESS_HUB") or "1").strip().lower()
     return raw not in _FALSEY
+
+
+def scorecard_fitness_enabled() -> bool:
+    """F135: fold F134 scorecard-skill-signals into local fitness ledger."""
+    raw = (os.environ.get("TORII_SKILL_FITNESS_SCORECARD") or "1").strip().lower()
+    return raw not in _FALSEY
+
+
+def _load_scorecard_fed_doc(root: Path) -> dict[str, Any] | None:
+    """Load privacy-safe scorecard skill federation doc (F134)."""
+    path = root / SCORECARD_FED_REL
+    if not path.is_file():
+        # also accept out_dir-style copy under .torii
+        alt = root / ".torii" / "scorecard-skill-signals.json"
+        path = alt if alt.is_file() else path
+    if not path.is_file():
+        return None
+    try:
+        doc = json.loads(path.read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError):
+        return None
+    return doc if isinstance(doc, dict) else None
+
+
+def ingest_scorecard_skills(
+    doc: dict[str, Any] | None = None,
+    ledger: dict[str, Any] | None = None,
+    *,
+    root: Path | None = None,
+    save: bool = True,
+) -> dict[str, Any]:
+    """F135: F134 scorecard skill themes → soft tool_hit / shield on ledger.
+
+    Consumes scorecard-skill-signals.json (skill_ids + scorecard_ops tags only).
+    Never stores paths, raw tenant names, or commands.
+    Active ops skills get tool-hit shield so they are not demoted as zombies
+    before live hits accumulate (CoEvoSkills: adopt without fitness = rot).
+    """
+    root = root or _root()
+    if not scorecard_fitness_enabled():
+        return {
+            "feature": FEATURE_SCORECARD,
+            "ingested_n": 0,
+            "reason": "scorecard_fitness_off",
+            "privacy_ok": True,
+            "scorecard_ops_ok": False,
+        }
+    if doc is None:
+        doc = _load_scorecard_fed_doc(root)
+    if not isinstance(doc, dict):
+        return {
+            "feature": FEATURE_SCORECARD,
+            "ingested_n": 0,
+            "reason": "no_scorecard_signals",
+            "privacy_ok": True,
+            "scorecard_ops_ok": False,
+        }
+
+    ledger = ledger if ledger is not None else load_ledger(ledger_path(root))
+    skill_ids: list[str] = []
+    for sid in doc.get("skill_ids") or []:
+        sid_s = str(sid).strip()
+        if sid_s and sid_s not in skill_ids:
+            skill_ids.append(sid_s)
+    for sig in doc.get("signals") or []:
+        if not isinstance(sig, dict):
+            continue
+        tags = sig.get("tags") or []
+        if "scorecard_ops" not in tags and "f134" not in tags:
+            # still accept theme that maps to skill-prefer-*
+            pass
+        theme = str(sig.get("theme") or sig.get("id") or "")
+        # reconstruct skill id from theme slug when possible
+        if theme.startswith("skill-prefer-") or theme.startswith("skill-"):
+            sid_s = theme[:96]
+            if sid_s not in skill_ids:
+                skill_ids.append(sid_s)
+        # keywords may carry skill stem
+        for kw in sig.get("keywords") or []:
+            k = str(kw).strip()
+            if k.startswith("skill-prefer-") and k not in skill_ids:
+                skill_ids.append(k[:96])
+
+    # also soft-load active scorecard skills from disk (ids only)
+    try:
+        sys.path.insert(0, str(Path(__file__).resolve().parent))
+        from skill_auto_adopt import list_active_scorecard_skills  # type: ignore
+
+        for sid in list_active_scorecard_skills(root):
+            if sid not in skill_ids:
+                skill_ids.append(sid)
+    except Exception:
+        pass
+
+    ingested: list[str] = []
+    for sid in skill_ids:
+        sid_s = str(sid).strip()
+        if not sid_s or _PATH_RX.search(sid_s) or "/" in sid_s or ".." in sid_s:
+            continue
+        sid_s = re.sub(r"[^A-Za-z0-9._-]+", "-", sid_s)[:96]
+        if not sid_s.startswith("skill-"):
+            # map bare stems
+            if sid_s.startswith("prefer-"):
+                sid_s = f"skill-{sid_s}"
+            else:
+                continue
+        # soft sample weight: scorecard ops are tool CLIs (doctor/scorecard)
+        weight = 2
+        ent = _skill_entry(ledger, sid_s)
+        ent["selected_n"] = int(ent.get("selected_n") or 0) + weight
+        ent["tool_hit_n"] = int(ent.get("tool_hit_n") or 0) + weight
+        ent["hit_n"] = int(ent.get("hit_n") or 0) + weight
+        sel = int(ent["selected_n"])
+        ent["hit_rate"] = round(int(ent["hit_n"]) / sel, 4) if sel else 0.0
+        ent["tool_hit_rate"] = (
+            round(int(ent.get("tool_hit_n") or 0) / sel, 4) if sel else 0.0
+        )
+        ent["scorecard_ingested_n"] = int(ent.get("scorecard_ingested_n") or 0) + 1
+        ent["scorecard_ops"] = True
+        ent["last_seen"] = _now()
+        ent["last_scorecard_at"] = _now()
+        # never demote scorecard ops while tool fitness on
+        if tool_fitness_enabled():
+            ent["demoted"] = False
+        ingested.append(sid_s)
+
+    hist = ledger.setdefault("history", [])
+    hist.append(
+        {
+            "at": _now(),
+            "run_id": "scorecard_skills",
+            "feature": FEATURE_SCORECARD,
+            "ingested_n": len(ingested),
+            "skills": ingested[:16],
+        }
+    )
+    ledger["history"] = hist[-100:]
+    ledger["last_scorecard_ingest"] = {
+        "at": _now(),
+        "feature": FEATURE_SCORECARD,
+        "skills": ingested[:16],
+        "n": len(ingested),
+        "privacy_ok": bool(doc.get("privacy_ok", True)),
+    }
+    if save:
+        save_ledger(ledger, ledger_path(root))
+    privacy_blob = json.dumps(ledger.get("last_scorecard_ingest") or {})
+    privacy_ok = (
+        "/Users/" not in privacy_blob
+        and "/home/" not in privacy_blob
+        and bool(doc.get("privacy_ok", True))
+    )
+    return {
+        "feature": FEATURE_SCORECARD,
+        "ingested_n": len(ingested),
+        "skills": ingested[:16],
+        "privacy_ok": privacy_ok,
+        "scorecard_ops_ok": len(ingested) >= 1,
+        "fed_skill_n": len(doc.get("skill_ids") or []),
+    }
 
 
 def ingest_hub_recovery(
@@ -476,6 +644,9 @@ def federate_signals(
         if use_tool and tool_n >= 1:
             tags.extend(["tool_outcome", "f116"])
             keywords.append("tool-outcome")
+        if ent.get("scorecard_ops") or int(ent.get("scorecard_ingested_n") or 0) >= 1:
+            tags.extend(["scorecard_ops", "f135"])
+            keywords.append("scorecard-ops")
         sig: dict[str, Any] = {
             "id": theme_slug,
             "theme": theme_slug,
@@ -552,6 +723,13 @@ def cycle(out_dir: Path | None = None, root: Path | None = None) -> dict[str, An
             # ledger already mutated; ensure demote sees tool shields
         except Exception as exc:
             hub_fit = {"soft_error": str(exc)[:120]}
+    # F135: fold F134 scorecard skill themes into ledger before demote
+    sc_fit = None
+    if scorecard_fitness_enabled():
+        try:
+            sc_fit = ingest_scorecard_skills(None, ledger, root=root, save=False)
+        except Exception as exc:
+            sc_fit = {"soft_error": str(exc)[:120]}
     ledger = apply_demotions(ledger)
     path = save_ledger(ledger, ledger_path(root))
     signals = federate_signals(ledger)
@@ -578,16 +756,23 @@ def cycle(out_dir: Path | None = None, root: Path | None = None) -> dict[str, An
         for sid, e in (ledger.get("skills") or {}).items()
         if int(e.get("tool_hit_n") or 0) >= 1
     ]
+    scorecard_skills = [
+        sid
+        for sid, e in (ledger.get("skills") or {}).items()
+        if e.get("scorecard_ops") or int(e.get("scorecard_ingested_n") or 0) >= 1
+    ]
     return {
         "feature": FEATURE,
         "feature_tool": FEATURE_TOOL if tool_fitness_enabled() else None,
         "feature_hub": FEATURE_HUB if hub_fitness_enabled() else None,
+        "feature_scorecard": FEATURE_SCORECARD if scorecard_fitness_enabled() else None,
         "ingested": ingested,
         "hits_path": str(hits_path) if hits_path else None,
         "ledger": str(path),
         "demoted": list(ledger.get("demoted") or []),
         "tool_shielded": list((ledger.get("last_demote") or {}).get("tool_shielded") or []),
         "tool_skills": tool_skills,
+        "scorecard_skills": scorecard_skills,
         "boosts": fitness_boosts(ledger),
         "fed_path": str(fed_path),
         "fed_n": len(signals),
@@ -596,6 +781,7 @@ def cycle(out_dir: Path | None = None, root: Path | None = None) -> dict[str, An
         ),
         "hub": hub_result,
         "hub_fitness": hub_fit,
+        "scorecard_fitness": sc_fit,
         "privacy_ok": True,
     }
 
@@ -746,6 +932,29 @@ def cmd_apply(args: argparse.Namespace) -> int:
 
 
 def cmd_fixture(args: argparse.Namespace) -> int:
+    prev_env = {
+        k: os.environ.get(k)
+        for k in (
+            "TORII_ROOT",
+            "TORII_SKILL_FITNESS",
+            "TORII_SKILL_FITNESS_MIN_N",
+            "TORII_SKILL_FITNESS_DEMOTE",
+            "TORII_SKILL_FITNESS_BOOST",
+            "TORII_MEMORY_TENANT",
+            "TORII_SKILL_FITNESS_SCORECARD",
+        )
+    }
+    try:
+        return _cmd_fixture_body()
+    finally:
+        for k, v in prev_env.items():
+            if v is None:
+                os.environ.pop(k, None)
+            else:
+                os.environ[k] = v
+
+
+def _cmd_fixture_body() -> int:
     with tempfile.TemporaryDirectory() as td:
         root = Path(td)
         os.environ["TORII_ROOT"] = str(root)
@@ -754,6 +963,7 @@ def cmd_fixture(args: argparse.Namespace) -> int:
         os.environ["TORII_SKILL_FITNESS_DEMOTE"] = "0.34"
         os.environ["TORII_SKILL_FITNESS_BOOST"] = "2.0"
         os.environ["TORII_MEMORY_TENANT"] = "fixture-tenant-a"
+        os.environ["TORII_SKILL_FITNESS_SCORECARD"] = "1"
 
         # good skill always hits; zombie never hits
         good = "skill-f74-prefer-chain-json"
@@ -878,6 +1088,52 @@ def cmd_fixture(args: argparse.Namespace) -> int:
         )
         cyc = cycle(out_dir=out_dir, root=root)
 
+        # F135: plant scorecard skill signals → fitness ingest shields ops skills
+        sc_skill = "skill-prefer-product-scorecard"
+        fed_dir = root / "memory" / "federation"
+        fed_dir.mkdir(parents=True, exist_ok=True)
+        sc_doc = {
+            "schema_version": 1,
+            "feature": "F133",
+            "feature_federate": "F134",
+            "privacy_ok": True,
+            "skill_ids": [sc_skill, "skill-prefer-demote-eval-check"],
+            "signals": [
+                {
+                    "id": "scorecard-skill-skill-prefer-product-scorecard",
+                    "theme": sc_skill,
+                    "tags": ["scorecard_ops", "federated_skill", "f134", "tool_outcome"],
+                    "keywords": ["product-scorecard", "scorecard-gap"],
+                    "path_basenames": [],
+                    "hits": 1,
+                    "tool_hits": 1,
+                    "source": "scorecard_skill_adopt",
+                }
+            ],
+        }
+        (fed_dir / "scorecard-skill-signals.json").write_text(
+            json.dumps(sc_doc, indent=2) + "\n", encoding="utf-8"
+        )
+        # adversarial: pretent demoted before ingest
+        ent_sc = _skill_entry(ledger, sc_skill)
+        ent_sc["selected_n"] = 4
+        ent_sc["hit_n"] = 0
+        ent_sc["hit_rate"] = 0.0
+        ent_sc["demoted"] = True
+        ledger.setdefault("skills", {})[sc_skill] = ent_sc
+        sc_fit = ingest_scorecard_skills(sc_doc, ledger, root=root, save=True)
+        ledger = apply_demotions(load_ledger(ledger_path(root)))
+        sc_shielded = sc_skill not in demoted_set(ledger)
+        sc_boost = fitness_boosts(ledger).get(sc_skill, 0) > 0
+        sc_privacy = bool(sc_fit.get("privacy_ok")) and "fixture-tenant-a" not in json.dumps(
+            sc_fit
+        )
+        sc_ops_ok = bool(sc_fit.get("scorecard_ops_ok"))
+        sc_in_fed_out = any(
+            sc_skill in str(s.get("id") or s.get("theme") or "")
+            for s in federate_signals(ledger, tenant="fixture-tenant-a")
+        )
+
         fixture_pass = all(
             [
                 zombie_demoted,
@@ -896,6 +1152,13 @@ def cmd_fixture(args: argparse.Namespace) -> int:
                 tool_privacy,
                 int(cyc.get("tool_outcome_fed_n") or 0) >= 1
                 or tool_skill in (cyc.get("tool_skills") or []),
+                # F135
+                sc_shielded,
+                sc_boost,
+                sc_privacy,
+                sc_ops_ok,
+                int(sc_fit.get("ingested_n") or 0) >= 1,
+                sc_in_fed_out,
             ]
         )
         print(
@@ -903,7 +1166,9 @@ def cmd_fixture(args: argparse.Namespace) -> int:
                 {
                     "feature": FEATURE,
                     "feature_tool": FEATURE_TOOL,
+                    "feature_scorecard": FEATURE_SCORECARD,
                     "f116": True,
+                    "f135": True,
                     "fixture_pass": fixture_pass,
                     "zombie_demoted": zombie_demoted,
                     "good_not_demoted": good_not_demoted,
@@ -917,6 +1182,12 @@ def cmd_fixture(args: argparse.Namespace) -> int:
                     "tool_in_fed": tool_in_fed,
                     "tool_outcome_fed_n": cyc.get("tool_outcome_fed_n"),
                     "tool_skills": cyc.get("tool_skills"),
+                    "f135_sc_shielded": sc_shielded,
+                    "f135_sc_boost": fitness_boosts(ledger).get(sc_skill),
+                    "f135_sc_ops_ok": sc_ops_ok,
+                    "f135_sc_privacy_ok": sc_privacy,
+                    "f135_sc_ingested_n": sc_fit.get("ingested_n"),
+                    "f135_sc_in_fed": sc_in_fed_out,
                     "demoted": sorted(demoted_set(ledger)),
                     "cycle_fed_n": cyc.get("fed_n"),
                     "ledger": str(path),
@@ -952,8 +1223,45 @@ def main(argv: list[str] | None = None) -> int:
     pc.add_argument("--force", action="store_true")
     pc.set_defaults(func=cmd_cycle)
 
+    psc = sub.add_parser(
+        "ingest-scorecard",
+        help="F135 fold scorecard-skill-signals into fitness ledger",
+    )
+    psc.add_argument(
+        "--file",
+        default="",
+        help="Optional path to scorecard-skill-signals.json",
+    )
+    psc.set_defaults(func=cmd_ingest_scorecard)
+
     args = p.parse_args(argv)
     return int(args.func(args))
+
+
+def cmd_ingest_scorecard(args: argparse.Namespace) -> int:
+    """F135: CLI for scorecard skill theme → fitness ledger."""
+    root = _root()
+    doc = None
+    if args.file:
+        p = Path(args.file)
+        if p.is_file():
+            try:
+                doc = json.loads(p.read_text(encoding="utf-8"))
+            except (OSError, json.JSONDecodeError) as exc:
+                print(json.dumps({"feature": FEATURE_SCORECARD, "error": str(exc)[:120]}))
+                return 1
+    report = ingest_scorecard_skills(doc, root=root, save=True)
+    # re-apply demotions so shields take effect
+    ledger = apply_demotions(load_ledger(ledger_path(root)))
+    save_ledger(ledger, ledger_path(root))
+    report["demoted"] = list(ledger.get("demoted") or [])
+    report["boosts"] = {
+        k: v
+        for k, v in fitness_boosts(ledger).items()
+        if k in (report.get("skills") or [])
+    }
+    print(json.dumps(report, indent=2))
+    return 0 if report.get("privacy_ok", True) else 1
 
 
 if __name__ == "__main__":

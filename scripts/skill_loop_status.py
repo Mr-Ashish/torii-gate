@@ -222,6 +222,46 @@ def assess(root: Path | None = None, *, deep: bool = True) -> dict[str, Any]:
         if s in skills
     ]
     recovery_ok = len(recovery_active) >= 3
+    # F135: scorecard-gap ops skills (soft; not required for L3)
+    scorecard_active = [
+        s
+        for s in skills
+        if any(
+            x in s
+            for x in (
+                "scorecard",
+                "demote-eval",
+                "memory-util",
+                "hub-gap",
+                "dual-compound",
+                "workflow-scorecard",
+            )
+        )
+    ]
+    # fitness ledger scorecard ingest presence
+    scorecard_fitness_n = 0
+    fit_path = root / ".torii" / "skill-fitness.json"
+    if fit_path.is_file():
+        try:
+            import json as _json
+
+            led = _json.loads(fit_path.read_text(encoding="utf-8"))
+            scorecard_fitness_n = sum(
+                1
+                for e in (led.get("skills") or {}).values()
+                if isinstance(e, dict)
+                and (
+                    e.get("scorecard_ops")
+                    or int(e.get("scorecard_ingested_n") or 0) >= 1
+                )
+            )
+        except Exception:
+            scorecard_fitness_n = 0
+    fed_sc = root / "memory" / "federation" / "scorecard-skill-signals.json"
+    scorecard_fed_ok = fed_sc.is_file()
+    scorecard_ops_ok = (
+        len(scorecard_active) >= 1 or scorecard_fitness_n >= 1 or scorecard_fed_ok
+    )
 
     # assemble-context / run-torii-review / hermes / save-trace wiring
     assemble = (root / "scripts" / "assemble-context.sh").read_text(
@@ -328,6 +368,11 @@ def assess(root: Path | None = None, *, deep: bool = True) -> dict[str, Any]:
         and bool(wire.get("router_hub_score_cmd")),
         "recovery_hub_gap_ok": bool(wire.get("critic_hub_gap"))
         and bool(wire.get("critic_demote_eval")),
+        "feature_scorecard_ops": "F135",
+        "scorecard_active": scorecard_active,
+        "scorecard_ops_ok": scorecard_ops_ok,
+        "scorecard_fitness_n": scorecard_fitness_n,
+        "scorecard_fed_ok": scorecard_fed_ok,
         "pct": pct,
         "points": points,
         "max_points": max_points,

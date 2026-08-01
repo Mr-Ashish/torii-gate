@@ -287,6 +287,68 @@ def cmd_status(args: argparse.Namespace) -> int:
     return 0 if all(present.values()) else 1
 
 
+def _scorecard_ops_panel(root: Path) -> dict[str, Any]:
+    """F135: privacy-safe scorecard skill fitness readiness (soft panel)."""
+    panel: dict[str, Any] = {
+        "feature": "F135",
+        "active_n": 0,
+        "active": [],
+        "fed_n": 0,
+        "fitness_ingested_n": 0,
+        "scorecard_ops_ok": False,
+        "privacy_ok": True,
+    }
+    try:
+        sys.path.insert(0, str(_scripts_dir(root)))
+        from skill_auto_adopt import list_active_scorecard_skills  # type: ignore
+
+        active = list_active_scorecard_skills(root)
+        panel["active"] = active[:16]
+        panel["active_n"] = len(active)
+    except Exception as exc:
+        panel["active_soft_error"] = str(exc)[:80]
+    fed = root / "memory" / "federation" / "scorecard-skill-signals.json"
+    if fed.is_file():
+        try:
+            doc = json.loads(fed.read_text(encoding="utf-8"))
+            panel["fed_n"] = int(doc.get("count") or len(doc.get("signals") or []))
+            panel["fed_skill_n"] = len(doc.get("skill_ids") or [])
+            panel["privacy_ok"] = bool(doc.get("privacy_ok", True)) and (
+                "/Users/" not in fed.read_text(encoding="utf-8")
+            )
+        except (OSError, json.JSONDecodeError, TypeError):
+            pass
+    # fitness ledger scorecard ops entries
+    fit = root / ".torii" / "skill-fitness.json"
+    if fit.is_file():
+        try:
+            led = json.loads(fit.read_text(encoding="utf-8"))
+            sc_ids = [
+                sid
+                for sid, e in (led.get("skills") or {}).items()
+                if isinstance(e, dict)
+                and (
+                    e.get("scorecard_ops")
+                    or int(e.get("scorecard_ingested_n") or 0) >= 1
+                )
+            ]
+            panel["fitness_ingested_n"] = len(sc_ids)
+            panel["fitness_skills"] = sc_ids[:16]
+            last = led.get("last_scorecard_ingest") or {}
+            if last:
+                panel["last_scorecard_ingest_n"] = last.get("n")
+        except (OSError, json.JSONDecodeError, TypeError):
+            pass
+    # ok when any scorecard skill is active OR federated OR fitness-ingested
+    panel["scorecard_ops_ok"] = bool(
+        panel["active_n"] >= 1
+        or panel.get("fed_skill_n", 0) >= 1
+        or panel["fitness_ingested_n"] >= 1
+        or panel["fed_n"] >= 1
+    )
+    return panel
+
+
 def cmd_doctor(args: argparse.Namespace) -> int:
     """Cheap product doctor: memory + loops + budget + recovery skill readiness."""
     root = _root()
@@ -382,15 +444,20 @@ def cmd_doctor(args: argparse.Namespace) -> int:
     for e in results:
         if e.get("check") == "skill_loop" and "recovery_hub_gap_ok" in e:
             hub_gap = e.get("recovery_hub_gap_ok")
+    # F135: scorecard ops fitness panel (informational — does not fail doctor)
+    sc_panel = _scorecard_ops_panel(root)
     print(
         json.dumps(
             {
                 "feature": FEATURE,
                 "feature_recovery": "F128",
+                "feature_scorecard_ops": "F135",
                 "doctor_pass": all_ok,
                 "recovery_ok": recovery_ok,
                 "recovery_active": recovery_active,
                 "recovery_hub_gap_ok": hub_gap,
+                "scorecard_ops": sc_panel,
+                "scorecard_ops_ok": sc_panel.get("scorecard_ops_ok"),
                 "results": results,
                 "scored_at": _now(),
             },
@@ -498,6 +565,24 @@ def product_scorecard(
         "triple_ready": skill_level == "L3" and mem_level == "L3" and wf_ok,
     }
 
+    # F135: scorecard skill fitness readiness (soft metric; not brand gate)
+    sc_ops = _scorecard_ops_panel(root)
+    # soft: try fitness ingest so scorecard themes compound into ledger
+    sc_fit_report: dict[str, Any] = {}
+    try:
+        sys.path.insert(0, str(sd))
+        from skill_fitness import (  # type: ignore
+            ingest_scorecard_skills,
+            scorecard_fitness_enabled,
+        )
+
+        if scorecard_fitness_enabled():
+            sc_fit_report = ingest_scorecard_skills(None, root=root, save=True)
+            # refresh panel after ingest
+            sc_ops = _scorecard_ops_panel(root)
+    except Exception as exc:
+        sc_fit_report = {"soft_error": str(exc)[:120]}
+
     # brand headline metrics (privacy-safe floats/bools only)
     metrics = {
         "doctor_pass": doctor_pass,
@@ -517,6 +602,11 @@ def product_scorecard(
         "memory_tool_util_good": mem_util.get("good_score") if mem_util else None,
         "memory_tool_util_weak": mem_util.get("weak_score") if mem_util else None,
         "memory_util_eval_pass": mem_util_pass,
+        # F135
+        "scorecard_ops_ok": bool(sc_ops.get("scorecard_ops_ok")),
+        "scorecard_skills_n": int(sc_ops.get("active_n") or 0),
+        "scorecard_fed_n": int(sc_ops.get("fed_n") or 0),
+        "scorecard_fitness_ingested_n": int(sc_ops.get("fitness_ingested_n") or 0),
     }
     brand_ready = bool(
         doctor_pass
@@ -549,6 +639,7 @@ def product_scorecard(
         "feature_cli": FEATURE,
         "feature_scorecard": "F129",
         "feature_memory_util": "F130",
+        "feature_scorecard_ops": "F135",
         "schema": SCHEMA,
         "scored_at": _now(),
         "level": level,
@@ -565,13 +656,28 @@ def product_scorecard(
             f"Critic APPROVE demote rate (offline pack): **{demote_rate}**",
             f"Memory tool util delta (good−weak): **{mem_util_delta}** (F130)",
             f"Dual compound: skill **{skill_level}** · memory **{mem_level}** · workflow **{wf_level}** (F131)",
+            (
+                f"Scorecard ops fitness: **{'ok' if sc_ops.get('scorecard_ops_ok') else 'idle'}** "
+                f"(active={sc_ops.get('active_n', 0)} fed={sc_ops.get('fed_n', 0)} "
+                f"fitness={sc_ops.get('fitness_ingested_n', 0)}) (F135)"
+            ),
         ],
         "doctor": {
             "doctor_pass": doctor.get("doctor_pass"),
             "recovery_ok": doctor.get("recovery_ok"),
             "recovery_hub_gap_ok": doctor.get("recovery_hub_gap_ok"),
             "recovery_active": doctor.get("recovery_active"),
+            "scorecard_ops_ok": doctor.get("scorecard_ops_ok"),
         },
+        "scorecard_ops": sc_ops,
+        "scorecard_fitness": {
+            "ingested_n": sc_fit_report.get("ingested_n"),
+            "privacy_ok": sc_fit_report.get("privacy_ok"),
+            "scorecard_ops_ok": sc_fit_report.get("scorecard_ops_ok"),
+            "skills": sc_fit_report.get("skills"),
+        }
+        if sc_fit_report
+        else None,
         "skill_loop": skill,
         "memory_loop": memory,
         "workflow": {

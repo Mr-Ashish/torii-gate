@@ -1,0 +1,56 @@
+{
+  "feature": "F110",
+  "feature_recovery": "F128",
+  "feature_scorecard_ops": "F135",
+  "doctor_pass": true,
+  "recovery_ok": true,
+  "recovery_active": [
+    "skill-prefer-memory-cli-early",
+    "skill-prefer-product-cli",
+    "skill-prefer-critic-early"
+  ],
+  "recovery_hub_gap_ok": true,
+  "scorecard_ops": {
+    "feature": "F135",
+    "active_n": 0,
+    "active": [],
+    "fed_n": 0,
+    "fitness_ingested_n": 0,
+    "scorecard_ops_ok": false,
+    "privacy_ok": true,
+    "fed_skill_n": 0,
+    "fitness_skills": [],
+    "last_scorecard_ingest_n": 0
+  },
+  "scorecard_ops_ok": false,
+  "results": [
+    {
+      "check": "memory",
+      "ok": true,
+      "rc": 0
+    },
+    {
+      "check": "memory_loop",
+      "ok": true,
+      "rc": 0
+    },
+    {
+      "check": "budget",
+      "ok": true,
+      "rc": 0
+    },
+    {
+      "check": "skill_loop",
+      "ok": true,
+      "rc": 0,
+      "recovery_ok": true,
+      "recovery_active": [
+        "skill-prefer-memory-cli-early",
+        "skill-prefer-product-cli",
+        "skill-prefer-critic-early"
+      ],
+      "recovery_hub_gap_ok": true
+    }
+  ],
+  "scored_at": "2026-08-01T07:45:46Z"
+}
