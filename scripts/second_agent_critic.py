@@ -2734,6 +2734,100 @@ def demote_eval(
                 os.environ["TORII_ROOT"] = prev_root_ha
             os.environ.pop("TORII_SECOND_CRITIC_MIN_PATH", None)
 
+    # F162: multi-tenant hub-archival hub pressure + local util gap APPROVE
+    with tempfile.TemporaryDirectory() as td_ha_hub:
+        od = Path(td_ha_hub)
+        ha_sid = "skill-prefer-hub-archival-early"
+        fed = od / "memory" / "federation"
+        fed.mkdir(parents=True)
+        (fed / "hub-archival-util-signals.json").write_text(
+            json.dumps(
+                {
+                    "schema_version": 1,
+                    "feature": "F161",
+                    "privacy_ok": True,
+                    "signals": [
+                        {
+                            "id": "hub-archival-util-gap",
+                            "theme": "hub-archival-util-gap",
+                            "tags": [
+                                "hub_archival",
+                                "utilization_gap",
+                                "hub_archival_idle",
+                                "f161",
+                            ],
+                            "hits": 6,
+                            "tenants": 3,
+                            "tenant_hashes": ["a1", "b2", "c3"],
+                            "util_rate_bin": "gap",
+                            "hub_archival_idle": True,
+                            "path_basenames": [],
+                        }
+                    ],
+                }
+            )
+            + "\n",
+            encoding="utf-8",
+        )
+        (od / "skill-router.json").write_text(
+            json.dumps(
+                {
+                    "selected": [ha_sid, "skill-prefer-memory-cli-early"],
+                    "always_selected": [ha_sid, "skill-prefer-memory-cli-early"],
+                    "inject_chars": 800,
+                }
+            ),
+            encoding="utf-8",
+        )
+        (od / "skill-hits.json").write_text(
+            json.dumps(
+                {
+                    "hits": [
+                        {
+                            "id": ha_sid,
+                            "tool_hit": False,
+                            "hit": True,
+                            "prose_hit": True,
+                        },
+                        {
+                            "id": "skill-prefer-memory-cli-early",
+                            "tool_hit": True,
+                            "hit": True,
+                        },
+                    ],
+                    "tool_hit_n": 1,
+                }
+            ),
+            encoding="utf-8",
+        )
+        ha_hub_review = od / "approve-hub-archival-hub-idle.md"
+        ha_hub_review.write_text(
+            "## Review\n**Verdict:** APPROVE\n\n### Summary\nok\n\n"
+            "### Blocking\nnone\n\n### What I checked\n`app.py:1` path ok\n",
+            encoding="utf-8",
+        )
+        prev_root_hh = os.environ.get("TORII_ROOT")
+        os.environ["TORII_ROOT"] = str(od)
+        os.environ["TORII_HUB_ARCHIVAL_UTIL_CRITIC"] = "1"
+        os.environ["TORII_HUB_ARCHIVAL_HUB"] = "1"
+        os.environ["TORII_HUB_ARCHIVAL_HUB_THR"] = "0.3"
+        os.environ["TORII_SECOND_CRITIC_MIN_PATH"] = "0.1"
+        try:
+            cases.append(
+                _case(
+                    "hub_archival_hub_pressure_idle_approve",
+                    ha_hub_review,
+                    od,
+                    case_root=od,
+                )
+            )
+        finally:
+            if prev_root_hh is None:
+                os.environ.pop("TORII_ROOT", None)
+            else:
+                os.environ["TORII_ROOT"] = prev_root_hh
+            os.environ.pop("TORII_SECOND_CRITIC_MIN_PATH", None)
+
     # metrics
     approve_cases = [c for c in cases if c.get("maker") == "APPROVE"]
     demoted_n = sum(1 for c in approve_cases if c.get("demoted"))
@@ -2749,6 +2843,10 @@ def demote_eval(
     )
     hac = next(
         (c for c in cases if c["name"] == "hub_archival_util_idle_approve"), {}
+    )
+    hah = next(
+        (c for c in cases if c["name"] == "hub_archival_hub_pressure_idle_approve"),
+        {},
     )
     goodc = next((c for c in cases if c["name"] == "good_insecure"), {})
     weak_demote_ok = bool(weak.get("demoted") or weak.get("recommended") != "APPROVE")
@@ -2767,6 +2865,12 @@ def demote_eval(
         hac.get("f156_ok") is False
         and any("hub_archival_util_gap" in str(r) for r in (hac.get("reasons") or []))
     )
+    ha_hub_demote_ok = bool(hah.get("demoted")) or (
+        hah.get("f156_ok") is False
+        and any(
+            "hub_archival" in str(r) for r in (hah.get("reasons") or [])
+        )
+    )
     # good should not be demoted from REQUEST_CHANGES to worse without reason;
     # typically maker is REQUEST_CHANGES already
     good_stable = goodc.get("maker") in ("REQUEST_CHANGES", "COMMENT", "APPROVE")
@@ -2780,6 +2884,7 @@ def demote_eval(
         "feature_demote_eval_recon": "F151",
         "feature_hub_archival_util": FEATURE_HUB_ARCHIVAL_UTIL,
         "feature_demote_eval_hub_archival": "F156",
+        "feature_hub_archival_hub_inject": "F162",
         "scored_at": _now(),
         "cases": cases,
         "approve_n": len(approve_cases),
@@ -2794,6 +2899,8 @@ def demote_eval(
         "recon_warm_hub_soft_ok": rw_hub_demote_ok,
         "hub_archival_util_demote_ok": bool(hac.get("demoted")),
         "hub_archival_util_soft_ok": ha_util_demote_ok,
+        "hub_archival_hub_pressure_demote_ok": bool(hah.get("demoted")),
+        "hub_archival_hub_pressure_soft_ok": ha_hub_demote_ok,
         "good_stable": good_stable,
         "paper": {
             "metric": "critic_approve_demote_rate",
@@ -2803,9 +2910,10 @@ def demote_eval(
             "scorecard_hub_gap_idle_demoted": bool(schc.get("demoted")),
             "recon_warm_hub_idle_demoted": bool(rwc.get("demoted")),
             "hub_archival_util_idle_demoted": bool(hac.get("demoted")),
+            "hub_archival_hub_pressure_idle_demoted": bool(hah.get("demoted")),
             "notes": (
                 "demote_rate = demoted APPROVE / APPROVE cases; "
-                "F156 adds hub-archival util gap (partial recovery idle)"
+                "F162 adds multi-tenant hub-archival hub pressure + local util gap"
             ),
         },
         "eval_pass": weak_demote_ok
@@ -2813,7 +2921,8 @@ def demote_eval(
         and (bool(hubc.get("demoted")) or hub_demote_ok)
         and (bool(schc.get("demoted")) or sc_hub_demote_ok)
         and (bool(rwc.get("demoted")) or rw_hub_demote_ok)
-        and (bool(hac.get("demoted")) or ha_util_demote_ok),
+        and (bool(hac.get("demoted")) or ha_util_demote_ok)
+        and (bool(hah.get("demoted")) or ha_hub_demote_ok),
     }
     if out_dir:
         try:

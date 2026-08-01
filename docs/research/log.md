@@ -2820,3 +2820,30 @@ Multi-tenant compound memory of skill under-use → local always budget + recove
 
 ### SHA
 `8409b6e9b7aadac24365a792fb9b2239e61bec82`
+
+## 2026-08-01 — F162 hub-archival hub pressure inject + demote-eval
+
+### Papers / posts
+- F125 recovery hub inject pattern (privacy-safe ids + bins).
+- F161 multi-tenant hub-archival gap_pressure without prompt surface.
+- Loop Engineering scorecard: paper demote metric for multi-tenant idle APPROVE.
+
+### Insight
+F161 computed pressure offline; agents never saw it. Highest ROI: inject F162 section into prompt + demote-eval case for hub_archival_hub_pressure_idle_approve.
+
+### Feature shipped (F162)
+- `render_hub_archival_hub_section` + `inject_hub_archival_hub_into_prompt`
+- soft wire in `inject_into_prompt` after F125 recovery hub
+- demote-eval `hub_archival_hub_pressure_idle_approve` paper metric
+- fixture f162_ok; skill_loop hub_archival_hub_inject_ok
+
+### Loop-engineering
+Maker sees multi-tenant under-use before checker demotes — budgeted recovery with observability.
+
+### Metric
+- Offline f162_ok inject; demote-eval hub_archival_hub_pressure_idle_demoted
+- Live: F162 marker + gap pressure in prompt; recovery_injected_n=3; recall=1.0
+- Modal pytorch#191831 BIT3_OK ~91s
+
+### SHA
+`pending`

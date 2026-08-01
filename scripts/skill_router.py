@@ -68,6 +68,7 @@ FEATURE_HUB_ARCHIVAL_UTIL = "F155"
 FEATURE_HUB_ARCHIVAL_REPROMPT = "F157"
 FEATURE_ROUTER_SYNTH = "F160"
 FEATURE_HUB_ARCHIVAL_HUB = "F161"
+FEATURE_HUB_ARCHIVAL_HUB_INJECT = "F162"
 SCHEMA = 1
 MARKER_OPEN = "<!-- torii-f84-skill-router -->"
 MARKER_CLOSE = "<!-- /torii-f84-skill-router -->"
@@ -77,6 +78,8 @@ HUB_MARKER_OPEN = "<!-- torii-f125-recovery-hub -->"
 HUB_MARKER_CLOSE = "<!-- /torii-f125-recovery-hub -->"
 SCORECARD_HUB_MARKER_OPEN = "<!-- torii-f138-scorecard-hub -->"
 SCORECARD_HUB_MARKER_CLOSE = "<!-- /torii-f138-scorecard-hub -->"
+HA_HUB_MARKER_OPEN = "<!-- torii-f162-hub-archival-hub -->"
+HA_HUB_MARKER_CLOSE = "<!-- /torii-f162-hub-archival-hub -->"
 
 _FALSEY = frozenset({"0", "false", "no", "off", "disabled", "n", "none", ""})
 
@@ -1175,6 +1178,135 @@ def inject_recovery_hub_into_prompt(
     }
 
 
+def render_hub_archival_hub_section(hub: dict[str, Any]) -> str:
+    """F162: privacy-safe prompt section for multi-tenant hub-archival util pressure."""
+    gp = float(hub.get("gap_pressure") or 0)
+    thr = float(hub.get("thr") or hub_archival_hub_pressure_threshold())
+    high = bool(hub.get("high")) or gp >= thr
+    lines = [
+        HA_HUB_MARKER_OPEN,
+        "## Federated hub-archival util (F161/F162 hub pressure)",
+        "",
+        "Cross-tenant hub-archival tool outcomes (skill ids + util bins only; no paths):",
+    ]
+    skills = hub.get("skills") or {}
+    if skills:
+        ranked = sorted(
+            skills.values(),
+            key=lambda e: (-int(e.get("priority_delta") or 0), str(e.get("skill_id"))),
+        )
+        for e in ranked[:6]:
+            lines.append(
+                f"- `{e.get('skill_id')}`: hits={e.get('hits')} tenants={e.get('tenants')} "
+                f"tool_hits={e.get('tool_hits')} gap_hits={e.get('gap_hits')} "
+                f"Δprio=+{e.get('priority_delta')} bin={e.get('util_rate_bin')}"
+            )
+    else:
+        lines.append(
+            "- (no hub-archival util themes yet — keep archival hub_boost when multi-tenant heat rises)"
+        )
+    if high:
+        lines.append(
+            f"- **Hub-archival gap pressure={gp:.2f}** (thr={thr:.2f}) — call "
+            "`archival_memory_search` with hub warm themes so `hub_boost` evidence appears "
+            "before finalizing (generic memory CLI is not enough)."
+        )
+    elif int(hub.get("ok_hits") or 0) >= 1:
+        lines.append(
+            f"- Hub-archival util_ok hits={hub.get('ok_hits')} — keep hub_boost archival in the loop."
+        )
+    lines.append(HA_HUB_MARKER_CLOSE)
+    return "\n".join(lines) + "\n"
+
+
+def inject_hub_archival_hub_into_prompt(
+    prompt: Path,
+    hub: dict[str, Any] | None = None,
+    *,
+    root: Path | None = None,
+) -> dict[str, Any]:
+    """F162: inject/replace multi-tenant hub-archival util pressure section."""
+    root = root or _root()
+    hub = hub if hub is not None else post_score_hub_archival_hub(root=root)
+    if not hub_archival_hub_enabled():
+        return {
+            "feature": FEATURE_HUB_ARCHIVAL_HUB_INJECT,
+            "injected": 0,
+            "reason": "off",
+            "hub": hub,
+        }
+    # skip empty noise when no signals and not high
+    if int(hub.get("signals_n") or 0) < 1 and not hub.get("high"):
+        return {
+            "feature": FEATURE_HUB_ARCHIVAL_HUB_INJECT,
+            "injected": 0,
+            "reason": "no_signals",
+            "hub": hub,
+            "gap_pressure": hub.get("gap_pressure"),
+        }
+    section = render_hub_archival_hub_section(hub)
+    try:
+        original = prompt.read_text(encoding="utf-8", errors="replace")
+    except OSError as exc:
+        return {
+            "feature": FEATURE_HUB_ARCHIVAL_HUB_INJECT,
+            "injected": 0,
+            "error": str(exc)[:120],
+        }
+    if HA_HUB_MARKER_OPEN in original:
+        new = re.sub(
+            rf"{re.escape(HA_HUB_MARKER_OPEN)}.*?{re.escape(HA_HUB_MARKER_CLOSE)}\n?",
+            section,
+            original,
+            count=1,
+            flags=re.DOTALL,
+        )
+    else:
+        # place after F125 recovery hub or skill router block
+        if HUB_MARKER_CLOSE in original:
+            new = original.replace(
+                HUB_MARKER_CLOSE, HUB_MARKER_CLOSE + "\n\n" + section, 1
+            )
+        elif MARKER_CLOSE in original:
+            new = original.replace(MARKER_CLOSE, MARKER_CLOSE + "\n\n" + section, 1)
+        else:
+            marker = "## PR metadata"
+            if marker in original:
+                new = original.replace(marker, section + "\n" + marker, 1)
+            else:
+                new = original.rstrip() + "\n\n" + section
+    # privacy assert
+    if "/Users/" in section or "/home/" in section:
+        return {
+            "feature": FEATURE_HUB_ARCHIVAL_HUB_INJECT,
+            "injected": 0,
+            "reason": "privacy_block",
+            "hub": hub,
+        }
+    prompt.write_text(new if new.endswith("\n") else new + "\n", encoding="utf-8")
+    od = (os.environ.get("OUT_DIR") or "").strip()
+    art = None
+    if od:
+        try:
+            p = Path(od) / "hub-archival-hub-score.json"
+            p.parent.mkdir(parents=True, exist_ok=True)
+            p.write_text(json.dumps(hub, indent=2) + "\n", encoding="utf-8")
+            art = str(p)
+        except OSError:
+            pass
+    return {
+        "feature": FEATURE_HUB_ARCHIVAL_HUB_INJECT,
+        "feature_hub": FEATURE_HUB_ARCHIVAL_HUB,
+        "injected": 1,
+        "gap_pressure": hub.get("gap_pressure"),
+        "high": hub.get("high"),
+        "skill_n": hub.get("skill_n"),
+        "privacy_ok": hub.get("privacy_ok"),
+        "artifact": art,
+        "hub": hub,
+    }
+
+
 def active_skills_dir(root: Path | None = None) -> Path:
     return (root or _root()) / "agent" / "skills" / "active"
 
@@ -1990,6 +2122,13 @@ def inject_into_prompt(
             mem_hub_inj = inject_memory_hub_into_prompt(dest, root=root)
     except Exception as exc:
         mem_hub_inj = {"injected": 0, "soft_error": str(exc)[:80]}
+    # F162: inject multi-tenant hub-archival util pressure (soft)
+    ha_hub_inj: dict[str, Any] = {"injected": 0}
+    if hub_archival_hub_enabled():
+        try:
+            ha_hub_inj = inject_hub_archival_hub_into_prompt(dest, root=root)
+        except Exception as exc:
+            ha_hub_inj = {"injected": 0, "soft_error": str(exc)[:80]}
 
     result = {
         "feature": FEATURE,
@@ -2025,6 +2164,15 @@ def inject_into_prompt(
         "memory_hub_gap_pressure": selection.get("memory_hub_gap_pressure"),
         "memory_hub_priority_deltas": selection.get("memory_hub_priority_deltas"),
         "feature_memory_hub": selection.get("feature_memory_hub"),
+        # F162
+        "hub_archival_hub_injected": int(ha_hub_inj.get("injected") or 0),
+        "hub_archival_hub_gap_pressure": ha_hub_inj.get("gap_pressure")
+        if ha_hub_inj.get("injected")
+        else selection.get("hub_archival_hub_gap_pressure"),
+        "hub_archival_hub_high": ha_hub_inj.get("high"),
+        "feature_hub_archival_hub_inject": FEATURE_HUB_ARCHIVAL_HUB_INJECT
+        if ha_hub_inj.get("injected")
+        else None,
     }
     # write selection artifact next to prompt if OUT_DIR (F160: also prompt parent)
     od = (os.environ.get("OUT_DIR") or "").strip()
@@ -4791,6 +4939,26 @@ themes: memory,archival,recovery
             and "aaa" not in json.dumps(ha_hub.get("skills") or {})
         )
 
+        # F162: inject hub-archival hub pressure section into prompt
+        prompt_ha_hub = root / "prompt-ha-hub.md"
+        prompt_ha_hub.write_text(
+            "# Review\n## PR metadata\nDo security review.\n", encoding="utf-8"
+        )
+        inj_ha = inject_hub_archival_hub_into_prompt(
+            prompt_ha_hub, hub=ha_hub, root=root
+        )
+        text_ha = prompt_ha_hub.read_text(encoding="utf-8")
+        f162_ok = (
+            int(inj_ha.get("injected") or 0) == 1
+            and HA_HUB_MARKER_OPEN in text_ha
+            and "F161" in text_ha
+            and "hub_boost" in text_ha
+            and "gap pressure" in text_ha.lower()
+            and "/Users/" not in text_ha
+            and "aaa" not in text_ha
+            and bool(inj_ha.get("privacy_ok") or ha_hub.get("privacy_ok"))
+        )
+
         # F136: scorecard util — tool hits ok; idle scorecard skill → gap; none → ok
         sc_util_out = root / "sc-util-out"
         sc_util_out.mkdir(exist_ok=True)
@@ -5028,6 +5196,7 @@ Call `python3 scripts/torii.py doctor` and scorecard early.
                 f157_ok,
                 f160_ok,
                 f161_ok,
+                f162_ok,
             ]
         )
         payload = {
@@ -5043,10 +5212,12 @@ Call `python3 scripts/torii.py doctor` and scorecard early.
             "f157": True,
             "f160": True,
             "f161": True,
+            "f162": True,
             "feature_hub_archival_util": FEATURE_HUB_ARCHIVAL_UTIL,
             "feature_hub_archival_reprompt": FEATURE_HUB_ARCHIVAL_REPROMPT,
             "feature_router_synth": FEATURE_ROUTER_SYNTH,
             "feature_hub_archival_hub": FEATURE_HUB_ARCHIVAL_HUB,
+            "feature_hub_archival_hub_inject": FEATURE_HUB_ARCHIVAL_HUB_INJECT,
             "feature_always_budget": "F119",
             "feature_compact": "F120",
             "feature_util": "F121",
@@ -5150,6 +5321,10 @@ Call `python3 scripts/torii.py doctor` and scorecard early.
             "f161_reprompt": dec_ha_hub.get("reprompt"),
             "f161_reason": dec_ha_hub.get("reason"),
             "f161_ok_local_no_reprompt": int(dec_ha_ok_hub.get("reprompt") or 0),
+            "f162_ok": f162_ok,
+            "f162_injected": inj_ha.get("injected"),
+            "f162_marker": HA_HUB_MARKER_OPEN in text_ha,
+            "f162_gap_pressure": inj_ha.get("gap_pressure"),
         }
         print(json.dumps(payload, indent=2))
         return 0 if fixture_pass else 1

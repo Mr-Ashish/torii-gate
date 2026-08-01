@@ -1,0 +1,29 @@
+{
+  "feature": "F162",
+  "title": "hub-archival hub pressure prompt inject + demote-eval",
+  "scored_at": "2026-08-01T10:50:34Z",
+  "live": {
+    "recall": 1.0,
+    "tp": 4,
+    "fn": 0,
+    "verdict": "REQUEST_CHANGES",
+    "passed": 1,
+    "model": "deepseek/deepseek-v4-pro",
+    "recovery_injected_n": 3,
+    "util_rate": 1.0,
+    "f162_marker_in_prompt": true,
+    "hub_archival_gap_pressure_in_prompt": true
+  },
+  "modal": {
+    "repo": "pytorch/pytorch",
+    "pr": 191831,
+    "outcome": "BIT3_OK",
+    "elapsed_s": 90.9,
+    "log_streaming": true,
+    "modal_url": "https://modal.com/apps/mr-ashish/main/ap-i3TW7Gw9ULjxv3Vs3q271p"
+  },
+  "offline": {
+    "skill_router_fixture_f162_ok": true,
+    "demote_eval_hub_archival_hub_pressure": true
+  }
+}

@@ -1,0 +1,54 @@
+{
+  "feature": "F105",
+  "schema": 1,
+  "score": 1.0,
+  "level": "L3",
+  "hit_count": 6,
+  "tools_used": [
+    "archival_search",
+    "torii_product_memory"
+  ],
+  "by_tool": {
+    "torii_product_memory": 3,
+    "archival_search": 3
+  },
+  "cli_subcmds": {
+    "search": 4
+  },
+  "inject_offered": true,
+  "utilization_gap": false,
+  "tool_call_turns": 2,
+  "feedback": [
+    "memory_tools_used=2 hits=6 tools=['archival_search', 'torii_product_memory']"
+  ],
+  "scored_at": "2026-08-01T10:48:26Z",
+  "hits_detail": [
+    {
+      "tool": "torii_product_memory",
+      "snip": "{\"command\": \"python3 scripts/torii.py memory -- search -- -q \\\"sql OR pickle OR secret OR injection\\\" 2>&1 || echo \\\"memory"
+    },
+    {
+      "tool": "archival_search",
+      "snip": "{\"command\": \"python3 scripts/archival_memory_search.py auto --files demo/insecure/app.py 2>&1 || echo \\\"archival search not available\\"
+    },
+    {
+      "tool": "torii_product_memory",
+      "snip": "--files changed.py` `python3 scripts/torii.py memory -- search -- -q \"hub warm theme"
+    },
+    {
+      "tool": "archival_search",
+      "snip": "re archival paging: `python3 scripts/archival_memory_search.py auto --files changed.py` `python3 scripts/torii.py memory -- search -- -q \"h"
+    },
+    {
+      "tool": "torii_product_memory",
+      "snip": "es) - Federated memory search (`scripts/torii.py memory -- search`) \u2014 8 hits, TP `sqli-search` confirmed at score 0.89 - Hub-archival s"
+    },
+    {
+      "tool": "archival_search",
+      "snip": "re 0.89 - Hub-archival search (`scripts/archival_memory_search.py auto`) \u2014 4 TP signatures reconsolidated at score 1.0; hub themes: sql_injection"
+    }
+  ],
+  "out_dir": "docs/benchmarks/traces/f162-hub-archival-hub-inject/live",
+  "loop_path": "docs/benchmarks/traces/f162-hub-archival-hub-inject/live/agent-loop/agent-loop.json",
+  "enabled": true
+}
