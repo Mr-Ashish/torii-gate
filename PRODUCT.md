@@ -86,6 +86,8 @@ Install path: [`docs/GOLDEN-PATH.md`](docs/GOLDEN-PATH.md) · metrics: [`docs/be
 
 **Pricing & packaging (open core · pre-revenue):** [`docs/PRICING.md`](docs/PRICING.md) — Open (Gate) free · Team support · Business multi-org · Enterprise Plane roadmap. No Hub71 archaeology required.
 
+**Public labeled eval freshness:** seed **42** · model pin · scored_at age (max 72h) — [`docs/benchmarks/public-eval/SCORECARD.md`](docs/benchmarks/public-eval/SCORECARD.md) · badge [`BADGE.md`](docs/benchmarks/public-eval/BADGE.md) · `python3 scripts/torii.py public-eval -- status`.
+
 **Workflows-as-code:** declarative pipeline graph (not LLM prose) → [`docs/WORKFLOWS.md`](docs/WORKFLOWS.md) · `python3 scripts/torii.py workflow -- scorecard`.
 
 > **Advanced** content below (mental models A–E, feature IDs, loop stage tables) is for engineers and research. Buyers can stop here.

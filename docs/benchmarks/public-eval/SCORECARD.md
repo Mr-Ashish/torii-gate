@@ -2,11 +2,24 @@
 
 # Public labeled eval scorecard
 
-_Generated: `2026-08-01T18:07:15Z` · seed **42** · model **`deepseek/deepseek-chat-v4-pro`** · target **8.5/10**_
+_Generated: `2026-08-01T18:43:39Z` · seed **42** · model **`deepseek/deepseek-chat-v4-pro`** · target **8.5/10**_
 
-**public_eval_ok:** `True`
+**public_eval_ok:** `True` · **freshness_ok:** `True` · age **0.0h** (max 72.0h)
+
+> Badge: `Public eval · seed 42 · deepseek-chat-v4-pro · scored 2026-08-01T18:43:39Z · age 0.0h`
 
 Public labeled eval: Juice Shop synthetic + NodeGoat-theme + Django/Flask-theme packs; fixed seed; cost/PR from dogfood vault.
+
+## Freshness (buyer trust)
+
+| Metric | Value |
+|--------|------:|
+| scored_at | 2026-08-01T18:43:39Z |
+| age_hours | 0.0 |
+| max_age_hours | 72.0 |
+| freshness_ok | True |
+| model_id | `deepseek/deepseek-chat-v4-pro` |
+| seed | 42 |
 
 ## Packs (license-safe synthetic · OSS themes)
 

@@ -1,3 +1,34 @@
+## 2026-08-01 — PUBLIC_EVAL_FRESHNESS: seed/model/age badge (Phase B #5)
+
+### Papers / posts
+- Buyer trust dies when labeled eval tables are undated marketing screenshots.
+- Public eval already had seed+model; missing scored_at age + front-door badge.
+
+### Decide / copy / skip
+- **Copy:** freshness_panel (age_hours, max 72h, model pin, seed) on public_eval schema 2.
+- **Copy:** BADGE.md · SCORECARD Freshness section · README/PRODUCT/landing surfaces.
+- **Skip:** F185+; live hosted marketing site.
+
+### Feature shipped (PUBLIC_EVAL_FRESHNESS)
+- public_eval freshness_ok ANDed into public_eval_ok
+- fixture surfaces_badge + badge_ok
+- first-principles dim5 → 9 · overall cap 8.0
+
+### Metric
+- Offline: public_eval fixture_pass · freshness age 0h · commercial 8.5
+- Live Modal: pytorch#191842 BIT3_OK ~211s · fail-closed 0-tool COMMENT · POST_COMMENT=0
+- Traces: docs/benchmarks/traces/20260801-1844-pytorch-pytorch-PR191842-modal-public-eval-freshness/
+- Modal: https://modal.com/apps/mr-ashish/main/ap-cD4gXDuWs2coPahr6HnmYL
+
+### scorecard_target
+technical trust (#5) · GTM (#11)
+
+### dim_lift
+Buyers see seed/model/scored_at age — not a stale pack list
+
+### SHA
+(pending)
+
 ## 2026-08-01 — ENT_ISOLATION_PROOF: hermetic cross-tenant inject (Phase B #4)
 
 ### Papers / posts

@@ -30,9 +30,11 @@ from pathlib import Path
 from typing import Any
 
 FEATURE = "PUBLIC_EVAL"
-SCHEMA = 1
+SCHEMA = 2
 DEFAULT_SEED = 42
 OUT_REL = Path("docs/benchmarks/public-eval")
+# Max age before public eval is "stale" on buyer surfaces (hours)
+DEFAULT_MAX_AGE_H = 72.0
 
 
 def _root() -> Path:
@@ -44,6 +46,74 @@ def _root() -> Path:
 
 def _now() -> str:
     return datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
+
+
+def _max_age_h() -> float:
+    raw = (os.environ.get("TORII_PUBLIC_EVAL_MAX_AGE_H") or "").strip()
+    if not raw:
+        return DEFAULT_MAX_AGE_H
+    try:
+        return max(1.0, float(raw))
+    except ValueError:
+        return DEFAULT_MAX_AGE_H
+
+
+def freshness_panel(
+    scored_at: str | None,
+    *,
+    model_id: str,
+    seed: int,
+    max_age_h: float | None = None,
+) -> dict[str, Any]:
+    """Buyer freshness: scored_at age + model pin + fixed seed (PUBLIC_EVAL_FRESHNESS)."""
+    max_age = float(max_age_h if max_age_h is not None else _max_age_h())
+    age_h: float | None = None
+    parse_ok = False
+    if scored_at:
+        try:
+            # accept trailing Z
+            ts = str(scored_at).replace("Z", "+00:00")
+            dt = datetime.fromisoformat(ts)
+            if dt.tzinfo is None:
+                dt = dt.replace(tzinfo=timezone.utc)
+            age_h = round(
+                (datetime.now(timezone.utc) - dt.astimezone(timezone.utc)).total_seconds()
+                / 3600.0,
+                2,
+            )
+            parse_ok = True
+        except ValueError:
+            parse_ok = False
+    model_ok = bool(model_id and str(model_id).strip())
+    seed_ok = seed == _seed()
+    fresh = bool(
+        parse_ok
+        and age_h is not None
+        and age_h <= max_age
+        and model_ok
+        and seed_ok
+    )
+    short_model = str(model_id or "").split("/")[-1] if model_id else "unset"
+    age_s = f"{age_h:.1f}h" if age_h is not None else "unknown"
+    badge = (
+        f"Public eval · seed {seed} · {short_model} · "
+        f"scored {scored_at or '—'} · age {age_s}"
+        f"{'' if fresh else ' · STALE'}"
+    )
+    return {
+        "scored_at": scored_at,
+        "age_hours": age_h,
+        "max_age_hours": max_age,
+        "freshness_ok": fresh,
+        "model_id": model_id,
+        "model_pin_ok": model_ok,
+        "seed": seed,
+        "seed_ok": seed_ok,
+        "badge": badge,
+        "one_liner": (
+            "Labeled eval freshness: fixed seed + recorded model + scored_at within max age"
+        ),
+    }
 
 
 def _seed() -> int:
@@ -235,8 +305,14 @@ def build_scorecard(root: Path | None = None) -> dict[str, Any]:
             "out_dir": str(OUT_REL),
             "scorecard_md": str(OUT_REL / "SCORECARD.md"),
             "scorecard_json": str(OUT_REL / "scorecard.json"),
+            "badge_md": str(OUT_REL / "BADGE.md"),
         },
     }
+    scorecard["freshness"] = freshness_panel(
+        scorecard["scored_at"],
+        model_id=str(scorecard.get("model_id") or ""),
+        seed=int(scorecard.get("seed") or seed),
+    )
     scorecard["public_eval_ok"] = bool(
         corpus.get("all_pass")
         and has_juice
@@ -244,6 +320,7 @@ def build_scorecard(root: Path | None = None) -> dict[str, Any]:
         and labeled_tp >= 9
         and scorecard["fp_tp"]["good_recall_mean"] is not None
         and float(scorecard["fp_tp"]["good_recall_mean"] or 0) >= 1.0
+        and (scorecard.get("freshness") or {}).get("freshness_ok")
     )
     return scorecard
 
@@ -263,6 +340,11 @@ def render_markdown(sc: dict[str, Any]) -> str:
     corp = sc.get("corpus") or {}
     req = sc.get("requirements") or {}
 
+    fr = sc.get("freshness") or freshness_panel(
+        sc.get("scored_at"),
+        model_id=str(sc.get("model_id") or ""),
+        seed=int(sc.get("seed") or DEFAULT_SEED),
+    )
     lines = [
         "<!-- torii-public-eval-scorecard -->",
         "",
@@ -271,9 +353,24 @@ def render_markdown(sc: dict[str, Any]) -> str:
         f"_Generated: `{sc.get('scored_at')}` · seed **{sc.get('seed')}** · "
         f"model **`{sc.get('model_id')}`** · target **{sc.get('scorecard_target')}/10**_",
         "",
-        f"**public_eval_ok:** `{sc.get('public_eval_ok')}`",
+        f"**public_eval_ok:** `{sc.get('public_eval_ok')}` · "
+        f"**freshness_ok:** `{fr.get('freshness_ok')}` · age **{fr.get('age_hours')}h** "
+        f"(max {fr.get('max_age_hours')}h)",
+        "",
+        f"> Badge: `{fr.get('badge')}`",
         "",
         f"{sc.get('one_liner')}",
+        "",
+        "## Freshness (buyer trust)",
+        "",
+        "| Metric | Value |",
+        "|--------|------:|",
+        f"| scored_at | {fr.get('scored_at')} |",
+        f"| age_hours | {fr.get('age_hours')} |",
+        f"| max_age_hours | {fr.get('max_age_hours')} |",
+        f"| freshness_ok | {fr.get('freshness_ok')} |",
+        f"| model_id | `{fr.get('model_id')}` |",
+        f"| seed | {fr.get('seed')} |",
         "",
         "## Packs (license-safe synthetic · OSS themes)",
         "",
@@ -368,8 +465,26 @@ def cmd_report(args: argparse.Namespace) -> int:
     md_path = out_dir / "SCORECARD.md"
     index_path = out_dir / "README.md"
     if not getattr(args, "dry_run", False):
+        fr = sc.get("freshness") or {}
         json_path.write_text(json.dumps(sc, indent=2, default=str) + "\n", encoding="utf-8")
         md_path.write_text(render_markdown(sc), encoding="utf-8")
+        badge_path = out_dir / "BADGE.md"
+        badge_path.write_text(
+            "\n".join(
+                [
+                    "<!-- torii-public-eval-badge -->",
+                    "",
+                    f"**{fr.get('badge')}**",
+                    "",
+                    f"- freshness_ok: `{fr.get('freshness_ok')}` · age_hours: `{fr.get('age_hours')}` "
+                    f"(max {fr.get('max_age_hours')})",
+                    f"- Refresh: `python3 scripts/public_eval.py report`",
+                    f"- Full: [SCORECARD.md](SCORECARD.md)",
+                    "",
+                ]
+            ),
+            encoding="utf-8",
+        )
         index_path.write_text(
             "\n".join(
                 [
@@ -377,16 +492,18 @@ def cmd_report(args: argparse.Namespace) -> int:
                     "",
                     "Technical-trust scorecard for Torii Gate (priority →8.5).",
                     "",
-                    f"- **Scorecard:** [SCORECARD.md](SCORECARD.md) · [scorecard.json](scorecard.json)",
+                    f"- **Scorecard:** [SCORECARD.md](SCORECARD.md) · [scorecard.json](scorecard.json) · [BADGE.md](BADGE.md)",
                     f"- **Seed:** `{sc.get('seed')}`",
                     f"- **Model:** `{sc.get('model_id')}`",
-                    f"- **public_eval_ok:** `{sc.get('public_eval_ok')}`",
+                    f"- **public_eval_ok:** `{sc.get('public_eval_ok')}` · **freshness_ok:** `{fr.get('freshness_ok')}`",
+                    f"- **Badge:** `{fr.get('badge')}`",
                     "",
                     "Packs are license-safe **synthetic** demos themed after OSS training apps "
                     "(Juice Shop, NodeGoat, Django/Flask vuln classes) — not forks.",
                     "",
                     "```bash",
                     "python3 scripts/public_eval.py report",
+                    "python3 scripts/public_eval.py status   # includes freshness age",
                     "```",
                     "",
                 ]
@@ -397,6 +514,7 @@ def cmd_report(args: argparse.Namespace) -> int:
             "json": str(json_path),
             "md": str(md_path),
             "readme": str(index_path),
+            "badge": str(badge_path),
         }
     if getattr(args, "json", False) or not sys.stdout.isatty():
         print(json.dumps(sc, indent=2, default=str))
@@ -457,13 +575,58 @@ def cmd_fixture(args: argparse.Namespace) -> int:
         )
         and cost_n >= 5
     )
-    pe_scorecard_ok = pe_scorecard.is_file() and bool(
-        re.search(
-            r"Cost\s*/\s*PR|cost USD|never federated",
-            pe_scorecard.read_text(encoding="utf-8", errors="replace"),
-            re.I,
-        )
+    pe_body = (
+        pe_scorecard.read_text(encoding="utf-8", errors="replace")
+        if pe_scorecard.is_file()
+        else ""
     )
+    pe_scorecard_ok = pe_scorecard.is_file() and bool(
+        re.search(r"Cost\s*/\s*PR|cost USD|never federated", pe_body, re.I)
+    )
+    # PUBLIC_EVAL_FRESHNESS: scorecard has freshness section + buyer surfaces pin model/seed
+    pe_json = root / OUT_REL / "scorecard.json"
+    freshness: dict[str, Any] = {}
+    if pe_json.is_file():
+        try:
+            scj = json.loads(pe_json.read_text(encoding="utf-8"))
+            freshness = scj.get("freshness") or freshness_panel(
+                scj.get("scored_at"),
+                model_id=str(scj.get("model_id") or _model_id()),
+                seed=int(scj.get("seed") or seed),
+            )
+            # recompute age from stored scored_at (live clock)
+            freshness = freshness_panel(
+                scj.get("scored_at"),
+                model_id=str(scj.get("model_id") or _model_id()),
+                seed=int(scj.get("seed") or seed),
+            )
+        except (json.JSONDecodeError, OSError, TypeError, ValueError):
+            freshness = {}
+    pe_freshness_section = bool(
+        re.search(r"Freshness|freshness_ok|age_hours", pe_body, re.I)
+    )
+    badge_md = root / OUT_REL / "BADGE.md"
+    badge_ok = badge_md.is_file() and "Public eval" in badge_md.read_text(
+        encoding="utf-8", errors="replace"
+    )
+    readme = (root / "README.md").read_text(encoding="utf-8", errors="replace")
+    landing = (root / "docs" / "brand" / "landing.html").read_text(
+        encoding="utf-8", errors="replace"
+    )
+    product = (root / "PRODUCT.md").read_text(encoding="utf-8", errors="replace")
+    surfaces_badge = {
+        "readme_public_eval_fresh": bool(
+            re.search(r"public-eval|SCORECARD\.md", readme, re.I)
+            and re.search(r"seed|freshness|scored_at|deepseek", readme, re.I)
+        ),
+        "landing_public_eval_fresh": bool(
+            re.search(r"public-eval|labeled|seed\s*42|freshness", landing, re.I)
+        ),
+        "product_public_eval_fresh": bool(
+            re.search(r"public-eval|SCORECARD|freshness|seed\s*42", product, re.I)
+        ),
+    }
+    freshness_ok = bool(freshness.get("freshness_ok"))
     fixture_pass = bool(
         required.issubset(ids)
         and all(demo_ok[k] for k in required)
@@ -473,6 +636,10 @@ def cmd_fixture(args: argparse.Namespace) -> int:
         and (root / "scripts" / "public_eval.py").is_file()
         and cost_surface_ok
         and pe_scorecard_ok
+        and pe_freshness_section
+        and badge_ok
+        and freshness_ok
+        and all(surfaces_badge.values())
     )
     payload = {
         "feature": FEATURE,
@@ -489,7 +656,13 @@ def cmd_fixture(args: argparse.Namespace) -> int:
         "cost_p50_usd": (dog.get("cost_usd") or {}).get("p50"),
         "cost_surface_ok": cost_surface_ok,
         "pe_scorecard_ok": pe_scorecard_ok,
+        "pe_freshness_section": pe_freshness_section,
+        "badge_ok": badge_ok,
+        "freshness": freshness,
+        "freshness_ok": freshness_ok,
+        "surfaces_badge": surfaces_badge,
         "scorecard_target": "8.5",
+        "dim_lift": "technical trust / public labeled eval freshness",
         "at": _now(),
     }
     # silence unused
@@ -504,6 +677,17 @@ def cmd_status(args: argparse.Namespace) -> int:
     if out.is_file():
         try:
             sc = json.loads(out.read_text(encoding="utf-8"))
+            fr = sc.get("freshness") or freshness_panel(
+                sc.get("scored_at"),
+                model_id=str(sc.get("model_id") or ""),
+                seed=int(sc.get("seed") or DEFAULT_SEED),
+            )
+            # live age recompute
+            fr = freshness_panel(
+                sc.get("scored_at"),
+                model_id=str(sc.get("model_id") or ""),
+                seed=int(sc.get("seed") or DEFAULT_SEED),
+            )
             print(
                 json.dumps(
                     {
@@ -512,6 +696,9 @@ def cmd_status(args: argparse.Namespace) -> int:
                         "seed": sc.get("seed"),
                         "model_id": sc.get("model_id"),
                         "labeled_tp": (sc.get("fp_tp") or {}).get("labeled_tp_cases"),
+                        "freshness_ok": fr.get("freshness_ok"),
+                        "age_hours": fr.get("age_hours"),
+                        "badge": fr.get("badge"),
                         "at": sc.get("scored_at"),
                     },
                     indent=2,
