@@ -1,6 +1,34 @@
 # Torii research → product log
 
 
+## 2026-08-01 — F113 dual-gate adopt of skill-prefer-memory-cli-early
+
+### Papers / posts
+- SkillsBench dual-rollout: contribution_pp must beat ablated baseline.
+- F88 LOO attribution: free-riders do not adopt.
+- F112 proposed memory-CLI skill; auto-adopt was f74-only.
+
+### OSS design patterns stolen
+1. Expand `skill_auto_adopt` globs to `skill-prefer-*` (F113).
+2. Gates: validate + F86 dual + F88 attr + regression — then copy to active/.
+3. Live prompt lists skill-prefer-memory-cli-early after adopt.
+
+### Insight
+Self-evolution without dual-gate adopt leaves recovery skills as proposals forever. Highest ROI close: open the adopt path for F112 skills with the same contribution gates as F74.
+
+### Feature shipped (F113)
+- `skill_auto_adopt.list_candidates` F112/prefer globs
+- active skill `skill-prefer-memory-cli-early.md`
+- PRODUCT note F112/F113 self-evolve adopt
+- tests for active skill presence
+
+### Metric
+- dual_pass=true contribution_pp=50; adopt ok; free_rider=false
+- pytest 589; Modal BIT3_OK ~157s skill in prompt log_streaming=true
+
+### SHA
+_pending_
+
 ## 2026-08-01 — F112 self-evolve skill from F106 memory recovery
 
 ### Papers / posts

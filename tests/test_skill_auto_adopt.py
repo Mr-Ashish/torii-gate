@@ -78,6 +78,20 @@ class SkillAutoAdoptTests(unittest.TestCase):
         self.assertTrue(data.get("f87"))
         self.assertTrue(data.get("dual_gate"))
 
+    def test_f113_memory_cli_skill_active(self):
+        """F113: dual-gate adopted prefer-memory-cli-early into active/."""
+        active = ROOT / "agent" / "skills" / "active" / "skill-prefer-memory-cli-early.md"
+        self.assertTrue(active.is_file(), "expected dual-gate adopt of memory-cli skill")
+        body = active.read_text(encoding="utf-8")
+        self.assertIn("status: adopted", body)
+        self.assertIn("torii_memory", body)
+        self.assertIn("F113", body)
+        # not listed as candidate once active
+        r = _run(["candidates"])
+        data = json.loads(r.stdout)
+        ids = [c["id"] for c in (data.get("candidates") or []) if isinstance(c, dict)]
+        self.assertNotIn("skill-prefer-memory-cli-early", ids)
+
 
 if __name__ == "__main__":
     unittest.main()

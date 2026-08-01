@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""F82/F87: Safe skill auto-adopt with regression + dual-rollout contribution gates.
+"""F82/F87/F113: Safe skill auto-adopt with regression + dual-rollout contribution gates.
 
 Research drivers:
   - SkillOpt / Hermes self-evolution: adopt only when held-out score improves
@@ -128,8 +128,24 @@ def _save_ledger(root: Path, data: dict[str, Any]) -> None:
     path.write_text(json.dumps(data, indent=2) + "\n", encoding="utf-8")
 
 
+def _candidate_globs() -> list[str]:
+    """F113: expand beyond skill-f74-* to F112 self-evolve / memory recovery skills."""
+    raw = (os.environ.get("TORII_SKILL_AUTO_ADOPT_GLOBS") or "").strip()
+    if raw:
+        return [g.strip() for g in raw.split(",") if g.strip()]
+    return [
+        "skill-f74-*.md",
+        "skill-prefer-memory-cli-early.md",
+        "skill-prefer-*.md",
+    ]
+
+
 def list_candidates(root: Path) -> list[dict[str, Any]]:
-    """Proposals eligible: skill-f74-* file + validate recommend=adopt + not already active."""
+    """Proposals eligible: glob match + validate recommend=adopt + not already active.
+
+    F82: skill-f74-* fitness-gate proposals.
+    F113: also F112 self-evolve memory-CLI recovery skills (skill-prefer-*).
+    """
     _ensure_path()
     from fitness_gate_evolve import validate_proposal  # type: ignore
 
@@ -139,13 +155,28 @@ def list_candidates(root: Path) -> list[dict[str, Any]]:
     ledger = _load_ledger(root)
     out: list[dict[str, Any]] = []
 
-    files = sorted(prop_dir.glob("skill-f74-*.md")) if prop_dir.is_dir() else []
+    files: list[Path] = []
+    if prop_dir.is_dir():
+        seen: set[str] = set()
+        for glob in _candidate_globs():
+            for fp in sorted(prop_dir.glob(glob)):
+                if fp.stem not in seen:
+                    files.append(fp)
+                    seen.add(fp.stem)
     for fp in files:
         pid = fp.stem
         if pid in active_ids:
             continue
-        # skip malicious test ids
+        # skip malicious test ids / soft always-on templates already active
         if "malicious" in pid or "evil" in pid:
+            continue
+        # skip generic soft-nudge / already-shipped baseline proposals
+        if pid in (
+            "skill-soft-tool-nudge",
+            "skill-tool-depth-hunks",
+            "skill-preserve-deep-tools",
+            "skill-test-gap-blocking",
+        ):
             continue
         vr = validate_proposal(root, pid)
         meta = next(
@@ -162,6 +193,7 @@ def list_candidates(root: Path) -> list[dict[str, Any]]:
                 "total": vr.total,
                 "weak_dims": meta.get("weak_dims") or vr.reasons,
                 "title": meta.get("title") or pid,
+                "source": "f113" if "memory-cli" in pid or "prefer-" in pid else "f74",
             }
         )
     return out

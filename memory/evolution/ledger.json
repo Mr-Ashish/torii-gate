@@ -275,22 +275,50 @@
       "title": "Call torii product/memory CLI early mid-review",
       "path": "agent/skills/proposals/skill-prefer-memory-cli-early.md",
       "signal": "f106_recovered|memory_utilization_gap",
-      "status": "evaluated",
+      "status": "adopted",
       "created_at": "2026-08-01T04:47:50Z",
       "eval": {
-        "scored_at": "2026-08-01T04:47:56Z",
+        "scored_at": "2026-08-01T04:53:53Z",
         "dims": {
-          "structure": 3,
-          "actionability": 2,
-          "evidence": 5,
+          "structure": 5,
+          "actionability": 5,
+          "evidence": 4,
           "safety": 5,
           "size": 5
         },
-        "total": 20,
+        "total": 24,
         "max": 25,
         "recommend": "adopt",
-        "words": 132,
-        "bullets": 0
+        "weak_dim_coverage": 0.5,
+        "constraints": [
+          {
+            "name": "non_empty",
+            "passed": true,
+            "message": "skill text non-empty"
+          },
+          {
+            "name": "max_size",
+            "passed": true,
+            "message": "size=959 limit=4000"
+          },
+          {
+            "name": "structure",
+            "passed": true,
+            "message": "has_skill_header=True bullets=5 min=3"
+          },
+          {
+            "name": "safety",
+            "passed": true,
+            "message": "no unsafe instructions"
+          },
+          {
+            "name": "evidence_duty",
+            "passed": true,
+            "message": "preserves evidence duty"
+          }
+        ],
+        "reasons": [],
+        "feature": "F74"
       }
     }
   ],
@@ -404,9 +432,31 @@
         "forced": true
       },
       "feature": "F74"
+    },
+    {
+      "id": "skill-prefer-memory-cli-early",
+      "title": "Call torii product/memory CLI early mid-review",
+      "path": "agent/skills/active/skill-prefer-memory-cli-early.md",
+      "adopted_at": "2026-08-01T04:53:53Z",
+      "eval": {
+        "scored_at": "2026-08-01T04:53:53Z",
+        "dims": {
+          "structure": 5,
+          "actionability": 5,
+          "evidence": 4,
+          "safety": 5,
+          "size": 5
+        },
+        "total": 24,
+        "max": 25,
+        "recommend": "adopt",
+        "weak_dim_coverage": 0.5,
+        "forced": false
+      },
+      "feature": "F74"
     }
   ],
-  "updated_at": "2026-08-01T04:47:56Z",
+  "updated_at": "2026-08-01T04:53:53Z",
   "fitness_signals": [
     {
       "at": "2026-08-01T00:16:02Z",
@@ -686,6 +736,27 @@
       "feature": "F82",
       "total": 23,
       "forced": true
+    },
+    {
+      "at": "2026-08-01T04:53:53Z",
+      "id": "skill-prefer-memory-cli-early",
+      "feature": "F82",
+      "f87": true,
+      "f88": true,
+      "total": 24,
+      "forced": false,
+      "attribution": {
+        "id": "skill-prefer-memory-cli-early",
+        "solo_hit": true,
+        "matched": [
+          "path:line",
+          "prefer"
+        ],
+        "n_matched": 2,
+        "contribution": 2.0,
+        "free_rider": false,
+        "probes_n": 10
+      }
     }
   ]
 }

@@ -1,0 +1,19 @@
+{
+  "feature": "F113",
+  "repo": "pytorch/pytorch",
+  "pr": 191813,
+  "model": "deepseek/deepseek-v4-pro",
+  "host": "modal",
+  "bit3": "OK",
+  "elapsed_s": 156.5,
+  "log_streaming": true,
+  "tool_call_turns": 4,
+  "post_comment": 0,
+  "skill_adopt": {
+    "id": "skill-prefer-memory-cli-early",
+    "dual_gate": true,
+    "in_prompt": true
+  },
+  "scored_at": "2026-08-01T04:58:09Z",
+  "modal_app": "https://modal.com/apps/mr-ashish/main/ap-B9MPyD0uVyxF6XcTkZT6f6"
+}

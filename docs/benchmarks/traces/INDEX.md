@@ -45,3 +45,4 @@ Paper/eval-safe slim traces (redacted). Large raw logs may be gitignored; always
 | 2026-08-01T04:35:00Z | pytorch/pytorch | 191813 | deepseek/deepseek-v4-pro | modal+f110 | product CLI | `20260801-0435-pytorch-pytorch-PR191813-modal-f110` |
 | 2026-08-01T04:41:00Z | pytorch/pytorch | 191813 | deepseek/deepseek-v4-pro | modal+f111 | smoke doctor+fed≥1 | `20260801-0441-pytorch-pytorch-PR191813-modal-f111` |
 | 2026-08-01T04:48:00Z | pytorch/pytorch | 191813 | deepseek/deepseek-v4-pro | modal+f112 | skill-prefer-memory-cli-early | `20260801-0448-pytorch-pytorch-PR191813-modal-f112` |
+| 2026-08-01T04:55:00Z | pytorch/pytorch | 191813 | deepseek/deepseek-v4-pro | modal+f113 | dual-gate adopt memory-cli skill | `20260801-0455-pytorch-pytorch-PR191813-modal-f113` |

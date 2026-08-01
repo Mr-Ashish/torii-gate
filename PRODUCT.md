@@ -122,6 +122,8 @@ compound → write → consolidate → effective_critic → federate → scoped_
 
 **Re-prompt budget (F108):** F49 (zero-tool) and F106 (memory gap) share a **max paid retry** (default 1). Quality recovery stays available; double Hermes spend does not stack by default.
 
+**Self-evolve adopt (F112/F113):** F106 recovery signals propose `skill-prefer-memory-cli-early`; dual-gate (F86 contribution + F88 attribution + regression) adopts into `active/` so the next PR calls memory tools **before** burning the re-prompt budget.
+
 **Ops:** `python3 scripts/memory_loop_status.py scorecard` → L0–L3. Smoke requires L3 on the hub tree. CI job summary annotates readiness; optional advisory `torii/memory-loop` via `TORII_MEMORY_LOOP_STATUS_COMMIT=1`.
 
 ---
