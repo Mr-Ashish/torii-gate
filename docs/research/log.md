@@ -26,7 +26,7 @@ Close dual-loop heat into always budget — not inject-only theater.
 - Live Modal: pytorch#191836 BIT3_OK ~40.1s POST_COMMENT=0 log_streaming=true F182 soft wire
 
 ### SHA
-`3290c3b1611f9a4069f4a0a0ee0fd785cdaf8ca4`
+`aa9d43df30cabfc7b255d3803def68ac05b3bf6e`
 
 ## 2026-08-01 — F181 hub×GEPA compound prompt inject
 
