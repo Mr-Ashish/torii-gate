@@ -1,9 +1,21 @@
 {
   "schema_version": 1,
-  "feature": "F105",
+  "feature": "F106",
   "description": "Torii agent tool catalog \u2014 research \u2192 eval \u2192 adopt pipeline",
-  "updated_at": "2026-08-01T03:57:32Z",
+  "updated_at": "2026-08-01T04:03:22Z",
   "tools": [
+    {
+      "id": "memory-tool-reprompt",
+      "name": "Memory utilization soft re-prompt",
+      "status": "adopted",
+      "source": "shipped",
+      "kind": "workflow_tool",
+      "toolset": "terminal",
+      "rationale": "F106: one soft re-prompt when inject offered but memory tools unused after tool turns",
+      "safety": "defers to F49 on zero tools; once per run",
+      "adopted_at": "2026-08-01T04:03:22Z",
+      "feature": "F106"
+    },
     {
       "id": "memory-tool-audit",
       "name": "Memory tool utilization audit",

@@ -770,6 +770,200 @@ else
   } >"$OUT_DIR/tool-turns-reprompt.env" || true
 fi
 
+# ---------------------------------------------------------------------------
+# F106: soft re-prompt once when memory tools were offered but unused after
+# tools ran (utilization_gap). Complements F49 (zero tools) — does not stack
+# when tool_turns==0 (defers to F49).
+# ---------------------------------------------------------------------------
+MEM_REPROMPT_ATTEMPTED=0
+MEM_REPROMPT_RECOVERED=0
+MEM_REPROMPT_REASON="skipped"
+MEM_HIT_BEFORE=""
+MEM_HIT_AFTER=""
+MEM_AUDIT_HELPER="$TORII_ROOT/scripts/memory_tool_audit.py"
+if [[ -f "$MEM_AUDIT_HELPER" && $TIMED_OUT -eq 0 && "${HERMES_CLI_ARGV_BROKEN:-0}" -eq 0 && -s "$RAW_OUT" ]]; then
+  case "${TORII_MEMORY_TOOL_REPROMPT:-1}" in
+    0|false|no|off)
+      {
+        echo "reprompt=0"
+        echo "enabled=0"
+        echo "reason=reprompt_off"
+        echo "attempted=0"
+        echo "recovered=0"
+      } >"$OUT_DIR/memory-tool-reprompt.env" || true
+      ;;
+    *)
+      _mrp_args=(
+        reprompt-decide
+        --out-dir "$OUT_DIR"
+        --loop "$LOOP_DIR/agent-loop.json"
+        --prompt "$PROMPT_PATH"
+      )
+      [[ -f "$OUT_DIR/memory-tool-reprompt.env" ]] && _mrp_args+=(--already-env "$OUT_DIR/memory-tool-reprompt.env")
+      _mrp_kv="$(python3 "$MEM_AUDIT_HELPER" "${_mrp_args[@]}" 2>/dev/null || true)"
+      _mrp_do="$(printf '%s\n' "$_mrp_kv" | sed -n 's/^reprompt=//p' | head -1)"
+      MEM_HIT_BEFORE="$(printf '%s\n' "$_mrp_kv" | sed -n 's/^hit_count=//p' | head -1)"
+      MEM_REPROMPT_REASON="$(printf '%s\n' "$_mrp_kv" | sed -n 's/^reason=//p' | head -1)"
+      _mrp_tt="$(printf '%s\n' "$_mrp_kv" | sed -n 's/^tool_call_turns=//p' | head -1)"
+      if [[ "$_mrp_do" == "1" || "$_mrp_do" == "true" ]]; then
+        MEM_REPROMPT_ATTEMPTED=1
+        notice "F106 memory soft re-prompt · hits=${MEM_HIT_BEFORE:-0} tool_turns=${_mrp_tt:-?} (utilization_gap)"
+        # Archive attempt-1 if F49 did not already
+        if [[ ! -f "$OUT_DIR/review-${PR_NUMBER}.attempt1.raw.md" ]]; then
+          cp -f "$RAW_OUT" "$OUT_DIR/review-${PR_NUMBER}.attempt1.raw.md" 2>/dev/null || true
+          [[ -d "$LOOP_DIR" ]] && rm -rf "$OUT_DIR/agent-loop-attempt1" && cp -a "$LOOP_DIR" "$OUT_DIR/agent-loop-attempt1" 2>/dev/null || true
+        fi
+        # Prefer F49 nudged prompt as base if present, else original
+        _mrp_base="$PROMPT_PATH"
+        [[ -s "$OUT_DIR/prompt-reprompt.md" ]] && _mrp_base="$OUT_DIR/prompt-reprompt.md"
+        MEM_REPROMPT_PROMPT="$OUT_DIR/prompt-memory-reprompt.md"
+        _mrw_args=(
+          reprompt-write
+          --prompt-in "$_mrp_base"
+          --prompt-out "$MEM_REPROMPT_PROMPT"
+          --hit-count "${MEM_HIT_BEFORE:-0}"
+          --tool-turns "${_mrp_tt:-0}"
+        )
+        [[ -f "$OUT_DIR/files.txt" ]] && _mrw_args+=(--paths-file "$OUT_DIR/files.txt")
+        python3 "$MEM_AUDIT_HELPER" "${_mrw_args[@]}" >/dev/null 2>&1 || true
+        if [[ -s "$MEM_REPROMPT_PROMPT" ]]; then
+          PROMPT="$(cat "$MEM_REPROMPT_PROMPT")"
+          LOG_OFFSET=0
+          if [[ -f "$LOG_FILE" ]]; then
+            LOG_OFFSET=$(wc -c <"$LOG_FILE" | tr -d ' ')
+          fi
+          echo "$LOG_OFFSET" >"$OUT_DIR/hermes-log-offset-memory-reprompt.txt" || true
+          STDERR_FILE_MRP="$OUT_DIR/hermes-${PR_NUMBER}.memory-reprompt.stderr"
+          set +e
+          (
+            cd "$WORKSPACE_ROOT"
+            if [[ $STREAM_LOGS -eq 1 ]]; then
+              _hermes_wrap hermes -z "$PROMPT" \
+                --provider openrouter \
+                --model "$MODEL" \
+                -t "$TOOLSETS" \
+                --usage-file "$USAGE_FILE" \
+                >"$RAW_OUT" 2> >(tee -a "$STDERR_FILE_MRP" >&2)
+            else
+              _hermes_wrap hermes -z "$PROMPT" \
+                --provider openrouter \
+                --model "$MODEL" \
+                -t "$TOOLSETS" \
+                --usage-file "$USAGE_FILE" \
+                >"$RAW_OUT" 2>"$STDERR_FILE_MRP"
+            fi
+          )
+          RC_MRP=$?
+          set -e
+          if [[ $RC_MRP -eq 124 ]]; then
+            notice "F106 memory re-prompt TIMED OUT — keeping prior body"
+            if [[ -f "$OUT_DIR/review-${PR_NUMBER}.attempt1.raw.md" ]]; then
+              cp -f "$OUT_DIR/review-${PR_NUMBER}.attempt1.raw.md" "$RAW_OUT"
+            fi
+            MEM_REPROMPT_REASON="reprompt_timeout"
+            TIMED_OUT=1
+          elif [[ $RC_MRP -ne 0 || ! -s "$RAW_OUT" ]]; then
+            notice "F106 memory re-prompt failed/empty (rc=$RC_MRP) — keeping prior body"
+            if [[ -f "$OUT_DIR/review-${PR_NUMBER}.attempt1.raw.md" ]]; then
+              cp -f "$OUT_DIR/review-${PR_NUMBER}.attempt1.raw.md" "$RAW_OUT"
+            fi
+            MEM_REPROMPT_REASON="reprompt_failed"
+            [[ $RC -eq 0 ]] || RC=$RC_MRP
+          else
+            RC=$RC_MRP
+            MEM_REPROMPT_REASON="reprompt_ran"
+            if [[ -s "$STDERR_FILE_MRP" ]]; then
+              {
+                echo ""
+                echo "===== F106 memory soft re-prompt stderr ====="
+                cat "$STDERR_FILE_MRP"
+              } >>"$STDERR_FILE" 2>/dev/null || true
+            fi
+            if [[ -f "$LOG_FILE" ]]; then
+              python3 - <<'PY' "$LOG_FILE" "$OUT_DIR/hermes-run.log" "$LOG_OFFSET"
+import sys
+from pathlib import Path
+src, dest, off = Path(sys.argv[1]), Path(sys.argv[2]), int(sys.argv[3] or 0)
+data = src.read_bytes()
+chunk = data[off:] if off < len(data) else data[-200_000:]
+dest.write_bytes(chunk)
+print(f"hermes-run.log (memory-reprompt) bytes={len(chunk)}", file=sys.stderr)
+PY
+            fi
+            export HERMES_LOG_OFFSET="$LOG_OFFSET"
+            rm -rf "$LOOP_DIR"
+            mkdir -p "$LOOP_DIR"
+            python3 "$TORII_ROOT/scripts/capture-hermes-loop.py" || notice "capture-hermes-loop (memory-reprompt) soft-failed"
+            # re-audit hits
+            MEM_HIT_AFTER="$(
+              python3 "$MEM_AUDIT_HELPER" audit --out-dir "$OUT_DIR" --prompt "$PROMPT_PATH" 2>/dev/null \
+                | python3 -c 'import json,sys; d=json.load(sys.stdin); print(d.get("hit_count",0))' 2>/dev/null || echo "0"
+            )"
+            if [[ -n "$MEM_HIT_AFTER" && "$MEM_HIT_AFTER" != "0" ]]; then
+              MEM_REPROMPT_RECOVERED=1
+              MEM_REPROMPT_REASON="reprompt_recovered"
+              notice "F106 memory re-prompt recovered hits=${MEM_HIT_AFTER} (was ${MEM_HIT_BEFORE:-0})"
+            else
+              notice "F106 memory re-prompt still hits=${MEM_HIT_AFTER:-0} — F105 gap may remain"
+            fi
+          fi
+          {
+            echo "reprompt=1"
+            echo "enabled=1"
+            echo "reason=${MEM_REPROMPT_REASON}"
+            echo "attempted=1"
+            echo "recovered=${MEM_REPROMPT_RECOVERED}"
+            echo "hit_count_before=${MEM_HIT_BEFORE:-}"
+            echo "hit_count_after=${MEM_HIT_AFTER:-}"
+            echo "tool_call_turns=${_mrp_tt:-}"
+            echo "feature=F106"
+          } >"$OUT_DIR/memory-tool-reprompt.env" || true
+          if [[ -f "$FINAL_OUT" || -s "$RAW_OUT" ]]; then
+            {
+              echo ""
+              echo "### Torii memory soft re-prompt (F106)"
+              echo "- **memory tool hits:** before=\`${MEM_HIT_BEFORE:-?}\` → after=\`${MEM_HIT_AFTER:-?}\` · recovered=\`${MEM_REPROMPT_RECOVERED}\`"
+              echo "- **reason:** \`${MEM_REPROMPT_REASON}\`"
+              echo "- Prefer \`python3 scripts/torii_memory.py search|graph\` when memory sections are injected"
+            } >>"$OUT_DIR/memory-tool-reprompt.md" 2>/dev/null || true
+          fi
+        else
+          MEM_REPROMPT_REASON="reprompt_prompt_write_failed"
+          {
+            echo "reprompt=0"
+            echo "enabled=1"
+            echo "reason=${MEM_REPROMPT_REASON}"
+            echo "attempted=1"
+            echo "recovered=0"
+            echo "hit_count_before=${MEM_HIT_BEFORE:-}"
+            echo "feature=F106"
+          } >"$OUT_DIR/memory-tool-reprompt.env" || true
+        fi
+      else
+        {
+          echo "reprompt=0"
+          echo "enabled=1"
+          echo "reason=${MEM_REPROMPT_REASON:-skipped}"
+          echo "attempted=0"
+          echo "recovered=0"
+          echo "hit_count_before=${MEM_HIT_BEFORE:-}"
+          echo "tool_call_turns=${_mrp_tt:-}"
+          echo "feature=F106"
+        } >"$OUT_DIR/memory-tool-reprompt.env" || true
+      fi
+      ;;
+  esac
+else
+  {
+    echo "reprompt=0"
+    echo "enabled=${TORII_MEMORY_TOOL_REPROMPT:-1}"
+    echo "reason=preconditions_not_met"
+    echo "attempted=0"
+    echo "recovered=0"
+    echo "feature=F106"
+  } >"$OUT_DIR/memory-tool-reprompt.env" || true
+fi
+
 # F46 / H13: detect Hermes actually blocking SOUL.md at load time
 # F48 / H16: only scan *this invocation* artifacts (offset-sliced hermes-run.log +
 # stderr). Do NOT scan the full Hermes agent.log / errors.log history — capture

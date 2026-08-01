@@ -652,6 +652,15 @@ REGISTRY: list[ToggleSpec] = [
         "F105",
     ),
     ToggleSpec(
+        "memory_tool_reprompt",
+        "TORII_MEMORY_TOOL_REPROMPT",
+        "bool",
+        True,
+        "product",
+        "F106 soft re-prompt once on memory utilization gap (inject unused after tools)",
+        "F106",
+    ),
+    ToggleSpec(
         "trace_vault",
         "TORII_TRACE_VAULT",
         "bool",

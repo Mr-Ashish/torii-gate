@@ -1,0 +1,31 @@
+{
+  "feature": "F106",
+  "repo": "pytorch/pytorch",
+  "pr": 191813,
+  "model": "deepseek/deepseek-v4-pro",
+  "host": "modal",
+  "bit3": "OK",
+  "elapsed_s": 148.7,
+  "log_streaming": true,
+  "tool_call_turns": 5,
+  "post_comment": 0,
+  "verdict": "REQUEST_CHANGES",
+  "memory_tool_reprompt": {
+    "attempted": true,
+    "recovered": true,
+    "hit_count_before": 0,
+    "hit_count_after": 5,
+    "tool_turns_at_decide": 10,
+    "f105_after": {
+      "score": 1.0,
+      "level": "L3",
+      "tools": [
+        "torii_memory"
+      ]
+    }
+  },
+  "scored_at": "2026-08-01T04:08:22Z",
+  "modal_app": "https://modal.com/apps/mr-ashish/main/ap-7vkt3Y2GxUGdMhCIzsMMaY",
+  "tests": "576 passed",
+  "fixture_f106": "pass"
+}

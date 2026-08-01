@@ -1,0 +1,6 @@
+{
+  "id": "memory-tool-reprompt",
+  "feature": "F106",
+  "status": "adopted",
+  "one_liner": "Soft re-prompt once when memory inject unused after tools ran"
+}

@@ -70,7 +70,72 @@ class MemoryToolAuditTests(unittest.TestCase):
     def test_status(self):
         r = _run(["status"])
         self.assertEqual(r.returncode, 0)
-        self.assertEqual(json.loads(r.stdout)["feature"], "F105")
+        data = json.loads(r.stdout)
+        self.assertEqual(data["feature"], "F105")
+        self.assertEqual(data["reprompt_feature"], "F106")
+
+    def test_reprompt_decide_gap(self):
+        with tempfile.TemporaryDirectory() as td:
+            td_path = Path(td)
+            (td_path / "agent-loop").mkdir()
+            loop = {
+                "tool_call_turns": 3,
+                "steps": [
+                    {
+                        "kind": "assistant_tool_calls",
+                        "tool_calls": [
+                            {
+                                "name": "terminal",
+                                "arguments_preview": json.dumps(
+                                    {"command": "cat pr.diff"}
+                                ),
+                            }
+                        ],
+                    }
+                ],
+                "messages": [],
+            }
+            (td_path / "agent-loop" / "agent-loop.json").write_text(json.dumps(loop))
+            (td_path / "prompt.md").write_text(
+                "<!-- torii-f103-memory-cli -->\npython3 scripts/torii_memory.py help\n"
+            )
+            r = _run(
+                [
+                    "reprompt-decide",
+                    "--out-dir",
+                    str(td_path),
+                    "--prompt",
+                    str(td_path / "prompt.md"),
+                ]
+            )
+            self.assertEqual(r.returncode, 0, r.stderr + r.stdout)
+            self.assertIn("reprompt=1", r.stdout)
+            self.assertIn("reason=utilization_gap", r.stdout)
+
+    def test_reprompt_write(self):
+        with tempfile.TemporaryDirectory() as td:
+            pin = Path(td) / "in.md"
+            pout = Path(td) / "out.md"
+            pin.write_text("# review\n")
+            r = _run(
+                [
+                    "reprompt-write",
+                    "--prompt-in",
+                    str(pin),
+                    "--prompt-out",
+                    str(pout),
+                    "--hit-count",
+                    "0",
+                    "--tool-turns",
+                    "2",
+                    "--path",
+                    "app.py",
+                ]
+            )
+            self.assertEqual(r.returncode, 0, r.stderr + r.stdout)
+            body = pout.read_text()
+            self.assertIn("F106", body)
+            self.assertIn("torii_memory.py search", body)
 
     def test_disabled_skips(self):
         with tempfile.TemporaryDirectory() as td:

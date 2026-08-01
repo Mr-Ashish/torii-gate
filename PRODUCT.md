@@ -114,6 +114,8 @@ compound → write → consolidate → effective_critic → federate → scoped_
 
 **Utilization audit (F105):** mid-review memory tool calls (search/graph/…) are **scored** from the agent loop — inject offered but unused is a measured gap, soft-blended into trajectory fitness.
 
+**Memory soft re-prompt (F106):** when tools ran but memory CLI was never called despite inject, Hermes gets **one** soft re-prompt (F49-style) to call `torii_memory search|graph` before finalizing — zero-tool recovery stays F49.
+
 **Ops:** `python3 scripts/memory_loop_status.py scorecard` → L0–L3. Smoke requires L3 on the hub tree. CI job summary annotates readiness; optional advisory `torii/memory-loop` via `TORII_MEMORY_LOOP_STATUS_COMMIT=1`.
 
 ---

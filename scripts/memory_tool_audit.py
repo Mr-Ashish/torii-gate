@@ -14,17 +14,20 @@ Product thesis:
   fitness + traces can prove utilization — not just inject presence.
 
 Commands:
-  scan      — extract memory tool invocations from agent-loop / log
-  score     — scan + 0–1 utilization score + readiness flags
-  inject    — write memory-tool-audit section into a prompt (soft rubric)
-  audit     — score a run dir (agent-loop under out_dir)
-  fixture   — hermetic good (memory cmds) vs weak (no memory cmds)
-  status    — feature + toggle
+  scan            — extract memory tool invocations from agent-loop / log
+  score           — scan + 0–1 utilization score + readiness flags
+  inject          — write memory-tool-audit section into a prompt (soft rubric)
+  audit           — score a run dir (agent-loop under out_dir)
+  reprompt-decide — F106: whether to soft re-prompt on utilization gap
+  reprompt-write  — F106: append memory-tool nudge to prompt
+  fixture         — hermetic good (memory cmds) vs weak (no memory cmds) + re-prompt
+  status          — feature + toggle
 
 Env:
   TORII_ROOT
-  TORII_MEMORY_TOOL_AUDIT   1 (default) | 0
-  TORII_MEMORY_TOOL_FITNESS 1 (default) | 0  — soft blend into trajectory fitness
+  TORII_MEMORY_TOOL_AUDIT     1 (default) | 0
+  TORII_MEMORY_TOOL_FITNESS   1 (default) | 0  — soft blend into trajectory fitness
+  TORII_MEMORY_TOOL_REPROMPT  1 (default) | 0  — F106 soft re-prompt once on gap
 """
 
 from __future__ import annotations
@@ -40,8 +43,10 @@ from pathlib import Path
 from typing import Any
 
 FEATURE = "F105"
+FEATURE_REPROMPT = "F106"
 SCHEMA = 1
 MARKER = "<!-- torii-f105-memory-tool-audit -->"
+REPROMPT_MARKER = "## Soft re-prompt (Torii F106 / memory tools)"
 REPORT_NAME = "memory-tool-audit.json"
 
 _FALSEY = frozenset({"0", "false", "no", "off", "disabled", "n", "none", ""})
@@ -95,6 +100,11 @@ def enabled() -> bool:
 
 def fitness_blend_enabled() -> bool:
     raw = (os.environ.get("TORII_MEMORY_TOOL_FITNESS") or "1").strip().lower()
+    return raw not in _FALSEY
+
+
+def reprompt_enabled() -> bool:
+    raw = (os.environ.get("TORII_MEMORY_TOOL_REPROMPT") or "1").strip().lower()
     return raw not in _FALSEY
 
 
@@ -359,6 +369,111 @@ def inject_prompt(prompt_path: Path) -> bool:
     return True
 
 
+def should_reprompt(
+    audit: dict[str, Any],
+    *,
+    already_reprompted: bool = False,
+    reprompt_on: bool | None = None,
+) -> dict[str, Any]:
+    """F106: soft re-prompt once when memory inject offered but unused after tools.
+
+    Mirrors F49 tool-turns re-prompt, but targets **utilization gap**:
+    inject_offered ∧ hit_count==0 ∧ tool_call_turns≥1.
+    Zero-tool cases remain F49's job (F106 does not stack when tools never ran).
+    """
+    on = reprompt_enabled() if reprompt_on is None else bool(reprompt_on)
+    hits = int(audit.get("hit_count") or 0)
+    turns = int(audit.get("tool_call_turns") or 0)
+    inject = bool(audit.get("inject_offered"))
+    gap = bool(audit.get("utilization_gap")) or (inject and hits == 0 and turns >= 1)
+    out: dict[str, Any] = {
+        "feature": FEATURE_REPROMPT,
+        "reprompt": 0,
+        "enabled": on,
+        "reason": "ok",
+        "hit_count": hits,
+        "tool_call_turns": turns,
+        "inject_offered": inject,
+        "utilization_gap": gap,
+        "already_reprompted": bool(already_reprompted),
+        "score": audit.get("score"),
+    }
+    if not on:
+        out["reason"] = "reprompt_off"
+        return out
+    if already_reprompted:
+        out["reason"] = "already_reprompted"
+        return out
+    if not inject:
+        out["reason"] = "inject_not_offered"
+        return out
+    if hits > 0:
+        out["reason"] = "memory_tools_used"
+        return out
+    if turns < 1:
+        # F49 owns zero-tool recovery; avoid double re-prompt storm
+        out["reason"] = "zero_tools_defer_f49"
+        return out
+    out["reprompt"] = 1
+    out["reason"] = "utilization_gap"
+    return out
+
+
+def build_memory_reprompt_suffix(
+    *,
+    hit_count: int = 0,
+    tool_call_turns: int = 0,
+    paths: list[str] | None = None,
+) -> str:
+    """Soft nudge: call torii_memory before finalizing review."""
+    paths = [p for p in (paths or []) if p][:12]
+    files_block = ""
+    if paths:
+        bullets = "\n".join(f"  - `{p}`" for p in paths)
+        files_block = f"\nChanged paths (memory search seeds):\n{bullets}\n"
+    seed = paths[0] if paths else "changed/file.py"
+    return (
+        "\n\n---\n\n"
+        f"{REPROMPT_MARKER}\n\n"
+        f"Your previous reply used **{tool_call_turns} tool turns** but "
+        f"**{hit_count} memory-tool calls** despite injected memory CLI / "
+        "archival / graph sections (F103–F105).\n\n"
+        "Before finalizing, **once** use the Torii memory front door via terminal:\n\n"
+        "```bash\n"
+        "python3 scripts/torii_memory.py help\n"
+        f'python3 scripts/torii_memory.py search -- -q "auth OR sql OR pickle OR secret"\n'
+        f"python3 scripts/torii_memory.py graph -- query --path {seed} --hops 2\n"
+        "```\n\n"
+        "Treat hits as **hints only** — still require path:line evidence to block. "
+        "If search returns nothing relevant, say so and continue the review.\n"
+        f"{files_block}"
+    )
+
+
+def write_memory_reprompt_prompt(
+    *,
+    prompt_in: Path,
+    prompt_out: Path,
+    hit_count: int = 0,
+    tool_call_turns: int = 0,
+    paths: list[str] | None = None,
+) -> str:
+    base = prompt_in.read_text(encoding="utf-8", errors="replace")
+    if REPROMPT_MARKER in base:
+        text = base
+    else:
+        text = base.rstrip() + build_memory_reprompt_suffix(
+            hit_count=hit_count,
+            tool_call_turns=tool_call_turns,
+            paths=paths,
+        )
+        if not text.endswith("\n"):
+            text += "\n"
+    prompt_out.parent.mkdir(parents=True, exist_ok=True)
+    prompt_out.write_text(text, encoding="utf-8")
+    return text
+
+
 def blend_into_fitness(
     fitness: dict[str, Any], audit: dict[str, Any], *, weight: float = 0.08
 ) -> dict[str, Any]:
@@ -517,11 +632,89 @@ def cmd_status(args: argparse.Namespace) -> int:
         json.dumps(
             {
                 "feature": FEATURE,
+                "reprompt_feature": FEATURE_REPROMPT,
                 "enabled": enabled(),
                 "fitness_blend": fitness_blend_enabled(),
+                "reprompt_enabled": reprompt_enabled(),
                 "patterns": [t for t, _ in _MEMORY_CMD_PATTERNS],
             },
             indent=2,
+        )
+    )
+    return 0
+
+
+def cmd_reprompt_decide(args: argparse.Namespace) -> int:
+    """Stdout key=value for shell (F49-style) plus optional JSON."""
+    out_dir = Path(args.out_dir) if args.out_dir else None
+    if out_dir:
+        audit = audit_run(
+            out_dir,
+            loop_path=Path(args.loop) if args.loop else None,
+            prompt_path=Path(args.prompt) if args.prompt else None,
+        )
+    else:
+        loop = load_loop(Path(args.loop)) if args.loop else {}
+        log = ""
+        blobs = _collect_text_blobs(loop, log)
+        scan = scan_blobs(blobs)
+        inject = False
+        if args.prompt and Path(args.prompt).is_file():
+            inject = detect_inject_offered(
+                Path(args.prompt).read_text(encoding="utf-8", errors="replace")
+            )
+        turns = int(loop.get("tool_call_turns") or 0)
+        audit = score_utilization(scan, inject_offered=inject, tool_call_turns=turns)
+
+    already = bool(args.already_reprompted)
+    if args.already_env and Path(args.already_env).is_file():
+        try:
+            for line in Path(args.already_env).read_text().splitlines():
+                if line.startswith("attempted=1") or line.startswith("reprompt=1"):
+                    already = True
+        except OSError:
+            pass
+
+    dec = should_reprompt(audit, already_reprompted=already)
+    # shell-friendly
+    print(f"reprompt={dec['reprompt']}")
+    print(f"enabled={int(bool(dec['enabled']))}")
+    print(f"reason={dec['reason']}")
+    print(f"hit_count={dec['hit_count']}")
+    print(f"tool_call_turns={dec['tool_call_turns']}")
+    print(f"inject_offered={int(bool(dec['inject_offered']))}")
+    print(f"utilization_gap={int(bool(dec['utilization_gap']))}")
+    print(f"score={dec.get('score')}")
+    if args.json:
+        print(json.dumps(dec, indent=2), file=sys.stderr)
+    return 0
+
+
+def cmd_reprompt_write(args: argparse.Namespace) -> int:
+    paths: list[str] = []
+    if args.paths_file and Path(args.paths_file).is_file():
+        paths = [
+            ln.strip()
+            for ln in Path(args.paths_file).read_text().splitlines()
+            if ln.strip() and not ln.strip().startswith("#")
+        ]
+    for p in args.path or []:
+        if p:
+            paths.append(p)
+    write_memory_reprompt_prompt(
+        prompt_in=Path(args.prompt_in),
+        prompt_out=Path(args.prompt_out),
+        hit_count=int(args.hit_count or 0),
+        tool_call_turns=int(args.tool_turns or 0),
+        paths=paths,
+    )
+    print(
+        json.dumps(
+            {
+                "feature": FEATURE_REPROMPT,
+                "prompt_out": args.prompt_out,
+                "written": True,
+            }
         )
     )
     return 0
@@ -602,9 +795,46 @@ def cmd_fixture(args: argparse.Namespace) -> int:
         inject_prompt(inj_p)
         inject_ok = MARKER in inj_p.read_text()
 
-        fixture_pass = all([good_ok, weak_ok, delta_ok, blend_ok, inject_ok])
+        # F106 re-prompt decide
+        dec_weak = should_reprompt(weak, already_reprompted=False)
+        dec_good = should_reprompt(good, already_reprompted=False)
+        dec_already = should_reprompt(weak, already_reprompted=True)
+        dec_zero = should_reprompt(
+            {
+                "hit_count": 0,
+                "tool_call_turns": 0,
+                "inject_offered": True,
+                "utilization_gap": False,
+                "score": 0.1,
+            }
+        )
+        reprompt_ok = (
+            dec_weak.get("reprompt") == 1
+            and dec_weak.get("reason") == "utilization_gap"
+            and dec_good.get("reprompt") == 0
+            and dec_already.get("reprompt") == 0
+            and dec_zero.get("reason") == "zero_tools_defer_f49"
+        )
+
+        # write nudge
+        pin = td_path / "prompt-in.md"
+        pout = td_path / "prompt-out.md"
+        pin.write_text(prompt + "\n# review task\n")
+        write_memory_reprompt_prompt(
+            prompt_in=pin,
+            prompt_out=pout,
+            hit_count=0,
+            tool_call_turns=3,
+            paths=["app.py", "db.py"],
+        )
+        write_ok = REPROMPT_MARKER in pout.read_text() and "torii_memory.py search" in pout.read_text()
+
+        fixture_pass = all(
+            [good_ok, weak_ok, delta_ok, blend_ok, inject_ok, reprompt_ok, write_ok]
+        )
         out = {
             "feature": FEATURE,
+            "reprompt_feature": FEATURE_REPROMPT,
             "fixture_pass": fixture_pass,
             "good_score": good["score"],
             "weak_score": weak["score"],
@@ -614,6 +844,11 @@ def cmd_fixture(args: argparse.Namespace) -> int:
             "delta_ok": delta_ok,
             "blend_ok": blend_ok,
             "inject_ok": inject_ok,
+            "reprompt_ok": reprompt_ok,
+            "write_ok": write_ok,
+            "dec_weak": dec_weak,
+            "dec_good_reason": dec_good.get("reason"),
+            "dec_zero_reason": dec_zero.get("reason"),
             "good_tools": good["tools_used"],
             "weak_gap": weak["utilization_gap"],
             "good_fit_composite": good_fit["composite"],
@@ -625,7 +860,7 @@ def cmd_fixture(args: argparse.Namespace) -> int:
 
 
 def main(argv: list[str] | None = None) -> int:
-    p = argparse.ArgumentParser(description="F105 memory tool-use auditor")
+    p = argparse.ArgumentParser(description="F105/F106 memory tool-use auditor + re-prompt")
     sub = p.add_subparsers(dest="cmd", required=True)
 
     ps = sub.add_parser("scan", help="extract memory tool hits from loop/log")
@@ -655,10 +890,28 @@ def main(argv: list[str] | None = None) -> int:
     pi.add_argument("--prompt", required=True)
     pi.set_defaults(func=cmd_inject)
 
+    prd = sub.add_parser("reprompt-decide", help="F106: decide soft memory re-prompt")
+    prd.add_argument("--out-dir", default="")
+    prd.add_argument("--loop", default="")
+    prd.add_argument("--prompt", default="")
+    prd.add_argument("--already-reprompted", action="store_true")
+    prd.add_argument("--already-env", default="", help="prior memory-tool-reprompt.env")
+    prd.add_argument("--json", action="store_true")
+    prd.set_defaults(func=cmd_reprompt_decide)
+
+    prw = sub.add_parser("reprompt-write", help="F106: write memory-nudged prompt")
+    prw.add_argument("--prompt-in", required=True)
+    prw.add_argument("--prompt-out", required=True)
+    prw.add_argument("--hit-count", type=int, default=0)
+    prw.add_argument("--tool-turns", type=int, default=0)
+    prw.add_argument("--paths-file", default="")
+    prw.add_argument("--path", action="append", default=[])
+    prw.set_defaults(func=cmd_reprompt_write)
+
     pst = sub.add_parser("status")
     pst.set_defaults(func=cmd_status)
 
-    pf = sub.add_parser("fixture", help="hermetic good vs weak utilization")
+    pf = sub.add_parser("fixture", help="hermetic good vs weak utilization + re-prompt")
     pf.set_defaults(func=cmd_fixture)
 
     args = p.parse_args(argv)

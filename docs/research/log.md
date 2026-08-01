@@ -1,6 +1,36 @@
 # Torii research → product log
 
 
+## 2026-08-01 — F106 soft re-prompt on memory utilization gap
+
+### Papers / posts
+- Mem2ActBench / MemoryAgentBench: value is **proactive memory use**, not passive inject.
+- Torii F49/H15: soft re-prompt recovers zero-tool multi-file runs — same pattern for memory gap.
+- F105 auditor: measures inject-offered-but-unused; F106 closes the recovery loop.
+- Loop-eng: score + recoverable stage, not scorecard-only.
+
+### OSS design patterns stolen
+1. **Soft second attempt** (F49 mirror) only when tools already ran and memory unused.
+2. **Defer zero-tool** cases to F49 (no double re-prompt storm).
+3. **Recovered metric** hit_count before/after written to `memory-tool-reprompt.env`.
+
+### Insight
+Live F105 showed inject offered but zero memory hits. Measuring gap is insufficient — agents need one recoverable nudge mid-pipeline when utilization fails after real tool use.
+
+### Feature shipped (F106)
+- `memory_tool_audit.py` `reprompt-decide` / `reprompt-write`
+- Soft stage in `run-hermes-review.sh` after F49
+- Toggle `TORII_MEMORY_TOOL_REPROMPT`
+- PRODUCT mental model C + F106 one-liner
+
+### Metric
+- Offline fixture: weak→reprompt=1; good→0; zero tools→defer_f49; write_ok
+- Live Modal pytorch#191813 deepseek-v4-pro: BIT3_OK ~149s; F106 recovered hits **0→5**; post-audit F105 score=1.0 L3; log_streaming=true
+- pytest: 576 passed
+
+### SHA
+_pending_
+
 ## 2026-08-01 — F105 mid-review memory tool utilization audit
 
 ### Papers / posts
