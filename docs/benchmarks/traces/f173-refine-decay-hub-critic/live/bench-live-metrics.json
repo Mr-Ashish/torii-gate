@@ -1,0 +1,459 @@
+{
+  "feature": "F70",
+  "mode": "live",
+  "at": "2026-08-01T12:31:01Z",
+  "model": "deepseek/deepseek-v4-pro",
+  "hermes_rc": 0,
+  "review": "docs/benchmarks/traces/f173-refine-decay-hub-critic/live/review-bench-f70.md",
+  "score": {
+    "feature": "F70",
+    "pack_id": "insecure-demo",
+    "verdict": "REQUEST_CHANGES",
+    "expected_verdict": "REQUEST_CHANGES",
+    "verdict_ok": true,
+    "tp": 4,
+    "fn": 0,
+    "required_total": 4,
+    "recall": 1.0,
+    "precision_proxy": 0.0,
+    "cases": [
+      {
+        "case_id": "sqli-search",
+        "hit": true,
+        "matched_terms": [
+          "sql injection",
+          "sqli",
+          "f-string",
+          "f\"select",
+          "execute(f",
+          "cur.execute(f",
+          "cwe-89"
+        ],
+        "path_ok": true
+      },
+      {
+        "case_id": "pickle-load",
+        "hit": true,
+        "matched_terms": [
+          "pickle",
+          "deserialize",
+          "deserialization",
+          "cwe-502",
+          "pickle.loads"
+        ],
+        "path_ok": true
+      },
+      {
+        "case_id": "cmdi-run",
+        "hit": true,
+        "matched_terms": [
+          "command injection",
+          "shell=true",
+          "os command",
+          "rce",
+          "subprocess",
+          "cwe-78"
+        ],
+        "path_ok": true
+      },
+      {
+        "case_id": "secret-exposure",
+        "hit": true,
+        "matched_terms": [
+          "secret",
+          "api key",
+          "api_key",
+          "openrouter",
+          "exposes",
+          "exposure"
+        ],
+        "path_ok": true
+      }
+    ],
+    "path_hits": [
+      {
+        "path": "demo/insecure/app.py",
+        "line": null
+      },
+      {
+        "path": "demo/insecure/app.py",
+        "line": 15
+      },
+      {
+        "path": "demo/insecure/app.py",
+        "line": 21
+      },
+      {
+        "path": "demo/insecure/app.py",
+        "line": 27
+      },
+      {
+        "path": "demo/insecure/app.py",
+        "line": 32
+      }
+    ],
+    "critic": {
+      "feature": "F70",
+      "pass": "dual_offline",
+      "effective_aware": true,
+      "graph_supersede_aware": true,
+      "graph_multi_hop": true,
+      "graph_supersede_edges": 0,
+      "graph_hop": {
+        "multi_hop": true,
+        "hops": 2,
+        "seed_n": 4,
+        "neighborhood_n": 4,
+        "seeds": [
+          "tp:cmdi-run",
+          "tp:pickle-load",
+          "tp:secret-exposure",
+          "tp:sqli-search"
+        ]
+      },
+      "effective_floor": 0.25,
+      "chunk_count": 20,
+      "likely_fp": 0,
+      "confirmed_tp": 0,
+      "stale_tp_match": 0,
+      "superseded_tp": 0,
+      "weak_evidence": 20,
+      "precision_proxy": 0.0,
+      "effective_precision": 0.0,
+      "findings": [
+        {
+          "index": 0,
+          "status": "weak_evidence",
+          "has_path": false,
+          "paths": [],
+          "tp_signature_hits": [
+            "sqli-search",
+            "pickle-load",
+            "cmdi-run",
+            "secret-exposure"
+          ],
+          "tp_effective_max": 0.95,
+          "tp_effective_scores": [
+            0.95,
+            0.95,
+            0.95,
+            0.95
+          ],
+          "demote_reason": "",
+          "graph_filtered": null,
+          "preview": "All four findings below are blocking.  ---   : **No** \u2014 four concerns  | # | Concern | CWE | |---|---------|-----| | 1 | SQL injection via f-string query interpolation | CWE-89 | |"
+        },
+        {
+          "index": 1,
+          "status": "weak_evidence",
+          "has_path": true,
+          "paths": [
+            {
+              "path": "demo/insecure/app.py",
+              "line": 15
+            }
+          ],
+          "tp_signature_hits": [],
+          "tp_effective_max": null,
+          "tp_effective_scores": [],
+          "demote_reason": "",
+          "graph_filtered": null,
+          "preview": "**Path:** `demo/insecure/app.py:15`"
+        },
+        {
+          "index": 2,
+          "status": "weak_evidence",
+          "has_path": false,
+          "paths": [],
+          "tp_signature_hits": [
+            "sqli-search"
+          ],
+          "tp_effective_max": 0.95,
+          "tp_effective_scores": [
+            0.95
+          ],
+          "demote_reason": "",
+          "graph_filtered": null,
+          "preview": "**Sink:** `cur.execute(f\"SELECT * FROM items WHERE name = '{q}'\")`"
+        },
+        {
+          "index": 3,
+          "status": "weak_evidence",
+          "has_path": false,
+          "paths": [],
+          "tp_signature_hits": [
+            "cmdi-run"
+          ],
+          "tp_effective_max": 0.95,
+          "tp_effective_scores": [
+            0.95
+          ],
+          "demote_reason": "",
+          "graph_filtered": null,
+          "preview": "**Source:** `q = request.args.get(\"q\", \"\")` (line 13)"
+        },
+        {
+          "index": 4,
+          "status": "weak_evidence",
+          "has_path": false,
+          "paths": [],
+          "tp_signature_hits": [
+            "sqli-search"
+          ],
+          "tp_effective_max": 0.95,
+          "tp_effective_scores": [
+            0.95
+          ],
+          "demote_reason": "",
+          "graph_filtered": null,
+          "preview": "**Attacker trigger:** `GET /search?q=' OR 1=1 --` enumerates all rows; `GET /search?q='; DROP TABLE items --` destroys data. The f-string places unsanitized user input directly int"
+        },
+        {
+          "index": 5,
+          "status": "weak_evidence",
+          "has_path": false,
+          "paths": [],
+          "tp_signature_hits": [
+            "pickle-load"
+          ],
+          "tp_effective_max": 0.95,
+          "tp_effective_scores": [
+            0.95
+          ],
+          "demote_reason": "",
+          "graph_filtered": null,
+          "preview": "**Fix:** Use parameterized queries: `cur.execute(\"SELECT * FROM items WHERE name = ?\", (q,))`  **2. Insecure Deserialization \u2014 `/load` (CRITICAL)**"
+        },
+        {
+          "index": 6,
+          "status": "weak_evidence",
+          "has_path": true,
+          "paths": [
+            {
+              "path": "demo/insecure/app.py",
+              "line": 21
+            }
+          ],
+          "tp_signature_hits": [],
+          "tp_effective_max": null,
+          "tp_effective_scores": [],
+          "demote_reason": "",
+          "graph_filtered": null,
+          "preview": "**Path:** `demo/insecure/app.py:21`"
+        },
+        {
+          "index": 7,
+          "status": "weak_evidence",
+          "has_path": false,
+          "paths": [],
+          "tp_signature_hits": [
+            "pickle-load"
+          ],
+          "tp_effective_max": 0.95,
+          "tp_effective_scores": [
+            0.95
+          ],
+          "demote_reason": "",
+          "graph_filtered": null,
+          "preview": "**Sink:** `pickle.loads(data)`"
+        },
+        {
+          "index": 8,
+          "status": "weak_evidence",
+          "has_path": false,
+          "paths": [],
+          "tp_signature_hits": [
+            "cmdi-run"
+          ],
+          "tp_effective_max": 0.95,
+          "tp_effective_scores": [
+            0.95
+          ],
+          "demote_reason": "",
+          "graph_filtered": null,
+          "preview": "**Source:** `data = request.data` (line 20)"
+        },
+        {
+          "index": 9,
+          "status": "weak_evidence",
+          "has_path": false,
+          "paths": [],
+          "tp_signature_hits": [
+            "pickle-load"
+          ],
+          "tp_effective_max": 0.95,
+          "tp_effective_scores": [
+            0.95
+          ],
+          "demote_reason": "",
+          "graph_filtered": null,
+          "preview": "**Attacker trigger:** `POST /load` with a crafted pickle payload (`cos\\nsystem\\n(S'rm -rf /'\\ntR.`) achieves arbitrary code execution on the server. `pickle.loads` executes attacke"
+        },
+        {
+          "index": 10,
+          "status": "weak_evidence",
+          "has_path": false,
+          "paths": [],
+          "tp_signature_hits": [
+            "pickle-load",
+            "cmdi-run"
+          ],
+          "tp_effective_max": 0.95,
+          "tp_effective_scores": [
+            0.95,
+            0.95
+          ],
+          "demote_reason": "",
+          "graph_filtered": null,
+          "preview": "**Fix:** Never deserialize untrusted pickle. Use a safe serialization format (JSON, MessagePack) or restrict with `pickle.Unpickler` + a strict `find_class` allowlist.  **3. Comman"
+        },
+        {
+          "index": 11,
+          "status": "weak_evidence",
+          "has_path": true,
+          "paths": [
+            {
+              "path": "demo/insecure/app.py",
+              "line": 27
+            }
+          ],
+          "tp_signature_hits": [],
+          "tp_effective_max": null,
+          "tp_effective_scores": [],
+          "demote_reason": "",
+          "graph_filtered": null,
+          "preview": "**Path:** `demo/insecure/app.py:27`"
+        },
+        {
+          "index": 12,
+          "status": "weak_evidence",
+          "has_path": false,
+          "paths": [],
+          "tp_signature_hits": [
+            "cmdi-run"
+          ],
+          "tp_effective_max": 0.95,
+          "tp_effective_scores": [
+            0.95
+          ],
+          "demote_reason": "",
+          "graph_filtered": null,
+          "preview": "**Sink:** `subprocess.check_output(cmd, shell=True)`"
+        },
+        {
+          "index": 13,
+          "status": "weak_evidence",
+          "has_path": false,
+          "paths": [],
+          "tp_signature_hits": [
+            "cmdi-run"
+          ],
+          "tp_effective_max": 0.95,
+          "tp_effective_scores": [
+            0.95
+          ],
+          "demote_reason": "",
+          "graph_filtered": null,
+          "preview": "**Source:** `cmd = request.args.get(\"cmd\", \"echo hi\")` (line 26)"
+        },
+        {
+          "index": 14,
+          "status": "weak_evidence",
+          "has_path": false,
+          "paths": [],
+          "tp_signature_hits": [
+            "cmdi-run"
+          ],
+          "tp_effective_max": 0.95,
+          "tp_effective_scores": [
+            0.95
+          ],
+          "demote_reason": "",
+          "graph_filtered": null,
+          "preview": "**Attacker trigger:** `GET /run?cmd=cat /etc/passwd` or `GET /run?cmd=; rm -rf /` \u2014 the shell=True passes the raw string to `/bin/sh -c`, allowing command chaining, subshells, and "
+        },
+        {
+          "index": 15,
+          "status": "weak_evidence",
+          "has_path": false,
+          "paths": [],
+          "tp_signature_hits": [
+            "cmdi-run",
+            "secret-exposure"
+          ],
+          "tp_effective_max": 0.95,
+          "tp_effective_scores": [
+            0.95,
+            0.95
+          ],
+          "demote_reason": "",
+          "graph_filtered": null,
+          "preview": "**Fix:** Use `subprocess.check_output([cmd])` with shell=False, or better, avoid passing user input to subprocess entirely.  **4. Secret Exposure \u2014 `/secret` (HIGH)**"
+        },
+        {
+          "index": 16,
+          "status": "weak_evidence",
+          "has_path": true,
+          "paths": [
+            {
+              "path": "demo/insecure/app.py",
+              "line": 32
+            }
+          ],
+          "tp_signature_hits": [],
+          "tp_effective_max": null,
+          "tp_effective_scores": [],
+          "demote_reason": "",
+          "graph_filtered": null,
+          "preview": "**Path:** `demo/insecure/app.py:32`"
+        },
+        {
+          "index": 17,
+          "status": "weak_evidence",
+          "has_path": false,
+          "paths": [],
+          "tp_signature_hits": [
+            "secret-exposure"
+          ],
+          "tp_effective_max": 0.95,
+          "tp_effective_scores": [
+            0.95
+          ],
+          "demote_reason": "",
+          "graph_filtered": null,
+          "preview": "**Sink:** `return {\"key\": os.environ.get(\"OPENROUTER_API_KEY\", \"missing\")}`"
+        },
+        {
+          "index": 18,
+          "status": "weak_evidence",
+          "has_path": false,
+          "paths": [],
+          "tp_signature_hits": [
+            "secret-exposure"
+          ],
+          "tp_effective_max": 0.95,
+          "tp_effective_scores": [
+            0.95
+          ],
+          "demote_reason": "",
+          "graph_filtered": null,
+          "preview": "**Attacker trigger:** Any unauthenticated `GET /secret` returns the live `OPENROUTER_API_KEY` (or \"missing\" if unset). If the env var is populated, the key is exfiltrated with zero"
+        },
+        {
+          "index": 19,
+          "status": "weak_evidence",
+          "has_path": false,
+          "paths": [],
+          "tp_signature_hits": [],
+          "tp_effective_max": null,
+          "tp_effective_scores": [],
+          "demote_reason": "",
+          "graph_filtered": null,
+          "preview": "**Fix:** Remove the endpoint entirely. If the key is needed internally, access it only server-side; never serialize it into an HTTP response.  ---"
+        }
+      ]
+    },
+    "score_pct": 100.0,
+    "passed": true
+  }
+}

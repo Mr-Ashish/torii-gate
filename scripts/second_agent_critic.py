@@ -364,6 +364,12 @@ def refine_dual_fail_critic_enabled() -> bool:
     return raw not in _FALSEY
 
 
+def refine_decay_hub_critic_enabled() -> bool:
+    """F173: demote APPROVE when multi-tenant chronic dual_fail decay is elevated."""
+    raw = (os.environ.get("TORII_REFINE_DECAY_HUB_CRITIC") or "1").strip().lower()
+    return raw not in _FALSEY
+
+
 def run_f121_recovery_util(out_dir: Path | None) -> CheckerResult:
     """F121: recovery always skills must fire tool CLIs (inject ≠ utilization)."""
     if out_dir is None:
@@ -413,6 +419,133 @@ def run_f121_recovery_util(out_dir: Path | None) -> CheckerResult:
             error=str(e)[:200],
             detail={"soft_fail": True},
         )
+
+
+def run_f173_refine_decay_hub(
+    out_dir: Path | None,
+    root: Path | None = None,
+) -> CheckerResult:
+    """F173: multi-tenant chronic dual_fail decay elevated → demote weak APPROVE.
+
+    F171/F172 mark multi_tenant_decay skills; when hub chronic_fail_n≥1 with
+    tenants≥2 or promoted decay themes exist, APPROVE is free-rider risk.
+    Soft-feeds f81 LLM panel_draft with endorse_demote_hint when enabled.
+    """
+    if not refine_decay_hub_critic_enabled():
+        return CheckerResult(
+            id="f173_refine_decay_hub",
+            name="Multi-tenant refine dual_fail decay (F173)",
+            ok=True,
+            score=1.0,
+            detail={"enabled": False, "feature": "F173"},
+        )
+    root = root or _root()
+    chronic_n = 0
+    max_tenants = 0
+    max_decay = 0
+    multi = False
+    high = False
+    themes: list[str] = []
+    # fitness ledger multi_tenant_decay
+    try:
+        fit_path = root / ".torii" / "skill-fitness.json"
+        envf = (os.environ.get("TORII_SKILL_FITNESS_FILE") or "").strip()
+        if envf:
+            fit_path = Path(envf)
+        if fit_path.is_file():
+            fit = json.loads(fit_path.read_text(encoding="utf-8"))
+            for sid, ent in (fit.get("skills") or {}).items():
+                if not isinstance(ent, dict):
+                    continue
+                if ent.get("multi_tenant_decay") or (
+                    ent.get("refine_dual_chronic_fail")
+                    and int(ent.get("multi_tenant_decay_tenants") or 0) >= 2
+                ):
+                    chronic_n += 1
+                    multi = True
+                    max_tenants = max(
+                        max_tenants, int(ent.get("multi_tenant_decay_tenants") or 0)
+                    )
+                    max_decay = min(
+                        max_decay, int(ent.get("refine_priority_decay") or -20)
+                    )
+                    themes.append(str(sid))
+    except (OSError, json.JSONDecodeError, TypeError, ValueError):
+        pass
+    # promoted decay federation
+    try:
+        prom = (
+            root
+            / "memory"
+            / "federation"
+            / "promoted-refine-dual-decay-themes.json"
+        )
+        if prom.is_file():
+            data = json.loads(prom.read_text(encoding="utf-8"))
+            for s in data.get("signals") or []:
+                if not isinstance(s, dict):
+                    continue
+                chronic_n += 1
+                multi = True
+                max_tenants = max(max_tenants, int(s.get("tenants") or 0))
+                max_decay = min(max_decay, int(s.get("decay") or -20))
+                themes.append(str(s.get("skill_id") or s.get("theme") or ""))
+    except (OSError, json.JSONDecodeError, TypeError, ValueError):
+        pass
+    # hub post_score chronic_fail_n + multi_tenant flags
+    try:
+        sys.path.insert(0, str(Path(__file__).resolve().parent))
+        from skill_router import post_score_refine_dual_hub  # type: ignore
+
+        hub = post_score_refine_dual_hub(root=root)
+        for sid, ent in (hub.get("skills") or {}).items():
+            if not isinstance(ent, dict):
+                continue
+            if ent.get("multi_tenant_decay") or (
+                ent.get("chronic_fail") and int(ent.get("tenants") or 0) >= 2
+            ):
+                chronic_n = max(chronic_n, 1)
+                multi = True
+                max_tenants = max(max_tenants, int(ent.get("tenants") or 0))
+                max_decay = min(
+                    max_decay, int(ent.get("fitness_decay") or ent.get("priority_delta") or -15)
+                )
+                themes.append(str(sid))
+        if int(hub.get("chronic_fail_n") or 0) >= 1 and multi:
+            high = True
+    except Exception:
+        pass
+
+    high = high or (multi and chronic_n >= 1 and max_tenants >= 2)
+    if not multi and chronic_n < 1:
+        return CheckerResult(
+            id="f173_refine_decay_hub",
+            name="Multi-tenant refine dual_fail decay (F173)",
+            ok=True,
+            score=1.0,
+            detail={
+                "feature": "F173",
+                "reason": "no_multi_tenant_decay",
+                "chronic_n": chronic_n,
+            },
+        )
+    score = 0.2 if high else 0.55
+    return CheckerResult(
+        id="f173_refine_decay_hub",
+        name="Multi-tenant refine dual_fail decay (F173)",
+        ok=not high,
+        score=round(score, 4),
+        detail={
+            "feature": "F173",
+            "high": high,
+            "multi_tenant_decay": multi,
+            "chronic_n": chronic_n,
+            "max_tenants": max_tenants,
+            "max_decay": max_decay,
+            "themes": themes[:8],
+            "reason": "multi_tenant_decay_high" if high else "multi_tenant_decay_soft",
+        },
+    )
 
 
 def run_f169_refine_dual_fail(
@@ -1397,6 +1530,7 @@ def composite_panel(checkers: list[CheckerResult]) -> dict[str, Any]:
         "f150_recon_warm_hub": 0.07,  # F150 multi-tenant recon-warm ignore
         "f156_hub_archival_util": 0.08,  # F156 hub-archival inject ≠ hub_boost
         "f169_refine_dual_fail": 0.07,  # F169 GEPA refine dual fail after inject
+        "f173_refine_decay_hub": 0.07,  # F173 multi-tenant chronic dual_fail decay
         "structure": 0.12,
         "f70_dual_critic": 0.20,
         "f72_chain": 0.16,
@@ -1560,6 +1694,19 @@ def decide_verdict(
                     f"(tool_pp={detail.get('tool_contrib_pp')};"
                     f"fail_pressure={detail.get('fail_pressure')})"
                 )
+        # F173: multi-tenant chronic dual_fail decay elevated → demote APPROVE
+        rdh = next((c for c in checkers if c.id == "f173_refine_decay_hub"), None)
+        if rdh and not rdh.ok:
+            detail = rdh.detail or {}
+            if detail.get("high") or detail.get("multi_tenant_decay"):
+                recommended = "COMMENT"
+                demoted = True
+                reasons.append(
+                    "refine_decay_hub_multi_tenant "
+                    f"(tenants={detail.get('max_tenants')};"
+                    f"chronic_n={detail.get('chronic_n')};"
+                    f"decay={detail.get('max_decay')})"
+                )
     elif maker == "UNKNOWN":
         recommended = "COMMENT"
         demoted = True
@@ -1600,6 +1747,7 @@ def run_panel(
         run_f150_recon_warm_hub(out_dir, root),
         run_f156_hub_archival_util(out_dir, root),
         run_f169_refine_dual_fail(out_dir, root),
+        run_f173_refine_decay_hub(out_dir, root),
     ]
     # F81: optional LLM checker after deterministic panel draft
     panel_draft = {
@@ -1609,6 +1757,17 @@ def run_panel(
             {"id": c.id, "ok": c.ok, "score": c.score} for c in checkers
         ],
     }
+    # F173: soft hint for LLM when multi-tenant decay is elevated
+    try:
+        dec_chk = next((c for c in checkers if c.id == "f173_refine_decay_hub"), None)
+        if dec_chk and not dec_chk.ok and isinstance(panel_draft, dict):
+            panel_draft["f173_multi_tenant_decay"] = (dec_chk.detail or {})
+            panel_draft["endorse_demote_hint"] = (
+                "multi-tenant chronic refine dual_fail decay elevated — "
+                "prefer demote weak APPROVE"
+            )
+    except Exception:
+        pass
     checkers.append(run_f81_llm(text, panel_draft))
     panel = composite_panel(checkers)
     decision = decide_verdict(maker, panel, checkers)
@@ -2930,6 +3089,87 @@ def demote_eval(
                 os.environ["TORII_ROOT"] = prev_root_rd
             os.environ.pop("TORII_SECOND_CRITIC_MIN_PATH", None)
 
+    # F173: multi-tenant chronic dual_fail decay elevated → demote APPROVE
+    with tempfile.TemporaryDirectory() as td_rdh:
+        od = Path(td_rdh)
+        fed = od / "memory" / "federation"
+        fed.mkdir(parents=True)
+        sid = "skill-prefer-hub-archival-early"
+        (fed / "promoted-refine-dual-decay-themes.json").write_text(
+            json.dumps(
+                {
+                    "schema_version": 1,
+                    "feature": "F172",
+                    "scope": "promoted_refine_dual_decay_themes",
+                    "privacy_ok": True,
+                    "signals": [
+                        {
+                            "skill_id": sid,
+                            "theme": sid,
+                            "tags": [
+                                "promoted_refine_dual_decay",
+                                "f172",
+                                "chronic_fail",
+                            ],
+                            "hits": 4,
+                            "tenants": 3,
+                            "tenant_hashes": ["a", "b", "c"],
+                            "fail_rate": 1.0,
+                            "decay": -30,
+                        }
+                    ],
+                }
+            )
+            + "\n",
+            encoding="utf-8",
+        )
+        torii = od / ".torii"
+        torii.mkdir(parents=True)
+        (torii / "skill-fitness.json").write_text(
+            json.dumps(
+                {
+                    "schema_version": 1,
+                    "skills": {
+                        sid: {
+                            "id": sid,
+                            "refine_dual_chronic_fail": True,
+                            "multi_tenant_decay": True,
+                            "multi_tenant_decay_tenants": 3,
+                            "refine_priority_decay": -30,
+                            "refine_dual_fail_rate": 1.0,
+                        }
+                    },
+                }
+            )
+            + "\n",
+            encoding="utf-8",
+        )
+        rdh_review = od / "approve-refine-decay-hub.md"
+        rdh_review.write_text(
+            "## Review\n**Verdict:** APPROVE\n\n### Summary\nok\n\n"
+            "### Blocking\nnone\n\n### What I checked\n`app.py:1` path ok\n",
+            encoding="utf-8",
+        )
+        prev_root_rdh = os.environ.get("TORII_ROOT")
+        os.environ["TORII_ROOT"] = str(od)
+        os.environ["TORII_REFINE_DECAY_HUB_CRITIC"] = "1"
+        os.environ["TORII_SECOND_CRITIC_MIN_PATH"] = "0.1"
+        try:
+            cases.append(
+                _case(
+                    "refine_decay_hub_idle_approve",
+                    rdh_review,
+                    od,
+                    case_root=od,
+                )
+            )
+        finally:
+            if prev_root_rdh is None:
+                os.environ.pop("TORII_ROOT", None)
+            else:
+                os.environ["TORII_ROOT"] = prev_root_rdh
+            os.environ.pop("TORII_SECOND_CRITIC_MIN_PATH", None)
+
     # F162: multi-tenant hub-archival hub pressure + local util gap APPROVE
     with tempfile.TemporaryDirectory() as td_ha_hub:
         od = Path(td_ha_hub)
@@ -3047,6 +3287,9 @@ def demote_eval(
     rdfc = next(
         (c for c in cases if c["name"] == "refine_dual_fail_idle_approve"), {}
     )
+    rdhc = next(
+        (c for c in cases if c["name"] == "refine_decay_hub_idle_approve"), {}
+    )
     goodc = next((c for c in cases if c["name"] == "good_insecure"), {})
     weak_demote_ok = bool(weak.get("demoted") or weak.get("recommended") != "APPROVE")
     hub_demote_ok = bool(hubc.get("demoted")) or (
@@ -3073,6 +3316,9 @@ def demote_eval(
     rd_fail_demote_ok = bool(rdfc.get("demoted")) or any(
         "refine_dual_fail" in str(r) for r in (rdfc.get("reasons") or [])
     )
+    rd_decay_demote_ok = bool(rdhc.get("demoted")) or any(
+        "refine_decay_hub" in str(r) for r in (rdhc.get("reasons") or [])
+    )
     # good should not be demoted from REQUEST_CHANGES to worse without reason;
     # typically maker is REQUEST_CHANGES already
     good_stable = goodc.get("maker") in ("REQUEST_CHANGES", "COMMENT", "APPROVE")
@@ -3088,6 +3334,7 @@ def demote_eval(
         "feature_demote_eval_hub_archival": "F156",
         "feature_hub_archival_hub_inject": "F162",
         "feature_refine_dual_fail": "F169",
+        "feature_refine_decay_hub": "F173",
         "scored_at": _now(),
         "cases": cases,
         "approve_n": len(approve_cases),
@@ -3106,6 +3353,8 @@ def demote_eval(
         "hub_archival_hub_pressure_soft_ok": ha_hub_demote_ok,
         "refine_dual_fail_demote_ok": bool(rdfc.get("demoted")),
         "refine_dual_fail_soft_ok": rd_fail_demote_ok,
+        "refine_decay_hub_demote_ok": bool(rdhc.get("demoted")),
+        "refine_decay_hub_soft_ok": rd_decay_demote_ok,
         "good_stable": good_stable,
         "paper": {
             "metric": "critic_approve_demote_rate",
@@ -3117,9 +3366,10 @@ def demote_eval(
             "hub_archival_util_idle_demoted": bool(hac.get("demoted")),
             "hub_archival_hub_pressure_idle_demoted": bool(hah.get("demoted")),
             "refine_dual_fail_idle_demoted": bool(rdfc.get("demoted")),
+            "refine_decay_hub_idle_demoted": bool(rdhc.get("demoted")),
             "notes": (
                 "demote_rate = demoted APPROVE / APPROVE cases; "
-                "F169 adds GEPA refine dual fail after inject demote"
+                "F173 adds multi-tenant chronic dual_fail decay demote"
             ),
         },
         "eval_pass": weak_demote_ok
@@ -3129,7 +3379,8 @@ def demote_eval(
         and (bool(rwc.get("demoted")) or rw_hub_demote_ok)
         and (bool(hac.get("demoted")) or ha_util_demote_ok)
         and (bool(hah.get("demoted")) or ha_hub_demote_ok)
-        and (bool(rdfc.get("demoted")) or rd_fail_demote_ok),
+        and (bool(rdfc.get("demoted")) or rd_fail_demote_ok)
+        and (bool(rdhc.get("demoted")) or rd_decay_demote_ok),
     }
     if out_dir:
         try:

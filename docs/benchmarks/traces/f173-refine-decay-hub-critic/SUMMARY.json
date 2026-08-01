@@ -1,0 +1,26 @@
+{
+  "feature": "F173",
+  "title": "multi-tenant decay hub critic + refine_loop_ok F171\u2013F172",
+  "scored_at": "2026-08-01T12:32:30Z",
+  "pattern": "multi_tenant_decay \u2192 demote APPROVE; refine_loop_ok AND F165\u2013F173",
+  "offline": {
+    "refine_decay_hub_idle_demoted": true,
+    "refine_loop_ok": true
+  },
+  "live_local": {
+    "recall": 1.0,
+    "tp": 4,
+    "verdict": "REQUEST_CHANGES",
+    "util_rate": 1.0,
+    "recovery_injected_n": 3,
+    "model": "deepseek/deepseek-v4-pro"
+  },
+  "modal": {
+    "repo": "pytorch/pytorch",
+    "pr": 191830,
+    "outcome": "BIT3_OK",
+    "elapsed_s": 99.6,
+    "log_streaming": true,
+    "post_comment": 0
+  }
+}

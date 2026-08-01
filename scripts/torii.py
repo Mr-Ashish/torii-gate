@@ -840,6 +840,19 @@ def product_scorecard(
         "refine_dual_fail_idle_demoted": demote.get("refine_dual_fail_demote_ok")
         if demote
         else None,
+        "refine_decay_hub_idle_demoted": demote.get("refine_decay_hub_demote_ok")
+        if demote
+        else None,
+        "refine_dual_decay_ok": bool(
+            skill.get("refine_dual_decay_ok")
+            if skill.get("refine_dual_decay_ok") is not None
+            else doctor.get("refine_dual_decay_ok")
+        ),
+        "refine_decay_fed_ok": bool(
+            skill.get("refine_decay_fed_ok")
+            if skill.get("refine_decay_fed_ok") is not None
+            else doctor.get("refine_decay_fed_ok")
+        ),
         "hub_archival_hub_pressure_idle_demoted": demote.get(
             "hub_archival_hub_pressure_demote_ok"
         )
@@ -1048,9 +1061,12 @@ def product_scorecard(
             f"| refine_promote_ok | {metrics.get('refine_promote_ok')} |",
             f"| refine_dual_hub_ok | {metrics.get('refine_dual_hub_ok')} |",
             f"| refine_loop_ok | {metrics.get('refine_loop_ok')} |",
+            f"| refine_dual_decay_ok | {metrics.get('refine_dual_decay_ok')} |",
+            f"| refine_decay_fed_ok | {metrics.get('refine_decay_fed_ok')} |",
             f"| refine_dual_fail_idle_demoted | {metrics.get('refine_dual_fail_idle_demoted')} |",
+            f"| refine_decay_hub_idle_demoted | {metrics.get('refine_decay_hub_idle_demoted')} |",
             "",
-            "Source: `python3 scripts/torii.py scorecard` · workflow F131 · demote F128/F151 · util F130 · hub-archival F155–F163 (F164) · GEPA refine F165–F169 (F170 brand pack).",
+            "Source: `python3 scripts/torii.py scorecard` · workflow F131 · demote F128/F151 · util F130 · hub-archival F155–F163 (F164) · GEPA refine F165–F173 (F170/F173).",
             "",
             "These are **measured** offline/ops metrics — not marketing pass rates.",
             "",

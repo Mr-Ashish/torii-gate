@@ -276,13 +276,13 @@ always inject → util score → critic demote → soft re-prompt → fitness �
 
 ---
 
-## Mental model E — GEPA refine compound loop (F165–F169)
+## Mental model E — GEPA refine compound loop (F165–F173)
 
-Torii does not leave recovery skill bodies static after util gaps. Skills **evolve from traces under gates**, then prove contribution and multi-tenant promote before they rank always budget:
+Torii does not leave recovery skill bodies static after util gaps. Skills **evolve from traces under gates**, prove contribution, multi-tenant promote, and **decay when dual_fail is chronic**:
 
 ```text
-util gap → GEPA refine body → dual-gate LOO floor → dual contribution_pp
-       → federate+promote → always Δprio + dual_fail critic
+util gap → GEPA refine → dual-gate LOO → dual_pp → federate promote
+       → always Δprio + dual_fail critic → chronic decay → multi-tenant demote
 ```
 
 | Stage | Feature | Customer-facing meaning |
@@ -293,6 +293,9 @@ util gap → GEPA refine body → dual-gate LOO floor → dual contribution_pp
 | **Federate promote** | F168 | Multi-tenant min_tenants gate on refine_pp bins |
 | **Hub + critic** | F169 | Promoted refine boosts always slots; dual_fail demotes APPROVE |
 | **Product bit** | F170 | `refine_loop_ok` on doctor/scorecard — one readiness flag |
+| **Chronic decay** | F171 | dual_fail_rate ≥ thr → always Δprio decay + lift shield |
+| **Decay federate** | F172 | Multi-tenant gate amplifies local always demote |
+| **Decay critic** | F173 | Multi-tenant decay elevated → demote weak APPROVE (+ LLM soft hint) |
 
 **One-liner (eng):** *Skills that fail tool util get refined, measured, and multi-tenant promoted — or they stay out of always budget.*
 
@@ -305,6 +308,8 @@ util gap → GEPA refine body → dual-gate LOO floor → dual contribution_pp
 **Chronic dual_fail decay (F171):** after min samples, high `refine_dual_fail_rate` lifts the F166 refine shield, soft-demotes the skill, and applies **negative always-priority** (`refine_priority_decay`) so idle refined skills fall out of the always budget until hub_boost tools recover contribution_pp.
 
 **Multi-tenant decay federate (F172):** FederatedSkill gate for F171 — privacy-safe `skill-refine-dual-decay-signals.json` (skill id + fail_rate bin + decay + tenant hash); `promote-refine-decay` requires ≥2 tenants before amplifying local decay and always demotion. Single-tenant chronic fails stay local-only.
+
+**Multi-tenant decay critic (F173):** second-agent `f173_refine_decay_hub` demotes APPROVE when multi-tenant chronic dual_fail decay is elevated; soft `endorse_demote_hint` for optional LLM critic (`TORII_LLM_CRITIC=1`). Paper demote-eval: `refine_decay_hub_idle_demoted`. `refine_loop_ok` now ANDs F165–F173.
 
 ---
 

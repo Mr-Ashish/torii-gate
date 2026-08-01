@@ -713,8 +713,53 @@ def assess(root: Path | None = None, *, deep: bool = True) -> dict[str, Any]:
                 if (root / "scripts" / "second_agent_critic.py").is_file()
                 else ""
             )
+            # F171 chronic dual_fail decay
+            and "ingest_refine_dual"
+            in (
+                (root / "scripts" / "skill_fitness.py").read_text(
+                    encoding="utf-8", errors="replace"
+                )
+                if (root / "scripts" / "skill_fitness.py").is_file()
+                else ""
+            )
+            and "ingest-refine-dual" in hermes_sh
+            and "F171" in hermes_sh
+            # F172 multi-tenant decay federate
+            and "federate_refine_dual_decay"
+            in (
+                (root / "scripts" / "skill_fitness.py").read_text(
+                    encoding="utf-8", errors="replace"
+                )
+                if (root / "scripts" / "skill_fitness.py").is_file()
+                else ""
+            )
+            and "promote_refine_dual_decay"
+            in (
+                (root / "scripts" / "skill_fitness.py").read_text(
+                    encoding="utf-8", errors="replace"
+                )
+                if (root / "scripts" / "skill_fitness.py").is_file()
+                else ""
+            )
+            and "federate-refine-decay" in hermes_sh
+            and "F172" in hermes_sh
+            # F173 multi-tenant decay critic demote
+            and "f173_refine_decay_hub" in (
+                (root / "scripts" / "second_agent_critic.py").read_text(
+                    encoding="utf-8", errors="replace"
+                )
+                if (root / "scripts" / "second_agent_critic.py").is_file()
+                else ""
+            )
+            and "refine_decay_hub_idle_approve" in (
+                (root / "scripts" / "second_agent_critic.py").read_text(
+                    encoding="utf-8", errors="replace"
+                )
+                if (root / "scripts" / "second_agent_critic.py").is_file()
+                else ""
+            )
         ),
-        "feature_refine_loop": "F170",
+        "feature_refine_loop": "F170/F173",
         # F171: chronic refine dual_fail always-priority decay
         "refine_dual_decay_ok": "ingest_refine_dual" in (
             (root / "scripts" / "skill_fitness.py").read_text(

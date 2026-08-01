@@ -1,0 +1,15 @@
+{
+  "feature": "F137",
+  "reprompt": 0,
+  "enabled": true,
+  "reason": "no_scorecard_injected",
+  "utilization_gap": false,
+  "scorecard_injected_n": 0,
+  "tool_hit_n": 0,
+  "tool_call_turns": 1,
+  "already_reprompted": false,
+  "util_rate": 1.0,
+  "inject_chars": 3327,
+  "idle_ids": [],
+  "hub_scorecard_util_gap": 0
+}

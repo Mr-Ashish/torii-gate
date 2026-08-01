@@ -1,5 +1,39 @@
 # Torii research → product log
 
+## 2026-08-01 — F173 multi-tenant decay hub critic + refine_loop_ok extend
+
+### Papers / posts
+- FederatedSkill / F172: multi-tenant decay without panel demote left APPROVE free-rider path.
+- F169 dual_fail critic; hub gap critics F127/F139 for multi-tenant pressure.
+- Optional LLM soft endorse (TORII_LLM_CRITIC) when multi-tenant decay elevated.
+- F170 refine_loop_ok stopped at F169 — F171–F172 wires not readiness-gated.
+
+### OSS design patterns stolen
+1. f173_refine_decay_hub checker: multi_tenant_decay + tenants≥2 → demote APPROVE.
+2. panel_draft endorse_demote_hint for f81 LLM soft path.
+3. demote-eval refine_decay_hub_idle_approve paper metric.
+4. refine_loop_ok AND extends through F171–F173.
+
+### Insight
+Always-budget demote without verdict demote still ships free-rider APPROVE. Highest ROI: multi-tenant decay critic + close refine_loop_ok through F173.
+
+### Feature shipped (F173)
+- second_agent f173 critic + demote-eval
+- refine_loop_ok F165–F173; scorecard demote rows
+- PRODUCT Mental model E table update
+
+### Metric
+- Offline: demote-eval refine_decay_hub_idle_demoted; refine_loop_ok F165–F173
+- Live local: recall=1.0 util_rate=1.0 F171–F172 hermes chain
+- Modal pytorch#191830 BIT3_OK ~99.6s POST_COMMENT=0 log_streaming=true
+
+### Loop-engineering / Hermes practice used
+**Hub pressure → checker demote** — multi-tenant decay compounds into verdict.
+
+### SHA
+`(pending)`
+
+
 ## 2026-08-01 — F172 multi-tenant federate chronic dual_fail decay
 
 ### Papers / posts
