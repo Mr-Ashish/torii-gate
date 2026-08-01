@@ -49,6 +49,20 @@ class SkillDualRolloutTests(unittest.TestCase):
         self.assertTrue(data["dual_pass"], data)
         self.assertGreater(data["with_skills"]["hit_rate"], data["ablated"]["hit_rate"])
 
+    def test_f115_tool_contribution(self):
+        """F115: with-skills tool blob beats ablated tools on tool_hit_n."""
+        r = _run(["dual"])
+        self.assertEqual(r.returncode, 0, r.stderr + r.stdout)
+        data = json.loads(r.stdout)
+        self.assertEqual(data.get("feature_tool"), "F115")
+        self.assertTrue(data.get("tool_dual_ok"), data)
+        self.assertGreaterEqual(int(data["with_skills"].get("tool_hit_n") or 0), 1)
+        self.assertGreaterEqual(float(data.get("tool_contribution_pp") or 0), 0)
+        self.assertGreater(
+            int(data["with_skills"].get("tool_hit_n") or 0),
+            int(data["ablated"].get("tool_hit_n") or 0),
+        )
+
     def test_install_ships(self):
         with tempfile.TemporaryDirectory() as td:
             dest = Path(td) / "target"

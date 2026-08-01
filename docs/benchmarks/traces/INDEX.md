@@ -47,3 +47,5 @@ Paper/eval-safe slim traces (redacted). Large raw logs may be gitignored; always
 | 2026-08-01T04:48:00Z | pytorch/pytorch | 191813 | deepseek/deepseek-v4-pro | modal+f112 | skill-prefer-memory-cli-early | `20260801-0448-pytorch-pytorch-PR191813-modal-f112` |
 | 2026-08-01T04:55:00Z | pytorch/pytorch | 191813 | deepseek/deepseek-v4-pro | modal+f113 | dual-gate adopt memory-cli skill | `20260801-0455-pytorch-pytorch-PR191813-modal-f113` |
 | 2026-08-01T05:05:00Z | pytorch/pytorch | 191813 | deepseek/deepseek-v4-pro | modal+f114 | tool-outcome skill score | `20260801-0505-pytorch-pytorch-PR191813-modal-f114` |
+
+- `f115-tool-attr-dual/` — F115 tool LOO attribution + dual tool contribution (offline + Modal pytorch#191813 BIT3_OK)

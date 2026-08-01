@@ -1,0 +1,20 @@
+{
+  "feature": "F89",
+  "attr_feature": "F88",
+  "feature_tool": "F115",
+  "tool_hit_n": 1,
+  "tool_contributors": [
+    "skill-prefer-memory-cli-early"
+  ],
+  "ledger": "/Users/ashishmishra/Documents/experiments/torii/.torii/skill-attribution.json",
+  "free_riders": [],
+  "boosts": {
+    "skill-tool-depth-hunks": 3.0,
+    "skill-f74-exploit-scenario": 3.0,
+    "skill-f74-prefer-chain-json": 3.0,
+    "skill-preserve-deep-tools": 1.5,
+    "skill-prefer-memory-cli-early": 1.833
+  },
+  "n_contributing": 4,
+  "artifact": "docs/benchmarks/traces/f115-tool-attr-dual/skill-attribution.json"
+}

@@ -1,6 +1,39 @@
 # Torii research → product log
 
 
+## 2026-08-01 — F115 tool-outcome LOO attribution + dual tool contribution
+
+### Papers / posts
+- Mem2Act / proactive memory: inject ≠ utilization — score tool calls (F114).
+- SkillsBench dual-rollout: contribution_pp must beat ablated baseline (F86).
+- Assay / Not All Skills Help: LOO free-rider retire — must not mis-label tool-only skills.
+- Hermes self-evolution: multi-dim fitness + constraints before adopt.
+- Gap after F114: tool_hit measured but F88 LOO + F86 dual were prose-only → recovery skills look free-rider when review body is silent.
+
+### OSS design patterns stolen
+1. F114 TOOL_OUTCOME_PROBES reused in LOO + dual tool_blob_with vs ablated.
+2. Tool contribution weight 1.5 > prose keyword 1.0 (Mem2Act priority).
+3. Durable ledger `tool_hits` prevents free-rider demote of tool-effective skills.
+4. Dual synthetic tool transcripts: taught CLIs vs generic shell.
+
+### Insight
+Self-evolved memory-CLI skills succeed via **terminal**, not review prose. Without tool-aware LOO/dual, fitness ranking and adopt gates undervalue the skill F113 just dual-gate adopted. Highest ROI close: credit tool_hit in attribution + dual contribution_pp.
+
+### Feature shipped (F115)
+- `skill_attribution.py` — tool_blob/agent_loop LOO; feature_tool=F115; fixture tool-only proof
+- `skill_dual_rollout.py` — tool_contribution_pp; SYNTH tool with/ablated blobs
+- PRODUCT one-liner; research note skill-tool-attr-dual-pattern
+- traces `docs/benchmarks/traces/f115-tool-attr-dual/`
+
+### Metric
+- Offline: attr fixture_pass; dual tool_contribution_pp=50; cycle tool_contributors includes skill-prefer-memory-cli-early
+- pytest 594; Modal pytorch#191813 BIT3_OK ~134s log_streaming=true POST_COMMENT=0
+
+### Loop-engineering / Hermes practice used
+**Verifier LOO + multi-dim contribution** — independent tool outcome dimension; default REJECT free-riders until tool or prose evidence.
+
+### SHA
+`9099770298b3adb07f010be1dd1ede5af4e203fa`
 ## 2026-08-01 — F114 tool-invocation skill outcome + product CLI memory detect
 
 ### Papers / posts

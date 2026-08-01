@@ -1,0 +1,150 @@
+{
+  "feature": "F88",
+  "feature_tool": "F115",
+  "schema": 1,
+  "scored_at": "2026-08-01T05:19:03Z",
+  "paths": [
+    "demo/insecure/app.py",
+    "demo/insecure/db.py"
+  ],
+  "selected": [
+    "skill-prefer-memory-cli-early",
+    "skill-preserve-deep-tools",
+    "skill-tool-depth-hunks",
+    "skill-f74-exploit-scenario"
+  ],
+  "hit_rate_full": 1.0,
+  "hit_n_full": 4,
+  "tool_outcome": true,
+  "tool_hit_n": 1,
+  "tool_contributors": [
+    "skill-prefer-memory-cli-early"
+  ],
+  "skills": [
+    {
+      "id": "skill-tool-depth-hunks",
+      "solo_hit": true,
+      "prose_hit": true,
+      "tool_hit": false,
+      "n_matched": 9,
+      "matched": [
+        "head",
+        "diff",
+        "hunk",
+        "tool",
+        "prefer",
+        "hunks",
+        "over",
+        "file"
+      ],
+      "tool_matched": [],
+      "unique": [
+        "head",
+        "diff",
+        "hunk",
+        "hunks",
+        "over",
+        "file",
+        "heads"
+      ],
+      "n_unique": 7,
+      "tool_unique": [],
+      "n_tool_unique": 0,
+      "loo_delta_hit_rate": 0.0,
+      "contribution": 4.5,
+      "free_rider": false,
+      "always": true
+    },
+    {
+      "id": "skill-f74-exploit-scenario",
+      "solo_hit": true,
+      "prose_hit": true,
+      "tool_hit": false,
+      "n_matched": 7,
+      "matched": [
+        "attacker trigger",
+        "sink",
+        "attacker",
+        "pickle",
+        "trigger",
+        "request changes",
+        "skill"
+      ],
+      "tool_matched": [],
+      "unique": [
+        "attacker trigger",
+        "sink",
+        "attacker",
+        "trigger",
+        "request changes"
+      ],
+      "n_unique": 5,
+      "tool_unique": [],
+      "n_tool_unique": 0,
+      "loo_delta_hit_rate": 0.0,
+      "contribution": 3.5,
+      "free_rider": false,
+      "always": false
+    },
+    {
+      "id": "skill-prefer-memory-cli-early",
+      "solo_hit": true,
+      "prose_hit": true,
+      "tool_hit": true,
+      "n_matched": 4,
+      "matched": [
+        "path:line",
+        "pickle",
+        "skill",
+        "prefer"
+      ],
+      "tool_matched": [
+        "torii.py memory"
+      ],
+      "unique": [
+        "path:line"
+      ],
+      "n_unique": 1,
+      "tool_unique": [
+        "torii.py memory"
+      ],
+      "n_tool_unique": 1,
+      "loo_delta_hit_rate": 0.0,
+      "contribution": 3.5,
+      "free_rider": false,
+      "always": true
+    },
+    {
+      "id": "skill-preserve-deep-tools",
+      "solo_hit": true,
+      "prose_hit": true,
+      "tool_hit": false,
+      "n_matched": 2,
+      "matched": [
+        "tool",
+        "tools"
+      ],
+      "tool_matched": [],
+      "unique": [
+        "tools"
+      ],
+      "n_unique": 1,
+      "tool_unique": [],
+      "n_tool_unique": 0,
+      "loo_delta_hit_rate": 0.0,
+      "contribution": 1.5,
+      "free_rider": false,
+      "always": true
+    }
+  ],
+  "contributing": [
+    "skill-tool-depth-hunks",
+    "skill-f74-exploit-scenario",
+    "skill-prefer-memory-cli-early",
+    "skill-preserve-deep-tools"
+  ],
+  "free_riders": [],
+  "min_contribution": 0.01,
+  "n_contributing": 4,
+  "n_free_riders": 0
+}

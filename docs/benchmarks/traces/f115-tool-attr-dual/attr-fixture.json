@@ -1,0 +1,92 @@
+{
+  "feature": "F88",
+  "feature_tool": "F115",
+  "f89": true,
+  "f115": true,
+  "fixture_pass": true,
+  "n_contributing": 4,
+  "contributing": [
+    "skill-tool-depth-hunks",
+    "skill-f74-exploit-scenario",
+    "skill-prefer-memory-cli-early",
+    "skill-preserve-deep-tools"
+  ],
+  "free_riders_active": [],
+  "proposal_free_rider": {
+    "id": "skill-f74-free-rider-lorem",
+    "solo_hit": false,
+    "prose_hit": false,
+    "tool_hit": false,
+    "matched": [],
+    "tool_matched": [],
+    "n_matched": 0,
+    "contribution": 0.0,
+    "free_rider": true,
+    "probes_n": 3
+  },
+  "proposal_good": {
+    "id": "skill-f74-path-evidence",
+    "solo_hit": true,
+    "prose_hit": true,
+    "tool_hit": false,
+    "matched": [
+      "path:line",
+      "unvalidated",
+      "path",
+      "evidence"
+    ],
+    "tool_matched": [],
+    "n_matched": 4,
+    "contribution": 2.5,
+    "free_rider": false,
+    "probes_n": 5
+  },
+  "zombie_skipped": true,
+  "chain_boost": 2.0,
+  "zombie_boost": -3.0,
+  "tool_attr_ok": true,
+  "tool_contrib_ok": true,
+  "no_tool_ok": true,
+  "tool_prop_ok": true,
+  "mem_not_free_rider": true,
+  "mem_tool_hits": true,
+  "with_tool_row": {
+    "id": "skill-prefer-memory-cli-early",
+    "solo_hit": true,
+    "prose_hit": false,
+    "tool_hit": true,
+    "n_matched": 0,
+    "matched": [],
+    "tool_matched": [
+      "torii.py memory"
+    ],
+    "unique": [],
+    "n_unique": 0,
+    "tool_unique": [
+      "torii.py memory"
+    ],
+    "n_tool_unique": 1,
+    "loo_delta_hit_rate": 1.0,
+    "contribution": 2.0,
+    "free_rider": false,
+    "always": true
+  },
+  "no_tool_row": {
+    "id": "skill-prefer-memory-cli-early",
+    "solo_hit": false,
+    "prose_hit": false,
+    "tool_hit": false,
+    "n_matched": 0,
+    "matched": [],
+    "tool_matched": [],
+    "unique": [],
+    "n_unique": 0,
+    "tool_unique": [],
+    "n_tool_unique": 0,
+    "loo_delta_hit_rate": 0.0,
+    "contribution": 0.5,
+    "free_rider": false,
+    "always": true
+  },
+  "ledger": "/private/var/folders/2b/l8r1b38n75jd77wtd44p4ycr0000gn/T/tmpzo2q5jeb/.torii/skill-attribution.json"
+}

@@ -107,6 +107,41 @@ class SkillAttributionTests(unittest.TestCase):
             self.assertEqual(r.returncode, 0, r.stderr + r.stdout)
             self.assertTrue((dest / "scripts" / "skill_attribution.py").is_file())
 
+    def test_f115_tool_only_attribution(self):
+        """F115: silent prose + agent-loop tools → memory skill contributes."""
+        import importlib.util
+
+        path = ROOT / "scripts" / "skill_attribution.py"
+        spec = importlib.util.spec_from_file_location("skill_attribution", path)
+        mod = importlib.util.module_from_spec(spec)
+        assert spec and spec.loader
+        spec.loader.exec_module(mod)
+        silent = "## Review\n\nGeneric note only.\nVerdict: COMMENT\n"
+        blob = mod.SYNTH_TOOL_BLOB_GOOD
+        mem = "skill-prefer-memory-cli-early"
+        with_t = mod.attribute(
+            silent,
+            root=ROOT,
+            selected=[mem],
+            tool_blob=blob,
+        )
+        row = next(r for r in with_t["skills"] if r["id"] == mem)
+        self.assertTrue(row["tool_hit"])
+        self.assertFalse(row["prose_hit"])
+        self.assertGreaterEqual(row["contribution"], 1.5)
+        self.assertFalse(row["free_rider"])
+        self.assertIn(mem, with_t.get("tool_contributors") or [])
+
+        without = mod.attribute(
+            silent,
+            root=ROOT,
+            selected=[mem],
+            tool_blob="",
+        )
+        row0 = next(r for r in without["skills"] if r["id"] == mem)
+        self.assertFalse(row0["tool_hit"])
+        self.assertLess(row0["contribution"], 1.5)
+
 
 if __name__ == "__main__":
     unittest.main()

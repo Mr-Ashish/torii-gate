@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""F86: Dual-rollout skill contribution bench + multi-tenant skill promote.
+"""F86/F115: Dual-rollout skill contribution + tool-outcome contribution.
 
 Research drivers (2026):
   - SkillsBench (arXiv 2602.12670): every task under no-Skills vs Skills;
@@ -8,24 +8,28 @@ Research drivers (2026):
     performance gap with/without skills = skill contribution signal.
   - FederatedSkill (arXiv 2606.03143): multi-tenant promote of skill themes
     only when complementary clients agree (min_tenants gate).
+  - Mem2Act / F114: recovery skills fire via tools; dual must measure
+    tool_hit_rate_with − tool_hit_rate_ablated or tool-only skills show 0pp.
   - Prior Torii F84/F85: hit rates + demote, but no **with vs without** delta
     and skill themes promote without multi-tenant filter.
 
 Product thesis:
   Skills that never beat a no-skill baseline are noise. Highest ROI: offline
   dual-rollout on labeled fixtures (hit_rate_with − hit_rate_ablated + F70
-  recall held) and multi-tenant promote of skill fitness themes (≥2 tenants).
+  recall held + F115 tool contribution) and multi-tenant promote of skill
+  fitness themes (≥2 tenants).
 
 Commands:
   dual      — with-skills vs ablated/no-skills contribution on pack fixtures
   promote   — multi-tenant promote of skill-* federated themes
-  fixture   — hermetic dual_pass + promote gate + privacy
+  fixture   — hermetic dual_pass + promote gate + privacy + tool contrib
   status    — last metrics / ledger pointers
   all       — dual across bench_corpus packs
 
 Env:
   TORII_ROOT
   TORII_SKILL_DUAL_ROLLOUT   1 (default) | 0
+  TORII_SKILL_DUAL_TOOL     1 (default) | 0 — F115 tool_blob dual contribution
   TORII_SKILL_PROMOTE_MIN_TENANTS  default 2
   TORII_SKILL_PROMOTE_MIN_HITS     default 2
 """
@@ -43,9 +47,20 @@ from pathlib import Path
 from typing import Any
 
 FEATURE = "F86"
+FEATURE_TOOL = "F115"
 SCHEMA = 1
 
 _FALSEY = frozenset({"0", "false", "no", "off", "disabled", "n", "none", ""})
+
+# F115: skills-with tool transcript (memory CLI + depth tools)
+SYNTH_TOOL_BLOB_WITH = (
+    "tool_call: terminal\n"
+    "python3 scripts/torii.py memory -- search -- -q \"sql injection\"\n"
+    "rg -n pickle demo/insecure/app.py\n"
+    "chain_revalidate.py score\n"
+)
+# without skills the agent skips taught CLIs
+SYNTH_TOOL_BLOB_ABLATED = "tool_call: terminal\nls -la\necho hello\n"
 
 DEFAULT_CASES = "docs/benchmarks/cases/insecure-demo.json"
 DEFAULT_GOOD = "docs/benchmarks/fixtures/insecure-demo-good-review.md"
@@ -69,6 +84,12 @@ def _now() -> str:
 
 def enabled() -> bool:
     raw = (os.environ.get("TORII_SKILL_DUAL_ROLLOUT") or "1").strip().lower()
+    return raw not in _FALSEY
+
+
+def tool_dual_enabled() -> bool:
+    """F115: measure tool_hit_rate contribution in dual rollout (default on)."""
+    raw = (os.environ.get("TORII_SKILL_DUAL_TOOL") or "1").strip().lower()
     return raw not in _FALSEY
 
 
@@ -198,6 +219,8 @@ def run_dual(
     weak_path: Path | None = None,
     paths: list[str] | None = None,
     pack_id: str = "insecure-demo",
+    tool_blob_with: str | None = None,
+    tool_blob_ablated: str | None = None,
 ) -> dict[str, Any]:
     root = root or _root()
     cases_path = cases_path or (root / DEFAULT_CASES)
@@ -212,7 +235,20 @@ def run_dual(
     good = good_path.read_text(encoding="utf-8", errors="replace")
     weak = weak_path.read_text(encoding="utf-8", errors="replace") if weak_path.is_file() else ""
 
-    # WITH skills: enrich + select + score hits + F70
+    use_tools = tool_dual_enabled()
+    # Default synthetic tool blobs: with-skills agent follows memory CLI skill
+    tb_with = tool_blob_with
+    tb_abl = tool_blob_ablated
+    if use_tools:
+        if tb_with is None:
+            tb_with = SYNTH_TOOL_BLOB_WITH
+        if tb_abl is None:
+            tb_abl = SYNTH_TOOL_BLOB_ABLATED
+    else:
+        tb_with = tb_with if tb_with is not None else ""
+        tb_abl = tb_abl if tb_abl is not None else ""
+
+    # WITH skills: enrich + select + score hits + F70 (+ F115 tool blob)
     with_text = enrich_with_skill_language(good)
     cards = sr.catalog(root)
     sel = sr.select_skills(cards, paths)
@@ -223,10 +259,11 @@ def run_dual(
         root=root,
         selected=selected,
         out_dir=None,
+        tool_blob=tb_with or "",
     )
     score_with = bsg.score_review(with_text, pack)
 
-    # WITHOUT: ablate skill language; same selected list for fair hit comparison
+    # WITHOUT: ablate skill language; empty/weak tools (skills teach the CLIs)
     kws = skill_keyword_bank(root)
     ablated = ablate_skill_language(with_text, kws)
     hits_ablated = sr.score_hits(
@@ -234,6 +271,7 @@ def run_dual(
         root=root,
         selected=selected,
         out_dir=None,
+        tool_blob=tb_abl or "",
     )
     score_ablated = bsg.score_review(ablated, pack)
 
@@ -250,6 +288,14 @@ def run_dual(
     contribution = round(hr_with - hr_abl, 4)
     contribution_pp = round(contribution * 100, 2)
 
+    # F115: tool-only contribution dimension
+    thr_with = float(hits_with.get("tool_hit_rate") or 0)
+    thr_abl = float(hits_ablated.get("tool_hit_rate") or 0)
+    tool_contribution = round(thr_with - thr_abl, 4)
+    tool_contribution_pp = round(tool_contribution * 100, 2)
+    thr_n_with = int(hits_with.get("tool_hit_n") or 0)
+    thr_n_abl = int(hits_ablated.get("tool_hit_n") or 0)
+
     # F70 recall should hold on ablated (skills additive, not sole vuln text)
     recall_with = float(score_with.recall)
     recall_abl = float(score_ablated.recall)
@@ -259,7 +305,13 @@ def run_dual(
     score_weak = bsg.score_review(weak, pack) if weak else None
 
     select_ok = bool(selected) and (
-        any(s.startswith("skill-f74") or "tool" in s for s in selected)
+        any(
+            s.startswith("skill-f74")
+            or "tool" in s
+            or "memory" in s
+            or s.startswith("skill-prefer")
+            for s in selected
+        )
     )
 
     dual_pass = bool(
@@ -269,18 +321,24 @@ def run_dual(
         and score_with.passed
         and recall_hold
     )
+    # F115 soft gate: when tool dual on, with-skills must show tool hits
+    tool_dual_ok = (not use_tools) or (thr_n_with >= 1 and tool_contribution >= 0)
 
     return {
         "feature": FEATURE,
+        "feature_tool": FEATURE_TOOL if use_tools else None,
         "schema": SCHEMA,
         "pack_id": pack_id or pack.get("id") or cases_path.stem,
         "paths": paths,
         "selected": selected,
         "select_ok": select_ok,
+        "tool_dual": use_tools,
         "with_skills": {
             "hit_rate": hr_with,
             "hit_n": hits_with.get("hit_n"),
             "selected_n": hits_with.get("selected_n"),
+            "tool_hit_n": thr_n_with,
+            "tool_hit_rate": thr_with,
             "recall": recall_with,
             "score_pct": score_with.score_pct,
             "passed": score_with.passed,
@@ -289,6 +347,8 @@ def run_dual(
         "ablated": {
             "hit_rate": hr_abl,
             "hit_n": hits_ablated.get("hit_n"),
+            "tool_hit_n": thr_n_abl,
+            "tool_hit_rate": thr_abl,
             "recall": recall_abl,
             "score_pct": score_ablated.score_pct,
             "passed": score_ablated.passed,
@@ -300,6 +360,9 @@ def run_dual(
         },
         "skill_contribution": contribution,
         "skill_contribution_pp": contribution_pp,
+        "tool_contribution": tool_contribution,
+        "tool_contribution_pp": tool_contribution_pp,
+        "tool_dual_ok": tool_dual_ok,
         "recall_hold": recall_hold,
         "dual_pass": dual_pass,
         "scored_at": _now(),
@@ -571,6 +634,8 @@ def cmd_fixture(args: argparse.Namespace) -> int:
         non_skill_blocked = "sql_injection" not in themes
         privacy_ok = bool(prom.get("privacy_ok"))
 
+    tool_ok = bool(dual.get("tool_dual_ok"))
+    tool_cpp = float(dual.get("tool_contribution_pp") or 0)
     fixture_pass = all(
         [
             dual_ok,
@@ -579,17 +644,27 @@ def cmd_fixture(args: argparse.Namespace) -> int:
             non_skill_blocked,
             privacy_ok,
             float(dual.get("skill_contribution_pp") or 0) > 0,
+            tool_ok,
+            tool_cpp >= 0,
+            int((dual.get("with_skills") or {}).get("tool_hit_n") or 0) >= 1
+            or not tool_dual_enabled(),
         ]
     )
     print(
         json.dumps(
             {
                 "feature": FEATURE,
+                "feature_tool": FEATURE_TOOL,
+                "f115": True,
                 "fixture_pass": fixture_pass,
                 "dual_pass": dual_ok,
                 "skill_contribution_pp": dual.get("skill_contribution_pp"),
+                "tool_contribution_pp": dual.get("tool_contribution_pp"),
+                "tool_dual_ok": tool_ok,
                 "with_hit_rate": dual.get("with_skills", {}).get("hit_rate"),
+                "with_tool_hit_n": (dual.get("with_skills") or {}).get("tool_hit_n"),
                 "ablated_hit_rate": dual.get("ablated", {}).get("hit_rate"),
+                "ablated_tool_hit_n": (dual.get("ablated") or {}).get("tool_hit_n"),
                 "recall_hold": dual.get("recall_hold"),
                 "select_ok": dual.get("select_ok"),
                 "multi_ok": multi_ok,

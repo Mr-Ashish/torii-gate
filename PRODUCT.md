@@ -126,6 +126,8 @@ compound → write → consolidate → effective_critic → federate → scoped_
 
 **Skill tool outcomes (F114):** adopted skills that teach CLI calls are scored on **agent-loop invocations** (e.g. `torii.py memory`, `torii_memory.py`), not review prose alone — F105 also counts the F110 product CLI as memory utilization.
 
+**Tool-aware attribution (F115):** dual-rollout and LOO attribution credit **tool_hit** (weight 1.5) so recovery skills that only fire in the terminal are not free-rider demoted; durable ledger tracks `tool_hits` for router ranking.
+
 **Ops:** `python3 scripts/memory_loop_status.py scorecard` → L0–L3. Smoke requires L3 on the hub tree. CI job summary annotates readiness; optional advisory `torii/memory-loop` via `TORII_MEMORY_LOOP_STATUS_COMMIT=1`.
 
 ---
