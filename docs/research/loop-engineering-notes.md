@@ -37,3 +37,4 @@ Also mirrored from LOOP.md budget/observability: each fire records metrics (reca
 - F140: scorecard hub LOO attribution floor (F127 mirror for ops skills)
 - F141: memory util federate + critic demote (Mem0/Letta tools-must-be-called)
 - F142: memory util hub post-score → memory skill priority (F125 mirror)
+- F143: memory hub gap critic demotes APPROVE (F127/F139 mirror for Mem0 util)

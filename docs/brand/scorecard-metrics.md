@@ -92,3 +92,12 @@ Source: `memory_tool_audit.py` / second-agent critic.
 | gap_pressure | Federated memory util gap fraction |
 
 Source: `python3 scripts/memory_tool_audit.py hub-score`.
+
+## F143 memory hub gap critic
+
+| Metric | Meaning |
+|--------|---------|
+| memory_hub_gap_pressure | Federated memory util gap fraction |
+| f143 demote | APPROVE → COMMENT on hub gap + local idle |
+
+Source: `second_agent_critic.py` panel.

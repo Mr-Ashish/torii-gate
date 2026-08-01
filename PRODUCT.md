@@ -202,6 +202,8 @@ budget always → compact body → score tool_hit → util gap? → budgeted re-
 
 **Memory util hub compound (F142):** multi-tenant memory-util themes post-score into memory-skill priority deltas + prompt inject (`hub-score`); soft fitness shield so tool-effective memory CLI skills win always slots next run.
 
+**Memory util hub gap critic (F143):** second-agent checker `f143_memory_hub_gap` demotes APPROVE when multi-tenant memory util gap_pressure is high and local memory inject is idle (F127/F139 mirror for Mem0/Letta tool discipline).
+
 **Ops:** `python3 scripts/memory_loop_status.py scorecard` → L0–L3. Smoke requires L3 on the hub tree. CI job summary annotates readiness; optional advisory `torii/memory-loop` via `TORII_MEMORY_LOOP_STATUS_COMMIT=1`.
 
 ---

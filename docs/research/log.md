@@ -1,5 +1,36 @@
 # Torii research → product log
 
+## 2026-08-01 — F143 memory util hub gap critic
+
+### Papers / posts
+- F127/F139 hub gap critic: multi-tenant gap_pressure + local idle → demote APPROVE.
+- F141/F142 memory util federate + hub without panel demote on hub gap.
+- Mem0 multi-tenant: under-use of memory tools is a systemic risk signal.
+
+### OSS design patterns stolen
+1. run_f143_memory_hub_gap (weight 0.07) + decide_verdict demote.
+2. post_score_memory_util_hub gap_pressure + local audit inject unused.
+3. fixture f143_ok; inject brief; PRODUCT/research.
+4. TORII_MEMORY_HUB_GAP_CRITIC / THR defaults on.
+
+### Insight
+Hub post-score without critic demote is dashboard. Highest ROI: F127-style panel demote when multi-tenant memory util gap meets local inject-idle.
+
+### Feature shipped (F143)
+- second_agent f143_memory_hub_gap + fixture/tests
+- PRODUCT/research/brand; traces f143-memory-hub-gap-critic/
+
+### Metric
+- Offline: fixture f143_ok; pytest second_agent_critic
+- Live: Modal pytorch e2e POST_COMMENT=0
+
+### Loop-engineering / Hermes practice used
+**Maker/checker demote on multi-tenant gap** — memory mirrors recovery F127.
+
+### SHA
+`PENDING`
+
+
 ## 2026-08-01 — F142 memory util hub post-score compound
 
 ### Papers / posts
