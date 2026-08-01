@@ -43,3 +43,4 @@ Also mirrored from LOOP.md budget/observability: each fire records metrics (reca
 - F146: archival reconsolidation on promote (retrieval warms durable TP store)
 - F147: recon-warm → core tier promote (F146 timestamps compound into F97 core budget)
 - F148: recon-warm theme federate + hub post-score (multi-tenant retrieval heat)
+- F149: hub warm themes expand archival auto-query + hit boost (cross-tenant page)

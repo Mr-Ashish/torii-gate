@@ -214,6 +214,8 @@ budget always → compact body → score tool_hit → util gap? → budgeted re-
 
 **Recon-warm federate (F148):** privacy-safe multi-tenant signals of **retrieval-hot themes** (`memory/federation/recon-warm-signals.json`, `TORII_RECON_WARM_FEDERATE=1`) — themes/warm bins + tenant hash only; hub post-score ranks multi-tenant warm themes for next inject. No paths, signature ids, or snippets leave the tenant.
 
+**Hub warm → archival query (F149):** multi-tenant recon-warm themes **expand archival auto-query and soft-boost hit ranking** (`TORII_RECON_WARM_HUB_QUERY=1`) so cross-tenant retrieval heat pages related cold TPs even without local co_path — F148 export compounds into the next PR’s search, not write-only federation.
+
 **Ops:** `python3 scripts/memory_loop_status.py scorecard` → L0–L3. Smoke requires L3 on the hub tree. CI job summary annotates readiness; optional advisory `torii/memory-loop` via `TORII_MEMORY_LOOP_STATUS_COMMIT=1`.
 
 ---

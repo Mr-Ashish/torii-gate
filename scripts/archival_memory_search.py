@@ -16,13 +16,14 @@ Research drivers (patterns only — no vendored Letta/MemGPT/Zep runtime):
   - F146: non-superseded archival hits reconsolidate into tp-signatures on promote
   - F147: recon-warm promotes into core tier inject
   - F148: multi-tenant federate of recon-warm **themes only** (no paths/ids/snippets)
+  - F149: hub recon-warm themes **bias next archival auto-query + hit ranking**
 
 Product thesis:
   Highest ROI agentic-memory slice: **deterministic archival search** over
   TP/FP/federated stores + MEMORY.md, optionally **expanded by temporal graph
-  multi-hop themes**, **promote** only **temporally-active** hits into core, then
-  **reconsolidate** successful retrieves and **federate warm themes** so multi-tenant
-  hubs share retrieval heat without raw memory content.
+  multi-hop themes** and **multi-tenant hub warm themes**, **promote** only
+  **temporally-active** hits into core, then **reconsolidate** and **federate**
+  so retrieval heat compounds across tenants without raw memory content.
 
 Commands:
   search    — query archival + recall stores (JSON hits)
@@ -39,6 +40,7 @@ Env:
   TORII_ARCHIVAL_SUPERSEDE_FILTER  1 (default) | 0  — F145 temporal faithfulness
   TORII_ARCHIVAL_RECONSOLIDATE     1 (default) | 0  — F146 reconsolidation on promote
   TORII_RECON_WARM_FEDERATE        1 (default) | 0  — F148 federate recon-warm themes
+  TORII_RECON_WARM_HUB_QUERY       1 (default) | 0  — F149 hub themes expand auto-query
   TORII_MEMORY_TENANT              optional tenant id (hashed only for hub)
   TORII_TP_SIGNATURES_FILE / TORII_FP_RULES_FILE / TORII_FEDERATED_SIGNALS_FILE
   TORII_MEMORY_MD              path to MEMORY.md (else hermes home / agent seed)
@@ -61,12 +63,14 @@ FEATURE_GRAPH = "F144"
 FEATURE_SUPERSEDE = "F145"
 FEATURE_RECON = "F146"
 FEATURE_RECON_FED = "F148"
+FEATURE_HUB_QUERY = "F149"
 SCHEMA = 1
 MARKER = "<!-- torii-f98-archival-search -->"
 RECON_LEDGER = "archival-reconsolidation.json"
 RECON_FED_NAME = "recon-warm-signals.json"
 RECON_EFF_BUMP = 0.03
 RECON_EFF_CAP = 0.95
+HUB_THEME_BOOST = 0.18
 
 _FALSEY = frozenset({"0", "false", "no", "off", "disabled", "n", "none", ""})
 _PRIVATE_RX = re.compile(
@@ -452,6 +456,17 @@ def render_promote_section(result: dict[str, Any]) -> str:
                 "  multi-tenant warm themes: "
                 + ", ".join(f"`{t}`" for t in hub_themes[:8])
             )
+        lines.append("")
+    hub_q = result.get("hub_query") or {}
+    hq_themes = list(hub_q.get("themes") or result.get("hub_themes") or [])
+    if hq_themes or result.get("feature_hub_query") == FEATURE_HUB_QUERY:
+        lines.append(
+            f"**F149 hub warm → query:** multi-tenant recon-warm themes expanded "
+            f"auto-query + hit boost ({', '.join(f'`{t}`' for t in hq_themes[:8]) or '—'})."
+        )
+        boosted = sum(1 for h in hits if h.get("hub_boost"))
+        if boosted:
+            lines.append(f"  hub-boosted hits: **{boosted}**")
         lines.append("")
     if not hits:
         lines.append("_No archival hits for this query._")
@@ -1234,6 +1249,69 @@ def post_score_recon_warm_hub(
     }
 
 
+def recon_warm_hub_query_enabled() -> bool:
+    """F149: fold multi-tenant hub recon-warm themes into archival auto-query."""
+    raw = (os.environ.get("TORII_RECON_WARM_HUB_QUERY") or "1").strip().lower()
+    return raw not in _FALSEY
+
+
+def apply_hub_theme_boost(
+    result: dict[str, Any],
+    hub_themes: list[str],
+    *,
+    boost: float = HUB_THEME_BOOST,
+) -> dict[str, Any]:
+    """F149: soft score boost for hits matching multi-tenant hub warm themes."""
+    out = dict(result)
+    themes_n = {_theme_norm(t) for t in hub_themes if t}
+    themes_n = {t for t in themes_n if t and "/" not in t}
+    if not themes_n:
+        out["hub_boost_n"] = 0
+        return out
+    hits = []
+    boosted = 0
+    for h in result.get("hits") or []:
+        if not isinstance(h, dict):
+            continue
+        row = dict(h)
+        th = _theme_norm(str(row.get("theme") or ""))
+        hid = _theme_norm(str(row.get("id") or ""))
+        match = False
+        for ht in themes_n:
+            if not ht:
+                continue
+            if th == ht or ht in th or th in ht:
+                match = True
+                break
+            if ht.replace("_", " ") in th or ht in hid:
+                match = True
+                break
+            # token overlap (insecure_deserialization vs deserial)
+            if any(len(p) >= 5 and p in th for p in ht.split("_")):
+                match = True
+                break
+        if match:
+            try:
+                sc = float(row.get("score") or 0)
+            except (TypeError, ValueError):
+                sc = 0.0
+            row["score"] = round(min(1.0, sc + boost), 4)
+            row["hub_boost"] = True
+            row["hub_boost_delta"] = boost
+            boosted += 1
+        hits.append(row)
+    hits.sort(
+        key=lambda x: (
+            -float(x.get("score") or 0),
+            -float(x.get("effective_score") or 0),
+        )
+    )
+    out["hits"] = hits
+    out["hit_count"] = len(hits)
+    out["hub_boost_n"] = boosted
+    return out
+
+
 def auto_from_paths(
     paths: list[str],
     *,
@@ -1243,6 +1321,7 @@ def auto_from_paths(
     hops: int | None = None,
     supersede_filter: bool | None = None,
     reconsolidate: bool | None = None,
+    hub_query: bool | None = None,
 ) -> dict[str, Any]:
     """Build query from changed path basenames + F144 graph multi-hop themes.
 
@@ -1251,6 +1330,7 @@ def auto_from_paths(
     F145 filters multi-hop-superseded cold hits so resolved FPs do not re-page.
     F146 reconsolidates surviving TP hits into durable store (warm on retrieve).
     F148 federates recon-warm themes (privacy-safe) to multi-tenant hub.
+    F149 folds hub recon-warm themes into auto-query + hit ranking (cross-tenant).
     """
     root = root or _root()
     bases = []
@@ -1269,10 +1349,51 @@ def auto_from_paths(
     if use_mh and paths:
         graph_meta = graph_themes_for_paths(paths, root=root, hops=hop_n)
     themes = list(graph_meta.get("themes") or [])
-    # query: basenames + multi-hop themes + light security stems
-    q_parts = bases[:12] + themes[:8] + extra[:3]
+    # F149: multi-tenant hub warm themes expand query (privacy themes only)
+    use_hq = recon_warm_hub_query_enabled() if hub_query is None else bool(hub_query)
+    hub_meta: dict[str, Any] = {
+        "enabled": use_hq,
+        "themes": [],
+        "soft_skip": not use_hq,
+    }
+    hub_themes: list[str] = []
+    if use_hq:
+        try:
+            hub = post_score_recon_warm_hub(root=root)
+            hub_themes = [
+                str(t)
+                for t in (hub.get("themes") or [])
+                if t and "/" not in str(t) and not _PRIVATE_RX.search(str(t))
+            ][:8]
+            hub_meta = {
+                "enabled": True,
+                "themes": hub_themes,
+                "theme_n": len(hub_themes),
+                "signal_n": hub.get("signal_n"),
+                "top": (hub.get("top") or [])[:6],
+                "privacy_ok": bool(hub.get("privacy_ok", True)),
+                "feature": FEATURE_HUB_QUERY,
+            }
+        except Exception as exc:
+            hub_meta = {
+                "enabled": True,
+                "soft_skip": True,
+                "error": str(exc)[:120],
+                "themes": [],
+            }
+            hub_themes = []
+    # query: basenames + multi-hop themes + hub warm themes + light security stems
+    q_parts = bases[:12] + themes[:8] + hub_themes[:6] + extra[:3]
     query = " ".join(q_parts)
     result = search(query, root=root, limit=limit)
+    if use_hq and hub_themes:
+        result = apply_hub_theme_boost(result, hub_themes)
+        result["feature_hub_query"] = FEATURE_HUB_QUERY
+    else:
+        result["feature_hub_query"] = FEATURE_HUB_QUERY if use_hq else None
+        result["hub_boost_n"] = 0
+    result["hub_themes"] = hub_themes
+    result["hub_query"] = hub_meta
     result["feature_graph"] = FEATURE_GRAPH if use_mh else None
     result["graph_themes"] = themes
     result["graph"] = {
@@ -1288,7 +1409,14 @@ def auto_from_paths(
         )
         if k in graph_meta or graph_meta.get(k) is not None
     }
-    result["mode"] = "auto_graph" if themes else "auto"
+    if themes and hub_themes:
+        result["mode"] = "auto_graph_hub"
+    elif hub_themes:
+        result["mode"] = "auto_hub"
+    elif themes:
+        result["mode"] = "auto_graph"
+    else:
+        result["mode"] = "auto"
     # F145: temporal faithfulness on promote path
     use_sf = supersede_filter_enabled() if supersede_filter is None else bool(supersede_filter)
     if use_sf:
@@ -1389,12 +1517,16 @@ def cmd_auto(args: argparse.Namespace) -> int:
     rc = None
     if getattr(args, "no_reconsolidate", False):
         rc = False
+    hq = None
+    if getattr(args, "no_hub_query", False):
+        hq = False
     result = auto_from_paths(
         paths,
         limit=args.limit,
         multi_hop=multi,
         supersede_filter=sf,
         reconsolidate=rc,
+        hub_query=hq,
     )
     section = render_promote_section(result)
     out: dict[str, Any] = {
@@ -1410,8 +1542,12 @@ def cmd_auto(args: argparse.Namespace) -> int:
         "reconsolidated_n": result.get("reconsolidated_n") or 0,
         "reconsolidation": result.get("reconsolidation"),
         "feature_recon_fed": result.get("feature_recon_fed"),
+        "feature_hub_query": result.get("feature_hub_query"),
         "recon_federate": result.get("recon_federate"),
         "recon_hub": result.get("recon_hub"),
+        "hub_themes": result.get("hub_themes") or [],
+        "hub_query": result.get("hub_query"),
+        "hub_boost_n": result.get("hub_boost_n") or 0,
         "graph_themes": result.get("graph_themes") or [],
         "graph": result.get("graph"),
         "supersede": result.get("supersede"),
@@ -1513,6 +1649,7 @@ def cmd_fixture(args: argparse.Namespace) -> int:
                 "TORII_ARCHIVAL_RECONSOLIDATE"
             ),
             "TORII_RECON_WARM_FEDERATE": os.environ.get("TORII_RECON_WARM_FEDERATE"),
+            "TORII_RECON_WARM_HUB_QUERY": os.environ.get("TORII_RECON_WARM_HUB_QUERY"),
             "TORII_MEMORY_TENANT": os.environ.get("TORII_MEMORY_TENANT"),
         }
         try:
@@ -1524,6 +1661,7 @@ def cmd_fixture(args: argparse.Namespace) -> int:
             # keep early fixture stages free of recon writes until F146 block
             os.environ["TORII_ARCHIVAL_RECONSOLIDATE"] = "0"
             os.environ["TORII_RECON_WARM_FEDERATE"] = "0"
+            os.environ["TORII_RECON_WARM_HUB_QUERY"] = "0"
 
             r = search("sql injection db.py", root=td_path, limit=5)
             ids = {h.get("id") for h in r.get("hits") or []}
@@ -2171,6 +2309,142 @@ def cmd_fixture(args: argparse.Namespace) -> int:
                 f146_ids = [str(exc)[:80]]
                 f148_themes = [str(exc)[:80]]
 
+            # F149: hub recon-warm themes expand auto-query + boost ranking
+            f149_ok = False
+            f149_hub_themes: list[str] = []
+            try:
+                fed_dir = td_path / "memory" / "federation"
+                fed_dir.mkdir(parents=True, exist_ok=True)
+                (fed_dir / RECON_FED_NAME).write_text(
+                    json.dumps(
+                        {
+                            "schema_version": 1,
+                            "feature": FEATURE_RECON_FED,
+                            "scope": "recon_warm",
+                            "privacy_ok": True,
+                            "signals": [
+                                {
+                                    "id": "recon-warm-ok",
+                                    "theme": "recon-warm-ok",
+                                    "tags": ["recon_warm", "f148"],
+                                    "hits": 4,
+                                    "tenants": 2,
+                                    "tenant_hashes": ["aaa", "bbb"],
+                                    "path_basenames": [],
+                                },
+                                {
+                                    "id": "recon-warm-theme-insecure-deserialization",
+                                    "theme": "insecure_deserialization",
+                                    "tags": ["recon_warm", "warm_theme", "f148"],
+                                    "keywords": ["insecure_deserialization", "pickle"],
+                                    "hits": 3,
+                                    "tenants": 2,
+                                    "tenant_hashes": ["aaa", "bbb"],
+                                    "path_basenames": [],
+                                },
+                            ],
+                        }
+                    )
+                    + "\n",
+                    encoding="utf-8",
+                )
+                (torii / "tp-signatures.json").write_text(
+                    json.dumps(
+                        {
+                            "signatures": [
+                                {
+                                    "id": "noise-low",
+                                    "theme": "css_typo",
+                                    "keywords": ["margin"],
+                                    "path_globs": ["style.css"],
+                                    "hits": 1,
+                                    "effective_score": 0.2,
+                                },
+                                {
+                                    "id": "pickle-hub",
+                                    "theme": "insecure_deserialization",
+                                    "keywords": ["pickle", "loads"],
+                                    "path_globs": ["legacy/serde.py"],
+                                    "hits": 2,
+                                    "effective_score": 0.35,
+                                },
+                            ]
+                        }
+                    )
+                    + "\n",
+                    encoding="utf-8",
+                )
+                os.environ["TORII_RECON_WARM_HUB_QUERY"] = "1"
+                os.environ["TORII_ARCHIVAL_GRAPH_HOPS"] = "0"
+                os.environ["TORII_ARCHIVAL_RECONSOLIDATE"] = "0"
+                os.environ["TORII_RECON_WARM_FEDERATE"] = "0"
+                os.environ["TORII_ARCHIVAL_SUPERSEDE_FILTER"] = "0"
+                no_hub = auto_from_paths(
+                    ["app.py"],
+                    root=td_path,
+                    limit=5,
+                    multi_hop=False,
+                    supersede_filter=False,
+                    reconsolidate=False,
+                    hub_query=False,
+                )
+                with_hub = auto_from_paths(
+                    ["app.py"],
+                    root=td_path,
+                    limit=5,
+                    multi_hop=False,
+                    supersede_filter=False,
+                    reconsolidate=False,
+                    hub_query=True,
+                )
+                f149_hub_themes = list(with_hub.get("hub_themes") or [])
+                q = str(with_hub.get("query") or "").lower()
+                query_has = (
+                    "deserial" in q
+                    or "pickle" in q
+                    or "insecure" in q
+                    or any("deserial" in t or "pickle" in t for t in f149_hub_themes)
+                )
+                # hub themes present
+                theme_ok = any(
+                    "deserial" in t or "pickle" in t or "insecure" in t
+                    for t in f149_hub_themes
+                )
+                boost_n = int(with_hub.get("hub_boost_n") or 0)
+                pickle_boosted = any(
+                    h.get("hub_boost")
+                    and (
+                        "pickle" in str(h.get("id") or "")
+                        or "deserial" in _theme_norm(str(h.get("theme") or ""))
+                    )
+                    for h in (with_hub.get("hits") or [])
+                )
+                # ranking: with hub, pickle should rank >= no_hub or appear
+                with_ids = [str(h.get("id")) for h in (with_hub.get("hits") or [])]
+                no_ids = [str(h.get("id")) for h in (no_hub.get("hits") or [])]
+                pickle_present = any("pickle" in i for i in with_ids)
+                section_h = render_promote_section(with_hub)
+                section_ok = MARKER in section_h and (
+                    "F149" in section_h or "hub warm" in section_h.lower()
+                )
+                privacy_h = bool((with_hub.get("hub_query") or {}).get("privacy_ok", True))
+                f149_ok = (
+                    theme_ok
+                    and query_has
+                    and (boost_n >= 1 or pickle_boosted)
+                    and pickle_present
+                    and section_ok
+                    and privacy_h
+                    and with_hub.get("feature_hub_query") == FEATURE_HUB_QUERY
+                    and with_hub.get("mode") in ("auto_hub", "auto_graph_hub", "auto")
+                )
+                # mode should prefer auto_hub when themes present
+                if f149_hub_themes and with_hub.get("mode") == "auto":
+                    f149_ok = False
+            except Exception as exc:
+                f149_ok = False
+                f149_hub_themes = [str(exc)[:80]]
+
             fixture_pass = all(
                 [
                     hit_tp,
@@ -2184,6 +2458,7 @@ def cmd_fixture(args: argparse.Namespace) -> int:
                     f145_ok,
                     f146_ok,
                     f148_ok,
+                    f149_ok,
                 ]
             )
             print(
@@ -2194,10 +2469,12 @@ def cmd_fixture(args: argparse.Namespace) -> int:
                         "feature_supersede": FEATURE_SUPERSEDE,
                         "feature_recon": FEATURE_RECON,
                         "feature_recon_fed": FEATURE_RECON_FED,
+                        "feature_hub_query": FEATURE_HUB_QUERY,
                         "f144": True,
                         "f145": True,
                         "f146": True,
                         "f148": True,
+                        "f149": True,
                         "fixture_pass": fixture_pass,
                         "hit_tp": hit_tp,
                         "hit_fp": hit_fp,
@@ -2210,10 +2487,12 @@ def cmd_fixture(args: argparse.Namespace) -> int:
                         "f145_ok": f145_ok,
                         "f146_ok": f146_ok,
                         "f148_ok": f148_ok,
+                        "f149_ok": f149_ok,
                         "f144_graph_themes": graph_themes,
                         "f145_filtered_ids": f145_filtered,
                         "f146_recon_ids": f146_ids,
                         "f148_themes": f148_themes,
+                        "f149_hub_themes": f149_hub_themes,
                         "hit_ids": sorted(ids),
                         "auto_hits": auto.get("hit_count"),
                     },
@@ -2318,6 +2597,11 @@ def main(argv: list[str] | None = None) -> int:
         "--no-reconsolidate",
         action="store_true",
         help="Disable F146 reconsolidation (retrieval warm)",
+    )
+    pa.add_argument(
+        "--no-hub-query",
+        action="store_true",
+        help="Disable F149 hub recon-warm theme query expand",
     )
     pa.set_defaults(func=cmd_auto)
 

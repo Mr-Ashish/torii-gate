@@ -82,3 +82,4 @@ Paper/eval-safe slim traces (redacted). Large raw logs may be gitignored; always
 - `f146-archival-reconsolidation/` — F146 reconsolidation on archival promote; Modal pytorch e2e POST_COMMENT=0
 - `f147-recon-warm-core-tier/` — F147 recon-warm → core tier; Modal pytorch e2e POST_COMMENT=0
 - `f148-recon-warm-federate/` — F148 recon-warm federate + hub; Modal pytorch e2e POST_COMMENT=0
+- `f149-hub-warm-archival-query/` — F149 hub warm→archival query; Modal pytorch e2e POST_COMMENT=0

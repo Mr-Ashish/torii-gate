@@ -1,5 +1,36 @@
 # Torii research → product log
 
+## 2026-08-01 — F149 hub recon-warm → archival auto-query
+
+### Papers / posts
+- F148 hub post-score without query bias is write-only federation.
+- F144 multi-hop expands local graph themes into auto-query.
+- Mem0 multi-tenant: shared themes must change next retrieval.
+
+### OSS design patterns stolen
+1. post_score_recon_warm_hub themes fold into auto_from_paths query.
+2. apply_hub_theme_boost soft score on matching hits.
+3. TORII_RECON_WARM_HUB_QUERY; mode auto_hub; fixture f149_ok.
+4. PRODUCT/research/brand + traces.
+
+### Insight
+Federated warm themes that never enter archival search leave cross-tenant heat inert. Highest ROI: hub themes expand auto-query + boost ranking like F144 graph expand.
+
+### Feature shipped (F149)
+- archival_memory_search hub warm query expand + hit boost
+- fixture f149_ok; PRODUCT/research
+
+### Metric
+- Offline: fixture f149_ok; pytest 619 passed
+- Live: Modal pytorch#191813 BIT3_OK ~51s REQUEST_CHANGES POST_COMMENT=0 log_streaming=true
+
+### Loop-engineering / Hermes practice used
+**Closed-loop federation** — multi-tenant export must bias next retrieval.
+
+### SHA
+`PENDING`
+
+
 ## 2026-08-01 — F148 recon-warm theme federate + hub post-score
 
 ### Papers / posts

@@ -58,6 +58,16 @@ class ArchivalMemorySearchTests(unittest.TestCase):
             any("sql" in str(t) for t in (data.get("f148_themes") or [])),
             data.get("f148_themes"),
         )
+        # F149 hub warm → auto-query
+        self.assertTrue(data.get("f149") or data.get("feature_hub_query") == "F149")
+        self.assertTrue(data.get("f149_ok"), data)
+        self.assertTrue(
+            any(
+                "deserial" in str(t) or "insecure" in str(t) or "pickle" in str(t)
+                for t in (data.get("f149_hub_themes") or [])
+            ),
+            data.get("f149_hub_themes"),
+        )
 
     def test_status(self):
         r = _run(["status"])

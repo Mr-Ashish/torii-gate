@@ -2,5 +2,5 @@
   "id": "archival-memory-search",
   "feature": "F98",
   "status": "adopted",
-  "one_liner": "MemGPT archival + multi-hop + supersede + recon + federate warm (F98\u2013F148)"
+  "one_liner": "MemGPT archival + hop + supersede + recon + federate + hub query (F98\u2013F149)"
 }
