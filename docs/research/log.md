@@ -29,7 +29,7 @@ install (#7) · simplicity (#12)
 install surface surfaces measured cost without Modal archaeology
 
 ### SHA
-`(pending push)`
+`6d579929765bf24c11731c3b4dc0eb9edd145fa9`
 
 
 ## 2026-08-01 — BRAND_FED_COST: brand scorecard cost rows + federation never-spend
