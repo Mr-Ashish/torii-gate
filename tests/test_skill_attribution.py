@@ -38,6 +38,13 @@ class SkillAttributionTests(unittest.TestCase):
         self.assertGreaterEqual(data["n_contributing"], 1)
         self.assertTrue(data["proposal_free_rider"]["free_rider"])
         self.assertGreater(data["proposal_good"]["contribution"], 0)
+        # F140 scorecard hub LOO floor
+        self.assertTrue(data.get("f140") or data.get("feature_scorecard") == "F140")
+        self.assertTrue(data.get("f140_ok"), data)
+        sc = data.get("f140_sc_row") or {}
+        self.assertTrue(sc.get("scorecard_floor"), sc)
+        self.assertFalse(sc.get("free_rider"), sc)
+        self.assertGreaterEqual(float(sc.get("contribution") or 0), 0.85)
 
     def test_status(self):
         r = _run(SCRIPT, ["status"])
@@ -103,6 +110,76 @@ class SkillAttributionTests(unittest.TestCase):
                 self.assertGreaterEqual(float(row["contribution"]), 0.75)
                 self.assertFalse(row["free_rider"])
                 z = next(r for r in rep["skills"] if r["id"] == "skill-zombie-free")
+                self.assertTrue(z["free_rider"])
+        finally:
+            for k, v in prev.items():
+                if v is None:
+                    os.environ.pop(k, None)
+                else:
+                    os.environ[k] = v
+
+    def test_f140_scorecard_hub_floor(self):
+        """F140: scorecard_ops fitness skills get LOO floor, not free-rider."""
+        prev = {
+            k: os.environ.get(k)
+            for k in (
+                "TORII_ROOT",
+                "TORII_SKILL_ATTR_SCORECARD",
+                "TORII_SKILL_ATTR_TOOL",
+            )
+        }
+        try:
+            with tempfile.TemporaryDirectory() as td:
+                root = Path(td)
+                (root / ".torii").mkdir()
+                sc_id = "skill-prefer-product-scorecard"
+                (root / ".torii" / "skill-fitness.json").write_text(
+                    json.dumps(
+                        {
+                            "skills": {
+                                sc_id: {
+                                    "scorecard_ops": True,
+                                    "scorecard_ingested_n": 2,
+                                    "tool_hit_n": 2,
+                                    "hub_priority_delta": 20,
+                                }
+                            }
+                        }
+                    )
+                    + "\n",
+                    encoding="utf-8",
+                )
+                active = root / "agent" / "skills" / "active"
+                active.mkdir(parents=True)
+                (active / f"{sc_id}.md").write_text(
+                    f"---\nid: {sc_id}\n---\n\nscorecard ops\n",
+                    encoding="utf-8",
+                )
+                (active / "skill-zombie-sc.md").write_text(
+                    "---\nid: skill-zombie-sc\n---\n\nzombie\n",
+                    encoding="utf-8",
+                )
+                os.environ["TORII_ROOT"] = str(root)
+                os.environ["TORII_SKILL_ATTR_SCORECARD"] = "1"
+                os.environ["TORII_SKILL_ATTR_TOOL"] = "0"
+                sys.path.insert(0, str(ROOT / "scripts"))
+                import skill_attribution as sa  # type: ignore
+
+                rep = sa.attribute(
+                    "LGTM no findings APPROVE silent",
+                    root=root,
+                    paths=["x.py"],
+                    selected=[sc_id, "skill-zombie-sc"],
+                    tool_blob="",
+                )
+                self.assertEqual(rep.get("feature_scorecard"), "F140")
+                self.assertIn(sc_id, rep.get("scorecard_floored") or [])
+                self.assertIn(sc_id, rep.get("scorecard_contributors") or [])
+                row = next(r for r in rep["skills"] if r["id"] == sc_id)
+                self.assertTrue(row.get("scorecard_floor"))
+                self.assertFalse(row["free_rider"])
+                self.assertGreaterEqual(float(row["contribution"]), 0.85)
+                z = next(r for r in rep["skills"] if r["id"] == "skill-zombie-sc")
                 self.assertTrue(z["free_rider"])
         finally:
             for k, v in prev.items():

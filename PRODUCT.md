@@ -196,6 +196,8 @@ budget always → compact body → score tool_hit → util gap? → budgeted re-
 
 **Scorecard hub gap critic (F139):** second-agent panel checker `f139_scorecard_hub_gap` demotes APPROVE when multi-tenant scorecard util gap_pressure is high and local scorecard-gap ops skills are idle (F127 recovery-hub-gap mirror for ops readiness).
 
+**Scorecard hub attribution floor (F140):** LOO attribution floors scorecard hub / `scorecard_ops` fitness skills (F135/F138) so multi-tenant tool-effective ops skills are not free-rider demoted — same F127 hub_ingested floor for recovery, now for scorecard ops (`TORII_SKILL_ATTR_SCORECARD=1`).
+
 **Ops:** `python3 scripts/memory_loop_status.py scorecard` → L0–L3. Smoke requires L3 on the hub tree. CI job summary annotates readiness; optional advisory `torii/memory-loop` via `TORII_MEMORY_LOOP_STATUS_COMMIT=1`.
 
 ---

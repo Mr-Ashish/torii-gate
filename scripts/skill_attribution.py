@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""F88/F115: Per-skill contribution attribution (LOO + keywords + tool outcomes).
+"""F88/F115/F127/F140: Per-skill contribution attribution (LOO + hub floors).
 
 Research drivers (2026):
   - "Not All Skills Help" / Assay (arXiv 2606.15390): per-task skill masking
@@ -11,18 +11,20 @@ Research drivers (2026):
   - Mem2Act / F114: recovery skills succeed via **terminal tool calls**, not
     review-prose keywords — LOO must credit tool_hit or free-rider ledger
     zombie-demotes the skill F113 just dual-gate adopted.
+  - F138/F139: scorecard hub post-score + critic without attribution floor lets
+    LOO free-rider-demote multi-tenant tool-effective ops skills.
 
 Product thesis:
   F87 gates on pack-level contribution_pp>0 still allows free-riding skills to
   ride bulk adopt. Highest ROI: **leave-one-out + unique keyword + tool-outcome
-  attribution** so only skills with solo prose hit, unique coverage, or
-  measured tool invocation adopt or rank high.
+  attribution** so only skills with solo prose hit, unique coverage, measured
+  tool invocation, or **hub scorecard/recovery evidence** adopt or rank high.
 
 Commands:
-  attribute — LOO + unique keyword + F114 tool-outcome scores
+  attribute — LOO + unique keyword + F114 tool-outcome + hub floors
   rank      — sort skills by contribution score
   filter    — list skill ids with contribution > threshold
-  fixture   — hermetic: contributing skill > free-rider; tool-only contributes
+  fixture   — hermetic: contributing > free-rider; tool-only; scorecard hub floor
   status    — summary
 
 Env:
@@ -31,6 +33,7 @@ Env:
   TORII_SKILL_ATTR_MIN        default 0.01 — min contribution to count
   TORII_SKILL_ATTR_TOOL       1 (default) | 0 — F115 tool-outcome LOO credit
   TORII_SKILL_ATTR_HUB        1 (default) | 0 — F127 floor for hub_ingested fitness skills
+  TORII_SKILL_ATTR_SCORECARD  1 (default) | 0 — F140 floor for scorecard hub ops skills
 """
 
 from __future__ import annotations
@@ -48,6 +51,7 @@ from typing import Any
 FEATURE = "F88"
 FEATURE_TOOL = "F115"
 FEATURE_HUB = "F127"
+FEATURE_SCORECARD = "F140"
 SCHEMA = 1
 LEDGER_NAME = "skill-attribution.json"
 
@@ -189,6 +193,12 @@ def hub_attr_enabled() -> bool:
     return raw not in _FALSEY
 
 
+def scorecard_attr_enabled() -> bool:
+    """F140: floor contribution for scorecard hub / scorecard_ops fitness skills."""
+    raw = (os.environ.get("TORII_SKILL_ATTR_SCORECARD") or "1").strip().lower()
+    return raw not in _FALSEY
+
+
 def _load_hub_ingested_skills(root: Path) -> dict[str, dict[str, Any]]:
     """skill_id → fitness entry fields (hub_ingested_n, tool_hit_n) privacy-safe."""
     out: dict[str, dict[str, Any]] = {}
@@ -221,8 +231,88 @@ def _load_hub_ingested_skills(root: Path) -> dict[str, dict[str, Any]]:
                 "hub_ingested_n": hub_n,
                 "tool_hit_n": tool_n,
                 "hub_priority_delta": int(ent.get("hub_priority_delta") or 0),
+                "kind": "recovery_hub",
             }
         break
+    return out
+
+
+def _load_scorecard_hub_skills(root: Path) -> dict[str, dict[str, Any]]:
+    """skill_id → scorecard hub/fitness evidence (privacy-safe ids only).
+
+    Sources (F140):
+      1. fitness ledger: scorecard_ops / scorecard_ingested_n (F135/F138)
+      2. soft post_score_scorecard_hub priority_deltas (F138 multi-tenant util)
+    """
+    out: dict[str, dict[str, Any]] = {}
+    if not scorecard_attr_enabled():
+        return out
+    candidates = [
+        root / ".torii" / "skill-fitness.json",
+    ]
+    env = (os.environ.get("TORII_SKILL_FITNESS_FILE") or "").strip()
+    if env:
+        candidates.insert(0, Path(env))
+    for p in candidates:
+        if not p.is_file():
+            continue
+        try:
+            data = json.loads(p.read_text(encoding="utf-8"))
+        except (OSError, json.JSONDecodeError):
+            continue
+        skills = data.get("skills") if isinstance(data, dict) else None
+        if not isinstance(skills, dict):
+            continue
+        for sid, ent in skills.items():
+            if not isinstance(sid, str) or "/" in sid or ".." in sid:
+                continue
+            if not isinstance(ent, dict):
+                continue
+            sc_n = int(ent.get("scorecard_ingested_n") or 0)
+            is_ops = bool(ent.get("scorecard_ops"))
+            if sc_n < 1 and not is_ops:
+                continue
+            out[sid] = {
+                "scorecard_ingested_n": sc_n,
+                "tool_hit_n": int(ent.get("tool_hit_n") or 0),
+                "hub_priority_delta": int(ent.get("hub_priority_delta") or 0),
+                "kind": "scorecard_fitness",
+            }
+        break
+
+    # soft merge F138 hub priority deltas (multi-tenant tool themes)
+    try:
+        sys.path.insert(0, str(Path(__file__).resolve().parent))
+        from skill_router import (  # type: ignore
+            post_score_scorecard_hub,
+            scorecard_hub_enabled,
+        )
+
+        if scorecard_hub_enabled():
+            hub = post_score_scorecard_hub(root=root)
+            deltas = hub.get("priority_deltas") or {}
+            skills_doc = hub.get("skills") or {}
+            for sid, delta in deltas.items():
+                sid_s = str(sid).strip()
+                if not sid_s or "/" in sid_s or ".." in sid_s:
+                    continue
+                ent_h = skills_doc.get(sid_s) if isinstance(skills_doc, dict) else {}
+                tool_n = 0
+                if isinstance(ent_h, dict):
+                    tool_n = int(ent_h.get("tool_hits") or ent_h.get("tool_hit_n") or 0)
+                prev = out.get(sid_s) or {}
+                out[sid_s] = {
+                    "scorecard_ingested_n": max(
+                        1, int(prev.get("scorecard_ingested_n") or 0)
+                    ),
+                    "tool_hit_n": max(int(prev.get("tool_hit_n") or 0), tool_n),
+                    "hub_priority_delta": max(
+                        int(prev.get("hub_priority_delta") or 0), int(delta or 0)
+                    ),
+                    "kind": prev.get("kind") or "scorecard_hub",
+                }
+    except Exception:
+        pass
     return out
 
 
@@ -237,13 +327,14 @@ def attribute(
     log_path: Path | None = None,
     out_dir: Path | None = None,
 ) -> dict[str, Any]:
-    """Leave-one-out + unique keyword + F115 tool-outcome + F127 hub floor."""
+    """Leave-one-out + unique keyword + tool-outcome + F127/F140 hub floors."""
     root = root or _root()
     sr = _import_mod("skill_router")
     paths = paths or list(DEMO_PATHS)
     cards = sr.catalog(root)
     by_id = {c.id: c for c in cards}
     hub_skills = _load_hub_ingested_skills(root)
+    sc_hub_skills = _load_scorecard_hub_skills(root)
 
     if selected is None:
         sel = sr.select_skills(cards, paths)
@@ -285,6 +376,7 @@ def attribute(
     # tool unique = tool matched for this skill and not others)
     rows: list[dict[str, Any]] = []
     hub_floored: list[str] = []
+    scorecard_floored: list[str] = []
     for sid in selected:
         card = by_id[sid]
         solo_m = full_matched[sid]
@@ -330,6 +422,21 @@ def attribute(
             if score < floor:
                 score = floor
                 hub_floored.append(sid)
+        # F140: scorecard hub / scorecard_ops fitness themes get LOO floor
+        sc_ent = sc_hub_skills.get(sid)
+        sc_floor = False
+        if sc_ent and scorecard_attr_enabled():
+            sc_floor = True
+            floor_sc = 0.75 + min(
+                0.5, float(sc_ent.get("hub_priority_delta") or 0) / 80.0
+            )
+            if int(sc_ent.get("tool_hit_n") or 0) >= 1:
+                floor_sc = max(floor_sc, 1.0)
+            if int(sc_ent.get("scorecard_ingested_n") or 0) >= 1:
+                floor_sc = max(floor_sc, 0.85)
+            if score < floor_sc:
+                score = floor_sc
+                scorecard_floored.append(sid)
         # free-rider: selected but no prose/tool solo and no unique and not hub-floored
         free_rider = (
             (not solo_hit)
@@ -337,6 +444,7 @@ def attribute(
             and (len(tool_unique) == 0)
             and not getattr(card, "always", False)
             and not hub_floor
+            and not sc_floor
         )
         rows.append(
             {
@@ -357,6 +465,8 @@ def attribute(
                 "always": bool(getattr(card, "always", False)),
                 "hub_ingested": bool(hub_ent),
                 "hub_floor": hub_floor and sid in hub_floored,
+                "scorecard_hub": bool(sc_ent),
+                "scorecard_floor": sc_floor and sid in scorecard_floored,
             }
         )
 
@@ -366,11 +476,15 @@ def attribute(
     free_riders = [r["id"] for r in rows if r["free_rider"]]
     tool_contributors = [r["id"] for r in rows if r.get("tool_hit") and not r["free_rider"]]
     hub_contributors = [r["id"] for r in rows if r.get("hub_ingested") and not r["free_rider"]]
+    scorecard_contributors = [
+        r["id"] for r in rows if r.get("scorecard_hub") and not r["free_rider"]
+    ]
 
     return {
         "feature": FEATURE,
         "feature_tool": FEATURE_TOOL if use_tools else None,
         "feature_hub": FEATURE_HUB if hub_attr_enabled() else None,
+        "feature_scorecard": FEATURE_SCORECARD if scorecard_attr_enabled() else None,
         "schema": SCHEMA,
         "scored_at": _now(),
         "paths": paths,
@@ -382,6 +496,8 @@ def attribute(
         "tool_contributors": tool_contributors,
         "hub_contributors": hub_contributors,
         "hub_floored": hub_floored,
+        "scorecard_contributors": scorecard_contributors,
+        "scorecard_floored": scorecard_floored,
         "skills": rows,
         "contributing": contributing,
         "free_riders": free_riders,
@@ -994,6 +1110,141 @@ def cmd_fixture(args: argparse.Namespace) -> int:
         os.environ["TORII_ROOT"] = str(root)
         os.environ.pop("TORII_SKILL_ATTR_FILE", None)
 
+    # F140: scorecard hub LOO floor — silent review + scorecard skill floored
+    sc_id = "skill-prefer-product-scorecard"
+    f140_ok = False
+    sc_row = None
+    with tempfile.TemporaryDirectory() as td2:
+        td2_path = Path(td2)
+        prev_root = os.environ.get("TORII_ROOT")
+        prev_sc = os.environ.get("TORII_SKILL_ATTR_SCORECARD")
+        try:
+            os.environ["TORII_ROOT"] = str(td2_path)
+            os.environ["TORII_SKILL_ATTR_SCORECARD"] = "1"
+            # plant active scorecard skill (no always) so LOO would free-rider without floor
+            active = td2_path / "agent" / "skills" / "active"
+            active.mkdir(parents=True)
+            (active / f"{sc_id}.md").write_text(
+                f"""---
+id: {sc_id}
+title: Prefer product scorecard
+themes: scorecard,ops
+---
+
+## Skill: product-scorecard
+
+Call torii doctor and scorecard early.
+""",
+                encoding="utf-8",
+            )
+            # fitness ledger marks scorecard ops ingested (F135/F138)
+            torii = td2_path / ".torii"
+            torii.mkdir(parents=True)
+            (torii / "skill-fitness.json").write_text(
+                json.dumps(
+                    {
+                        "schema_version": 1,
+                        "skills": {
+                            sc_id: {
+                                "id": sc_id,
+                                "scorecard_ops": True,
+                                "scorecard_ingested_n": 2,
+                                "tool_hit_n": 2,
+                                "hub_priority_delta": 18,
+                                "selected_n": 2,
+                                "hit_n": 2,
+                                "hit_rate": 1.0,
+                            }
+                        },
+                    }
+                )
+                + "\n",
+                encoding="utf-8",
+            )
+            # federated scorecard util themes for soft hub merge
+            fed = td2_path / "memory" / "federation"
+            fed.mkdir(parents=True)
+            (fed / "scorecard-util-signals.json").write_text(
+                json.dumps(
+                    {
+                        "signals": [
+                            {
+                                "id": f"scorecard-util-hit-{sc_id}",
+                                "theme": sc_id,
+                                "tags": [
+                                    "scorecard_util",
+                                    "tool_outcome",
+                                    "f136",
+                                ],
+                                "hits": 3,
+                                "tool_hits": 3,
+                                "tenants": 2,
+                                "util_rate_bin": "hit",
+                                "source": "scorecard_skill_util",
+                            }
+                        ]
+                    }
+                )
+                + "\n",
+                encoding="utf-8",
+            )
+            silent_sc = (
+                "## Review\n\nGeneric note only.\n"
+                "Verdict: COMMENT\n"
+                "Finding: nothing of substance in this fixture body.\n"
+            )
+            sc_attr = attribute(
+                silent_sc,
+                root=td2_path,
+                paths=["src/auth.py"],
+                selected=[sc_id],
+                tool_blob="",
+            )
+            sc_row = next(
+                (r for r in (sc_attr.get("skills") or []) if r["id"] == sc_id),
+                None,
+            )
+            f140_ok = bool(
+                sc_row
+                and sc_row.get("scorecard_hub") is True
+                and sc_row.get("scorecard_floor") is True
+                and sc_row.get("free_rider") is False
+                and float(sc_row.get("contribution") or 0) >= 0.85
+                and sc_id in (sc_attr.get("scorecard_floored") or [])
+                and sc_id in (sc_attr.get("scorecard_contributors") or [])
+                and sc_id not in (sc_attr.get("free_riders") or [])
+            )
+            # adversarial: without scorecard attr flag, silent becomes free-rider
+            os.environ["TORII_SKILL_ATTR_SCORECARD"] = "0"
+            sc_off = attribute(
+                silent_sc,
+                root=td2_path,
+                paths=["src/auth.py"],
+                selected=[sc_id],
+                tool_blob="",
+            )
+            sc_off_row = next(
+                (r for r in (sc_off.get("skills") or []) if r["id"] == sc_id),
+                None,
+            )
+            f140_off_ok = bool(
+                sc_off_row
+                and (
+                    sc_off_row.get("free_rider") is True
+                    or float(sc_off_row.get("contribution") or 0) < 0.85
+                )
+            )
+            f140_ok = f140_ok and f140_off_ok
+        finally:
+            if prev_root is None:
+                os.environ.pop("TORII_ROOT", None)
+            else:
+                os.environ["TORII_ROOT"] = prev_root
+            if prev_sc is None:
+                os.environ.pop("TORII_SKILL_ATTR_SCORECARD", None)
+            else:
+                os.environ["TORII_SKILL_ATTR_SCORECARD"] = prev_sc
+
     fixture_pass = all(
         [
             has_contrib,
@@ -1008,6 +1259,7 @@ def cmd_fixture(args: argparse.Namespace) -> int:
             tool_prop_ok,
             mem_not_fr,
             mem_tool_hits,
+            f140_ok,
         ]
     )
     print(
@@ -1015,8 +1267,10 @@ def cmd_fixture(args: argparse.Namespace) -> int:
             {
                 "feature": FEATURE,
                 "feature_tool": FEATURE_TOOL,
+                "feature_scorecard": FEATURE_SCORECARD,
                 "f89": True,
                 "f115": True,
+                "f140": True,
                 "fixture_pass": fixture_pass,
                 "n_contributing": attr["n_contributing"],
                 "contributing": attr["contributing"],
@@ -1034,6 +1288,8 @@ def cmd_fixture(args: argparse.Namespace) -> int:
                 "mem_tool_hits": mem_tool_hits,
                 "with_tool_row": yes_row,
                 "no_tool_row": no_row,
+                "f140_ok": f140_ok,
+                "f140_sc_row": sc_row,
                 "ledger": str(lp),
             },
             indent=2,

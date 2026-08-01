@@ -1,5 +1,36 @@
 # Torii research → product log
 
+## 2026-08-01 — F140 scorecard hub attribution LOO floor
+
+### Papers / posts
+- Assay / Not All Skills Help: LOO free-rider retirement without multi-tenant shield kills ops skills.
+- F127 recovery hub_ingested floor; F138/F139 scorecard hub without attr floor.
+- FederatedSkill: hub themes must compound into attribution, not only demote/priority.
+
+### OSS design patterns stolen
+1. _load_scorecard_hub_skills (fitness scorecard_ops + F138 hub deltas).
+2. attribute() scorecard_floor ≥0.85 (tool ≥1.0); free_rider blocked.
+3. fixture f140_ok + off-flag free-rider; tests; PRODUCT.
+4. TORII_SKILL_ATTR_SCORECARD default on.
+
+### Insight
+Hub post-score + critic without attribution floor still LOO-kills multi-tenant ops skills. Highest ROI: F127-style contribution floor for scorecard hub evidence.
+
+### Feature shipped (F140)
+- skill_attribution scorecard hub LOO floor + fixture f140_*
+- PRODUCT/research/brand; traces f140-scorecard-hub-attr/
+
+### Metric
+- Offline: fixture f140_ok; pytest skill_attribution
+- Live: Modal pytorch e2e POST_COMMENT=0
+
+### Loop-engineering / Hermes practice used
+**Measure → federate → attribute floor** — scorecard ops mirror recovery F127 attr shield.
+
+### SHA
+`PENDING`
+
+
 ## 2026-08-01 — F139 scorecard hub gap critic
 
 ### Papers / posts

@@ -63,3 +63,12 @@ Source: `python3 scripts/skill_router.py scorecard-hub-score`.
 | gap_pressure | Federated scorecard util gap fraction |
 
 Source: `second_agent_critic.py` panel / `demote-eval`.
+
+## F140 scorecard hub attribution floor
+
+| Metric | Meaning |
+|--------|---------|
+| scorecard_floored | Skills LOO-floored from hub/fitness scorecard evidence |
+| scorecard_contributors | Non free-rider scorecard hub skills |
+
+Source: `skill_attribution.py attribute` / fixture.
