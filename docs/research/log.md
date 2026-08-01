@@ -31,7 +31,7 @@ F124 federated recovery util themes but next run ignored them. Highest ROI: clos
 **Measure → feedback path** — federated util is not write-only; doctor/scorecard surfaces hub wire.
 
 ### SHA
-`PENDING`
+`ca954e8a3f756b72625ae04d513d0e713feef7d2`
 
 
 ## 2026-08-01 — F124 recovery util federate + doctor recovery_ok
