@@ -32,11 +32,46 @@ Torii Gate is a PR/CI **security merge authority**: agent review with tools, pat
 - Time-to-first-signal on PR
 - Measured FP rate (memory growth of suppressions)
 - PRs blocked with path-evidenced findings
-- Skill contribution_pp > 0 (dual-rollout) before auto-adopt
+- Skill contribution before auto-adopt (must beat baseline)
 
 ---
 
-## Mental model A — Maker / Checker (F78)
+## How Torii works (buyer)
+
+**Primary story:** *The gate gets stricter and quieter over time — not noisier.*
+
+One diagram (full write-up: [`docs/brand/BUYER-DIAGRAM.md`](docs/brand/BUYER-DIAGRAM.md)):
+
+```text
+  PR / CI ──► TORII GATE ──► merge signal (torii/gate)
+                 │
+     1. REVIEW + CHECK     tools on the diff; demote empty APPROVE
+     2. COMPOUND           skills that measure in · memory that pages in
+     3. MERGE SIGNAL       required check · labels · comment
+                 │
+                 ▼
+        next PR is quieter and sharper
+```
+
+| Beat | Buyer language |
+|------|----------------|
+| **Review + check** | Agent reads the change with tools; a second pass kills weak approvals |
+| **Compound** | Every run teaches the next — useful skills stay, false positives die twice |
+| **Merge signal** | Branch protection requires **`torii/gate`** |
+
+Install path: [`docs/GOLDEN-PATH.md`](docs/GOLDEN-PATH.md) · metrics: [`docs/benchmarks/golden-path-metrics.md`](docs/benchmarks/golden-path-metrics.md).
+
+**CLI:** `python3 scripts/torii.py help` · `doctor` · `golden-path -- status`
+
+> **Advanced** content below (mental models A–E, feature IDs, loop stage tables) is for engineers and research. Buyers can stop here.
+
+---
+
+## Advanced — mental models & research IDs
+
+Feature numbers (Fnn) are **implementation / paper IDs**, not marketing. Prefer the buyer diagram above on landing and sales decks.
+
+### A — Maker / Checker
 
 **Maker.** Hermes agent runs tools on the PR and writes a security review.
 
@@ -46,7 +81,7 @@ Torii Gate is a PR/CI **security merge authority**: agent review with tools, pat
 
 ---
 
-## Mental model B — Skill compound loop (F84–F89)
+### B — Skill compound loop
 
 Torii does not dump a static SOUL forever. Skills are **measured, ranked, and retired**:
 
@@ -75,7 +110,7 @@ route → hit → fitness → dual → attr → inject
 
 ---
 
-## Mental model C — Memory compound loop (F93–F108)
+### C — Memory compound loop
 
 Torii does not dump every past finding into the next prompt. Memory is **written with integrity, events, consolidated, strength-ranked, tiered, and paged on demand**:
 
@@ -144,7 +179,7 @@ compound → write → consolidate → effective_critic → federate → scoped_
 
 ---
 
-## Mental model D — Recovery skill loop (F119–F123)
+### D — Recovery skill loop (research IDs in body)
 
 Always-on recovery skills teach terminal CLIs. Torii does not stop at inject:
 
@@ -238,7 +273,7 @@ budget always → compact body → score tool_hit → util gap? → budgeted re-
 
 ---
 
-## Mental model D — Hub-archival compound loop (F155–F163)
+### D2 — Hub-archival compound loop
 
 Hub-prefer archival skills are not “always inject and hope.” Torii **measures tool use, demotes idle APPROVE, re-prompts under budget, federates multi-tenant heat, and packages readiness as one product bit**:
 
@@ -276,7 +311,7 @@ always inject → util score → critic demote → soft re-prompt → fitness �
 
 ---
 
-## Mental model E — GEPA refine compound loop (F165–F173)
+### E — GEPA refine compound loop
 
 Torii does not leave recovery skill bodies static after util gaps. Skills **evolve from traces under gates**, prove contribution, multi-tenant promote, and **decay when dual_fail is chronic**:
 

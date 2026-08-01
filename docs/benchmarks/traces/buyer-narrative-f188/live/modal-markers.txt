@@ -1,0 +1,25 @@
+429:[orch:err] **Verdict:** < APPROVE | REQUEST CHANGES | COMMENT >
+645:[orch:err] | procedure | 0.25 | Verdict + Blocking + Security + What I checked + trigger scenario |
+942:[hermes:err-live] **Verdict:** < APPROVE | REQUEST CHANGES | COMMENT >
+1100:[hermes:err-live] | procedure | 0.25 | Verdict + Blocking + Security + What I checked + trigger scenario |
+1553:[orch:err] **Verdict:** < APPROVE | REQUEST CHANGES | COMMENT >
+1769:[orch:err] | procedure | 0.25 | Verdict + Blocking + Security + What I checked + trigger scenario |
+2119:[hermes:err-live] **Verdict:** < APPROVE | REQUEST CHANGES | COMMENT >
+2277:[hermes:err-live] | procedure | 0.25 | Verdict + Blocking + Security + What I checked + trigger scenario |
+2411:[orch:out]       "tool_call_turns": 0
+2446:[orch:out]     "tool_call_turns": 0,
+2520:[orch:out]   "tool_call_turns": 0,
+2612:[orch:out]       "name": "Verdict structure",
+2785:[orch:out]         "tool_call_turns": 0,
+3700:[orch:out] tool_call_turns=0
+3968:[torii/agent-loop] tool_call_turns=None messages_or_turns=1
+4200:      "tool_call_turns": null,
+4215:        "tool_call_turns",
+4222:  "elapsed_s": 50.3,
+4226:  "log_streaming": true,
+4235:**Verdict:** COMMENT
+4246:Agent output did not match the review contract (missing: **Verdict:**, 
+4254:BIT3_OK
+4263:[review] **Verdict:** COMMENT
+4271:[review] Agent output did not match the review contract (missing: **Verdict:**, **Score:**, ### Summary, ### Blocking, ### Security audit, ### Tests & risk). Raw content preserved below.
+4289:[torii/done] ok=True orch_rc=0 elapsed_s=50.3 review=True

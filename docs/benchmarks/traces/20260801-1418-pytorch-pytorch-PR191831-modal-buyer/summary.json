@@ -1,0 +1,18 @@
+{
+  "feature": "BUYER",
+  "schema_version": 1,
+  "repo": "pytorch/pytorch",
+  "pr": "191831",
+  "pr_number": "191831",
+  "model": "deepseek/deepseek-chat-v4-pro",
+  "host": "modal",
+  "bit3": true,
+  "elapsed_s": 50.3,
+  "log_streaming": true,
+  "tool_call_turns": 0,
+  "post_comment": 0,
+  "verdict": "COMMENT",
+  "notes": "Buyer-narrative fire dogfood; fail-closed F45 zero tools \u2192 COMMENT",
+  "scored_at": "2026-08-01T14:20:04Z",
+  "modal_run": "https://modal.com/apps/mr-ashish/main/ap-9FA1JX74tAuitCBiKRIjYa"
+}

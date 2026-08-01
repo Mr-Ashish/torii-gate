@@ -108,8 +108,9 @@ python3 scripts/torii.py gate -- --review path/to/review.md
 
 ## What we deliberately hide here
 
-- Mental models B/C stage diagrams and F78–F186 compound loop IDs → `PRODUCT.md` (full) / `docs/research/`.
-- Landing headline stays: **gate gets stricter and quieter** — not “F186 pressure.”
+- Multi-stage loop diagrams and research feature IDs → `PRODUCT.md` **Advanced** / `docs/research/`.
+- Landing headline stays: **gate gets stricter and quieter** — not internal loop codenames.
+- Buyer diagram: [`docs/brand/BUYER-DIAGRAM.md`](brand/BUYER-DIAGRAM.md).
 
 ## Next commercial lifts
 

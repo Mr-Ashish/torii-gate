@@ -1,3 +1,40 @@
+## 2026-08-01 — BUYER narrative: one diagram, F-IDs under Advanced
+
+### Papers / posts
+- Loop Engineering: high-signal surfaces; operational depth behind handoff layers.
+- Scorecard simplicity 3.5 — five mental models on landing raises cognitive load.
+- AppSec install UX: “stricter and quieter” + torii/gate beats F-stack tourism.
+
+### OSS design patterns stolen
+1. `docs/brand/BUYER-DIAGRAM.md` — Review + check → Compound → torii/gate.
+2. Landing hero “How” is three beats; compound loops in `<details id=advanced>`.
+3. PRODUCT buyer section first; mental models A–E under **Advanced**.
+4. `buyer_narrative_check.py` budgets F-counts on primary surfaces.
+
+### Insight
+Golden path shipped metrics but buyer still saw five loop pipelines. Highest ROI: collapse narrative to one diagram.
+
+### Feature shipped (BUYER / F188)
+- BUYER-DIAGRAM.md · buyer_narrative_check · torii.py buyer
+- landing/PRODUCT/README/TORII primary story
+- tests fixture 18/18
+
+### Loop-engineering
+Score the story customers hear; research IDs stay in the engine room.
+
+### Metric
+- Offline: fixture_pass; product_primary_f=0 landing_primary_f=0; pytest 8 passed (buyer+golden)
+- Live Modal: pytorch#191831 BIT3_OK ~50.3s POST_COMMENT=0 log_streaming=true
+
+### scorecard_target
+8.0
+
+### dim_lift
+simplicity (buyer narrative collapse)
+
+### SHA
+`(fill after push)`
+
 ## 2026-08-01 — GOLDEN commercial path metrics (install → torii/gate → dogfood)
 
 ### Papers / posts

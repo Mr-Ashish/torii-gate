@@ -92,7 +92,7 @@ tr:last-child td{border-bottom:0}
 <header class="hero"><div class="wrap">
   <p class="ey">PR / CI security gate · AI-written code</p>
   <h1 class="h1">Nothing ships<br/>without crossing<br/>the <em>gate</em>.</h1>
-  <p class="lede"><strong style="color:var(--champagne);font-weight:500">Torii</strong> is the security gate for every pull request. Agent-powered review, path-evidenced findings, merge protection — so AI and humans ship fast without shipping risk.</p>
+  <p class="lede"><strong style="color:var(--champagne);font-weight:500">Torii</strong> is the security gate for every pull request. The gate gets <strong style="color:var(--champagne);font-weight:500">stricter and quieter</strong> over time — path-evidenced review, merge protection, less noise.</p>
   <div class="cta-row">
     <a class="btn btn-p" href="#demo">Book a demo</a>
     <a class="btn btn-s" href="#how">See how it works</a>
@@ -142,84 +142,68 @@ tr:last-child td{border-bottom:0}
 <section class="sec" id="how"><div class="wrap">
   <div class="sh">
     <p class="ey">How Torii Gate works</p>
-    <h2>Control plane, not a chat box.</h2>
-    <p>Deterministic orchestration. Agentic analysis. Durable memory. Audit traces.</p>
+    <h2>Review. Compound. Gate.</h2>
+    <p>One buyer diagram — the gate gets <strong style="color:var(--champagne)">stricter and quieter</strong>. Loop stage IDs stay under Advanced.</p>
   </div>
-  <div class="pipeline">
-    <span class="pipe on">1 PR / CI trigger</span>
-    <span class="pipe on">2 Assemble + route skills</span>
-    <span class="pipe">3 Maker agent (Hermes)</span>
-    <span class="pipe">4 Checker panel</span>
-    <span class="pipe on">5 Verdict + labels</span>
-    <span class="pipe">6 Memory + skill loop</span>
+
+  <div id="buyer-diagram" class="card" style="border-color:var(--hair-g);margin-bottom:16px">
+    <div class="num">Buyer diagram</div>
+    <h3 style="margin-bottom:14px">Three beats · one product</h3>
+    <div class="pipeline" style="margin:0 0 12px">
+      <span class="pipe on">1. REVIEW + CHECK</span>
+      <span class="pipe on">2. COMPOUND</span>
+      <span class="pipe on">3. MERGE · torii/gate</span>
+    </div>
+    <pre style="margin:0;padding:16px;background:var(--deep);border:1px solid var(--hair);border-radius:var(--r);font-family:var(--fm);font-size:.72rem;line-height:1.55;color:var(--warm);overflow-x:auto">PR / CI ──► TORII GATE ──► open / closed · labels · comment
+               │
+   1. REVIEW + CHECK   tools on the diff; demote empty APPROVE
+   2. COMPOUND         skills that measure in · memory that pages in
+   3. MERGE SIGNAL     required check torii/gate
+               │
+               ▼
+      next PR is quieter and sharper</pre>
+    <p class="note" style="margin:14px 0 0">Install → require <code style="color:var(--gold)">torii/gate</code> → first PR signal. Full one-pager: <a href="../../GOLDEN-PATH.md">GOLDEN-PATH.md</a> · diagram source: <a href="BUYER-DIAGRAM.md">BUYER-DIAGRAM.md</a>.</p>
   </div>
-  <p class="ey" style="margin:8px 0 12px">Skill compound loop (why Torii gets quieter)</p>
-  <div class="pipeline">
-    <span class="pipe on">Route</span>
-    <span class="pipe on">Hit</span>
-    <span class="pipe on">Fitness</span>
-    <span class="pipe on">Dual</span>
-    <span class="pipe on">Attr</span>
-    <span class="pipe on">Inject</span>
+
+  <div class="grid3" style="margin-bottom:16px">
+    <div class="card"><div class="num">1 · Review</div><h3>Maker + checker</h3><p>Agent tools on the diff. Path:line evidence. A second pass demotes weak APPROVE — free by default.</p></div>
+    <div class="card"><div class="num">2 · Compound</div><h3>Quieter next PR</h3><p>Skills that help stay loud; noise dies twice. Memory pages cold truth in — without dumping the whole store.</p></div>
+    <div class="card"><div class="num">3 · Gate</div><h3>torii/gate</h3><p>Required status check. Labels. Comment. Scanners generate findings; Torii is the merge authority.</p></div>
   </div>
-  <p class="note" style="margin:0 0 16px">Progressive skills → measure hits → demote zombies → dual contribution → LOO free-riders out → next PR injects winners only. <strong style="color:var(--muted)">Skills that do not contribute do not ship in the next prompt.</strong></p>
-  <p class="ey" style="margin:8px 0 12px">Recovery skill loop (why inject is not enough)</p>
-  <div class="pipeline">
-    <span class="pipe on">Always budget</span>
-    <span class="pipe on">Compact body</span>
-    <span class="pipe on">Tool hit</span>
-    <span class="pipe on">Util score</span>
-    <span class="pipe on">Budgeted re-prompt</span>
-    <span class="pipe on">Paper traces</span>
-  </div>
-  <p class="note" style="margin:0 0 16px">Memory · product CLI · critic skills get a <strong style="color:var(--muted)">capped always slot</strong>, <strong style="color:var(--muted)">SkillReducer-lite bodies</strong>, and post-run <strong style="color:var(--muted)">tool utilization</strong>. Idle recovery tools soft-demote APPROVE and can spend <strong style="color:var(--muted)">one shared re-prompt</strong> — not infinite Hermes retries. Artifacts land in redacted traces for eval.</p>
-  <p class="ey" style="margin:8px 0 12px">Hub-archival compound loop (why cold memory pages in)</p>
-  <div class="pipeline">
-    <span class="pipe on">Always inject</span>
-    <span class="pipe on">Util score</span>
-    <span class="pipe on">Critic demote</span>
-    <span class="pipe on">Budgeted re-prompt</span>
-    <span class="pipe on">Fitness</span>
-    <span class="pipe on">Hub pressure</span>
-    <span class="pipe on">Hub inject</span>
-  </div>
-  <p class="note" style="margin:0 0 16px">Hub-prefer archival skills must call tools (<strong style="color:var(--muted)">inject ≠ utilization</strong>). Idle runs soft-demote APPROVE, spend one shared re-prompt, and multi-tenant gap pressure compounds into next always budget — privacy-safe themes only. One product bit: <code style="color:var(--gold)">hub_archival_loop_ok</code> on doctor/scorecard. <strong style="color:var(--muted)">Hub-archival skills that never page cold memory do not silently APPROVE.</strong></p>
-  <p class="ey" style="margin:8px 0 12px">Measured scorecard (not slogans)</p>
-  <div class="pipeline">
-    <span class="pipe on">Doctor</span>
-    <span class="pipe on">Recovery hub-gap</span>
-    <span class="pipe on">Hub-archival loop</span>
-    <span class="pipe on">Demote rate</span>
-    <span class="pipe on">Util delta</span>
-    <span class="pipe on">Skill L3</span>
-    <span class="pipe on">Memory L3</span>
-    <span class="pipe on">Workflow L3</span>
-  </div>
-  <p class="note" style="margin:0 0 16px">Ops surface: <code style="color:var(--gold)">python3 scripts/torii.py scorecard</code> — dual compound (skill + memory) plus <strong style="color:var(--muted)">workflows-as-code</strong> graph readiness, offline <strong style="color:var(--muted)">critic demote rate</strong>, <strong style="color:var(--muted)">memory util delta</strong>, measured <strong style="color:var(--muted)">hub_archival_loop_ok</strong> (F155–F163), and <strong style="color:var(--muted)">refine_loop_ok</strong> (GEPA refine F165–F185 / F184 pack: evolve → measure → promote → decay → revive → free-rider → pp-floor). <strong style="color:var(--muted)">Evidence over “zero false positives.”</strong></p>
-  <p class="ey" style="margin:16px 0 12px">GEPA refine compound loop (why idle skills evolve — and leave always budget)</p>
-  <p class="note" style="margin:0 0 16px">Util gaps refine skill bodies under size/probe gates, dual-gate LOO floors and fitness shields them, dual-rollout measures <code style="color:var(--gold)">refine_tool_contribution_pp</code>, multi-tenant promote gates free-riders, dual_fail demotes weak APPROVE, and <strong style="color:var(--muted)">chronic dual_fail decays always priority</strong> with multi-tenant amplify + critic demote. One product bit: <code style="color:var(--gold)">refine_loop_ok</code> (F165–F185 / F184 pack). <strong style="color:var(--muted)">Skills that fail tools get refined and measured — or stay out of always budget; dual_pass revive re-boosts under multi-tenant + contribution_pp floors.</strong></p>
-  <p class="ey" style="margin:8px 0 12px">Memory compound loop (why noise dies twice)</p>
-  <div class="pipeline">
-    <span class="pipe on">Compound</span>
-    <span class="pipe on">Write</span>
-    <span class="pipe on">Consolidate</span>
-    <span class="pipe on">Effective</span>
-    <span class="pipe on">Federate</span>
-    <span class="pipe on">Recall</span>
-    <span class="pipe on">Tiers</span>
-    <span class="pipe on">Search</span>
-  </div>
-  <p class="note" style="margin:0 0 16px">Integrity-gated compound (path only) → events on write → decay/merge/evict → confirm above effective floor → privacy-safe multi-tenant federate → path inject → core vs archival → just-in-time search. Mid-review utilization is <strong style="color:var(--muted)">measured</strong>; soft recovery is <strong style="color:var(--muted)">budgeted</strong>. One CLI: <code style="color:var(--gold)">torii_memory</code>.</p>
-  <p class="note" style="margin:0 0 24px"><strong style="color:var(--muted)">Stale memory does not confirm findings or crowd the inject budget.</strong> Scanners generate findings — Torii is the merge authority that compounds.</p>
+
   <div class="grid2">
-    <div class="card"><div class="num">Surfaces</div><h3>Where the gate sits</h3><p>Pull requests · required status checks · optional bot comments · security labels · branch protection. Later: SARIF ingest from Semgrep / CodeQL / peers.</p></div>
-    <div class="card"><div class="num">Honesty</div><h3>Evidence over slogans</h3><p>No “zero false positives.” No “95% ATT&amp;CK autonomous exploit.” We measure confirmed findings, FP rate, skill contribution, memory-loop L0–L3, utilization, <strong>critic demote rate</strong>, recovery hub-gap readiness, time-to-signal, gated PRs.</p></div>
+    <div class="card"><div class="num">Surfaces</div><h3>Where the gate sits</h3><p>Pull requests · required status checks · security labels · branch protection. Later: SARIF ingest from Semgrep / CodeQL / peers.</p></div>
+    <div class="card"><div class="num">Honesty</div><h3>Evidence over slogans</h3><p>No “zero false positives.” We measure time-to-signal, labeled TP/FP, cost/PR, and gated PRs — see golden-path metrics.</p></div>
   </div>
-  <div class="grid3" style="margin-top:8px">
-    <div class="card"><div class="num">Maker</div><h3>Hermes agent</h3><p>Tools on the diff. Path:line evidence. Security pack by default. Memory tools discoverable via one CLI.</p></div>
-    <div class="card"><div class="num">Checker</div><h3>Deterministic panel</h3><p>Re-score without burning another model. Demote weak APPROVE. Cap paid soft re-prompts.</p></div>
-    <div class="card"><div class="num">Compound</div><h3>Two loops</h3><p>Skills that measure in. Memory that pages in — integrity-gated, federated, budgeted.</p></div>
-  </div>
+
+  <details id="advanced" style="margin-top:20px;border:1px solid var(--hair);border-radius:var(--r);background:var(--raised);padding:16px 20px">
+    <summary style="cursor:pointer;font-family:var(--fm);font-size:.62rem;letter-spacing:.12em;text-transform:uppercase;color:var(--gold)">Advanced — compound loops &amp; research IDs (engineers)</summary>
+    <p class="note" style="margin:14px 0 12px">Buyers can skip this. Feature IDs (Fnn) are implementation/paper labels, not marketing.</p>
+    <p class="ey" style="margin:8px 0 12px">Skill compound loop</p>
+    <div class="pipeline">
+      <span class="pipe on">Route</span>
+      <span class="pipe on">Hit</span>
+      <span class="pipe on">Fitness</span>
+      <span class="pipe on">Dual</span>
+      <span class="pipe on">Attr</span>
+      <span class="pipe on">Inject</span>
+    </div>
+    <p class="note" style="margin:0 0 16px">Skills that do not contribute do not ship in the next prompt.</p>
+    <p class="ey" style="margin:8px 0 12px">Memory compound loop</p>
+    <div class="pipeline">
+      <span class="pipe on">Compound</span>
+      <span class="pipe on">Write</span>
+      <span class="pipe on">Consolidate</span>
+      <span class="pipe on">Effective</span>
+      <span class="pipe on">Federate</span>
+      <span class="pipe on">Recall</span>
+      <span class="pipe on">Tiers</span>
+      <span class="pipe on">Search</span>
+    </div>
+    <p class="note" style="margin:0 0 16px">False positives die twice — true positives stay sharp. Stale memory does not confirm findings.</p>
+    <p class="ey" style="margin:8px 0 12px">Recovery · hub-archival · refine (ops scorecard)</p>
+    <p class="note" style="margin:0">Doctor + scorecard measure demote rate, util delta, and loop readiness L0–L3. Depth: <code style="color:var(--gold)">PRODUCT.md</code> Advanced · <code style="color:var(--gold)">docs/research/</code>.</p>
+  </details>
 </div></section>
 
 <section class="sec" id="roadmap"><div class="wrap">

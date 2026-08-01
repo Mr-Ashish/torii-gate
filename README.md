@@ -3,38 +3,41 @@
 **The security gate for every pull request.**  
 *Nothing ships without crossing the gate.*
 
-Agent-powered PR/CI **security merge authority**: path-evidenced findings, maker/checker critics, **two compound loops** (skills + memory). Built for AI-written and human code.
+**Primary story:** the gate gets *stricter and quieter* over time — not noisier.
+
+Agent-powered PR/CI **security merge authority**: path-evidenced findings, maker + checker, skills and memory that compound. Built for AI-written and human code.
 
 [![Torii Gate](https://img.shields.io/static/v1?label=trigger&message=%40torii+review+this+pr&color=C9A227&style=for-the-badge)](#trigger)
 [![pack](https://img.shields.io/static/v1?label=default+pack&message=security&color=0B0F19&style=for-the-badge)](agent/packs/security.json)
 [![provider](https://img.shields.io/static/v1?label=provider&message=OpenRouter+%2B+Hermes&color=C41E3A&style=for-the-badge)](#stack)
 
-## Why Torii
+## How Torii works (buyer)
+
+One diagram — full write-up: [`docs/brand/BUYER-DIAGRAM.md`](docs/brand/BUYER-DIAGRAM.md).
+
+```text
+  PR / CI ──► TORII GATE ──► merge signal (torii/gate)
+                 │
+     1. REVIEW + CHECK     tools on the diff; demote empty APPROVE
+     2. COMPOUND           skills that measure in · memory that pages in
+     3. MERGE SIGNAL       required check · labels · comment
+                 │
+                 ▼
+        next PR is quieter and sharper
+```
 
 Most AI PR bots optimize for *code quality comments*. Torii optimizes for **security merge authority**:
 
 - Injection, authz, secrets, XSS/CSRF, SSRF, path traversal, unsafe deserialize, crypto misuse  
 - Evidence from workspace tools (not invented vulns)  
 - Durable `.torii/` memory so false positives die twice  
-- Labels + optional required checks as the **gate**  
-- **Two compound loops** so the gate gets *stricter and quieter* over time — not noisier  
+- Labels + required check **`torii/gate`** as the merge signal  
+- Every run teaches the next — stricter blocks, less noise  
 
-```text
-Skills:  route → hit → fitness → dual → attr → inject
-Memory:  compound → write → consolidate → effective → federate → recall → tiers → search
-           │  integrity gate · utilization audit · budgeted soft recovery · torii_memory CLI
-```
+**CLI front door:** `python3 scripts/torii.py help` · `doctor` · `golden-path -- status` · `memory -- search`
 
-- Skills that do not contribute do not ship in the next prompt.  
-- Stale memory does not confirm findings or crowd the inject budget.  
-- Only path-evidenced findings compound; soft re-prompts share a paid-attempt budget.  
-- Scanners generate findings; Torii is the **merge authority** that compounds.  
+Buyer brief: [`PRODUCT.md`](PRODUCT.md) · brand: [`docs/brand/`](docs/brand/) · Advanced loop detail (engineers): PRODUCT → **Advanced**.
 
-**Recovery skill loop:** always budget → compact → tool util → budgeted re-prompt → paper traces (`skill_loop_status` L0–L3).
-
-**CLI front door:** `python3 scripts/torii.py help` · `doctor` · `memory -- search` · `budget -- status`
-
-See [`PRODUCT.md`](PRODUCT.md) (ICP + mental models A/B/C) and [`docs/brand/`](docs/brand/).
 ## Trigger
 
 ```text

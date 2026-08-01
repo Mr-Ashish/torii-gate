@@ -106,6 +106,15 @@ GROUPS: dict[str, dict[str, Any]] = {
             "golden-path -- report",
         ],
     },
+    "buyer": {
+        "script": "buyer_narrative_check.py",
+        "help": "Buyer narrative: one diagram, hide F-IDs (→8.0 simplicity)",
+        "examples": [
+            "buyer -- fixture",
+            "buyer -- status",
+            "buyer -- report",
+        ],
+    },
 }
 
 

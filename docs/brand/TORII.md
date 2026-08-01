@@ -38,24 +38,18 @@ A **torii** is the gate at a threshold — ordinary ground on one side, what mat
 | Context | Line |
 |---------|------|
 | **Elevator** | Torii is the security gate for every pull request. |
+| **Primary (buyer)** | The gate gets stricter and quieter over time — not noisier. |
 | **Hub71** | Torii gates AI-written code in CI — evidence-backed findings, false-positive memory, merge authority. |
 | **AppSec fatigue** | The gate gets stricter and quieter over time — not noisier. |
-| **Eng** | Maker agent + checker panel + skill loop: route → hit → fitness → dual → attr → inject. |
+| **Buyer diagram** | Review + check → compound (skills + memory) → merge signal `torii/gate`. |
+| **Eng (Advanced)** | Maker + checker; skill loop route→hit→fitness→dual→attr→inject; memory pages cold truth. |
 | **Skills** | Skills that do not contribute do not ship in the next prompt. |
 | **Memory** | Stale memory does not confirm findings or crowd the inject budget. |
 | **Memory (AppSec)** | False positives die twice — and true positives stay sharp. |
-| **Memory CLI** | One front door for memory tools — agents call `torii_memory`, not tribal scripts. |
-| **Integrity** | Only path-evidenced findings compound; weak narrative never poisons the store. |
-| **Cost control** | Soft re-prompts recover quality within a shared paid-attempt budget. |
-| **Dual loops** | Skills that measure in; memory that pages in — both compound. |
-| **Hub-archival** | Hub-archival skills that never page cold memory do not silently APPROVE. |
-| **Hub-archival (AppSec)** | Cross-tenant retrieval heat becomes next-run always budget — without sharing paths or snippets. |
-| **Hub-archival loop** | util → critic → re-prompt → fitness → hub inject — one measured `hub_archival_loop_ok` bit. |
-| **GEPA refine (eng)** | Skills that fail tool util get refined, measured, multi-tenant promoted, decayed when dual_fail is chronic, and dual_pass-revived — or stay out of always budget. |
-| **GEPA refine (AppSec)** | Idle recovery skills cannot silently APPROVE after GEPA refine inject or multi-tenant decay. |
-| **GEPA refine loop** | refine → dual-gate → dual_pp → promote → hub critic → chronic decay → multi-tenant demote → dual_pass revive + free-rider MT + contribution_pp floor — one measured `refine_loop_ok` bit (F165–F185 / F184 pack / F178 pack). |
 | **vs SAST** | Scanners generate findings; Torii is the merge authority that compounds. |
 | **Tagline** | Nothing ships without crossing the gate. |
+
+**Buyer diagram (canonical):** [`BUYER-DIAGRAM.md`](BUYER-DIAGRAM.md) · landing collapses A–E into three beats; F-IDs only under Advanced / `docs/research/`.
 
 ---
 
@@ -71,45 +65,35 @@ A **torii** is the gate at a threshold — ordinary ground on one side, what mat
 
 ---
 
-## Skill compound loop (product story, F84–F89)
+## Buyer story (primary)
 
-Customer-facing diagram (same as PRODUCT mental model B):
+See [`BUYER-DIAGRAM.md`](BUYER-DIAGRAM.md). Three beats only on customer surfaces:
+
+1. **Review + check** — tools on the diff; demote empty APPROVE  
+2. **Compound** — skills measure in; memory pages in; quieter next PR  
+3. **Merge signal** — required check **`torii/gate`**
+
+## Advanced — skill & memory loops (engineers)
+
+Customer-facing stage strings (not for hero copy):
 
 `route → hit → fitness → dual → attr → inject`
 
-This is the differentiator vs static “agent skills.md” dumps: Torii **measures contribution**, demotes free-riders, and only full-injects skills that fire.
-
-### Recovery skill loop (F119–F123)
-
-Always-on recovery skills (memory CLI · product doctor · second-agent critic) get a **capped always budget**, **compact bodies**, post-run **tool utilization** scoring, and **one shared soft re-prompt** under F108. Traces archive `skill-router.json`, `recovery-skill-util.json`, and `recovery-skill-reprompt.env` for paper eval — inject without tools is not success.
-
-### Measured product scorecard (F128–F129)
-
-Install/ops surface — not marketing copy:
-
-```bash
-python3 scripts/torii.py doctor      # fails closed without recovery_hub_gap_ok
-python3 scripts/torii.py scorecard   # doctor + loop L0–L3 + critic demote_rate
-```
-
-Reports **critic_approve_demote_rate** (offline weak + hub-gap idle APPROVE packs), recovery hub-gap critic readiness, and skill/memory loop levels. Landing and `docs/brand/scorecard-metrics.md` tell the same story: **evidence over slogans**.
-
-
-## Memory compound loop (product story, F93–F108)
-
-Customer-facing diagram (PRODUCT mental model C):
-
 ```text
 compound → write → consolidate → effective → federate → recall → tiers → search
-   │                                                                    │
-   ├─ integrity gate (path only)          front door: torii_memory CLI ─┤
-   ├─ utilization audit mid-review        soft re-prompt (budgeted) ────┤
-   └─ privacy-safe multi-tenant export    shared max paid retries ──────┘
 ```
 
-Differentiator vs “dump MEMORY.md forever”: Torii **events on write**, **integrity-gates compound**, **decays and evicts**, **strength-ranks** TP confirms, **tiers** core vs archival, **pages cold memory** on demand, **measures** whether the agent actually used memory tools, and **caps** paid re-prompts so recovery cannot double-spend by default.
+Differentiator vs static skill dumps / forever MEMORY.md: measure contribution, demote free-riders, integrity-gate compound, tier core vs archival, budget soft re-prompts.
 
-Ops readiness: `python3 scripts/torii_memory.py doctor` + `memory_loop_status` L0–L3 — same discipline as the skill loop.
+Ops (not marketing):
+
+```bash
+python3 scripts/torii.py doctor
+python3 scripts/torii.py scorecard
+python3 scripts/buyer_narrative_check.py fixture
+```
+
+Research IDs and hub-archival / GEPA refine depth: `PRODUCT.md` → **Advanced** · `docs/research/`.
 
 ---
 
