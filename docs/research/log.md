@@ -28,7 +28,7 @@ Critic demote without budgeted re-prompt is post-mortem only. Highest ROI: one F
 **Budgeted recovery before reject** — shared attempt ceiling compounds quality without runaway spend.
 
 ### SHA
-`PENDING`
+`357f4bf7eef10ade5108057e61fcb6ed5202bd47`
 
 
 ## 2026-08-01 — F151 recon-warm hub demote-eval + doctor surface
