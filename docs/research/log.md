@@ -30,7 +30,7 @@ JTBD (#3) · simplicity (#12)
 product brief + quieter chart match landing cost honesty
 
 ### SHA
-`(pending push)`
+`3a19477da9bd1fa883161a4cc70000ffb5c7eefa`
 
 
 ## 2026-08-01 — LANDING_COST: measured dogfood p50 on landing + install day-2
