@@ -118,6 +118,8 @@ compound → write → consolidate → effective_critic → federate → scoped_
 
 **Integrity federate (F107):** path-evidenced compound TPs export as **privacy-safe hub signals** (theme/CWE/keywords/basenames + tenant hash only) so multi-tenant learning compounds without snippets or home paths.
 
+**Re-prompt budget (F108):** F49 (zero-tool) and F106 (memory gap) share a **max paid retry** (default 1). Quality recovery stays available; double Hermes spend does not stack by default.
+
 **Ops:** `python3 scripts/memory_loop_status.py scorecard` → L0–L3. Smoke requires L3 on the hub tree. CI job summary annotates readiness; optional advisory `torii/memory-loop` via `TORII_MEMORY_LOOP_STATUS_COMMIT=1`.
 
 ---

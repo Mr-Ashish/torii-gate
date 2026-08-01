@@ -574,9 +574,16 @@ export HERMES_LOG_OFFSET="$LOG_OFFSET"
 chmod +x "$TORII_ROOT/scripts/capture-hermes-loop.py" 2>/dev/null || true
 python3 "$TORII_ROOT/scripts/capture-hermes-loop.py" || notice "capture-hermes-loop soft-failed"
 
+# F108: shared soft-re-prompt budget (F49 + F106 share max_extra paid retries)
+REPROMPT_BUDGET_HELPER="$TORII_ROOT/scripts/reprompt_budget.py"
+if [[ -f "$REPROMPT_BUDGET_HELPER" ]]; then
+  python3 "$REPROMPT_BUDGET_HELPER" init --out-dir "$OUT_DIR" >/dev/null 2>&1 || true
+fi
+
 # ---------------------------------------------------------------------------
 # F49 / H15: soft re-prompt once when tool_turns=0 on multi-file code PRs.
 # Runs *before* F45 fail-closed so a second agentic attempt can recover quality.
+# F108: gated by shared re-prompt budget (default max_extra=1).
 # ---------------------------------------------------------------------------
 TOOL_TURNS_GATE_HELPER="$TORII_ROOT/scripts/tool_turns_gate.py"
 REPROMPT_ATTEMPTED=0
@@ -595,9 +602,24 @@ if [[ -f "$TOOL_TURNS_GATE_HELPER" && $TIMED_OUT -eq 0 && "${HERMES_CLI_ARGV_BRO
   _rp_do="$(printf '%s\n' "$_rp_kv" | sed -n 's/^reprompt=//p' | head -1)"
   TT_BEFORE="$(printf '%s\n' "$_rp_kv" | sed -n 's/^tool_turns=//p' | head -1)"
   REPROMPT_REASON="$(printf '%s\n' "$_rp_kv" | sed -n 's/^reason=//p' | head -1)"
+  # F108 budget gate
+  if [[ "$_rp_do" == "1" || "$_rp_do" == "true" ]] && [[ -f "$REPROMPT_BUDGET_HELPER" ]]; then
+    _bud_kv="$(python3 "$REPROMPT_BUDGET_HELPER" allow --out-dir "$OUT_DIR" --kind f49 2>/dev/null || true)"
+    _bud_allow="$(printf '%s\n' "$_bud_kv" | sed -n 's/^allow=//p' | head -1)"
+    if [[ "$_bud_allow" != "1" && "$_bud_allow" != "true" ]]; then
+      _bud_reason="$(printf '%s\n' "$_bud_kv" | sed -n 's/^reason=//p' | head -1)"
+      notice "F108 re-prompt budget blocked F49 · reason=${_bud_reason:-budget}"
+      REPROMPT_REASON="budget_blocked:${_bud_reason:-exhausted}"
+      _rp_do="0"
+    fi
+  fi
   if [[ "$_rp_do" == "1" || "$_rp_do" == "true" ]]; then
     REPROMPT_ATTEMPTED=1
     notice "F49 soft re-prompt · tool_turns=${TT_BEFORE:-0} files=${FILE_COUNT:-?} (H15 zero-tool multi-file)"
+    # F108: reserve budget slot as soon as we commit to a paid re-run
+    if [[ -f "$REPROMPT_BUDGET_HELPER" ]]; then
+      python3 "$REPROMPT_BUDGET_HELPER" consume --out-dir "$OUT_DIR" --kind f49 --note "attempt_start" >/dev/null 2>&1 || true
+    fi
     # Archive attempt-1 artifacts for comparison
     cp -f "$RAW_OUT" "$OUT_DIR/review-${PR_NUMBER}.attempt1.raw.md" 2>/dev/null || true
     [[ -f "$STDERR_FILE" ]] && cp -f "$STDERR_FILE" "$OUT_DIR/hermes-${PR_NUMBER}.attempt1.stderr" 2>/dev/null || true
@@ -714,6 +736,10 @@ PY
         else
           notice "F49 soft re-prompt still tool_turns=${TT_AFTER:-0} — F45 gate may still fire"
         fi
+        # F108: update recovered flag on already-consumed f49 slot
+        if [[ -f "$REPROMPT_BUDGET_HELPER" && "${REPROMPT_RECOVERED}" == "1" ]]; then
+          python3 "$REPROMPT_BUDGET_HELPER" consume --out-dir "$OUT_DIR" --kind f49 --recovered --note "tool_turns ${TT_BEFORE:-?}→${TT_AFTER:-?}" >/dev/null 2>&1 || true
+        fi
       fi
       {
         echo "reprompt=1"
@@ -773,7 +799,7 @@ fi
 # ---------------------------------------------------------------------------
 # F106: soft re-prompt once when memory tools were offered but unused after
 # tools ran (utilization_gap). Complements F49 (zero tools) — does not stack
-# when tool_turns==0 (defers to F49).
+# when tool_turns==0 (defers to F49). F108: shared budget may block after F49.
 # ---------------------------------------------------------------------------
 MEM_REPROMPT_ATTEMPTED=0
 MEM_REPROMPT_RECOVERED=0
@@ -805,9 +831,24 @@ if [[ -f "$MEM_AUDIT_HELPER" && $TIMED_OUT -eq 0 && "${HERMES_CLI_ARGV_BROKEN:-0
       MEM_HIT_BEFORE="$(printf '%s\n' "$_mrp_kv" | sed -n 's/^hit_count=//p' | head -1)"
       MEM_REPROMPT_REASON="$(printf '%s\n' "$_mrp_kv" | sed -n 's/^reason=//p' | head -1)"
       _mrp_tt="$(printf '%s\n' "$_mrp_kv" | sed -n 's/^tool_call_turns=//p' | head -1)"
+      # F108 budget gate (e.g. F49 already consumed the only extra attempt)
+      if [[ "$_mrp_do" == "1" || "$_mrp_do" == "true" ]] && [[ -f "$REPROMPT_BUDGET_HELPER" ]]; then
+        _mbud_kv="$(python3 "$REPROMPT_BUDGET_HELPER" allow --out-dir "$OUT_DIR" --kind f106 2>/dev/null || true)"
+        _mbud_allow="$(printf '%s\n' "$_mbud_kv" | sed -n 's/^allow=//p' | head -1)"
+        if [[ "$_mbud_allow" != "1" && "$_mbud_allow" != "true" ]]; then
+          _mbud_reason="$(printf '%s\n' "$_mbud_kv" | sed -n 's/^reason=//p' | head -1)"
+          notice "F108 re-prompt budget blocked F106 · reason=${_mbud_reason:-budget}"
+          MEM_REPROMPT_REASON="budget_blocked:${_mbud_reason:-exhausted}"
+          _mrp_do="0"
+        fi
+      fi
       if [[ "$_mrp_do" == "1" || "$_mrp_do" == "true" ]]; then
         MEM_REPROMPT_ATTEMPTED=1
         notice "F106 memory soft re-prompt · hits=${MEM_HIT_BEFORE:-0} tool_turns=${_mrp_tt:-?} (utilization_gap)"
+        # F108: reserve budget slot for paid memory re-run
+        if [[ -f "$REPROMPT_BUDGET_HELPER" ]]; then
+          python3 "$REPROMPT_BUDGET_HELPER" consume --out-dir "$OUT_DIR" --kind f106 --note "attempt_start" >/dev/null 2>&1 || true
+        fi
         # Archive attempt-1 if F49 did not already
         if [[ ! -f "$OUT_DIR/review-${PR_NUMBER}.attempt1.raw.md" ]]; then
           cp -f "$RAW_OUT" "$OUT_DIR/review-${PR_NUMBER}.attempt1.raw.md" 2>/dev/null || true
@@ -905,6 +946,10 @@ PY
               notice "F106 memory re-prompt recovered hits=${MEM_HIT_AFTER} (was ${MEM_HIT_BEFORE:-0})"
             else
               notice "F106 memory re-prompt still hits=${MEM_HIT_AFTER:-0} — F105 gap may remain"
+            fi
+            # F108: mark recovered on f106 slot
+            if [[ -f "$REPROMPT_BUDGET_HELPER" && "${MEM_REPROMPT_RECOVERED}" == "1" ]]; then
+              python3 "$REPROMPT_BUDGET_HELPER" consume --out-dir "$OUT_DIR" --kind f106 --recovered --note "hits ${MEM_HIT_BEFORE:-?}→${MEM_HIT_AFTER:-?}" >/dev/null 2>&1 || true
             fi
           fi
           {

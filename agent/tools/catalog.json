@@ -1,9 +1,21 @@
 {
   "schema_version": 1,
-  "feature": "F107",
+  "feature": "F108",
   "description": "Torii agent tool catalog \u2014 research \u2192 eval \u2192 adopt pipeline",
-  "updated_at": "2026-08-01T04:13:15Z",
+  "updated_at": "2026-08-01T04:21:17Z",
   "tools": [
+    {
+      "id": "reprompt-budget",
+      "name": "Shared re-prompt budget",
+      "status": "adopted",
+      "source": "shipped",
+      "kind": "workflow_tool",
+      "toolset": "terminal",
+      "rationale": "F108: cap stacked F49+F106 paid Hermes re-runs (default max_extra=1)",
+      "safety": "fail-open only if helper missing; default conserves spend",
+      "adopted_at": "2026-08-01T04:21:17Z",
+      "feature": "F108"
+    },
     {
       "id": "memory-compound-federate",
       "name": "Integrity compound federate",

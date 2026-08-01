@@ -40,3 +40,4 @@ Paper/eval-safe slim traces (redacted). Large raw logs may be gitignored; always
 | 2026-08-01T03:59:00Z | pytorch/pytorch | 191813 | deepseek/deepseek-v4-pro | modal+f105 | — | `20260801-0359-pytorch-pytorch-PR191813-modal-f105` |
 | 2026-08-01T04:07:00Z | pytorch/pytorch | 191813 | deepseek/deepseek-v4-pro | modal+f106 | recovered hits 0→5 | `20260801-0407-pytorch-pytorch-PR191813-modal-f106` |
 | 2026-08-01T04:15:00Z | pytorch/pytorch | 191813 | deepseek/deepseek-v4-pro | modal+f107 | compound federate=0 (correct) | `20260801-0415-pytorch-pytorch-PR191813-modal-f107` |
+| 2026-08-01T04:24:00Z | pytorch/pytorch | 191813 | deepseek/deepseek-v4-pro | modal+f108 | budget max=1 F106 only | `20260801-0424-pytorch-pytorch-PR191813-modal-f108` |

@@ -1,0 +1,6 @@
+{
+  "id": "reprompt-budget",
+  "feature": "F108",
+  "status": "adopted",
+  "one_liner": "Shared max paid soft re-prompts across F49+F106 (default 1)"
+}

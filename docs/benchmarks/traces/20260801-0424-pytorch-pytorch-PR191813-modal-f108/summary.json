@@ -1,0 +1,25 @@
+{
+  "feature": "F108",
+  "repo": "pytorch/pytorch",
+  "pr": 191813,
+  "model": "deepseek/deepseek-v4-pro",
+  "host": "modal",
+  "bit3": "OK",
+  "elapsed_s": 208.6,
+  "log_streaming": true,
+  "tool_call_turns": 8,
+  "post_comment": 0,
+  "verdict": "REQUEST_CHANGES",
+  "reprompt_budget": {
+    "max_extra_default": 1,
+    "f106_ran": true,
+    "f49_ran": false,
+    "note": "F106 consumed sole budget slot; no double re-prompt"
+  },
+  "f106": {
+    "hits": "0\u21921"
+  },
+  "scored_at": "2026-08-01T04:25:31Z",
+  "modal_app": "https://modal.com/apps/mr-ashish/main/ap-mEQUTj3BsOcFIlkSpCFjDC",
+  "tests": "581 passed"
+}

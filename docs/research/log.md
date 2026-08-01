@@ -1,6 +1,35 @@
 # Torii research → product log
 
 
+## 2026-08-01 — F108 shared soft-re-prompt budget (F49+F106)
+
+### Papers / posts
+- Agent cost 2026: multi-turn re-prompts roughly double LLM spend.
+- Braintrust/Portal26: attempt ceilings + kill switches per agent run.
+- Torii live: F49+F106 stacking → ~2× DeepSeek wall-time/cost without a shared cap.
+
+### OSS design patterns stolen
+1. **Shared max_extra** budget across recovery kinds (default 1).
+2. **Reserve on attempt start** so failed paid re-runs still consume the slot.
+3. **kind once** + remaining counter — F106 cannot fire after F49 at max=1.
+
+### Insight
+Soft re-prompts recover quality (F106 hits 0→1) but unbounded stacking is a cost bug. Highest ROI: deterministic shared budget before paid Hermes re-entry.
+
+### Feature shipped (F108)
+- `scripts/reprompt_budget.py` init/allow/consume/status/fixture
+- Wire in `run-hermes-review.sh` before F49 and F106
+- Toggles `TORII_REPROMPT_BUDGET` + `TORII_REPROMPT_MAX_EXTRA` (default 1)
+- PRODUCT re-prompt budget one-liner
+
+### Metric
+- Offline fixture: max1 blocks second; max2 allows both; fixture_pass=1
+- Live Modal pytorch#191813: BIT3_OK ~209s; F106 recovered hits 0→1 within budget; log_streaming=true
+- pytest: 581 passed
+
+### SHA
+_pending_
+
 ## 2026-08-01 — F107 privacy-safe federate of integrity-gated compound TPs
 
 ### Papers / posts
