@@ -26,7 +26,7 @@ Recovery re-prompts prove the agent *can* use memory tools — self-evolution mu
 - pytest 588; Live Modal pytorch#191813 BIT3_OK ~164s log_streaming=true
 
 ### SHA
-_pending_
+`ec96384af78e9a354d83a813e1316b666b3a4b0f`
 
 ## 2026-08-01 — F111 smoke product doctor + insecure compound/federate proof
 
