@@ -30,7 +30,7 @@ install (#7) · enterprise (#9) · public eval trust · JTBD
 commercial golden path documents enterprise tenant; public-eval cost matches vault
 
 ### SHA
-_pending_
+4f96b39a40a7923bb56dfd29176492108edc2baa
 
 
 ## 2026-08-01 — GTM_ENT_OPS: README/landing enterprise + fail-closed on status
