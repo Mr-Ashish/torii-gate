@@ -434,7 +434,7 @@
     },
     {
       "id": "memory-tiers",
-      "name": "Letta-style core/archival memory tiers (F97)",
+      "name": "Letta-style core/archival memory tiers (F97/F147)",
       "status": "adopted",
       "script": "scripts/memory_tiers.py",
       "feature": "F97",

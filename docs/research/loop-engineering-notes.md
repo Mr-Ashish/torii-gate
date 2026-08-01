@@ -41,3 +41,4 @@ Also mirrored from LOOP.md budget/observability: each fire records metrics (reca
 - F144: temporal multi-hop themes expand archival auto → core promote (MemGPT+Zep)
 - F145: supersede-aware archival promote (MemoTime temporal faithfulness on F144 paging)
 - F146: archival reconsolidation on promote (retrieval warms durable TP store)
+- F147: recon-warm → core tier promote (F146 timestamps compound into F97 core budget)

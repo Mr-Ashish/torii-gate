@@ -210,6 +210,8 @@ budget always → compact body → score tool_hit → util gap? → budgeted re-
 
 **Archival reconsolidation (F146):** successful non-superseded promote **warms** durable TP signatures (`hits++`, `last_retrieved_at`, soft `effective_score`) and writes `.torii/archival-reconsolidation.json` (`TORII_ARCHIVAL_RECONSOLIDATE=1`) — retrieval is not write-only inject; next PR ranks proven themes higher.
 
+**Recon-warm → core tier (F147):** Letta-style tiers promote items with recent `last_retrieved_at` / F146 reconsolidation into **core** inject (`TORII_MEMORY_RECON_CORE=1`, window `TORII_MEMORY_RECON_CORE_HOURS=168`). Stale or superseded retrieves stay archival — retrieval warm compounds into always-attend budget.
+
 **Ops:** `python3 scripts/memory_loop_status.py scorecard` → L0–L3. Smoke requires L3 on the hub tree. CI job summary annotates readiness; optional advisory `torii/memory-loop` via `TORII_MEMORY_LOOP_STATUS_COMMIT=1`.
 
 ---

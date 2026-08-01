@@ -1,5 +1,36 @@
 # Torii research → product log
 
+## 2026-08-01 — F147 recon-warm → core tier promote
+
+### Papers / posts
+- MemGPT/Letta: core = always-in-context; archival cold until paged.
+- F146 reconsolidation stamps last_retrieved_at without tier promote.
+- OS hierarchy must compound retrieval warm into core budget.
+
+### OSS design patterns stolen
+1. recon_warm_meta windowed last_retrieved / recon flag (skip superseded).
+2. classify_item warm → core; metrics core_recon_warm.
+3. scoped_memory_recall passes recon fields on TP load.
+4. TORII_MEMORY_RECON_CORE + HOURS; fixture f147_ok.
+
+### Insight
+Reconsolidation without tier promotion leaves warm TPs archival. Highest ROI: F147 promotes recent retrieves into core inject slots.
+
+### Feature shipped (F147)
+- memory_tiers recon-warm core promote + scoped recall field pass-through
+- fixture f147_ok; PRODUCT/research
+
+### Metric
+- Offline: fixture f147_ok; pytest 619 passed
+- Live: Modal pytorch#191813 BIT3_OK ~59s REQUEST_CHANGES POST_COMMENT=0 log_streaming=true
+
+### Loop-engineering / Hermes practice used
+**Warm store → hot context** — retrieval write-back compounds into OS hierarchy inject.
+
+### SHA
+`PENDING`
+
+
 ## 2026-08-01 — F146 archival reconsolidation on promote
 
 ### Papers / posts

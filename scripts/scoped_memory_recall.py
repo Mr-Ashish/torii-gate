@@ -164,6 +164,12 @@ class MemoryItem:
     decay_weight: float | None = None
     effective_score: float | None = None
     last_seen: str = ""
+    # F146/F147 reconsolidation → core tier promote
+    last_retrieved_at: str = ""
+    reconsolidated_at: str = ""
+    reconsolidation_feature: str = ""
+    active: bool | None = None
+    superseded_by: str = ""
 
     def to_dict(self) -> dict[str, Any]:
         return asdict(self)
@@ -243,6 +249,12 @@ def load_tp_items(
             except (TypeError, ValueError):
                 return None
 
+        active_raw = s.get("active")
+        active_v: bool | None
+        if active_raw is None:
+            active_v = None
+        else:
+            active_v = bool(active_raw)
         out.append(
             MemoryItem(
                 id=_item_id("tp", scope, raw_id, theme),
@@ -262,6 +274,13 @@ def load_tp_items(
                 decay_weight=_f(s.get("decay_weight")),
                 effective_score=_f(s.get("effective_score")),
                 last_seen=str(s.get("last_seen") or s.get("updated_at") or ""),
+                last_retrieved_at=str(
+                    s.get("last_retrieved_at") or s.get("reconsolidated_at") or ""
+                ),
+                reconsolidated_at=str(s.get("reconsolidated_at") or ""),
+                reconsolidation_feature=str(s.get("reconsolidation_feature") or ""),
+                active=active_v,
+                superseded_by=str(s.get("superseded_by") or ""),
             )
         )
     return out
@@ -573,6 +592,17 @@ def load_store(path: Path | None = None, root: Path | None = None) -> list[Memor
                 decay_weight=_f(d.get("decay_weight")),
                 effective_score=_f(d.get("effective_score")),
                 last_seen=str(d.get("last_seen") or ""),
+                last_retrieved_at=str(
+                    d.get("last_retrieved_at") or d.get("reconsolidated_at") or ""
+                ),
+                reconsolidated_at=str(d.get("reconsolidated_at") or ""),
+                reconsolidation_feature=str(d.get("reconsolidation_feature") or ""),
+                active=(
+                    None
+                    if d.get("active") is None
+                    else bool(d.get("active"))
+                ),
+                superseded_by=str(d.get("superseded_by") or ""),
             )
         )
     return out

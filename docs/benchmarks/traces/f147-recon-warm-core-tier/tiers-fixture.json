@@ -1,0 +1,40 @@
+{
+  "feature": "F97",
+  "feature_recon_core": "F147",
+  "f147": true,
+  "fixture_pass": true,
+  "f147_ok": true,
+  "core_ids": [
+    "cmdi-hot",
+    "fp-path",
+    "pickle-recon",
+    "sqli-path"
+  ],
+  "archival_ids": [
+    "dead-recon",
+    "fed-weak",
+    "old-recon",
+    "xss-noise"
+  ],
+  "core_has_path": true,
+  "core_has_hot": true,
+  "noise_archival": true,
+  "noise_not_core": true,
+  "recon_warm_core": true,
+  "stale_not_core": true,
+  "cold_without_f147": true,
+  "render_ok": true,
+  "counts": {
+    "core": 4,
+    "archival": 4,
+    "recall": 0,
+    "labeled": 8,
+    "recon_warm_core": 1
+  },
+  "metrics": {
+    "core_path_matched": 2,
+    "core_high_eff": 1,
+    "core_recon_warm": 1,
+    "archival_low_eff": 4
+  }
+}

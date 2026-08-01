@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""F97: Letta/MemGPT-style core · archival · recall memory tiers (tools-as-code).
+"""F97/F147: Letta/MemGPT-style core · archival · recall memory tiers (tools-as-code).
 
 Research drivers (patterns only — no vendored Letta runtime):
   - MemGPT / Letta: OS hierarchy — core (always-in-context RAM) vs archival
@@ -7,21 +7,24 @@ Research drivers (patterns only — no vendored Letta runtime):
   - Torii F75 flat budget dump treated path-matched and stale theme-only equal
     once they entered the top-N lists
   - F94 effective_score + F96 promoted strength already measure "how hot" a fact is
+  - F146 archival reconsolidation stamps last_retrieved_at / reconsolidated_at
+  - Without tier promotion, reconsolidated cold TPs stay archival until path match
 
 Product thesis:
   Highest ROI context control: **deterministic tier assignment** so inject always
-  prioritizes core (path-matched / high-effective / run-scope) and only fills
-  remaining budget from archival (low-effective theme noise stays cold).
+  prioritizes core (path-matched / high-effective / **recently reconsolidated** /
+  run-scope) and only fills remaining budget from archival (low-effective theme
+  noise stays cold). F147 compounds F146 retrieval warm into core inject slots.
 
 Tiers:
-  core      — path match > 0 OR effective ≥ floor OR scope=run OR high-hit path FP
+  core      — path match > 0 OR effective ≥ floor OR recon-warm OR scope=run OR path FP
   archival  — remaining TP/FP/federated (searchable via store; sparse inject)
   recall    — optional run-distill / MEMORY.md pointers (count-only by default)
 
 Commands:
   classify  — label scored items from store+paths
   inject    — produce tiered prompt section (or dry JSON)
-  fixture   — hermetic: core has path-matched, archival has weak high-hit noise
+  fixture   — hermetic: path core + recon-warm core + noise archival
   status    — env floors / last counts
 
 Env:
@@ -31,6 +34,8 @@ Env:
   TORII_MEMORY_CORE_MAX        default 6
   TORII_MEMORY_ARCHIVAL_MAX    default 4
   TORII_MEMORY_RECALL_MAX      default 2
+  TORII_MEMORY_RECON_CORE      1 (default) | 0  — F147 recon-warm → core
+  TORII_MEMORY_RECON_CORE_HOURS  default 168 (7d window for last_retrieved_at)
 """
 
 from __future__ import annotations
@@ -41,11 +46,12 @@ import os
 import re
 import sys
 import tempfile
-from datetime import datetime, timezone
+from datetime import datetime, timezone, timedelta
 from pathlib import Path
 from typing import Any
 
 FEATURE = "F97"
+FEATURE_RECON_CORE = "F147"
 SCHEMA = 1
 MARKER = "<!-- torii-f97-memory-tiers -->"
 TIERS = ("core", "archival", "recall")
@@ -105,6 +111,20 @@ def recall_max() -> int:
     return _int_env("TORII_MEMORY_RECALL_MAX", 2)
 
 
+def recon_core_enabled() -> bool:
+    """F147: promote recently reconsolidated / retrieved items into core."""
+    raw = (os.environ.get("TORII_MEMORY_RECON_CORE") or "1").strip().lower()
+    return raw not in _FALSEY
+
+
+def recon_core_hours() -> float:
+    raw = (os.environ.get("TORII_MEMORY_RECON_CORE_HOURS") or "168").strip()
+    try:
+        return max(1.0, min(24.0 * 30, float(raw)))
+    except ValueError:
+        return 168.0
+
+
 def _eff(item: dict[str, Any]) -> float:
     for k in ("effective_score", "effective"):
         if item.get(k) is not None:
@@ -120,6 +140,87 @@ def _path_match(item: dict[str, Any]) -> float:
         return float(item.get("path_match") or 0.0)
     except (TypeError, ValueError):
         return 0.0
+
+
+def _parse_ts(raw: Any) -> datetime | None:
+    if raw is None:
+        return None
+    s = str(raw).strip()
+    if not s:
+        return None
+    try:
+        if s.endswith("Z"):
+            s = s[:-1] + "+00:00"
+        return datetime.fromisoformat(s)
+    except ValueError:
+        return None
+
+
+def recon_warm_meta(
+    item: dict[str, Any],
+    *,
+    as_of: datetime | None = None,
+    hours: float | None = None,
+) -> dict[str, Any]:
+    """F147: whether item is warm from F146 reconsolidation / last retrieve."""
+    out: dict[str, Any] = {
+        "warm": False,
+        "reason": "",
+        "age_h": None,
+        "feature": FEATURE_RECON_CORE,
+    }
+    if not recon_core_enabled():
+        out["reason"] = "recon_core_off"
+        return out
+    # never promote superseded / inactive
+    if item.get("active") is False or item.get("superseded_by"):
+        out["reason"] = "superseded"
+        return out
+    if item.get("superseded") or item.get("tier_note") == "superseded":
+        out["reason"] = "superseded"
+        return out
+    now = as_of or datetime.now(timezone.utc)
+    if now.tzinfo is None:
+        now = now.replace(tzinfo=timezone.utc)
+    window_h = hours if hours is not None else recon_core_hours()
+    # explicit flag from reconsolidate_hits
+    if item.get("reconsolidated") is True or str(
+        item.get("reconsolidation_feature") or ""
+    ).upper() in ("F146", FEATURE_RECON_CORE):
+        # still require recency if timestamp present; else treat as warm
+        ts = _parse_ts(item.get("last_retrieved_at") or item.get("reconsolidated_at"))
+        if ts is None:
+            out["warm"] = True
+            out["reason"] = "recon_flag"
+            return out
+        if ts.tzinfo is None:
+            ts = ts.replace(tzinfo=timezone.utc)
+        age_h = (now - ts).total_seconds() / 3600.0
+        out["age_h"] = round(age_h, 3)
+        if age_h <= window_h:
+            out["warm"] = True
+            out["reason"] = "recon_flag_fresh"
+            return out
+        out["reason"] = "recon_flag_stale"
+        return out
+    ts = _parse_ts(item.get("last_retrieved_at") or item.get("reconsolidated_at"))
+    if ts is None:
+        out["reason"] = "no_retrieve_ts"
+        return out
+    if ts.tzinfo is None:
+        ts = ts.replace(tzinfo=timezone.utc)
+    age_h = (now - ts).total_seconds() / 3600.0
+    out["age_h"] = round(age_h, 3)
+    if age_h <= window_h:
+        out["warm"] = True
+        out["reason"] = "last_retrieved"
+        return out
+    out["reason"] = "retrieve_stale"
+    return out
+
+
+def is_recon_warm(item: dict[str, Any], **kwargs: Any) -> bool:
+    return bool(recon_warm_meta(item, **kwargs).get("warm"))
 
 
 def classify_item(item: dict[str, Any], *, floor: float | None = None) -> str:
@@ -147,6 +248,9 @@ def classify_item(item: dict[str, Any], *, floor: float | None = None) -> str:
     # path-anchored FP always core (prevent re-raise)
     if kind == "fp" and (item.get("path") or ""):
         return "core"
+    # F147: recently reconsolidated / retrieved cold TPs promote to core
+    if is_recon_warm(item):
+        return "core"
     # very high hits with some effective still archival if no path (noise)
     if hits >= 15 and eff < fl * 0.5:
         return "archival"
@@ -172,16 +276,33 @@ def tier_partition(
         if not isinstance(it, dict):
             continue
         row = dict(it)
+        warm = recon_warm_meta(row)
+        row["recon_warm"] = bool(warm.get("warm"))
+        if warm.get("warm"):
+            row["recon_warm_reason"] = warm.get("reason")
+            row["recon_warm_age_h"] = warm.get("age_h")
         tier = classify_item(row, floor=fl)
         row["tier"] = tier
+        if tier == "core" and warm.get("warm") and not (
+            _path_match(row) > 0 or _eff(row) >= fl
+        ):
+            row["tier_note"] = row.get("tier_note") or "recon_warm_core"
+            row["tier_feature"] = FEATURE_RECON_CORE
         labeled.append(row)
 
-    # sort within tier by score / path_match / effective
+    # sort within tier by score / path_match / effective / recon-warm recency
     def _key(x: dict[str, Any]) -> tuple:
+        age = x.get("recon_warm_age_h")
+        try:
+            age_v = float(age) if age is not None else 1e9
+        except (TypeError, ValueError):
+            age_v = 1e9
         return (
             -float(x.get("score") or 0),
             -_path_match(x),
             -_eff(x),
+            -int(bool(x.get("recon_warm"))),
+            age_v,  # fresher first among recon-warm
             -int(x.get("hits") or 1),
         )
 
@@ -204,11 +325,18 @@ def tier_partition(
         y["tier_note"] = "core_overflow"
         archival.append(y)
 
+    recon_core_n = sum(1 for x in core if x.get("recon_warm"))
     return {
         "feature": FEATURE,
+        "feature_recon_core": FEATURE_RECON_CORE if recon_core_enabled() else None,
         "schema": SCHEMA,
         "enabled": enabled(),
         "floor": fl,
+        "recon_core": {
+            "enabled": recon_core_enabled(),
+            "hours": recon_core_hours(),
+            "core_n": recon_core_n,
+        },
         "budgets": {"core": cm, "archival": am, "recall": rm},
         "core": core,
         "archival": archival,
@@ -218,10 +346,12 @@ def tier_partition(
             "archival": len(archival),
             "recall": len(recall),
             "labeled": len(labeled),
+            "recon_warm_core": recon_core_n,
         },
         "metrics": {
             "core_path_matched": sum(1 for x in core if _path_match(x) > 0),
             "core_high_eff": sum(1 for x in core if _eff(x) >= fl),
+            "core_recon_warm": recon_core_n,
             "archival_low_eff": sum(1 for x in archival if _eff(x) < fl),
         },
         "scored_at": _now(),
@@ -292,16 +422,35 @@ def render_tiers_section(part_or_result: dict[str, Any]) -> str:
     recall = tiers.get("recall") or []
     floor = tiers.get("floor", core_floor())
     budgets = tiers.get("budgets") or {}
+    recon = tiers.get("recon_core") or part_or_result.get("recon_core") or {}
+    recon_n = int(
+        (tiers.get("counts") or {}).get("recon_warm_core")
+        or recon.get("core_n")
+        or sum(1 for x in core if x.get("recon_warm"))
+    )
+    title = (
+        "## Memory tiers (F97/F147 — Letta core/archival + recon-warm promote)"
+        if recon_core_enabled() or recon_n > 0
+        else "## Memory tiers (F97 — Letta-style core / archival)"
+    )
     lines = [
         MARKER,
-        "## Memory tiers (F97 — Letta-style core / archival)",
+        title,
         "",
         "OS-inspired hierarchy (deterministic, no LLM paging):",
-        f"- **Core** (always attend): path-matched or effective ≥ {floor} — budget {budgets.get('core', core_max())}",
+        f"- **Core** (always attend): path-matched, effective ≥ {floor}, or "
+        f"**F146 recon-warm** (F147) — budget {budgets.get('core', core_max())}",
         f"- **Archival** (cold): low-effective / theme-only — budget {budgets.get('archival', archival_max())}",
         "- Prefer **core** findings; do not promote archival themes to blocking without new path evidence.",
         "",
     ]
+    if recon_n > 0 or recon_core_enabled():
+        hrs = recon.get("hours") if recon.get("hours") is not None else recon_core_hours()
+        lines.append(
+            f"**F147 recon-warm → core:** {recon_n} item(s) promoted from recent "
+            f"archival retrieve (window={hrs}h)."
+        )
+        lines.append("")
     if core:
         lines.append("### Core memory (hot)")
         for s in core:
@@ -309,10 +458,15 @@ def render_tiers_section(part_or_result: dict[str, Any]) -> str:
             eff = s.get("effective_score")
             eff_s = f"{float(eff):.2f}" if eff is not None else "—"
             pm = s.get("path_match", 0)
+            note = ""
+            if s.get("recon_warm"):
+                note = " · recon_warm"
+            elif s.get("tier_note"):
+                note = f" · {s.get('tier_note')}"
             lines.append(
                 f"- [{kind}] `{s.get('raw_id') or s.get('id') or s.get('theme')}` "
                 f"theme={s.get('theme')} path_match={pm} eff={eff_s} "
-                f"hits={s.get('hits')} scope={s.get('scope')}"
+                f"hits={s.get('hits')} scope={s.get('scope')}{note}"
             )
         lines.append("")
     else:
@@ -386,7 +540,10 @@ def cmd_inject(args: argparse.Namespace) -> int:
 
 
 def cmd_fixture(args: argparse.Namespace) -> int:
-    """Core gets path-matched; archival gets high-hit low-eff noise."""
+    """Core gets path-matched + recon-warm; archival gets high-hit low-eff noise."""
+    now = datetime.now(timezone.utc)
+    fresh = now.strftime("%Y-%m-%dT%H:%M:%SZ")
+    stale = (now - timedelta(days=30)).strftime("%Y-%m-%dT%H:%M:%SZ")
     items = [
         {
             "id": "sqli-path",
@@ -441,33 +598,113 @@ def cmd_fixture(args: argparse.Namespace) -> int:
             "score": 0.7,
             "hits": 1,
         },
+        # F147: cold low-eff but recently reconsolidated → core
+        {
+            "id": "pickle-recon",
+            "kind": "tp",
+            "theme": "insecure_deserialization",
+            "scope": "repo",
+            "path_match": 0.0,
+            "score": 0.35,
+            "hits": 5,
+            "effective_score": 0.38,  # below floor 0.55
+            "last_retrieved_at": fresh,
+            "reconsolidated_at": fresh,
+            "reconsolidation_feature": "F146",
+        },
+        # F147: stale retrieve stays archival
+        {
+            "id": "old-recon",
+            "kind": "tp",
+            "theme": "path_traversal",
+            "scope": "repo",
+            "path_match": 0.0,
+            "score": 0.3,
+            "hits": 4,
+            "effective_score": 0.2,
+            "last_retrieved_at": stale,
+            "reconsolidation_feature": "F146",
+        },
+        # superseded never promotes
+        {
+            "id": "dead-recon",
+            "kind": "tp",
+            "theme": "weak_crypto",
+            "scope": "repo",
+            "path_match": 0.0,
+            "score": 0.5,
+            "hits": 6,
+            "effective_score": 0.2,
+            "last_retrieved_at": fresh,
+            "superseded_by": "fp-crypto",
+            "active": False,
+        },
     ]
-    part = tier_partition(items, floor=0.55, c_max=6, a_max=4)
+    # baseline without recon-core: pickle-recon would be archival
+    old_env = os.environ.get("TORII_MEMORY_RECON_CORE")
+    try:
+        os.environ["TORII_MEMORY_RECON_CORE"] = "0"
+        cold = tier_partition(items, floor=0.55, c_max=8, a_max=6)
+        cold_ids = {x["id"] for x in cold["core"]}
+        cold_pickle_arch = "pickle-recon" not in cold_ids
+
+        os.environ["TORII_MEMORY_RECON_CORE"] = "1"
+        os.environ["TORII_MEMORY_RECON_CORE_HOURS"] = "168"
+        part = tier_partition(items, floor=0.55, c_max=8, a_max=6)
+    finally:
+        if old_env is None:
+            os.environ.pop("TORII_MEMORY_RECON_CORE", None)
+        else:
+            os.environ["TORII_MEMORY_RECON_CORE"] = old_env
+
     core_ids = {x["id"] for x in part["core"]}
     arch_ids = {x["id"] for x in part["archival"]}
     core_has_path = "sqli-path" in core_ids and "fp-path" in core_ids
     core_has_hot = "cmdi-hot" in core_ids
     noise_archival = "xss-noise" in arch_ids and "fed-weak" in arch_ids
     noise_not_core = "xss-noise" not in core_ids
+    recon_core = "pickle-recon" in core_ids
+    stale_not_core = "old-recon" not in core_ids and "dead-recon" not in core_ids
+    recon_metric = int((part.get("metrics") or {}).get("core_recon_warm") or 0) >= 1
     # render non-empty
     section = render_tiers_section(part)
-    render_ok = "Core memory" in section and "Archival memory" in section and MARKER in section
+    render_ok = (
+        "Core memory" in section
+        and "Archival memory" in section
+        and MARKER in section
+        and ("F147" in section or "recon-warm" in section.lower() or "recon_warm" in section)
+    )
+    f147_ok = recon_core and stale_not_core and cold_pickle_arch and recon_metric and render_ok
     fixture_pass = all(
-        [core_has_path, core_has_hot, noise_archival, noise_not_core, render_ok]
+        [
+            core_has_path,
+            core_has_hot,
+            noise_archival,
+            noise_not_core,
+            render_ok,
+            f147_ok,
+        ]
     )
     print(
         json.dumps(
             {
                 "feature": FEATURE,
+                "feature_recon_core": FEATURE_RECON_CORE,
+                "f147": True,
                 "fixture_pass": fixture_pass,
+                "f147_ok": f147_ok,
                 "core_ids": sorted(core_ids),
                 "archival_ids": sorted(arch_ids),
                 "core_has_path": core_has_path,
                 "core_has_hot": core_has_hot,
                 "noise_archival": noise_archival,
                 "noise_not_core": noise_not_core,
+                "recon_warm_core": recon_core,
+                "stale_not_core": stale_not_core,
+                "cold_without_f147": cold_pickle_arch,
                 "render_ok": render_ok,
                 "counts": part["counts"],
+                "metrics": part["metrics"],
             },
             indent=2,
         )
@@ -480,11 +717,14 @@ def cmd_status(args: argparse.Namespace) -> int:
         json.dumps(
             {
                 "feature": FEATURE,
+                "feature_recon_core": FEATURE_RECON_CORE,
                 "enabled": enabled(),
                 "core_floor": core_floor(),
                 "core_max": core_max(),
                 "archival_max": archival_max(),
                 "recall_max": recall_max(),
+                "recon_core_enabled": recon_core_enabled(),
+                "recon_core_hours": recon_core_hours(),
             },
             indent=2,
         )

@@ -33,11 +33,18 @@ class MemoryTiersTests(unittest.TestCase):
         self.assertTrue(data["fixture_pass"], data)
         self.assertTrue(data["core_has_path"])
         self.assertTrue(data["noise_not_core"])
+        # F147 recon-warm → core
+        self.assertTrue(data.get("f147") or data.get("feature_recon_core") == "F147")
+        self.assertTrue(data.get("f147_ok"), data)
+        self.assertTrue(data.get("recon_warm_core"))
+        self.assertIn("pickle-recon", data.get("core_ids") or [])
 
     def test_status(self):
         r = _run(["status"])
         self.assertEqual(r.returncode, 0, r.stderr + r.stdout)
-        self.assertEqual(json.loads(r.stdout)["feature"], "F97")
+        body = json.loads(r.stdout)
+        self.assertEqual(body["feature"], "F97")
+        self.assertEqual(body.get("feature_recon_core"), "F147")
 
     def test_install_ships(self):
         with tempfile.TemporaryDirectory() as td:
