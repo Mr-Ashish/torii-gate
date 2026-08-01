@@ -101,3 +101,12 @@ Source: `python3 scripts/memory_tool_audit.py hub-score`.
 | f143 demote | APPROVE → COMMENT on hub gap + local idle |
 
 Source: `second_agent_critic.py` panel.
+
+## F144 graph multi-hop archival promote
+
+| Metric | Meaning |
+|--------|---------|
+| graph_themes | Multi-hop themes folded into archival query |
+| mode | auto_graph when themes present |
+
+Source: `archival_memory_search.py auto` / fixture.

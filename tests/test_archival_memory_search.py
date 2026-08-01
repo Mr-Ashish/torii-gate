@@ -33,6 +33,14 @@ class ArchivalMemorySearchTests(unittest.TestCase):
         self.assertTrue(data["fixture_pass"], data)
         self.assertTrue(data["hit_tp"])
         self.assertTrue(data["privacy_ok"])
+        # F144 multi-hop → archival promote compound
+        self.assertTrue(data.get("f144") or data.get("feature_graph") == "F144")
+        self.assertTrue(data.get("f144_ok"), data)
+        themes = data.get("f144_graph_themes") or []
+        self.assertTrue(
+            any("pickle" in str(t) or "deserial" in str(t) for t in themes),
+            themes,
+        )
 
     def test_status(self):
         r = _run(["status"])

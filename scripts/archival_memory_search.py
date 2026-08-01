@@ -1,28 +1,31 @@
 #!/usr/bin/env python3
-"""F98: MemGPT-style archival_memory_search + promote-to-core (tools-as-code).
+"""F98/F144: MemGPT archival search + promote-to-core (+ graph multi-hop compound).
 
-Research drivers (patterns only — no vendored Letta/MemGPT runtime):
+Research drivers (patterns only — no vendored Letta/MemGPT/Zep runtime):
   - MemGPT archival_memory_search / core_memory_append: agent pages cold facts
     into working context on demand
   - Torii F97 tiers put cold items in archival but provided no retrieval tool
   - MEMORY.md distill is append-only prose — never keyword-searchable for PR paths
+  - Zep/F100–F102 temporal multi-hop: path kinship surfaces related themes
+  - F144: multi-hop themes must expand archival query or cold hits stay unpaged
 
 Product thesis:
   Highest ROI agentic-memory slice: **deterministic archival search** over
-  TP/FP/federated stores + MEMORY.md recall blocks, then optional **promote**
-  of hits into a core inject section for the current run (just-in-time paging).
+  TP/FP/federated stores + MEMORY.md, optionally **expanded by temporal graph
+  multi-hop themes**, then **promote** hits into core inject for this PR.
 
 Commands:
   search    — query archival + recall stores (JSON hits)
   promote   — write top hits as core inject markdown
-  auto      — search from changed-path basenames + promote (assemble soft path)
-  fixture   — hermetic: hit archival theme, miss poison privacy, promote inject
+  auto      — search from changed-path basenames (+ F144 graph multi-hop) + promote
+  fixture   — hermetic: hit archival theme, multi-hop expand, privacy, promote
   status    — sources / last result summary
 
 Env:
   TORII_ROOT
   TORII_ARCHIVAL_SEARCH        1 (default) | 0
   TORII_ARCHIVAL_SEARCH_LIMIT  default 8
+  TORII_ARCHIVAL_GRAPH_HOPS    default 2 (0/off disables F144 multi-hop expand)
   TORII_TP_SIGNATURES_FILE / TORII_FP_RULES_FILE / TORII_FEDERATED_SIGNALS_FILE
   TORII_MEMORY_MD              path to MEMORY.md (else hermes home / agent seed)
 """
@@ -40,6 +43,7 @@ from pathlib import Path
 from typing import Any
 
 FEATURE = "F98"
+FEATURE_GRAPH = "F144"
 SCHEMA = 1
 MARKER = "<!-- torii-f98-archival-search -->"
 
@@ -347,15 +351,26 @@ def search(
 
 def render_promote_section(result: dict[str, Any]) -> str:
     hits = result.get("hits") or []
+    themes = list(result.get("graph_themes") or [])
+    title = (
+        "## Archival search → core (F98/F144 — MemGPT paging + graph multi-hop)"
+        if themes or result.get("feature_graph") == FEATURE_GRAPH
+        else "## Archival search → core (F98 — MemGPT-style paging)"
+    )
     lines = [
         MARKER,
-        "## Archival search → core (F98 — MemGPT-style paging)",
+        title,
         "",
         f"Query: `{result.get('query')}` · hits={result.get('hit_count')} "
         f"(just-in-time from cold/archival + MEMORY.md recall).",
         "Treat promoted hits as **core** for this PR; still require path evidence to block.",
         "",
     ]
+    if themes:
+        lines.append(
+            f"**F144 graph multi-hop themes:** {', '.join(f'`{t}`' for t in themes[:8])}"
+        )
+        lines.append("")
     if not hits:
         lines.append("_No archival hits for this query._")
     for h in hits:
@@ -393,13 +408,125 @@ def inject_section(prompt_path: Path, section: str) -> bool:
     return True
 
 
+def graph_multi_hop_enabled() -> bool:
+    """F144: expand archival auto-query with temporal graph multi-hop themes."""
+    raw = (os.environ.get("TORII_ARCHIVAL_GRAPH_HOPS") or "2").strip().lower()
+    if raw in _FALSEY:
+        return False
+    try:
+        return int(raw) >= 1
+    except ValueError:
+        return True
+
+
+def graph_hops() -> int:
+    raw = (os.environ.get("TORII_ARCHIVAL_GRAPH_HOPS") or "2").strip()
+    try:
+        return max(0, min(4, int(raw)))
+    except ValueError:
+        return 2
+
+
+def graph_themes_for_paths(
+    paths: list[str],
+    *,
+    root: Path | None = None,
+    hops: int | None = None,
+) -> dict[str, Any]:
+    """F144: soft load temporal graph; collect multi-hop themes for path seeds.
+
+    Privacy: theme strings only (no paths, no tenant, no snippets).
+    """
+    root = root or _root()
+    hops = graph_hops() if hops is None else hops
+    out: dict[str, Any] = {
+        "feature": FEATURE_GRAPH,
+        "themes": [],
+        "neighbor_n": 0,
+        "seed_n": 0,
+        "hops": hops,
+        "enabled": hops >= 1,
+        "soft_skip": False,
+    }
+    if hops < 1:
+        out["soft_skip"] = True
+        out["reason"] = "hops_off"
+        return out
+    try:
+        sys.path.insert(0, str(Path(__file__).resolve().parent))
+        from memory_temporal_graph import (  # type: ignore
+            build_from_disk,
+            load_or_build_graph,
+            query_graph,
+            enabled as graph_enabled,
+        )
+
+        if not graph_enabled():
+            out["soft_skip"] = True
+            out["reason"] = "graph_off"
+            return out
+        try:
+            g = load_or_build_graph(root=root)
+        except Exception:
+            g = build_from_disk(root=root)
+        themes: list[str] = []
+        seen: set[str] = set()
+        seed_n = 0
+        neigh_n = 0
+        for p in paths[:16]:
+            q = query_graph(g, path=str(p), hops=hops, limit=16)
+            seed_n += len(q.get("seeds") or [])
+            neigh_n += int(q.get("neighbor_count") or 0)
+            for n in q.get("seed_nodes") or []:
+                if isinstance(n, dict):
+                    th = str(n.get("theme") or "").strip().lower()
+                    if th and th not in seen and "/" not in th and ".." not in th:
+                        seen.add(th)
+                        themes.append(th.replace("_", " ")[:48])
+            for nb in q.get("neighbors") or []:
+                if not isinstance(nb, dict):
+                    continue
+                peer = nb.get("peer_node") or {}
+                if isinstance(peer, dict):
+                    th = str(peer.get("theme") or "").strip().lower()
+                    if th and th not in seen and "/" not in th:
+                        seen.add(th)
+                        themes.append(th.replace("_", " ")[:48])
+                # edge meta keywords
+                meta = nb.get("meta") or {}
+                if isinstance(meta, dict):
+                    for kw in meta.get("keywords") or []:
+                        k = str(kw).strip().lower()[:32]
+                        if k and k not in seen and "/" not in k:
+                            seen.add(k)
+                            themes.append(k)
+        out["themes"] = themes[:12]
+        out["neighbor_n"] = neigh_n
+        out["seed_n"] = seed_n
+        blob = json.dumps(out)
+        out["privacy_ok"] = "/Users/" not in blob and "/home/" not in blob
+        return out
+    except Exception as exc:
+        out["soft_skip"] = True
+        out["error"] = str(exc)[:120]
+        out["privacy_ok"] = True
+        return out
+
+
 def auto_from_paths(
     paths: list[str],
     *,
     root: Path | None = None,
     limit: int | None = None,
+    multi_hop: bool | None = None,
+    hops: int | None = None,
 ) -> dict[str, Any]:
-    """Build query from changed path basenames + common security stems."""
+    """Build query from changed path basenames + F144 graph multi-hop themes.
+
+    MemGPT paging: basenames alone miss cold TP themes linked only via co_path.
+    F144 folds Zep multi-hop themes into the archival query before promote.
+    """
+    root = root or _root()
     bases = []
     for p in paths:
         name = Path(str(p)).name
@@ -410,8 +537,34 @@ def auto_from_paths(
             bases.append(stem)
     # always include light security vocabulary so empty path lists still search memory
     extra = ["sql", "injection", "pickle", "shell", "secret"]
-    query = " ".join(bases[:12] + extra[:3])
-    return search(query, root=root, limit=limit)
+    graph_meta: dict[str, Any] = {"enabled": False, "themes": []}
+    use_mh = graph_multi_hop_enabled() if multi_hop is None else bool(multi_hop)
+    if use_mh and paths:
+        graph_meta = graph_themes_for_paths(
+            paths, root=root, hops=hops if hops is not None else graph_hops()
+        )
+    themes = list(graph_meta.get("themes") or [])
+    # query: basenames + multi-hop themes + light security stems
+    q_parts = bases[:12] + themes[:8] + extra[:3]
+    query = " ".join(q_parts)
+    result = search(query, root=root, limit=limit)
+    result["feature_graph"] = FEATURE_GRAPH if use_mh else None
+    result["graph_themes"] = themes
+    result["graph"] = {
+        k: graph_meta.get(k)
+        for k in (
+            "enabled",
+            "hops",
+            "seed_n",
+            "neighbor_n",
+            "soft_skip",
+            "privacy_ok",
+            "reason",
+        )
+        if k in graph_meta or graph_meta.get(k) is not None
+    }
+    result["mode"] = "auto_graph" if themes else "auto"
+    return result
 
 
 def cmd_search(args: argparse.Namespace) -> int:
@@ -459,14 +612,22 @@ def cmd_auto(args: argparse.Namespace) -> int:
             for ln in Path(args.files_list).read_text(encoding="utf-8").splitlines()
             if ln.strip() and not ln.startswith("#")
         ]
-    result = auto_from_paths(paths, limit=args.limit)
+    multi = None
+    if getattr(args, "no_graph", False):
+        multi = False
+    elif getattr(args, "graph_hops", None) is not None:
+        os.environ["TORII_ARCHIVAL_GRAPH_HOPS"] = str(args.graph_hops)
+    result = auto_from_paths(paths, limit=args.limit, multi_hop=multi)
     section = render_promote_section(result)
     out: dict[str, Any] = {
         "feature": FEATURE,
-        "mode": "auto",
+        "feature_graph": result.get("feature_graph"),
+        "mode": result.get("mode") or "auto",
         "paths": paths[:20],
         "query": result.get("query"),
         "hit_count": result.get("hit_count"),
+        "graph_themes": result.get("graph_themes") or [],
+        "graph": result.get("graph"),
         "hits": [
             {"id": h.get("id"), "source": h.get("source"), "score": h.get("score"), "theme": h.get("theme")}
             for h in (result.get("hits") or [])[:8]
@@ -573,13 +734,146 @@ def cmd_fixture(args: argparse.Namespace) -> int:
             auto = auto_from_paths(["legacy/db.py", "app.py"], root=td_path, limit=5)
             auto_ok = int(auto.get("hit_count") or 0) >= 1
 
+            # F144: multi-hop theme expands archival query for co_path-only themes
+            # plant graph: app.py co_path with pickle TP that basenames alone miss
+            (torii / "tp-signatures.json").write_text(
+                json.dumps(
+                    {
+                        "signatures": [
+                            {
+                                "id": "sqli-arch",
+                                "theme": "sql_injection",
+                                "keywords": ["sql injection", "sqli", "cursor"],
+                                "path_globs": ["legacy/db.py"],
+                                "hits": 4,
+                                "effective_score": 0.35,
+                            },
+                            {
+                                "id": "pickle-cold",
+                                "theme": "insecure_deserialization",
+                                "keywords": ["pickle", "loads", "deserialize"],
+                                "path_globs": ["legacy/serde.py"],
+                                "hits": 3,
+                                "effective_score": 0.4,
+                            },
+                        ]
+                    }
+                )
+                + "\n",
+                encoding="utf-8",
+            )
+            # build temporal graph on disk via memory_temporal_graph
+            f144_ok = False
+            graph_themes: list[str] = []
+            try:
+                sys.path.insert(0, str(Path(__file__).resolve().parent))
+                from memory_temporal_graph import (  # type: ignore
+                    build_from_disk,
+                    save_graph,
+                    default_graph_path,
+                )
+
+                g = build_from_disk(root=td_path)
+                # force co_path edge app.py ↔ serde pickle theme
+                nodes = g.get("nodes") or []
+                pickle_nid = None
+                for n in nodes:
+                    if isinstance(n, dict) and "pickle" in str(n.get("theme") or ""):
+                        pickle_nid = n.get("id")
+                        break
+                if pickle_nid is None:
+                    # synthetic node if build didn't pick it
+                    pickle_nid = "tp:pickle-cold"
+                    nodes.append(
+                        {
+                            "id": pickle_nid,
+                            "raw_id": "pickle-cold",
+                            "theme": "insecure_deserialization",
+                            "path_basenames": ["serde.py"],
+                            "active": True,
+                        }
+                    )
+                    g["nodes"] = nodes
+                # seed app.py node for multi-hop
+                app_nid = "path:app.py"
+                if not any(
+                    isinstance(n, dict) and n.get("id") == app_nid for n in nodes
+                ):
+                    nodes.append(
+                        {
+                            "id": app_nid,
+                            "theme": "app_entry",
+                            "path_basenames": ["app.py"],
+                            "active": True,
+                        }
+                    )
+                    g["nodes"] = nodes
+                edges = list(g.get("edges") or [])
+                edges.append(
+                    {
+                        "id": "co_path:app-serde",
+                        "type": "co_path",
+                        "source": app_nid,
+                        "target": pickle_nid,
+                        "valid_from": "2026-01-01T00:00:00Z",
+                        "valid_until": None,
+                        "meta": {"keywords": ["pickle", "deserialize"]},
+                    }
+                )
+                g["edges"] = edges
+                save_graph(default_graph_path(td_path), g)
+                os.environ["TORII_ARCHIVAL_GRAPH_HOPS"] = "2"
+                # basename-only query (no graph) may miss pickle theme
+                no_graph = auto_from_paths(
+                    ["app.py"], root=td_path, limit=5, multi_hop=False
+                )
+                with_graph = auto_from_paths(
+                    ["app.py"], root=td_path, limit=5, multi_hop=True, hops=2
+                )
+                graph_themes = list(with_graph.get("graph_themes") or [])
+                # multi-hop should surface pickle-related theme tokens
+                theme_ok = any(
+                    "pickle" in t or "deserial" in t or "insecure" in t
+                    for t in graph_themes
+                )
+                # with graph query should not be worse; prefer more hits or theme in query
+                q = str(with_graph.get("query") or "").lower()
+                query_ok = "pickle" in q or "deserial" in q or "insecure" in q
+                section_g = render_promote_section(with_graph)
+                promote_g_ok = (
+                    MARKER in section_g
+                    and ("F144" in section_g or "multi-hop" in section_g.lower())
+                )
+                f144_ok = (
+                    theme_ok
+                    and query_ok
+                    and promote_g_ok
+                    and int(with_graph.get("hit_count") or 0)
+                    >= int(no_graph.get("hit_count") or 0)
+                    and bool((with_graph.get("graph") or {}).get("privacy_ok", True))
+                )
+            except Exception as exc:
+                f144_ok = False
+                graph_themes = [str(exc)[:80]]
+
             fixture_pass = all(
-                [hit_tp, hit_fp, hit_mem, privacy_ok, promote_ok, inject_ok, auto_ok]
+                [
+                    hit_tp,
+                    hit_fp,
+                    hit_mem,
+                    privacy_ok,
+                    promote_ok,
+                    inject_ok,
+                    auto_ok,
+                    f144_ok,
+                ]
             )
             print(
                 json.dumps(
                     {
                         "feature": FEATURE,
+                        "feature_graph": FEATURE_GRAPH,
+                        "f144": True,
                         "fixture_pass": fixture_pass,
                         "hit_tp": hit_tp,
                         "hit_fp": hit_fp,
@@ -588,6 +882,8 @@ def cmd_fixture(args: argparse.Namespace) -> int:
                         "promote_ok": promote_ok,
                         "inject_ok": inject_ok,
                         "auto_ok": auto_ok,
+                        "f144_ok": f144_ok,
+                        "f144_graph_themes": graph_themes,
                         "hit_ids": sorted(ids),
                         "auto_hits": auto.get("hit_count"),
                     },
@@ -647,13 +943,27 @@ def main(argv: list[str] | None = None) -> int:
     pp.add_argument("--out", default="")
     pp.set_defaults(func=cmd_promote)
 
-    pa = sub.add_parser("auto", help="Search from changed paths + optional inject")
+    pa = sub.add_parser(
+        "auto",
+        help="Search from changed paths (+ F144 graph multi-hop) + optional inject",
+    )
     pa.add_argument("--files", default="", help="comma-separated paths")
     pa.add_argument("--files-list", default="")
     pa.add_argument("--limit", type=int, default=None)
     pa.add_argument("--prompt", default="")
     pa.add_argument("--json-out", default="")
     pa.add_argument("--section-out", default="")
+    pa.add_argument(
+        "--graph-hops",
+        type=int,
+        default=None,
+        help="F144 multi-hop hops (default env TORII_ARCHIVAL_GRAPH_HOPS=2)",
+    )
+    pa.add_argument(
+        "--no-graph",
+        action="store_true",
+        help="Disable F144 graph multi-hop theme expand",
+    )
     pa.set_defaults(func=cmd_auto)
 
     sub.add_parser("fixture").set_defaults(func=cmd_fixture)

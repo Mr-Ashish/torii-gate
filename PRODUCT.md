@@ -204,6 +204,8 @@ budget always → compact body → score tool_hit → util gap? → budgeted re-
 
 **Memory util hub gap critic (F143):** second-agent checker `f143_memory_hub_gap` demotes APPROVE when multi-tenant memory util gap_pressure is high and local memory inject is idle (F127/F139 mirror for Mem0/Letta tool discipline).
 
+**Graph multi-hop → archival promote (F144):** temporal graph multi-hop themes expand MemGPT-style archival auto-query (`TORII_ARCHIVAL_GRAPH_HOPS=2`) so cold TP themes linked only via co_path/same_theme page into core inject — Zep hop + Letta archival paging compound.
+
 **Ops:** `python3 scripts/memory_loop_status.py scorecard` → L0–L3. Smoke requires L3 on the hub tree. CI job summary annotates readiness; optional advisory `torii/memory-loop` via `TORII_MEMORY_LOOP_STATUS_COMMIT=1`.
 
 ---

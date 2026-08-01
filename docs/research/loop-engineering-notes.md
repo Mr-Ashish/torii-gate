@@ -38,3 +38,4 @@ Also mirrored from LOOP.md budget/observability: each fire records metrics (reca
 - F141: memory util federate + critic demote (Mem0/Letta tools-must-be-called)
 - F142: memory util hub post-score → memory skill priority (F125 mirror)
 - F143: memory hub gap critic demotes APPROVE (F127/F139 mirror for Mem0 util)
+- F144: temporal multi-hop themes expand archival auto → core promote (MemGPT+Zep)

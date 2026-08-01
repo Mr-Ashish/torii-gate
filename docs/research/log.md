@@ -1,5 +1,36 @@
 # Torii research → product log
 
+## 2026-08-01 — F144 graph multi-hop → archival promote
+
+### Papers / posts
+- MemGPT archival paging (F98) + Zep multi-hop (F100–F102).
+- Cold TP themes only linked via co_path never paged if auto uses basenames alone.
+- Letta core/archival: just-in-time page cold facts into working context.
+
+### OSS design patterns stolen
+1. graph_themes_for_paths multi-hop theme harvest (privacy themes only).
+2. auto_from_paths folds themes into archival query; promote lists F144.
+3. TORII_ARCHIVAL_GRAPH_HOPS=2; --no-graph / --graph-hops CLI.
+4. fixture f144_ok; PRODUCT/research.
+
+### Insight
+Graph multi-hop without archival expand leaves cold related vulns unpaged. Highest ROI: compound hop themes into MemGPT auto-promote.
+
+### Feature shipped (F144)
+- archival_memory_search graph multi-hop auto + promote
+- fixture/tests; traces f144-graph-archival-promote/
+
+### Metric
+- Offline: fixture f144_ok; pytest archival
+- Live: Modal pytorch e2e POST_COMMENT=0
+
+### Loop-engineering / Hermes practice used
+**Compound retrieval paths** — temporal hop feeds archival paging.
+
+### SHA
+`PENDING`
+
+
 ## 2026-08-01 — F143 memory util hub gap critic
 
 ### Papers / posts

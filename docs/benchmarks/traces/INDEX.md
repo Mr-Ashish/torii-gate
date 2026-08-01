@@ -77,3 +77,4 @@ Paper/eval-safe slim traces (redacted). Large raw logs may be gitignored; always
 - `f141-memory-util-federate-critic/` — F141 memory util federate + critic; Modal pytorch#191813 BIT3_OK POST_COMMENT=0
 - `f142-memory-util-hub-compound/` — F142 memory util hub post-score; Modal pytorch#191813 BIT3_OK POST_COMMENT=0
 - `f143-memory-hub-gap-critic/` — F143 memory hub gap critic; Modal pytorch#191813 BIT3_OK POST_COMMENT=0
+- `f144-graph-archival-promote/` — F144 multi-hop→archival promote; Modal pytorch#191813 BIT3_OK POST_COMMENT=0

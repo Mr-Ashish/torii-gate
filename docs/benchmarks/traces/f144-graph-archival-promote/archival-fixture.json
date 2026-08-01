@@ -1,0 +1,12 @@
+{
+  "fixture_pass": true,
+  "f144": true,
+  "f144_ok": true,
+  "f144_graph_themes": [
+    "app entry",
+    "insecure deserialization",
+    "pickle",
+    "deserialize"
+  ],
+  "auto_ok": true
+}
