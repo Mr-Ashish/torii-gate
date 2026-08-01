@@ -30,6 +30,8 @@ Memory:  compound → write → consolidate → effective → federate → recal
 - Only path-evidenced findings compound; soft re-prompts share a paid-attempt budget.  
 - Scanners generate findings; Torii is the **merge authority** that compounds.  
 
+**Recovery skill loop:** always budget → compact → tool util → budgeted re-prompt → paper traces (`skill_loop_status` L0–L3).
+
 **CLI front door:** `python3 scripts/torii.py help` · `doctor` · `memory -- search` · `budget -- status`
 
 See [`PRODUCT.md`](PRODUCT.md) (ICP + mental models A/B/C) and [`docs/brand/`](docs/brand/).

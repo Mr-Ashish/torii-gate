@@ -142,6 +142,28 @@ compound → write → consolidate → effective_critic → federate → scoped_
 
 **Recovery soft re-prompt (F122):** on F121 gap with tool_turns≥1, soft re-prompt once under shared F108 budget (kind `f122`) to force doctor/memory/critic CLIs.
 
+---
+
+## Mental model D — Recovery skill loop (F119–F123)
+
+Always-on recovery skills teach terminal CLIs. Torii does not stop at inject:
+
+```text
+budget always → compact body → score tool_hit → util gap? → budgeted re-prompt → archive
+```
+
+| Stage | What ships | Customer-facing meaning |
+|-------|------------|-------------------------|
+| **Always budget** | F119 max 3 slots | Recovery outranks soft always skills |
+| **Compact** | F120 SkillReducer-lite | Less context tax, same action rules |
+| **Util** | F121 recovery-skill-util.json | Inject without tools is a measured gap |
+| **Re-prompt** | F122 under F108 | One paid recovery attempt, not two |
+| **Traces** | F123 save-trace + scorecard | Paper-ready inject_chars / util_rate |
+
+**One-liner (eng):** *Always skills that never call their CLI do not silently APPROVE.*
+
+**One-liner (AppSec):** *The gate teaches tools, measures use, and recovers once — under budget.*
+
 **Ops:** `python3 scripts/memory_loop_status.py scorecard` → L0–L3. Smoke requires L3 on the hub tree. CI job summary annotates readiness; optional advisory `torii/memory-loop` via `TORII_MEMORY_LOOP_STATUS_COMMIT=1`.
 
 ---

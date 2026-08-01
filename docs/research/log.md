@@ -1,6 +1,37 @@
 # Torii research → product log
 
 
+## 2026-08-01 — F123 recovery skill loop packaging (traces + brand + scorecard)
+
+### Papers / posts
+- Agent skills packaging 2026: skills without lifecycle packaging do not compound in product UX.
+- Torii F119–F122 measured recovery (always budget → compact → util → re-prompt) needed ops/brand/trace closure.
+- Loop-eng readiness scorecards: one surface for installers and paper.
+
+### OSS design patterns stolen
+1. save-trace archives skill-router / hits / recovery-util / re-prompt env for paper.
+2. skill_loop_status stages + recovery_active + hermes F122 + save-trace wire.
+3. Landing + TORII.md + PRODUCT mental model D: inject is not enough.
+4. README one-liner for recovery skill loop.
+
+### Insight
+Intelligence without packaging loses adoption clarity. Highest ROI this fire: close the recovery loop in traces, scorecard L3, and brand without empty polish.
+
+### Feature shipped (F123)
+- `save-trace.sh` F119–F122 artifacts
+- `skill_loop_status.py` recovery stages + recovery_ok
+- brand landing/TORII.md/PRODUCT/README
+- traces `f123-recovery-loop-packaging/`
+
+### Metric
+- skill_loop fixture L3 recovery_ok; save-trace copies util json
+- pytest 600; smoke PASS; Modal pytorch#191813 BIT3_OK log_streaming=true POST_COMMENT=0
+
+### Loop-engineering / Hermes practice used
+**Scorecard + trace archive as product surfaces** — dogfood readiness for recovery loop.
+
+### SHA
+`272d5b53035a38620e70d52f8b79f992ed18bb35`
 ## 2026-08-01 — F122 recovery skill soft re-prompt under F108 budget
 
 ### Papers / posts

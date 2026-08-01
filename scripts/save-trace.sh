@@ -76,7 +76,21 @@ copy_if "$OUT_DIR/severity-calibration.env" "$TRACE_DIR/severity-calibration.env
 copy_if "$OUT_DIR/linked-issue-context.env" "$TRACE_DIR/linked-issue-context.env"
 copy_if "$OUT_DIR/linked-issues.md" "$TRACE_DIR/linked-issues.md"
 copy_if "$OUT_DIR/prompt-reprompt.md" "$TRACE_DIR/prompt-reprompt.md"
+copy_if "$OUT_DIR/prompt-memory-reprompt.md" "$TRACE_DIR/prompt-memory-reprompt.md"
+copy_if "$OUT_DIR/prompt-recovery-reprompt.md" "$TRACE_DIR/prompt-recovery-reprompt.md"
 copy_if "$OUT_DIR/hermes-max-turns.env" "$TRACE_DIR/hermes-max-turns.env"
+# F123: paper-ready recovery skill loop artifacts (F119–F122)
+copy_if "$OUT_DIR/skill-router.json" "$TRACE_DIR/skill-router.json"
+copy_if "$OUT_DIR/skill-hits.json" "$TRACE_DIR/skill-hits.json"
+copy_if "$OUT_DIR/skill-attribution.json" "$TRACE_DIR/skill-attribution.json"
+copy_if "$OUT_DIR/recovery-skill-util.json" "$TRACE_DIR/recovery-skill-util.json"
+copy_if "$OUT_DIR/recovery-skill-reprompt.env" "$TRACE_DIR/recovery-skill-reprompt.env"
+copy_if "$OUT_DIR/memory-tool-reprompt.env" "$TRACE_DIR/memory-tool-reprompt.env"
+copy_if "$OUT_DIR/memory-tool-audit.json" "$TRACE_DIR/memory-tool-audit.json"
+copy_if "$OUT_DIR/reprompt-budget.json" "$TRACE_DIR/reprompt-budget.json"
+# second-agent critic panel (includes F121 recovery util checker)
+copy_if "$OUT_DIR/second-agent-critic.json" "$TRACE_DIR/second-agent-critic.json"
+copy_if "$OUT_DIR/second_agent_critic.json" "$TRACE_DIR/second_agent_critic.json"
 if [[ -d "$OUT_DIR/agent-loop-attempt1" ]]; then
   rm -rf "$TRACE_DIR/agent-loop-attempt1"
   cp -a "$OUT_DIR/agent-loop-attempt1" "$TRACE_DIR/agent-loop-attempt1" 2>/dev/null || true

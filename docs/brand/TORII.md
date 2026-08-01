@@ -73,6 +73,11 @@ Customer-facing diagram (same as PRODUCT mental model B):
 
 This is the differentiator vs static “agent skills.md” dumps: Torii **measures contribution**, demotes free-riders, and only full-injects skills that fire.
 
+### Recovery skill loop (F119–F123)
+
+Always-on recovery skills (memory CLI · product doctor · second-agent critic) get a **capped always budget**, **compact bodies**, post-run **tool utilization** scoring, and **one shared soft re-prompt** under F108. Traces archive `skill-router.json`, `recovery-skill-util.json`, and `recovery-skill-reprompt.env` for paper eval — inject without tools is not success.
+
+
 ## Memory compound loop (product story, F93–F108)
 
 Customer-facing diagram (PRODUCT mental model C):

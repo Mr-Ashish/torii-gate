@@ -56,3 +56,4 @@ Paper/eval-safe slim traces (redacted). Large raw logs may be gitignored; always
 - `f120-skill-compact/` — F120 SkillReducer-lite always body compact + pack verify (offline + Modal pytorch#191813)
 - `f121-recovery-util/` — F121 recovery skill tool utilization + critic demote (offline + Modal pytorch#191813)
 - `f122-recovery-reprompt/` — F122 recovery util soft re-prompt under F108 budget (offline + Modal pytorch#191813)
+- `f123-recovery-loop-packaging/` — F123 recovery loop scorecard + save-trace + brand (offline + Modal pytorch#191813)

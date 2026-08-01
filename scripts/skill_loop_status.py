@@ -37,7 +37,7 @@ from typing import Any
 FEATURE = "F91"
 SCHEMA = 1
 
-# Skill compound loop stages (F84–F89 + F114–F116 tool outcomes)
+# Skill compound loop stages (F84–F89 + F114–F122 recovery loop)
 LOOP_STAGES: list[dict[str, Any]] = [
     {
         "id": "route",
@@ -73,16 +73,30 @@ LOOP_STAGES: list[dict[str, Any]] = [
     },
     {
         "id": "inject",
-        "feature": "F89",
+        "feature": "F89/F119/F120",
         "script": "skill_router.py",
-        "one_liner": "Attribution-ranked full-body inject",
+        "one_liner": "Always budget + compact full-body inject",
         "needs_attr_router": True,
     },
     {
         "id": "adopt_gate",
-        "feature": "F87",
+        "feature": "F87/F118",
         "script": "skill_auto_adopt.py",
-        "one_liner": "Dual+attr gates before auto-adopt",
+        "one_liner": "Dual+tool-attr gates before auto-adopt",
+    },
+    {
+        "id": "recovery_util",
+        "feature": "F121",
+        "script": "skill_router.py",
+        "cmd": ["util", "--help"],
+        "one_liner": "Recovery skill tool utilization (inject ≠ tools)",
+        "soft_cmd": True,
+    },
+    {
+        "id": "recovery_reprompt",
+        "feature": "F122",
+        "script": "reprompt_budget.py",
+        "one_liner": "Shared budget includes f122 recovery re-prompt kind",
     },
 ]
 
@@ -181,20 +195,40 @@ def assess(root: Path | None = None, *, deep: bool = True) -> dict[str, Any]:
 
     skills = active_skills(root)
     skills_ok = len(skills) >= 1
+    # F123: dual-gate recovery skills that teach tool CLIs
+    recovery_active = [
+        s
+        for s in (
+            "skill-prefer-memory-cli-early",
+            "skill-prefer-product-cli",
+            "skill-prefer-critic-early",
+        )
+        if s in skills
+    ]
+    recovery_ok = len(recovery_active) >= 3
 
-    # assemble-context / run-torii-review wiring
+    # assemble-context / run-torii-review / hermes / save-trace wiring
     assemble = (root / "scripts" / "assemble-context.sh").read_text(
         encoding="utf-8", errors="replace"
     ) if (root / "scripts" / "assemble-context.sh").is_file() else ""
     run_sh = (root / "scripts" / "run-torii-review.sh").read_text(
         encoding="utf-8", errors="replace"
     ) if (root / "scripts" / "run-torii-review.sh").is_file() else ""
+    hermes_sh = (root / "scripts" / "run-hermes-review.sh").read_text(
+        encoding="utf-8", errors="replace"
+    ) if (root / "scripts" / "run-hermes-review.sh").is_file() else ""
+    save_tr = (root / "scripts" / "save-trace.sh").read_text(
+        encoding="utf-8", errors="replace"
+    ) if (root / "scripts" / "save-trace.sh").is_file() else ""
     wire = {
         "assemble_skill_router": "skill_router" in assemble or "SKILL_ROUTER" in assemble,
         "run_skill_router_score": "skill_router.py" in run_sh and "score" in run_sh,
         "run_skill_fitness": "skill_fitness.py" in run_sh,
         "run_skill_attribution": "skill_attribution.py" in run_sh,
         "run_skill_dual_promote": "skill_dual_rollout.py" in run_sh,
+        "run_recovery_util": "recovery_skill_util" in run_sh or "util --out-dir" in run_sh,
+        "hermes_f122_reprompt": "F122" in hermes_sh or "recovery-skill-reprompt" in hermes_sh,
+        "save_trace_recovery": "recovery-skill-util.json" in save_tr,
     }
     wire_ok = all(wire.values())
 
@@ -213,6 +247,9 @@ def assess(root: Path | None = None, *, deep: bool = True) -> dict[str, Any]:
         deep_results["fitness_fixture"] = run_soft_fixture(
             root, "skill_fitness.py", ["fixture"]
         )
+        deep_results["budget_fixture"] = run_soft_fixture(
+            root, "reprompt_budget.py", ["fixture"]
+        )
 
     deep_ok = True
     if deep:
@@ -222,13 +259,14 @@ def assess(root: Path | None = None, *, deep: bool = True) -> dict[str, Any]:
     stage_total = len(stages_out)
     # readiness scoring
     points = 0
-    points += stage_ok_n  # max 7
+    points += stage_ok_n
     points += 1 if skills_ok else 0
+    points += 1 if recovery_ok else 0  # F123
     points += 1 if wire_ok else 0
     points += 2 if deep_ok else 0
-    max_points = stage_total + 1 + 1 + 2  # 11
+    max_points = stage_total + 1 + 1 + 1 + 2
     pct = round(100.0 * points / max_points, 1) if max_points else 0.0
-    if pct >= 95 and deep_ok and skills_ok and wire_ok:
+    if pct >= 95 and deep_ok and skills_ok and wire_ok and recovery_ok:
         level = "L3"
     elif pct >= 75:
         level = "L2"
@@ -239,10 +277,13 @@ def assess(root: Path | None = None, *, deep: bool = True) -> dict[str, Any]:
 
     return {
         "feature": FEATURE,
+        "feature_recovery": "F123",
         "schema": SCHEMA,
-        "loop": "route → hit → fitness → dual → attr → inject",
+        "loop": "route → hit → fitness → dual → attr → inject → util → budgeted re-prompt",
         "scored_at": _now(),
         "level": level,
+        "recovery_active": recovery_active,
+        "recovery_ok": recovery_ok,
         "pct": pct,
         "points": points,
         "max_points": max_points,
@@ -282,7 +323,9 @@ def to_markdown(report: dict[str, Any]) -> str:
             "",
             f"- Active skills: **{report.get('active_skills_n')}** "
             f"({', '.join((report.get('active_skills') or [])[:6]) or 'none'})",
-            f"- Wiring (assemble/run): **{'ok' if report.get('wiring_ok') else 'gap'}**",
+            f"- Recovery skills (memory/product/critic): **{'ok' if report.get('recovery_ok') else 'gap'}** "
+            f"({', '.join(report.get('recovery_active') or []) or 'none'})",
+            f"- Wiring (assemble/run/hermes/save-trace): **{'ok' if report.get('wiring_ok') else 'gap'}**",
             f"- Deep fixtures: **{'ok' if report.get('deep_ok') else 'skipped/fail'}**",
             f"- Ready: **{report.get('ready')}**",
             "",
@@ -338,18 +381,22 @@ def cmd_fixture(args: argparse.Namespace) -> int:
         and report.get("skills_ok")
         and report.get("wiring_ok")
         and report.get("deep_ok")
+        and report.get("recovery_ok")
         and report.get("level") in ("L2", "L3")
     )
     print(
         json.dumps(
             {
                 "feature": FEATURE,
+                "feature_recovery": "F123",
                 "fixture_pass": fixture_pass,
                 "level": report["level"],
                 "pct": report["pct"],
                 "stages_ok": report["stages_ok"],
                 "stages_total": report["stages_total"],
                 "skills_n": report["active_skills_n"],
+                "recovery_ok": report.get("recovery_ok"),
+                "recovery_active": report.get("recovery_active"),
                 "wiring_ok": report["wiring_ok"],
                 "deep_ok": report["deep_ok"],
                 "ready": report["ready"],

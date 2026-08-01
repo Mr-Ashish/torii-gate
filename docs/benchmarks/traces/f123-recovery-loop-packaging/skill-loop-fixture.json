@@ -1,0 +1,19 @@
+{
+  "feature": "F91",
+  "feature_recovery": "F123",
+  "fixture_pass": true,
+  "level": "L3",
+  "pct": 100.0,
+  "stages_ok": 9,
+  "stages_total": 9,
+  "skills_n": 9,
+  "recovery_ok": true,
+  "recovery_active": [
+    "skill-prefer-memory-cli-early",
+    "skill-prefer-product-cli",
+    "skill-prefer-critic-early"
+  ],
+  "wiring_ok": true,
+  "deep_ok": true,
+  "ready": true
+}

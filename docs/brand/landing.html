@@ -4,7 +4,7 @@
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
 <title>Torii — Security gate for every pull request</title>
-<meta name="description" content="Torii is the PR/CI security merge authority for AI-written code. Maker/checker critics, dual compound loops (skills + integrity-gated memory), one memory CLI for agents, budgeted soft recovery. The gate gets stricter and quieter — not noisier." />
+<meta name="description" content="Torii is the PR/CI security merge authority for AI-written code. Maker/checker critics, dual compound loops (skills + memory), recovery skills that measure tool use, budgeted soft re-prompts. The gate gets stricter and quieter — not noisier." />
 <link rel="preconnect" href="https://fonts.googleapis.com" />
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
 <link href="https://fonts.googleapis.com/css2?family=Albert+Sans:wght@400;500;600&family=Alumni+Sans:wght@100;300;400&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet" />
@@ -163,6 +163,16 @@ tr:last-child td{border-bottom:0}
     <span class="pipe on">Inject</span>
   </div>
   <p class="note" style="margin:0 0 16px">Progressive skills → measure hits → demote zombies → dual contribution → LOO free-riders out → next PR injects winners only. <strong style="color:var(--muted)">Skills that do not contribute do not ship in the next prompt.</strong></p>
+  <p class="ey" style="margin:8px 0 12px">Recovery skill loop (why inject is not enough)</p>
+  <div class="pipeline">
+    <span class="pipe on">Always budget</span>
+    <span class="pipe on">Compact body</span>
+    <span class="pipe on">Tool hit</span>
+    <span class="pipe on">Util score</span>
+    <span class="pipe on">Budgeted re-prompt</span>
+    <span class="pipe on">Paper traces</span>
+  </div>
+  <p class="note" style="margin:0 0 16px">Memory · product CLI · critic skills get a <strong style="color:var(--muted)">capped always slot</strong>, <strong style="color:var(--muted)">SkillReducer-lite bodies</strong>, and post-run <strong style="color:var(--muted)">tool utilization</strong>. Idle recovery tools soft-demote APPROVE and can spend <strong style="color:var(--muted)">one shared re-prompt</strong> — not infinite Hermes retries. Artifacts land in redacted traces for eval.</p>
   <p class="ey" style="margin:8px 0 12px">Memory compound loop (why noise dies twice)</p>
   <div class="pipeline">
     <span class="pipe on">Compound</span>
