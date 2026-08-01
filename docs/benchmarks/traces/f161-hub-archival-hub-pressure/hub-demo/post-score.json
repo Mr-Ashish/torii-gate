@@ -1,0 +1,31 @@
+{
+  "feature": "F161",
+  "schema": 1,
+  "enabled": true,
+  "signals_n": 1,
+  "skill_n": 1,
+  "skills": {
+    "skill-prefer-hub-archival-early": {
+      "skill_id": "skill-prefer-hub-archival-early",
+      "hits": 4,
+      "tenants": 2,
+      "tool_hits": 0,
+      "gap_hits": 4,
+      "priority_delta": 37,
+      "util_rate_bin": "gap"
+    }
+  },
+  "priority_deltas": {
+    "skill-prefer-hub-archival-early": 37
+  },
+  "gap_hits": 4,
+  "ok_hits": 0,
+  "gap_tenants": 2,
+  "ok_tenants": 0,
+  "gap_pressure": 1.0,
+  "thr": 0.34,
+  "high": true,
+  "privacy_ok": true,
+  "hub_ok": true,
+  "skill_id": "skill-prefer-hub-archival-early"
+}

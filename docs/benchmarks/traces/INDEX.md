@@ -4,6 +4,7 @@ Paper/eval-safe slim traces (redacted). Large raw logs may be gitignored; always
 
 | Date (UTC) | Repo | PR | Model | Fitness | Level | Path |
 |------------|------|----|-------|---------|-------|------|
+| 2026-08-01T10:43:14Z | pytorch/pytorch | 191829 | deepseek/deepseek-v4-pro | hub-archival-hub | — | `f161-hub-archival-hub-pressure` |
 | 2026-08-01T10:35:42Z | pytorch/pytorch | 191831 | deepseek/deepseek-v4-pro | router-synth | — | `f160-skill-router-synth` |
 | 2026-08-01T10:29:08Z | pytorch/pytorch | 191829 | deepseek/deepseek-v4-pro | reprompt-adaptive | — | `f159-reprompt-adaptive-dual` |
 | 2026-08-01T10:21:56Z | pytorch/pytorch | 191831 | deepseek/deepseek-v4-pro | hub-archival-fitness | — | `f158-hub-archival-fitness` |

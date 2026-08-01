@@ -2791,3 +2791,32 @@ Observe what you inject — measurement without inject artifact is theater.
 
 ### SHA
 `441d0b63380be6307c6d7b9ded1e079e6c6bf76f`
+
+## 2026-08-01 — F161 multi-tenant hub-archival gap pressure
+
+### Papers / posts
+- FederatedSkill multi-tenant util themes (privacy-safe bins/tenant hashes).
+- Torii F126 recovery hub gap_pressure pattern for always priority + re-prompt bias.
+- F155–F160 local hub-archival util stack without multi-tenant compound.
+
+### Insight
+Local util/reprompt/demote existed but multi-tenant chronic hub-archival under-use did not raise always priority or re-prompt bias. Highest ROI: post_score hub-archival gap_pressure from federated signals + fitness chronic gaps.
+
+### Feature shipped (F161)
+- `post_score_hub_archival_hub` + load hub-archival-util-signals
+- always priority compound for skill-prefer-hub-archival-early
+- decide_recovery_reprompt F161 hub_archival_hub_pressure tags
+- F156 critic deeper demote when multi-tenant high + local gap
+- fitness federate chronic gap → hub-archival-util-signals.json
+- fixture f161_ok
+
+### Loop-engineering
+Multi-tenant compound memory of skill under-use → local always budget + recovery.
+
+### Metric
+- Offline f161_ok gap_pressure=0.875 delta=40 re-prompt with hub pressure
+- Live recovery_injected_n=3 util_rate=1.0 recall=1.0
+- Modal pytorch#191829 BIT3_OK ~54s
+
+### SHA
+`pending`

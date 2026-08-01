@@ -1,0 +1,242 @@
+{
+  "feature": "F84",
+  "feature_always_budget": "F119",
+  "feature_hub_compound": "F125",
+  "feature_scorecard_hub": "F138",
+  "schema": 1,
+  "f89": true,
+  "path_themes": [
+    "chain",
+    "cmdi",
+    "pickle",
+    "python",
+    "review",
+    "secrets",
+    "sqli",
+    "taint",
+    "tools"
+  ],
+  "paths_n": 1,
+  "max_full": 4,
+  "max_always": 3,
+  "always_selected": [
+    "skill-prefer-hub-archival-early",
+    "skill-prefer-memory-cli-early",
+    "skill-prefer-product-cli"
+  ],
+  "always_deferred": [
+    "skill-prefer-critic-early",
+    "skill-tool-depth-hunks",
+    "skill-preserve-deep-tools"
+  ],
+  "catalog_n": 10,
+  "selected": [
+    "skill-prefer-hub-archival-early",
+    "skill-prefer-memory-cli-early",
+    "skill-prefer-product-cli",
+    "skill-f74-exploit-scenario"
+  ],
+  "demoted_skipped": [],
+  "free_rider_skipped": [],
+  "fitness_boosts": {
+    "skill-prefer-memory-cli-early": 1.0,
+    "skill-prefer-product-cli": 1.0
+  },
+  "attr_boosts": {
+    "skill-tool-depth-hunks": 3.0,
+    "skill-f74-exploit-scenario": 3.0,
+    "skill-f74-prefer-chain-json": 3.0,
+    "skill-preserve-deep-tools": 1.474,
+    "skill-prefer-memory-cli-early": 1.429,
+    "skill-prefer-critic-early": 2.5,
+    "skill-prefer-product-cli": 1.5,
+    "skill-prefer-hub-archival-early": 0.75
+  },
+  "hub_priority_deltas": {
+    "skill-prefer-hub-archival-early": 32,
+    "skill-prefer-memory-cli-early": 40,
+    "skill-prefer-product-cli": 17
+  },
+  "hub_gap_pressure": 0.4388,
+  "hub_skill_n": 3,
+  "scorecard_hub_priority_deltas": {},
+  "scorecard_hub_gap_pressure": 0.0,
+  "scorecard_hub_skill_n": 0,
+  "memory_hub_priority_deltas": {},
+  "memory_hub_gap_pressure": 0.0,
+  "memory_hub_skill_n": 0,
+  "feature_memory_hub": "F142",
+  "hub_archival_hub_priority_deltas": {
+    "skill-prefer-hub-archival-early": 22
+  },
+  "hub_archival_hub_gap_pressure": 0.5,
+  "hub_archival_hub_high": true,
+  "feature_hub_archival_hub": "F161",
+  "ranking": [
+    {
+      "id": "skill-prefer-hub-archival-early",
+      "score": 1005.5,
+      "always": true,
+      "always_priority": 95,
+      "always_priority_effective": 149,
+      "hub_delta": 32,
+      "scorecard_hub_delta": 0,
+      "hub_archival_hub_delta": 22,
+      "memory_hub_delta": 0,
+      "always_deferred": false,
+      "demoted": false,
+      "free_rider": false
+    },
+    {
+      "id": "skill-prefer-memory-cli-early",
+      "score": 1000.0,
+      "always": true,
+      "always_priority": 100,
+      "always_priority_effective": 140,
+      "hub_delta": 40,
+      "scorecard_hub_delta": 0,
+      "hub_archival_hub_delta": 0,
+      "memory_hub_delta": 0,
+      "always_deferred": false,
+      "demoted": false,
+      "free_rider": false
+    },
+    {
+      "id": "skill-prefer-product-cli",
+      "score": 1000.0,
+      "always": true,
+      "always_priority": 90,
+      "always_priority_effective": 107,
+      "hub_delta": 17,
+      "scorecard_hub_delta": 0,
+      "hub_archival_hub_delta": 0,
+      "memory_hub_delta": 0,
+      "always_deferred": false,
+      "demoted": false,
+      "free_rider": false
+    },
+    {
+      "id": "skill-f74-exploit-scenario",
+      "score": 15.0,
+      "always": false,
+      "always_priority": 10,
+      "always_priority_effective": 10,
+      "hub_delta": 0,
+      "scorecard_hub_delta": 0,
+      "hub_archival_hub_delta": 0,
+      "memory_hub_delta": 0,
+      "always_deferred": false,
+      "demoted": false,
+      "free_rider": false
+    },
+    {
+      "id": "skill-f74-prefer-chain-json",
+      "score": 15.0,
+      "always": false,
+      "always_priority": 10,
+      "always_priority_effective": 10,
+      "hub_delta": 0,
+      "scorecard_hub_delta": 0,
+      "hub_archival_hub_delta": 0,
+      "memory_hub_delta": 0,
+      "always_deferred": false,
+      "demoted": false,
+      "free_rider": false
+    },
+    {
+      "id": "skill-tool-depth-hunks",
+      "score": 11.5,
+      "always": true,
+      "always_priority": 50,
+      "always_priority_effective": 50,
+      "hub_delta": 0,
+      "scorecard_hub_delta": 0,
+      "hub_archival_hub_delta": 0,
+      "memory_hub_delta": 0,
+      "always_deferred": true,
+      "demoted": false,
+      "free_rider": false
+    },
+    {
+      "id": "skill-preserve-deep-tools",
+      "score": 9.47,
+      "always": true,
+      "always_priority": 40,
+      "always_priority_effective": 40,
+      "hub_delta": 0,
+      "scorecard_hub_delta": 0,
+      "hub_archival_hub_delta": 0,
+      "memory_hub_delta": 0,
+      "always_deferred": true,
+      "demoted": false,
+      "free_rider": false
+    },
+    {
+      "id": "skill-prefer-critic-early",
+      "score": 6.75,
+      "always": true,
+      "always_priority": 85,
+      "always_priority_effective": 85,
+      "hub_delta": 0,
+      "scorecard_hub_delta": 0,
+      "hub_archival_hub_delta": 0,
+      "memory_hub_delta": 0,
+      "always_deferred": true,
+      "demoted": false,
+      "free_rider": false
+    },
+    {
+      "id": "skill-soft-tool-nudge",
+      "score": 6.0,
+      "always": false,
+      "always_priority": 20,
+      "always_priority_effective": 20,
+      "hub_delta": 0,
+      "scorecard_hub_delta": 0,
+      "hub_archival_hub_delta": 0,
+      "memory_hub_delta": 0,
+      "always_deferred": false,
+      "demoted": false,
+      "free_rider": false
+    },
+    {
+      "id": "skill-archival-memory-search",
+      "score": 0.0,
+      "always": false,
+      "always_priority": 10,
+      "always_priority_effective": 10,
+      "hub_delta": 0,
+      "scorecard_hub_delta": 0,
+      "hub_archival_hub_delta": 0,
+      "memory_hub_delta": 0,
+      "always_deferred": false,
+      "demoted": false,
+      "free_rider": false
+    }
+  ],
+  "f120_compact": [
+    {
+      "id": "skill-prefer-hub-archival-early",
+      "saved": 510,
+      "cap": 480,
+      "always": true
+    },
+    {
+      "id": "skill-prefer-memory-cli-early",
+      "saved": 265,
+      "cap": 480,
+      "always": true
+    },
+    {
+      "id": "skill-prefer-product-cli",
+      "saved": 230,
+      "cap": 480,
+      "always": true
+    }
+  ],
+  "f120_chars_saved": 1005,
+  "injected_at": "2026-08-01T10:41:03Z",
+  "inject_chars": 3314,
+  "hub_injected": 1,
+  "synthesized": false
+}

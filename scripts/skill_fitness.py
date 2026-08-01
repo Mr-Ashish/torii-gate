@@ -861,6 +861,38 @@ def federate_signals(
             sig["tenant_hashes"] = [th]
             sig["tenant_hash"] = th
         signals.append(sig)
+
+    # F161: chronic hub-archival util gap (even when demoted) → multi-tenant pressure
+    if hub_archival_fitness_enabled():
+        ha_ent = (ledger.get("skills") or {}).get(HUB_ARCHIVAL_SKILL_ID) or {}
+        ha_gap_n = int(ha_ent.get("hub_archival_gap_n") or 0)
+        ha_sel = int(ha_ent.get("hub_archival_selected_n") or 0)
+        ha_gap_rate = float(ha_ent.get("hub_archival_gap_rate") or 0.0)
+        if ha_sel >= 1 and ha_gap_n >= 1 and ha_gap_rate >= 0.34:
+            gap_sig: dict[str, Any] = {
+                "id": "hub-archival-util-gap",
+                "theme": "hub-archival-util-gap",
+                "cwe": [],
+                "tags": [
+                    "hub_archival",
+                    "utilization_gap",
+                    "hub_archival_idle",
+                    "f161",
+                    "f158",
+                    "federated_skill",
+                ],
+                "keywords": ["hub-archival-gap", "hub-boost-idle", "chronic"],
+                "path_basenames": [],
+                "hits": max(1, ha_gap_n),
+                "source": "skill_fitness_hub_archival",
+                "tenants": 1,
+                "util_rate_bin": "gap",
+                "hub_archival_idle": True,
+            }
+            if th:
+                gap_sig["tenant_hashes"] = [th]
+                gap_sig["tenant_hash"] = th
+            signals.append(gap_sig)
     return signals
 
 
@@ -880,6 +912,34 @@ def write_fed_file(
             issues.append(s.get("id"))
     clean = [s for s in signals if s.get("id") not in issues]
     tool_n = sum(1 for s in clean if "tool_outcome" in (s.get("tags") or []))
+    # F161: also write hub-archival slice for multi-tenant pressure consumers
+    ha_sigs = [
+        s
+        for s in clean
+        if "hub_archival" in (s.get("tags") or [])
+        or str(s.get("theme") or "").startswith("hub-archival")
+    ]
+    if ha_sigs:
+        try:
+            ha_dest = root / "memory" / "federation" / "hub-archival-util-signals.json"
+            ha_dest.write_text(
+                json.dumps(
+                    {
+                        "schema_version": SCHEMA,
+                        "feature": FEATURE_HUB_ARCHIVAL,
+                        "feature_hub": "F161",
+                        "scope": "hub_archival_util",
+                        "updated_at": _now(),
+                        "privacy_ok": True,
+                        "signals": ha_sigs,
+                    },
+                    indent=2,
+                )
+                + "\n",
+                encoding="utf-8",
+            )
+        except OSError:
+            pass
     doc = {
         "schema_version": SCHEMA,
         "feature": FEATURE,

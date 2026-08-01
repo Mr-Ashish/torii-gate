@@ -1,0 +1,29 @@
+{
+  "feature": "F161",
+  "title": "multi-tenant hub-archival gap pressure post-score",
+  "scored_at": "2026-08-01T10:43:14Z",
+  "live": {
+    "recall": 1.0,
+    "tp": 4,
+    "fn": 0,
+    "verdict": "REQUEST_CHANGES",
+    "passed": 1,
+    "model": "deepseek/deepseek-v4-pro",
+    "recovery_injected_n": 3,
+    "hub_archival_injected": true,
+    "util_rate": 1.0
+  },
+  "modal": {
+    "repo": "pytorch/pytorch",
+    "pr": 191829,
+    "outcome": "BIT3_OK",
+    "elapsed_s": 53.9,
+    "log_streaming": true,
+    "modal_url": "https://modal.com/apps/mr-ashish/main/ap-GVPAKSgC2m9DRjB5kinw5j"
+  },
+  "offline": {
+    "skill_router_fixture_f161_ok": true,
+    "demo_gap_pressure": 1.0,
+    "demo_high": true
+  }
+}

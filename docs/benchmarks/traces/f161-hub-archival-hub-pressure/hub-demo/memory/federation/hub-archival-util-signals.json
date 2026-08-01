@@ -1,0 +1,22 @@
+{
+  "signals": [
+    {
+      "id": "hub-archival-util-gap",
+      "theme": "hub-archival-util-gap",
+      "tags": [
+        "hub_archival",
+        "utilization_gap",
+        "f161"
+      ],
+      "hits": 4,
+      "tenants": 2,
+      "tenant_hashes": [
+        "t1",
+        "t2"
+      ],
+      "util_rate_bin": "gap",
+      "hub_archival_idle": true,
+      "path_basenames": []
+    }
+  ]
+}

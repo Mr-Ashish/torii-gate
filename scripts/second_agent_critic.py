@@ -413,11 +413,12 @@ def run_f156_hub_archival_util(
     out_dir: Path | None,
     root: Path | None = None,
 ) -> CheckerResult:
-    """F156: hub-archival always skill inject ≠ hub_boost tools → demote signal.
+    """F156/F161: hub-archival inject ≠ hub_boost (+ multi-tenant pressure) demote.
 
     F121 only flags full recovery utilization_gap (all recovery idle). Live runs
     often hit memory CLI while hub-archival stays idle (util_rate=0.5) — F155
     measures that slice; F156 demotes APPROVE for it (Assay: not all skills help).
+    F161: multi-tenant hub-archival gap_pressure strengthens demote when local gap.
     """
     if not hub_archival_util_critic_enabled():
         return CheckerResult(
@@ -439,6 +440,7 @@ def run_f156_hub_archival_util(
     try:
         from skill_router import (  # type: ignore
             HUB_ARCHIVAL_SKILL_ID,
+            post_score_hub_archival_hub,
             score_recovery_util,
         )
 
@@ -446,7 +448,15 @@ def run_f156_hub_archival_util(
         injected = bool(report.get("hub_archival_injected"))
         tool_hit = bool(report.get("hub_archival_tool_hit"))
         gap = bool(report.get("hub_archival_util_gap"))
-        # not injected → neutral pass (skill optional this run)
+        ha_hub: dict = {}
+        try:
+            ha_hub = post_score_hub_archival_hub(root=root)
+        except Exception:
+            ha_hub = {}
+        ha_pressure = float(ha_hub.get("gap_pressure") or 0.0)
+        ha_high = bool(ha_hub.get("high"))
+        # not injected → neutral pass unless multi-tenant pressure is elevated
+        # (still soft-pass; inject is F160/router responsibility)
         if not injected:
             return CheckerResult(
                 id="f156_hub_archival_util",
@@ -457,12 +467,21 @@ def run_f156_hub_archival_util(
                     "enabled": True,
                     "hub_archival_injected": False,
                     "hub_archival_util_gap": False,
+                    "hub_archival_gap_pressure": ha_pressure,
+                    "hub_archival_hub_high": ha_high,
                     "reason": "hub_archival_not_injected",
                     "skill_id": HUB_ARCHIVAL_SKILL_ID,
+                    "feature_hub": "F161",
                 },
             )
         ok = not gap
         score = 1.0 if tool_hit else 0.15
+        # F161: multi-tenant pressure + local gap → deeper demote score
+        if gap and ha_high:
+            score = min(score, 0.08)
+        reason = "hub_archival_util_gap" if gap else "hub_archival_tool_ok"
+        if gap and ha_high:
+            reason = "hub_archival_util_gap+hub_archival_hub_pressure"
         return CheckerResult(
             id="f156_hub_archival_util",
             name="Hub-archival util gap (F156)",
@@ -471,15 +490,19 @@ def run_f156_hub_archival_util(
             detail={
                 "enabled": True,
                 "feature": FEATURE_HUB_ARCHIVAL_UTIL,
+                "feature_hub": "F161",
                 "skill_id": HUB_ARCHIVAL_SKILL_ID,
                 "hub_archival_injected": injected,
                 "hub_archival_tool_hit": tool_hit,
                 "hub_archival_util_gap": gap,
                 "hub_archival_ok": bool(report.get("hub_archival_ok")),
+                "hub_archival_gap_pressure": ha_pressure,
+                "hub_archival_hub_high": ha_high,
+                "hub_archival_hub_gap_hits": ha_hub.get("gap_hits"),
                 "util_rate": report.get("util_rate"),
                 "idle_ids": report.get("idle_ids"),
                 "tool_hit_ids": report.get("tool_hit_ids"),
-                "reason": "hub_archival_util_gap" if gap else "hub_archival_tool_ok",
+                "reason": reason,
             },
         )
     except Exception as e:

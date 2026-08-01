@@ -44,6 +44,8 @@ Env:
   TORII_HUB_GAP_PRESSURE_THR  default 0.34 — re-prompt idle recovery when hub gap ≥ thr
   TORII_HUB_ARCHIVAL_UTIL     1 (default) | 0 — F155 hub-archival in recovery util stack
   TORII_SKILL_ROUTER_SYNTH    1 (default) | 0 — F160 synthesize skill-router.json from always skills
+  TORII_HUB_ARCHIVAL_HUB      1 (default) | 0 — F161 multi-tenant hub-archival gap pressure
+  TORII_HUB_ARCHIVAL_HUB_THR  default 0.34 — F161 re-prompt/critic bias thr
 """
 
 from __future__ import annotations
@@ -65,6 +67,7 @@ FEATURE_SCORECARD_HUB = "F138"
 FEATURE_HUB_ARCHIVAL_UTIL = "F155"
 FEATURE_HUB_ARCHIVAL_REPROMPT = "F157"
 FEATURE_ROUTER_SYNTH = "F160"
+FEATURE_HUB_ARCHIVAL_HUB = "F161"
 SCHEMA = 1
 MARKER_OPEN = "<!-- torii-f84-skill-router -->"
 MARKER_CLOSE = "<!-- /torii-f84-skill-router -->"
@@ -339,6 +342,190 @@ def always_priority_for(sid: str, defaults: dict[str, Any] | None = None) -> int
         except (TypeError, ValueError):
             pass
     return 10
+
+
+def hub_archival_hub_enabled() -> bool:
+    """F161: multi-tenant hub-archival util gap pressure compound (default on)."""
+    raw = (os.environ.get("TORII_HUB_ARCHIVAL_HUB") or "1").strip().lower()
+    return raw not in _FALSEY
+
+
+def hub_archival_hub_pressure_threshold() -> float:
+    """F161: re-prompt/critic bias when multi-tenant ha gap_pressure ≥ thr."""
+    raw = (os.environ.get("TORII_HUB_ARCHIVAL_HUB_THR") or "0.34").strip()
+    try:
+        return max(0.0, min(1.0, float(raw)))
+    except ValueError:
+        return 0.34
+
+
+def load_hub_archival_hub_signals(root: Path | None = None) -> list[dict[str, Any]]:
+    """F161: privacy-safe hub-archival util signals from federation store(s)."""
+    root = root or _root()
+    paths = [
+        root / "memory" / "federation" / "recovery-util-signals.json",
+        root / "memory" / "federation" / "federated-signals.json",
+        root / "memory" / "federation" / "hub-archival-util-signals.json",
+    ]
+    od = (os.environ.get("OUT_DIR") or "").strip()
+    if od:
+        paths.insert(0, Path(od) / "recovery-util-signals.json")
+        paths.insert(0, Path(od) / "hub-archival-util-signals.json")
+    out: list[dict[str, Any]] = []
+    seen: set[str] = set()
+    for p in paths:
+        if not p.is_file():
+            continue
+        try:
+            data = json.loads(p.read_text(encoding="utf-8"))
+        except (OSError, json.JSONDecodeError):
+            continue
+        sigs = data.get("signals") if isinstance(data, dict) else data
+        if not isinstance(sigs, list):
+            continue
+        for s in sigs:
+            if not isinstance(s, dict):
+                continue
+            tags = [str(t).lower() for t in (s.get("tags") or [])]
+            theme = str(s.get("theme") or s.get("id") or "").lower()
+            is_ha = (
+                "hub_archival" in tags
+                or "f155" in tags
+                or "f158" in tags
+                or "f161" in tags
+                or "hub-archival" in theme
+                or "prefer-hub-archival" in theme
+                or theme == "hub-archival-util-gap"
+                or theme.startswith("hub-archival")
+            )
+            if not is_ha:
+                continue
+            blob = json.dumps(s, ensure_ascii=False)
+            if "/Users/" in blob or "/home/" in blob:
+                continue
+            key = str(s.get("id") or theme)
+            if key in seen:
+                continue
+            seen.add(key)
+            out.append(s)
+    return out
+
+
+def post_score_hub_archival_hub(
+    signals: list[dict[str, Any]] | None = None,
+    *,
+    root: Path | None = None,
+) -> dict[str, Any]:
+    """F161: multi-tenant hub-archival util themes → gap_pressure + always prio.
+
+    Privacy: skill ids, bins, tenant counts only — no paths/commands/tenant names.
+    """
+    root = root or _root()
+    if not hub_archival_hub_enabled():
+        return {
+            "feature": FEATURE_HUB_ARCHIVAL_HUB,
+            "enabled": False,
+            "gap_pressure": 0.0,
+            "priority_deltas": {},
+            "privacy_ok": True,
+            "reason": "hub_archival_hub_off",
+        }
+    signals = signals if signals is not None else load_hub_archival_hub_signals(root)
+    gap_hits = 0
+    ok_hits = 0
+    gap_tenants = 0
+    ok_tenants = 0
+    skill_scores: dict[str, dict[str, Any]] = {}
+
+    for s in signals:
+        theme = str(s.get("theme") or s.get("id") or "").lower()
+        hits = max(1, int(s.get("hits") or 1))
+        tenants = max(1, int(s.get("tenants") or len(s.get("tenant_hashes") or []) or 1))
+        util_bin = str(s.get("util_rate_bin") or "").lower()
+        tags = [str(t).lower() for t in (s.get("tags") or [])]
+        is_gap = (
+            util_bin == "gap"
+            or "utilization_gap" in tags
+            or "hub_archival_idle" in tags
+            or theme in ("hub-archival-util-gap", "recovery-util-gap")
+            or theme.endswith("-gap")
+            or bool(s.get("hub_archival_idle"))
+        )
+        is_ok = (
+            util_bin in ("full", "partial", "ok", "hit")
+            or "util_ok" in tags
+            or "hub_boost" in tags
+            and not is_gap
+        )
+        if is_gap:
+            gap_hits += hits
+            gap_tenants = max(gap_tenants, tenants)
+        elif is_ok:
+            ok_hits += hits
+            ok_tenants = max(ok_tenants, tenants)
+
+        sid = HUB_ARCHIVAL_SKILL_ID
+        # only compound into hub-archival skill priority (not generic recovery)
+        if (
+            HUB_ARCHIVAL_SKILL_ID in theme
+            or "prefer-hub-archival" in theme
+            or "hub_archival" in tags
+            or is_gap
+            or is_ok
+        ):
+            ent = skill_scores.setdefault(
+                sid,
+                {
+                    "skill_id": sid,
+                    "hits": 0,
+                    "tenants": 0,
+                    "tool_hits": 0,
+                    "gap_hits": 0,
+                    "priority_delta": 0,
+                    "util_rate_bin": util_bin or ("gap" if is_gap else "hit"),
+                },
+            )
+            ent["hits"] = int(ent["hits"]) + hits
+            ent["tenants"] = max(int(ent["tenants"]), tenants)
+            if is_gap:
+                ent["gap_hits"] = int(ent["gap_hits"]) + hits
+            else:
+                tool_hits = int(s.get("tool_hits") or (hits if util_bin == "hit" else 0))
+                ent["tool_hits"] = int(ent["tool_hits"]) + max(0, tool_hits)
+
+    for sid, ent in skill_scores.items():
+        t = min(4, int(ent["tenants"]))
+        h = min(8, int(ent["hits"]))
+        th = min(6, int(ent["tool_hits"]))
+        gh = min(6, int(ent.get("gap_hits") or 0))
+        # boost tool hits; mild gap pressure still keeps skill visible (need recovery)
+        delta = 5 + 8 * t + 2 * h + 3 * th + 2 * gh
+        ent["priority_delta"] = min(40, int(delta))
+
+    total_sys = gap_hits + ok_hits
+    gap_pressure = round(gap_hits / total_sys, 4) if total_sys else 0.0
+    blob = json.dumps({"skills": skill_scores, "gap": gap_hits, "ok": ok_hits})
+    privacy_ok = "/Users/" not in blob and "/home/" not in blob
+
+    return {
+        "feature": FEATURE_HUB_ARCHIVAL_HUB,
+        "schema": SCHEMA,
+        "enabled": True,
+        "signals_n": len(signals),
+        "skill_n": len(skill_scores),
+        "skills": skill_scores,
+        "priority_deltas": {k: v["priority_delta"] for k, v in skill_scores.items()},
+        "gap_hits": gap_hits,
+        "ok_hits": ok_hits,
+        "gap_tenants": gap_tenants,
+        "ok_tenants": ok_tenants,
+        "gap_pressure": gap_pressure,
+        "thr": hub_archival_hub_pressure_threshold(),
+        "high": gap_pressure >= hub_archival_hub_pressure_threshold() and gap_hits >= 1,
+        "privacy_ok": privacy_ok,
+        "hub_ok": privacy_ok,
+        "skill_id": HUB_ARCHIVAL_SKILL_ID,
+    }
 
 
 def recovery_hub_enabled() -> bool:
@@ -1380,12 +1567,25 @@ def select_skills(
     except Exception:
         mem_hub_report = {"enabled": False, "priority_deltas": {}, "skills": {}}
 
+    # F161: multi-tenant hub-archival util gap → always priority for hub-archival skill
+    ha_hub_report: dict[str, Any] = {
+        "enabled": False,
+        "priority_deltas": {},
+        "skills": {},
+    }
+    if hub_archival_hub_enabled():
+        try:
+            ha_hub_report = post_score_hub_archival_hub(root=root or _root())
+        except Exception:
+            ha_hub_report = {"enabled": False, "priority_deltas": {}, "skills": {}}
+
     def _effective_always_prio(c: SkillCard) -> int:
         return (
             int(c.always_priority or 0)
             + hub_priority_delta(c.id, hub_report)
             + hub_priority_delta(c.id, sc_hub_report)
             + hub_priority_delta(c.id, mem_hub_report)
+            + hub_priority_delta(c.id, ha_hub_report)
         )
 
     # F119: always-on budget — rank always candidates by always_priority (+ F125 hub), take top N
@@ -1420,6 +1620,12 @@ def select_skills(
             s += min(12.0, float(hd_mem) / 4.0)
             if c.id in always_deferred_set:
                 s += min(6.0, float(hd_mem) / 6.0)
+        # F161: multi-tenant hub-archival util pressure keeps skill-prefer-hub-archival-early
+        hd_ha = hub_priority_delta(c.id, ha_hub_report)
+        if hd_ha:
+            s += min(12.0, float(hd_ha) / 4.0)
+            if c.id in always_deferred_set:
+                s += min(8.0, float(hd_ha) / 5.0)
         ranked.append((s, c))
     ranked.sort(key=lambda x: (-x[0], x[1].id))
 
@@ -1518,6 +1724,15 @@ def select_skills(
         "feature_memory_hub": "F142"
         if (mem_hub_report.get("enabled") or mem_hub_report.get("skill_n"))
         else None,
+        "hub_archival_hub_priority_deltas": {
+            k: v
+            for k, v in (ha_hub_report.get("priority_deltas") or {}).items()
+        },
+        "hub_archival_hub_gap_pressure": ha_hub_report.get("gap_pressure"),
+        "hub_archival_hub_high": ha_hub_report.get("high"),
+        "feature_hub_archival_hub": FEATURE_HUB_ARCHIVAL_HUB
+        if hub_archival_hub_enabled()
+        else None,
         "ranking": [
             {
                 "id": c.id,
@@ -1527,6 +1742,7 @@ def select_skills(
                 "always_priority_effective": _effective_always_prio(c),
                 "hub_delta": hub_priority_delta(c.id, hub_report),
                 "scorecard_hub_delta": hub_priority_delta(c.id, sc_hub_report),
+                "hub_archival_hub_delta": hub_priority_delta(c.id, ha_hub_report),
                 "memory_hub_delta": hub_priority_delta(c.id, mem_hub_report),
                 "always_deferred": c.id in always_deferred_set,
                 "demoted": c.id in demoted and c.id not in always_selected_ids,
@@ -3131,13 +3347,14 @@ def decide_recovery_reprompt(
     hub: dict[str, Any] | None = None,
     root: Path | None = None,
 ) -> dict[str, Any]:
-    """F122/F126/F157: re-prompt on util gap, hub gap_pressure, or hub-archival idle.
+    """F122/F126/F157/F161: re-prompt on util gap, hub pressure, or hub-archival idle.
 
     F122: recovery injected + tools ran + zero recovery tool hits → re-prompt.
     F126: partial util (some idle) + hub gap_pressure ≥ thr → re-prompt idle skills
     so multi-tenant gap themes bias the paid recovery attempt under F108.
     F157: hub-archival specifically idle (partial recovery util) → re-prompt for
     hub_boost archival even when memory/product CLIs already fired (live F155).
+    F161: multi-tenant hub-archival gap_pressure biases F157 when local ha idle.
     """
     on = recovery_reprompt_enabled() if reprompt_on is None else bool(reprompt_on)
     gap = bool(util.get("utilization_gap"))
@@ -3159,11 +3376,27 @@ def decide_recovery_reprompt(
     thr = hub_gap_pressure_threshold()
     hub_bias_on = hub_gap_reprompt_enabled()
 
+    # F161: multi-tenant hub-archival util gap pressure
+    ha_hub: dict[str, Any] = {}
+    if hub_archival_hub_enabled():
+        try:
+            ha_hub = post_score_hub_archival_hub(root=root or _root())
+        except Exception:
+            ha_hub = {}
+    ha_gap_pressure = float((ha_hub or {}).get("gap_pressure") or 0.0)
+    ha_thr = hub_archival_hub_pressure_threshold()
+    ha_hub_high = bool((ha_hub or {}).get("high")) or (
+        ha_gap_pressure >= ha_thr and int((ha_hub or {}).get("gap_hits") or 0) >= 1
+    )
+
     out: dict[str, Any] = {
         "feature": "F122",
         "feature_hub_gap": "F126" if hub_bias_on else None,
         "feature_hub_archival_reprompt": FEATURE_HUB_ARCHIVAL_REPROMPT
         if ha_reprompt_on
+        else None,
+        "feature_hub_archival_hub": FEATURE_HUB_ARCHIVAL_HUB
+        if hub_archival_hub_enabled()
         else None,
         "reprompt": 0,
         "enabled": on,
@@ -3182,6 +3415,13 @@ def decide_recovery_reprompt(
         "hub_archival_util_gap": int(ha_gap),
         "hub_archival_injected": int(bool(util.get("hub_archival_injected"))),
         "hub_archival_tool_hit": int(bool(util.get("hub_archival_tool_hit"))),
+        "hub_archival_gap_pressure": ha_gap_pressure,
+        "hub_archival_hub_thr": ha_thr,
+        "hub_archival_hub_high": int(ha_hub_high),
+        "hub_archival_hub_delta": int(
+            ((ha_hub or {}).get("priority_deltas") or {}).get(HUB_ARCHIVAL_SKILL_ID)
+            or 0
+        ),
         "budget_kind": "f122",
     }
     if not on:
@@ -3233,12 +3473,40 @@ def decide_recovery_reprompt(
         out["reason"] = "hub_archival_util_gap"
         out["budget_kind"] = "f157"
         out["feature"] = FEATURE_HUB_ARCHIVAL_REPROMPT
+        if ha_hub_high:
+            out["reason"] = "hub_archival_util_gap+hub_archival_hub_pressure"
+            out["feature"] = FEATURE_HUB_ARCHIVAL_HUB
+        return out
+
+    # F161: multi-tenant hub-archival gap pressure + local hub-archival idle
+    # (covers edge where ha_gap flag missing but idle_ids includes hub-archival)
+    if (
+        ha_reprompt_on
+        and ha_hub_high
+        and HUB_ARCHIVAL_SKILL_ID in idle
+        and int(util.get("hub_archival_injected") or 0)
+    ):
+        out["reprompt"] = 1
+        out["reason"] = "hub_archival_hub_pressure_idle"
+        out["budget_kind"] = "f157"
+        out["feature"] = FEATURE_HUB_ARCHIVAL_HUB
         return out
 
     if tool_n >= 1 and not idle:
         out["reason"] = "recovery_tools_used"
         return out
     if tool_n >= 1 and idle and (not hub_bias_on or gap_pressure < thr):
+        # F161: multi-tenant ha pressure can still re-prompt hub-archival idle
+        if (
+            ha_reprompt_on
+            and ha_hub_high
+            and HUB_ARCHIVAL_SKILL_ID in idle
+        ):
+            out["reprompt"] = 1
+            out["reason"] = "hub_archival_hub_pressure_idle"
+            out["budget_kind"] = "f157"
+            out["feature"] = FEATURE_HUB_ARCHIVAL_HUB
+            return out
         out["reason"] = "partial_util_hub_below_thr"
         return out
     if not gap:
@@ -4423,6 +4691,106 @@ themes: memory,archival,recovery
             and "/Users/" not in json.dumps(synth_doc)
         )
 
+        # F161: multi-tenant hub-archival gap pressure post-score + re-prompt bias
+        os.environ["TORII_HUB_ARCHIVAL_HUB"] = "1"
+        os.environ["TORII_HUB_ARCHIVAL_HUB_THR"] = "0.30"
+        os.environ["TORII_HUB_ARCHIVAL_REPROMPT"] = "1"
+        fed_ha = root / "memory" / "federation"
+        fed_ha.mkdir(parents=True, exist_ok=True)
+        (fed_ha / "hub-archival-util-signals.json").write_text(
+            json.dumps(
+                {
+                    "schema_version": 1,
+                    "feature": "F161",
+                    "privacy_ok": True,
+                    "signals": [
+                        {
+                            "id": "hub-archival-util-gap",
+                            "theme": "hub-archival-util-gap",
+                            "tags": [
+                                "hub_archival",
+                                "utilization_gap",
+                                "hub_archival_idle",
+                                "f161",
+                            ],
+                            "hits": 5,
+                            "tenants": 3,
+                            "tenant_hashes": ["aaa", "bbb", "ccc"],
+                            "util_rate_bin": "gap",
+                            "hub_archival_idle": True,
+                            "path_basenames": [],
+                        },
+                        {
+                            "id": "recovery-util-hit-skill-prefer-hub-archival-early",
+                            "theme": HUB_ARCHIVAL_SKILL_ID,
+                            "tags": ["hub_archival", "f155", "hub_boost", "tool_outcome"],
+                            "hits": 2,
+                            "tool_hits": 2,
+                            "tenants": 1,
+                            "tenant_hashes": ["ddd"],
+                            "util_rate_bin": "hit",
+                            "path_basenames": [],
+                        },
+                    ],
+                }
+            )
+            + "\n",
+            encoding="utf-8",
+        )
+        ha_hub = post_score_hub_archival_hub(root=root)
+        ha_delta = int(
+            (ha_hub.get("priority_deltas") or {}).get(HUB_ARCHIVAL_SKILL_ID) or 0
+        )
+        util_ha_idle = {
+            "recovery_injected_n": 2,
+            "tool_hit_n": 1,
+            "util_rate": 0.5,
+            "utilization_gap": False,
+            "idle_ids": [HUB_ARCHIVAL_SKILL_ID],
+            "inject_chars": 700,
+            "hub_archival_util_gap": True,
+            "hub_archival_injected": True,
+            "hub_archival_tool_hit": False,
+        }
+        hub_low_gen = {
+            "enabled": True,
+            "gap_pressure": 0.05,
+            "priority_deltas": {},
+            "skills": {},
+            "privacy_ok": True,
+        }
+        dec_ha_hub = decide_recovery_reprompt(
+            util_ha_idle, tool_call_turns=3, hub=hub_low_gen, root=root
+        )
+        util_ha_ok_local = {
+            "recovery_injected_n": 2,
+            "tool_hit_n": 2,
+            "util_rate": 1.0,
+            "utilization_gap": False,
+            "idle_ids": [],
+            "inject_chars": 700,
+            "hub_archival_util_gap": False,
+            "hub_archival_injected": True,
+            "hub_archival_tool_hit": True,
+        }
+        dec_ha_ok_hub = decide_recovery_reprompt(
+            util_ha_ok_local, tool_call_turns=3, hub=hub_low_gen, root=root
+        )
+        f161_ok = (
+            bool(ha_hub.get("privacy_ok"))
+            and float(ha_hub.get("gap_pressure") or 0) >= 0.3
+            and bool(ha_hub.get("high"))
+            and ha_delta >= 5
+            and int(dec_ha_hub.get("reprompt") or 0) == 1
+            and (
+                "hub_archival" in str(dec_ha_hub.get("reason") or "")
+            )
+            and int(dec_ha_hub.get("hub_archival_hub_high") or 0) == 1
+            and int(dec_ha_ok_hub.get("reprompt") or 0) == 0
+            and "/Users/" not in json.dumps(ha_hub)
+            and "aaa" not in json.dumps(ha_hub.get("skills") or {})
+        )
+
         # F136: scorecard util — tool hits ok; idle scorecard skill → gap; none → ok
         sc_util_out = root / "sc-util-out"
         sc_util_out.mkdir(exist_ok=True)
@@ -4659,6 +5027,7 @@ Call `python3 scripts/torii.py doctor` and scorecard early.
                 f155_ok,
                 f157_ok,
                 f160_ok,
+                f161_ok,
             ]
         )
         payload = {
@@ -4673,9 +5042,11 @@ Call `python3 scripts/torii.py doctor` and scorecard early.
             "f155": True,
             "f157": True,
             "f160": True,
+            "f161": True,
             "feature_hub_archival_util": FEATURE_HUB_ARCHIVAL_UTIL,
             "feature_hub_archival_reprompt": FEATURE_HUB_ARCHIVAL_REPROMPT,
             "feature_router_synth": FEATURE_ROUTER_SYNTH,
+            "feature_hub_archival_hub": FEATURE_HUB_ARCHIVAL_HUB,
             "feature_always_budget": "F119",
             "feature_compact": "F120",
             "feature_util": "F121",
@@ -4772,6 +5143,13 @@ Call `python3 scripts/torii.py doctor` and scorecard early.
             "f160_hub_archival_gap": util_synth.get("hub_archival_util_gap"),
             "f160_router_synthesized": util_synth.get("router_synthesized"),
             "f160_always": synth_doc.get("always_selected"),
+            "f161_ok": f161_ok,
+            "f161_gap_pressure": ha_hub.get("gap_pressure"),
+            "f161_high": ha_hub.get("high"),
+            "f161_ha_delta": ha_delta,
+            "f161_reprompt": dec_ha_hub.get("reprompt"),
+            "f161_reason": dec_ha_hub.get("reason"),
+            "f161_ok_local_no_reprompt": int(dec_ha_ok_hub.get("reprompt") or 0),
         }
         print(json.dumps(payload, indent=2))
         return 0 if fixture_pass else 1

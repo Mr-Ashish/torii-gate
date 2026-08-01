@@ -1,0 +1,447 @@
+{
+  "feature": "F70",
+  "mode": "live",
+  "at": "2026-08-01T10:41:40Z",
+  "model": "deepseek/deepseek-v4-pro",
+  "hermes_rc": 0,
+  "review": "docs/benchmarks/traces/f161-hub-archival-hub-pressure/live/review-bench-f70.md",
+  "score": {
+    "feature": "F70",
+    "pack_id": "insecure-demo",
+    "verdict": "REQUEST_CHANGES",
+    "expected_verdict": "REQUEST_CHANGES",
+    "verdict_ok": true,
+    "tp": 4,
+    "fn": 0,
+    "required_total": 4,
+    "recall": 1.0,
+    "precision_proxy": 0.2222,
+    "cases": [
+      {
+        "case_id": "sqli-search",
+        "hit": true,
+        "matched_terms": [
+          "sql injection",
+          "sqli",
+          "f-string",
+          "f\"select",
+          "execute(f",
+          "cur.execute(f",
+          "cwe-89"
+        ],
+        "path_ok": true
+      },
+      {
+        "case_id": "pickle-load",
+        "hit": true,
+        "matched_terms": [
+          "pickle",
+          "deserialization",
+          "cwe-502",
+          "pickle.loads"
+        ],
+        "path_ok": true
+      },
+      {
+        "case_id": "cmdi-run",
+        "hit": true,
+        "matched_terms": [
+          "command injection",
+          "shell=true",
+          "os command",
+          "rce",
+          "subprocess",
+          "cwe-78"
+        ],
+        "path_ok": true
+      },
+      {
+        "case_id": "secret-exposure",
+        "hit": true,
+        "matched_terms": [
+          "secret",
+          "api key",
+          "api_key",
+          "openrouter",
+          "credential",
+          "exposes",
+          "exposure"
+        ],
+        "path_ok": true
+      }
+    ],
+    "path_hits": [
+      {
+        "path": "demo/insecure/app.py",
+        "line": 15
+      },
+      {
+        "path": "demo/insecure/app.py",
+        "line": 21
+      },
+      {
+        "path": "demo/insecure/app.py",
+        "line": 27
+      },
+      {
+        "path": "demo/insecure/app.py",
+        "line": 31
+      },
+      {
+        "path": "demo/insecure/app.py",
+        "line": null
+      },
+      {
+        "path": "torii.py",
+        "line": null
+      },
+      {
+        "path": "archival_memory_search.py auto --files demo/insecure/app.py",
+        "line": null
+      }
+    ],
+    "critic": {
+      "feature": "F70",
+      "pass": "dual_offline",
+      "effective_aware": true,
+      "graph_supersede_aware": true,
+      "graph_multi_hop": true,
+      "graph_supersede_edges": 0,
+      "graph_hop": {
+        "multi_hop": true,
+        "hops": 2,
+        "seed_n": 4,
+        "neighborhood_n": 4,
+        "seeds": [
+          "tp:cmdi-run",
+          "tp:pickle-load",
+          "tp:secret-exposure",
+          "tp:sqli-search"
+        ]
+      },
+      "effective_floor": 0.25,
+      "chunk_count": 18,
+      "likely_fp": 0,
+      "confirmed_tp": 4,
+      "stale_tp_match": 0,
+      "superseded_tp": 0,
+      "weak_evidence": 14,
+      "precision_proxy": 0.2222,
+      "effective_precision": 0.1967,
+      "findings": [
+        {
+          "index": 0,
+          "status": "confirmed_tp",
+          "has_path": true,
+          "paths": [
+            {
+              "path": "demo/insecure/app.py",
+              "line": 15
+            }
+          ],
+          "tp_signature_hits": [
+            "sqli-search",
+            "pickle-load",
+            "cmdi-run",
+            "secret-exposure"
+          ],
+          "tp_effective_max": 0.8943,
+          "tp_effective_scores": [
+            0.8943,
+            0.8568,
+            0.8756,
+            0.8756
+          ],
+          "demote_reason": "",
+          "graph_filtered": null,
+          "preview": "All four findings below are blocking. Merge must not proceed until every sink is either removed or protected with input validation, parameterization, and authn/authz gates.    | # "
+        },
+        {
+          "index": 1,
+          "status": "weak_evidence",
+          "has_path": false,
+          "paths": [],
+          "tp_signature_hits": [
+            "sqli-search"
+          ],
+          "tp_effective_max": 0.8943,
+          "tp_effective_scores": [
+            0.8943
+          ],
+          "demote_reason": "",
+          "graph_filtered": null,
+          "preview": "Sink: `cur.execute(f\"SELECT * FROM items WHERE name = '{q}'\")`"
+        },
+        {
+          "index": 2,
+          "status": "weak_evidence",
+          "has_path": false,
+          "paths": [],
+          "tp_signature_hits": [
+            "sqli-search",
+            "cmdi-run"
+          ],
+          "tp_effective_max": 0.8943,
+          "tp_effective_scores": [
+            0.8943,
+            0.8756
+          ],
+          "demote_reason": "",
+          "graph_filtered": null,
+          "preview": "Source: `q = request.args.get(\"q\", \"\")` (line 14), unsanitized user input interpolated directly into an f-string SQL query."
+        },
+        {
+          "index": 3,
+          "status": "weak_evidence",
+          "has_path": false,
+          "paths": [],
+          "tp_signature_hits": [],
+          "tp_effective_max": null,
+          "tp_effective_scores": [],
+          "demote_reason": "",
+          "graph_filtered": null,
+          "preview": "Exploit: `GET /search?q='; DROP TABLE items; --` dumps the table; `' OR 1=1 --` returns all rows. Arbitrary SQL executed with the app's database privileges."
+        },
+        {
+          "index": 4,
+          "status": "weak_evidence",
+          "has_path": false,
+          "paths": [],
+          "tp_signature_hits": [],
+          "tp_effective_max": null,
+          "tp_effective_scores": [],
+          "demote_reason": "",
+          "graph_filtered": null,
+          "preview": "Fix: use parameterized queries \u2014 `cur.execute(\"SELECT * FROM items WHERE name = ?\", (q,))`."
+        },
+        {
+          "index": 5,
+          "status": "confirmed_tp",
+          "has_path": true,
+          "paths": [
+            {
+              "path": "demo/insecure/app.py",
+              "line": 21
+            }
+          ],
+          "tp_signature_hits": [
+            "sqli-search",
+            "pickle-load"
+          ],
+          "tp_effective_max": 0.8943,
+          "tp_effective_scores": [
+            0.8943,
+            0.8568
+          ],
+          "demote_reason": "",
+          "graph_filtered": null,
+          "preview": "Matches TP signature `sqli-search` (score 1.0, archival reconsolidated).  **2. Insecure Deserialization \u2014 `demo/insecure/app.py:21`**"
+        },
+        {
+          "index": 6,
+          "status": "weak_evidence",
+          "has_path": false,
+          "paths": [],
+          "tp_signature_hits": [
+            "pickle-load"
+          ],
+          "tp_effective_max": 0.8568,
+          "tp_effective_scores": [
+            0.8568
+          ],
+          "demote_reason": "",
+          "graph_filtered": null,
+          "preview": "Sink: `pickle.loads(data)` on raw `request.data` (line 19\u201320)."
+        },
+        {
+          "index": 7,
+          "status": "weak_evidence",
+          "has_path": false,
+          "paths": [],
+          "tp_signature_hits": [
+            "pickle-load",
+            "cmdi-run"
+          ],
+          "tp_effective_max": 0.8756,
+          "tp_effective_scores": [
+            0.8568,
+            0.8756
+          ],
+          "demote_reason": "",
+          "graph_filtered": null,
+          "preview": "Exploit: attacker POSTs a crafted pickle payload to `/load`. Pickle `__reduce__` gadgets allow arbitrary code execution in the Python process \u2014 full RCE. No authentication required"
+        },
+        {
+          "index": 8,
+          "status": "weak_evidence",
+          "has_path": false,
+          "paths": [],
+          "tp_signature_hits": [
+            "pickle-load"
+          ],
+          "tp_effective_max": 0.8568,
+          "tp_effective_scores": [
+            0.8568
+          ],
+          "demote_reason": "",
+          "graph_filtered": null,
+          "preview": "Fix: Never call `pickle.loads` on untrusted data. Use JSON (`json.loads`) or a safe serialization format. If pickle must be used, cryptographically sign and verify payloads."
+        },
+        {
+          "index": 9,
+          "status": "confirmed_tp",
+          "has_path": true,
+          "paths": [
+            {
+              "path": "demo/insecure/app.py",
+              "line": 27
+            }
+          ],
+          "tp_signature_hits": [
+            "pickle-load",
+            "cmdi-run"
+          ],
+          "tp_effective_max": 0.8756,
+          "tp_effective_scores": [
+            0.8568,
+            0.8756
+          ],
+          "demote_reason": "",
+          "graph_filtered": null,
+          "preview": "Matches TP signature `pickle-load` (score 1.0, archival reconsolidated).  **3. Command Injection \u2014 `demo/insecure/app.py:27`**"
+        },
+        {
+          "index": 10,
+          "status": "weak_evidence",
+          "has_path": false,
+          "paths": [],
+          "tp_signature_hits": [
+            "cmdi-run"
+          ],
+          "tp_effective_max": 0.8756,
+          "tp_effective_scores": [
+            0.8756
+          ],
+          "demote_reason": "",
+          "graph_filtered": null,
+          "preview": "Sink: `subprocess.check_output(cmd, shell=True)` with `cmd = request.args.get(\"cmd\", \"echo hi\")` (line 26), unsanitized user input passed directly to a shell."
+        },
+        {
+          "index": 11,
+          "status": "weak_evidence",
+          "has_path": false,
+          "paths": [],
+          "tp_signature_hits": [],
+          "tp_effective_max": null,
+          "tp_effective_scores": [],
+          "demote_reason": "",
+          "graph_filtered": null,
+          "preview": "Exploit: `GET /run?cmd=cat /etc/passwd` leaks system files. `GET /run?cmd=rm -rf /` (if privileges allow) is catastrophic. Shell metacharacters (`;`, `|`, `` ` ``, `$()`) are unesc"
+        },
+        {
+          "index": 12,
+          "status": "weak_evidence",
+          "has_path": false,
+          "paths": [],
+          "tp_signature_hits": [
+            "cmdi-run"
+          ],
+          "tp_effective_max": 0.8756,
+          "tp_effective_scores": [
+            0.8756
+          ],
+          "demote_reason": "",
+          "graph_filtered": null,
+          "preview": "Fix: Use `subprocess.check_output([cmd], shell=False)` with argument lists, or better, avoid executing user-supplied commands entirely. At minimum, validate against a strict allowl"
+        },
+        {
+          "index": 13,
+          "status": "confirmed_tp",
+          "has_path": true,
+          "paths": [
+            {
+              "path": "demo/insecure/app.py",
+              "line": 31
+            }
+          ],
+          "tp_signature_hits": [
+            "secret-exposure"
+          ],
+          "tp_effective_max": 0.8756,
+          "tp_effective_scores": [
+            0.8756
+          ],
+          "demote_reason": "",
+          "graph_filtered": null,
+          "preview": "Matches TP signature `cmdi-run` (score 1.0, archival reconsolidated).  **4. Secrets Exposure \u2014 `demo/insecure/app.py:31\u201332`**"
+        },
+        {
+          "index": 14,
+          "status": "weak_evidence",
+          "has_path": false,
+          "paths": [],
+          "tp_signature_hits": [
+            "secret-exposure"
+          ],
+          "tp_effective_max": 0.8756,
+          "tp_effective_scores": [
+            0.8756
+          ],
+          "demote_reason": "",
+          "graph_filtered": null,
+          "preview": "Sink: `return {\"key\": os.environ.get(\"OPENROUTER_API_KEY\", \"missing\")}` exposes `OPENROUTER_API_KEY` to any caller of `GET /secret`."
+        },
+        {
+          "index": 15,
+          "status": "weak_evidence",
+          "has_path": false,
+          "paths": [],
+          "tp_signature_hits": [
+            "secret-exposure"
+          ],
+          "tp_effective_max": 0.8756,
+          "tp_effective_scores": [
+            0.8756
+          ],
+          "demote_reason": "",
+          "graph_filtered": null,
+          "preview": "Exploit: unauthenticated request returns the live API key. This key can then be used by an attacker to make paid API calls, exfiltrate data, or rack up billing charges."
+        },
+        {
+          "index": 16,
+          "status": "weak_evidence",
+          "has_path": false,
+          "paths": [],
+          "tp_signature_hits": [
+            "secret-exposure"
+          ],
+          "tp_effective_max": 0.8756,
+          "tp_effective_scores": [
+            0.8756
+          ],
+          "demote_reason": "",
+          "graph_filtered": null,
+          "preview": "Fix: Remove this endpoint entirely. Never echo secrets to clients. If a health-check endpoint is needed, return a boolean or masked value (e.g., `{\"configured\": bool(key)}`)."
+        },
+        {
+          "index": 17,
+          "status": "weak_evidence",
+          "has_path": false,
+          "paths": [],
+          "tp_signature_hits": [
+            "secret-exposure"
+          ],
+          "tp_effective_max": 0.8756,
+          "tp_effective_scores": [
+            0.8756
+          ],
+          "demote_reason": "",
+          "graph_filtered": null,
+          "preview": "Matches TP signature `secret-exposure` (score 1.0, archival reconsolidated)."
+        }
+      ]
+    },
+    "score_pct": 100.0,
+    "passed": true
+  }
+}

@@ -478,6 +478,22 @@ def assess(root: Path | None = None, *, deep: bool = True) -> dict[str, Any]:
             else ""
         ),
         "feature_router_synth": "F160",
+        # F161: multi-tenant hub-archival gap pressure
+        "hub_archival_hub_ok": "post_score_hub_archival_hub" in (
+            (root / "scripts" / "skill_router.py").read_text(
+                encoding="utf-8", errors="replace"
+            )
+            if (root / "scripts" / "skill_router.py").is_file()
+            else ""
+        )
+        and "F161" in (
+            (root / "scripts" / "skill_router.py").read_text(
+                encoding="utf-8", errors="replace"
+            )
+            if (root / "scripts" / "skill_router.py").is_file()
+            else ""
+        ),
+        "feature_hub_archival_hub": "F161",
         # F158: fitness ledger ingest/demote for hub-archival util
         "hub_archival_fitness_ok": "ingest_hub_archival_util" in (
             (root / "scripts" / "skill_fitness.py").read_text(
@@ -545,6 +561,7 @@ def to_markdown(report: dict[str, Any]) -> str:
             f"- Hub-archival util soft re-prompt (F157): **{'ok' if report.get('hub_archival_reprompt_ok') else 'gap'}**",
             f"- F108 adaptive dual-recovery slot (F159): **{'ok' if report.get('reprompt_adaptive_ok') else 'gap'}**",
             f"- Skill-router synth for bench util (F160): **{'ok' if report.get('router_synth_ok') else 'gap'}**",
+            f"- Hub-archival multi-tenant hub pressure (F161): **{'ok' if report.get('hub_archival_hub_ok') else 'gap'}**",
             f"- Hub-archival fitness demote/boost (F158): **{'ok' if report.get('hub_archival_fitness_ok') else 'gap'}**",
             f"- Recovery hub gap critic/demote-eval (F128): **{'ok' if report.get('recovery_hub_gap_ok') else 'gap'}**",
             f"- Recon-warm hub critic/demote-eval (F151): **{'ok' if report.get('recon_warm_hub_ok') else 'gap'}**",
@@ -596,6 +613,8 @@ def cmd_scorecard(args: argparse.Namespace) -> int:
                 "feature_reprompt_adaptive": report.get("feature_reprompt_adaptive"),
                 "router_synth_ok": report.get("router_synth_ok"),
                 "feature_router_synth": report.get("feature_router_synth"),
+                "hub_archival_hub_ok": report.get("hub_archival_hub_ok"),
+                "feature_hub_archival_hub": report.get("feature_hub_archival_hub"),
                 "hub_archival_fitness_ok": report.get("hub_archival_fitness_ok"),
                 "feature_hub_archival_fitness": report.get(
                     "feature_hub_archival_fitness"
@@ -664,6 +683,8 @@ def cmd_fixture(args: argparse.Namespace) -> int:
                 "feature_reprompt_adaptive": "F159",
                 "router_synth_ok": report.get("router_synth_ok"),
                 "feature_router_synth": "F160",
+                "hub_archival_hub_ok": report.get("hub_archival_hub_ok"),
+                "feature_hub_archival_hub": "F161",
                 "hub_archival_fitness_ok": report.get("hub_archival_fitness_ok"),
                 "feature_hub_archival_fitness": "F158",
                 "wiring_ok": report["wiring_ok"],
