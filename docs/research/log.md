@@ -23,7 +23,9 @@ Merge authority is measured evidence, not chat.
 
 ### Metric
 - Offline: fixture 11/11 · pytest gate_certificate+gate_status green
-- Live Modal: (see fire result below)
+- Live Modal: pytorch#191836 BIT3_OK ~284.9s POST_COMMENT=0 log_streaming=true hermes tools=12
+- Live cert: CLOSED REQUEST_CHANGES · path_evidence=1.0 · id gc-3f3b2e2951a12451
+- Traces: docs/benchmarks/traces/20260801-1451-pytorch-pytorch-PR191836-modal-gate-cert/
 
 ### scorecard_target
 evidence / simplicity (dim 12)
@@ -32,7 +34,7 @@ evidence / simplicity (dim 12)
 merge-authority evidence + tools-as-code vs LLM prose
 
 ### SHA
-ffbb32f5b8a3a74286b73b748f0a16a4f3174d48
+`ffbb32f5b8a3a74286b73b748f0a16a4f3174d48`
 
 ## 2026-08-01 — COMMERCIAL: priority-queue rollup scorecard (→7.5+)
 
