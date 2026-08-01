@@ -31,7 +31,7 @@ Score the commercial loop as a product, not a research log.
 commercial rollup (queue 1–6)
 
 ### SHA
-`(fill after push)`
+`154cc461f1734fa9c071010b1d1f3f04ca4d43ea`
 
 ## 2026-08-01 — ENTERPRISE: org isolation + federation privacy product surface
 
