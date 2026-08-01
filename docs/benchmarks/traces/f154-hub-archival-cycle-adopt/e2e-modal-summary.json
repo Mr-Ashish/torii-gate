@@ -1,0 +1,16 @@
+{
+  "feature": "F154",
+  "e2e": {
+    "host": "modal",
+    "repo": "pytorch/pytorch",
+    "pr": 191813,
+    "post_comment": 0,
+    "bit3_ok": true,
+    "elapsed_s": 60.9,
+    "log_streaming": true,
+    "verdict": "REQUEST_CHANGES",
+    "model": "deepseek/deepseek-v4-pro",
+    "modal_app": "https://modal.com/apps/mr-ashish/main/ap-ROVCg31wEqTDXkCNYbw1vd"
+  },
+  "privacy": "redacted modal summary only; no secrets"
+}

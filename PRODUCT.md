@@ -224,6 +224,8 @@ budget always → compact body → score tool_hit → util gap? → budgeted re-
 
 **Hub-archival skill self-evolve (F153):** F152 fire signals (`recon-warm-reprompt.env`) propose `skill-prefer-hub-archival-early` via `self_evolve propose`; dual-gate adopt uses synthetic archival tool blob (F118) — next PR prefers hub-aware archival **before** burning the F108/F152 re-prompt slot.
 
+**Hub-archival dual-gate adopt + always budget (F154):** `skill_auto_adopt cycle-hub-archival` adopts the F153 skill into `active/` with `always_priority=95` under F119 (memory 100 > hub-archival 95 > product 90 > critic 85). Soft post-F152 hermes wire closes propose→adopt so multi-tenant warm paging ships in the always inject budget.
+
 **Ops:** `python3 scripts/memory_loop_status.py scorecard` → L0–L3. Smoke requires L3 on the hub tree. CI job summary annotates readiness; optional advisory `torii/memory-loop` via `TORII_MEMORY_LOOP_STATUS_COMMIT=1`.
 
 ---

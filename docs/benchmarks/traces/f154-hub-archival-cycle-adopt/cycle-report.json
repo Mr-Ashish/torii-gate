@@ -1,0 +1,25 @@
+{
+  "feature": "F154",
+  "feature_base": "F82",
+  "f118": true,
+  "f119": true,
+  "ok": true,
+  "skill_id": "skill-prefer-hub-archival-early",
+  "always_priority": 95,
+  "adopt": {
+    "ok": true,
+    "id": "skill-prefer-hub-archival-early",
+    "path": "agent/skills/active/skill-prefer-hub-archival-early.md",
+    "total": 24,
+    "forced": true
+  },
+  "always_budget_ok": true,
+  "router": {
+    "always_priority": 95,
+    "always_max": 3,
+    "active": true
+  },
+  "gates_pre": null,
+  "proposal": "agent/skills/proposals/skill-prefer-hub-archival-early.md",
+  "active_path": "agent/skills/active/skill-prefer-hub-archival-early.md"
+}

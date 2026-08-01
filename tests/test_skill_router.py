@@ -327,7 +327,7 @@ class SkillRouterTests(unittest.TestCase):
             self.assertIn("skill-prefer-memory-cli-early", always_sel)
 
     def test_f119_always_budget_priority(self):
-        """F119: ALWAYS_MAX keeps product-cli over soft always tool-depth."""
+        """F119/F154: ALWAYS_MAX keeps memory + hub-archival + product over soft always."""
         r = subprocess.run(
             [
                 sys.executable,
@@ -349,11 +349,16 @@ class SkillRouterTests(unittest.TestCase):
         always_def = data.get("always_deferred") or []
         self.assertIn("skill-prefer-memory-cli-early", always_sel)
         self.assertIn("skill-prefer-product-cli", always_sel)
-        self.assertIn("skill-prefer-critic-early", always_sel)
-        # soft always deferred under budget=3 with 5 always candidates
+        # F154: hub-archival (prio 95) outranks critic (85) under budget=3
+        if "skill-prefer-hub-archival-early" in always_sel:
+            self.assertNotIn("skill-prefer-critic-early", always_sel)
+        else:
+            self.assertIn("skill-prefer-critic-early", always_sel)
+        # soft always deferred under budget=3 with 5+ always candidates
         self.assertTrue(
             "skill-tool-depth-hunks" in always_def
-            or "skill-preserve-deep-tools" in always_def,
+            or "skill-preserve-deep-tools" in always_def
+            or "skill-prefer-critic-early" in always_def,
             data,
         )
         sel = set(data.get("selected") or [])

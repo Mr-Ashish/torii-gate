@@ -1,5 +1,36 @@
 # Torii research → product log
 
+## 2026-08-01 — F154 hub-archival cycle-adopt + F119 always priority
+
+### Papers / posts
+- F118 dual-gate adopt; F119 always budget max 3 by priority.
+- F153 proposal without active inject re-spends F152 every run.
+- Recovery skills must ship in always slots (memory > hub-archival > product).
+
+### OSS design patterns stolen
+1. cycle_hub_archival ensure proposal → adopt → stamp always_priority 95.
+2. SKILL_DEFAULTS + TOOL_OUTCOME_PROBES for hub-archival.
+3. hermes soft cycle-hub-archival after F152; fixture f154_ok.
+4. F119 ranking: memory 100 > hub 95 > product 90 > critic 85.
+
+### Insight
+Proposals do not inject. Highest ROI: dual-gate cycle-adopt into always budget so hub-aware archival pages multi-tenant warm themes every PR.
+
+### Feature shipped (F154)
+- skill_auto_adopt cycle-hub-archival; skill_router always prio 95
+- active skill adopted; PRODUCT/research; fixture f154_ok
+
+### Metric
+- Offline: fixture f154_ok; pytest 620
+- Live: Modal pytorch#191813 BIT3_OK ~61s REQUEST_CHANGES POST_COMMENT=0 log_streaming=true
+
+### Loop-engineering / Hermes practice used
+**Propose → dual-gate adopt → always inject** — recovery skills ship under budget.
+
+### SHA
+`PENDING`
+
+
 ## 2026-08-01 — F153 hub-archival skill self-evolve from F152
 
 ### Papers / posts

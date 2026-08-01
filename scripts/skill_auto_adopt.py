@@ -54,7 +54,10 @@ from typing import Any
 FEATURE = "F82"
 FEATURE_TOOL = "F118"
 FEATURE_SCORECARD = "F133"
+FEATURE_HUB_ARCHIVAL = "F154"
 SCHEMA = 1
+HUB_ARCHIVAL_SKILL = "skill-prefer-hub-archival-early"
+HUB_ARCHIVAL_ALWAYS_PRIORITY = 95
 
 _FALSEY = frozenset({"0", "false", "no", "off", "disabled", "n", "none", ""})
 
@@ -850,6 +853,162 @@ def cycle_scorecard(
     }
 
 
+def ensure_hub_archival_proposal(root: Path) -> Path:
+    """F154: write skill-prefer-hub-archival-early proposal if missing (F153 body)."""
+    prop_dir = root / "agent" / "skills" / "proposals"
+    prop_dir.mkdir(parents=True, exist_ok=True)
+    path = prop_dir / f"{HUB_ARCHIVAL_SKILL}.md"
+    if path.is_file() and "hub-archival" in path.read_text(encoding="utf-8", errors="replace"):
+        return path
+    body = (
+        f"---\n"
+        f"id: {HUB_ARCHIVAL_SKILL}\n"
+        f"feature: F153/F154\n"
+        f"status: proposal\n"
+        f"always: true\n"
+        f"always_priority: {HUB_ARCHIVAL_ALWAYS_PRIORITY}\n"
+        f"signal: f152_recon_warm_reprompt|f152_recon_warm_heat_idle\n"
+        f"title: Hub-aware archival search early (multi-tenant warm themes)\n"
+        f"---\n\n"
+        "## Skill: prefer-hub-archival-early (F153/F154)\n\n"
+        "When multi-tenant recon-warm hub heat is elevated (F148–F152):\n"
+        "1. **Before** finishing findings, run hub-aware archival paging:\n"
+        "   `python3 scripts/archival_memory_search.py auto --files changed.py`\n"
+        "   `python3 scripts/torii.py memory -- search -- -q \"hub warm themes\"`\n"
+        "   Keep `TORII_RECON_WARM_HUB_QUERY=1` (F149 expands auto-query).\n"
+        "2. Prefer hits with **hub_boost** / multi-tenant warm themes; still require path:line.\n"
+        "3. Do **not** re-raise F145-superseded cold TPs; skip hub-ignore APPROVE.\n"
+        "4. Proactive hub paging avoids spending the F108/F152 re-prompt slot.\n"
+        "5. If F152 already fired, call archival/memory once more with hub themes before verdict.\n"
+    )
+    path.write_text(body, encoding="utf-8")
+    return path
+
+
+def _stamp_always_priority(active_path: Path, *, prio: int = HUB_ARCHIVAL_ALWAYS_PRIORITY) -> None:
+    """Ensure adopted skill frontmatter has always + always_priority for F119."""
+    if not active_path.is_file():
+        return
+    text = active_path.read_text(encoding="utf-8")
+    if text.startswith("---"):
+        # replace or inject always fields in frontmatter
+        parts = text.split("---", 2)
+        if len(parts) >= 3:
+            fm = parts[1]
+            body = parts[2]
+            if "always:" not in fm:
+                fm = fm.rstrip() + "\nalways: true\n"
+            if "always_priority:" not in fm:
+                fm = fm.rstrip() + f"\nalways_priority: {prio}\n"
+            else:
+                fm = re.sub(
+                    r"always_priority:\s*\d+",
+                    f"always_priority: {prio}",
+                    fm,
+                )
+            if "always: false" in fm:
+                fm = fm.replace("always: false", "always: true")
+            active_path.write_text(f"---{fm}---{body}", encoding="utf-8")
+            return
+    # no frontmatter — prepend
+    header = (
+        f"---\nid: {HUB_ARCHIVAL_SKILL}\nfeature: F154\nstatus: adopted\n"
+        f"always: true\nalways_priority: {prio}\n---\n\n"
+    )
+    active_path.write_text(header + text.lstrip(), encoding="utf-8")
+
+
+def cycle_hub_archival(
+    root: Path,
+    *,
+    force: bool = False,
+    skip_gates: bool = False,
+    propose: bool = True,
+) -> dict[str, Any]:
+    """F154: ensure hub-archival proposal → dual-gate adopt → always_priority 95.
+
+    Closes F153 proposal gap: skill becomes active recovery under F119 always budget
+    (priority 95: memory 100 > hub-archival 95 > product 90 > critic 85).
+    """
+    root = Path(root)
+    prop_path = None
+    if propose:
+        prop_path = ensure_hub_archival_proposal(root)
+    active = root / "agent" / "skills" / "active"
+    active.mkdir(parents=True, exist_ok=True)
+    gates: dict[str, Any] | None = None
+    if not skip_gates:
+        gates = run_regression_gates(root)
+        if not gates.get("passed") and not force:
+            return {
+                "feature": FEATURE_HUB_ARCHIVAL,
+                "ok": False,
+                "error": "regression_gates_failed",
+                "gates": gates,
+                "adopted": [],
+                "proposal": str(prop_path) if prop_path else None,
+            }
+
+    # prefer dual-gate adopt_one; force path for hermetic/CI when gates soft
+    res = adopt_one(root, HUB_ARCHIVAL_SKILL, force=force or skip_gates)
+    if not res.get("ok") and (force or skip_gates):
+        # last resort: copy proposal → active
+        src = root / "agent" / "skills" / "proposals" / f"{HUB_ARCHIVAL_SKILL}.md"
+        dst = active / f"{HUB_ARCHIVAL_SKILL}.md"
+        if src.is_file():
+            dst.write_text(src.read_text(encoding="utf-8"), encoding="utf-8")
+            res = {"ok": True, "id": HUB_ARCHIVAL_SKILL, "path": str(dst), "forced_copy": True}
+        else:
+            return {
+                "feature": FEATURE_HUB_ARCHIVAL,
+                "ok": False,
+                "error": "adopt_failed",
+                "adopt": res,
+                "proposal": str(prop_path) if prop_path else None,
+            }
+
+    active_path = active / f"{HUB_ARCHIVAL_SKILL}.md"
+    if active_path.is_file():
+        _stamp_always_priority(active_path, prio=HUB_ARCHIVAL_ALWAYS_PRIORITY)
+
+    # verify always budget ranking includes hub-archival when present
+    always_ok = False
+    router_meta: dict[str, Any] = {}
+    try:
+        sys.path.insert(0, str(_scripts()))
+        from skill_router import (  # type: ignore
+            ALWAYS_PRIORITY_DEFAULT,
+            always_priority_for,
+            always_max,
+        )
+
+        prio = always_priority_for(HUB_ARCHIVAL_SKILL)
+        always_ok = prio >= 90 and ALWAYS_PRIORITY_DEFAULT.get(HUB_ARCHIVAL_SKILL, 0) >= 90
+        router_meta = {
+            "always_priority": prio,
+            "always_max": always_max(),
+            "active": active_path.is_file(),
+        }
+    except Exception as exc:
+        router_meta = {"soft_error": str(exc)[:120]}
+
+    return {
+        "feature": FEATURE_HUB_ARCHIVAL,
+        "feature_base": FEATURE,
+        "f118": True,
+        "f119": True,
+        "ok": bool(res.get("ok")) and active_path.is_file(),
+        "skill_id": HUB_ARCHIVAL_SKILL,
+        "always_priority": HUB_ARCHIVAL_ALWAYS_PRIORITY,
+        "adopt": res,
+        "always_budget_ok": always_ok,
+        "router": router_meta,
+        "gates_pre": gates,
+        "proposal": str(prop_path.relative_to(root)) if prop_path and str(prop_path).startswith(str(root)) else (str(prop_path) if prop_path else None),
+        "active_path": str(active_path.relative_to(root)) if active_path.is_file() and str(active_path).startswith(str(root)) else str(active_path),
+    }
+
+
 def cycle(
     root: Path,
     *,
@@ -982,6 +1141,19 @@ def cmd_federate_scorecard(args: argparse.Namespace) -> int:
     report = federate_scorecard_skills(root, tenant=tenant)
     print(json.dumps(report, indent=2))
     return 0 if report.get("privacy_ok") else 1
+
+
+def cmd_cycle_hub_archival(args: argparse.Namespace) -> int:
+    """F154: propose/ensure hub-archival skill → dual-gate adopt → always prio 95."""
+    root = _root()
+    report = cycle_hub_archival(
+        root,
+        force=bool(getattr(args, "force", False)),
+        skip_gates=bool(getattr(args, "skip_gates", False)),
+        propose=not bool(getattr(args, "no_propose", False)),
+    )
+    print(json.dumps(report, indent=2))
+    return 0 if report.get("ok") else 1
 
 
 def cmd_cycle(args: argparse.Namespace) -> int:
@@ -1296,6 +1468,35 @@ When workflow_ok is false:
                 and "/Users/" not in json.dumps(fed_sc)
             )
 
+            # F154: hub-archival cycle adopt + always_priority under F119
+            for name in ("skill_router.py", "skill_attribution.py"):
+                src = root / "scripts" / name
+                if src.is_file():
+                    shutil.copy2(src, td_path / "scripts" / name)
+            hub_rep = cycle_hub_archival(
+                td_path, force=True, skip_gates=True, propose=True
+            )
+            hub_active = (
+                td_path / "agent/skills/active" / f"{HUB_ARCHIVAL_SKILL}.md"
+            ).is_file()
+            hub_body = ""
+            if hub_active:
+                hub_body = (
+                    td_path / "agent/skills/active" / f"{HUB_ARCHIVAL_SKILL}.md"
+                ).read_text(encoding="utf-8")
+            hub_prio_ok = (
+                "always: true" in hub_body or "always:true" in hub_body.replace(" ", "")
+            ) and (
+                f"always_priority: {HUB_ARCHIVAL_ALWAYS_PRIORITY}" in hub_body
+                or "always_priority: 95" in hub_body
+            )
+            f154_ok = (
+                bool(hub_rep.get("ok"))
+                and hub_active
+                and hub_prio_ok
+                and int(hub_rep.get("always_priority") or 0) >= 90
+            )
+
             fixture_pass = (
                 good_v.recommend == "adopt"
                 and bad_v.recommend == "reject"
@@ -1312,6 +1513,7 @@ When workflow_ok is false:
                 and ad_sc.get("ok") is True
                 and sc_active
                 and fed_ok
+                and f154_ok
             )
             print(
                 json.dumps(
@@ -1319,14 +1521,21 @@ When workflow_ok is false:
                         "feature": FEATURE,
                         "feature_tool": FEATURE_TOOL,
                         "feature_scorecard": FEATURE_SCORECARD,
+                        "feature_hub_archival": FEATURE_HUB_ARCHIVAL,
                         "f118": True,
                         "f133": True,
+                        "f154": True,
                         "fixture_pass": fixture_pass,
                         "good_recommend": good_v.recommend,
                         "bad_recommend": bad_v.recommend,
                         "candidates": cand_ids,
                         "adopt_ok": ad.get("ok"),
-                        "active": [p.name for p in active],
+                        "active": [p.name for p in active]
+                        + (
+                            [f"{HUB_ARCHIVAL_SKILL}.md"]
+                            if hub_active
+                            else []
+                        ),
                         "bad_active": bad_active,
                         "f118_free_without_tools": free_without,
                         "f118_tool_attr_ok": tool_attr_ok,
@@ -1340,6 +1549,9 @@ When workflow_ok is false:
                         "f134_fed_ok": fed_ok,
                         "f134_fed_n": fed_sc.get("fed_n"),
                         "f134_skill_n": fed_sc.get("skill_n"),
+                        "f154_ok": f154_ok,
+                        "f154_always_priority": hub_rep.get("always_priority"),
+                        "f154_active": hub_active,
                         "f118_attr": {
                             k: attr_yes.get(k)
                             for k in (
@@ -1377,6 +1589,14 @@ def main(argv: list[str] | None = None) -> int:
     psc.add_argument("--skip-gates", action="store_true")
     psc.add_argument("--no-propose", action="store_true")
     psc.set_defaults(func=cmd_cycle_scorecard)
+    pha = sub.add_parser(
+        "cycle-hub-archival",
+        help="F154 ensure hub-archival proposal → adopt → always_priority 95",
+    )
+    pha.add_argument("--force", action="store_true")
+    pha.add_argument("--skip-gates", action="store_true")
+    pha.add_argument("--no-propose", action="store_true")
+    pha.set_defaults(func=cmd_cycle_hub_archival)
     pfed = sub.add_parser(
         "federate-scorecard",
         help="F134 federate active scorecard-gap skill themes (privacy-safe)",

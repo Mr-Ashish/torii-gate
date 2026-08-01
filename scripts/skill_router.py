@@ -177,11 +177,36 @@ DEFAULT_TRIGGERS: dict[str, dict[str, Any]] = {
         "always": True,
         "always_priority": 85,
     },
+    # F154: F153 hub-archival recovery — always under F119 budget (below memory, above product)
+    "skill-prefer-hub-archival-early": {
+        "themes": [
+            "archival",
+            "hub",
+            "recon_warm",
+            "memory",
+            "multi_tenant",
+            "recovery",
+        ],
+        "keywords": [
+            "archival_memory_search",
+            "hub warm",
+            "recon-warm",
+            "TORII_RECON_WARM_HUB_QUERY",
+            "hub_boost",
+            "f149",
+            "f152",
+            "f153",
+        ],
+        "exts": [],
+        "always": True,
+        "always_priority": 95,
+    },
 }
 
 # F119: default always priority when card.always (higher = keep under ALWAYS_MAX)
 ALWAYS_PRIORITY_DEFAULT: dict[str, int] = {
     "skill-prefer-memory-cli-early": 100,
+    "skill-prefer-hub-archival-early": 95,  # F154
     "skill-prefer-product-cli": 90,
     "skill-prefer-critic-early": 85,
     "skill-f74-path-evidence": 70,
@@ -197,6 +222,13 @@ TOOL_OUTCOME_PROBES: dict[str, list[re.Pattern[str]]] = {
         re.compile(r"torii_memory\.py\b", re.I),
         re.compile(r"archival_memory_search\.py\b", re.I),
         re.compile(r"memory_temporal_graph\.py\b", re.I),
+    ],
+    # F154: hub-aware archival recovery skill tool outcomes
+    "skill-prefer-hub-archival-early": [
+        re.compile(r"archival_memory_search\.py\b", re.I),
+        re.compile(r"torii\.py\s+memory\b", re.I),
+        re.compile(r"torii_memory\.py\b", re.I),
+        re.compile(r"reprompt-decide|RECON_WARM_HUB", re.I),
     ],
     # F118: F117 product/critic skills — baseline probes (also mined into durable ledger)
     "skill-prefer-product-cli": [

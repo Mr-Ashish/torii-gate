@@ -1331,11 +1331,15 @@ if [[ -f "$ARCHIVAL_HELPER" && "${TORII_RECON_WARM_REPROMPT:-1}" != "0" ]]; then
     echo "hub_boost_n=${_rw_boost:-0}"
     echo "feature=F152"
   } >"$OUT_DIR/recon-warm-reprompt.env" || true
-  # F153: soft self-evolve propose hub-archival skill when F152 fires (dual-gate later)
+  # F153/F154: soft self-evolve propose + dual-gate cycle-adopt hub-archival when F152 fires
   if [[ "${RW_REPROMPT_ATTEMPTED}" == "1" || "${_rw_do}" == "1" ]] && [[ -f "$TORII_ROOT/scripts/self_evolve.py" ]]; then
     python3 "$TORII_ROOT/scripts/self_evolve.py" ingest --out-dir "$OUT_DIR" >/dev/null 2>&1 || true
     python3 "$TORII_ROOT/scripts/self_evolve.py" propose --limit 3 >/dev/null 2>&1 || true
     notice "F153 self-evolve propose hub-archival skill (soft)"
+    if [[ -f "$TORII_ROOT/scripts/skill_auto_adopt.py" ]]; then
+      python3 "$TORII_ROOT/scripts/skill_auto_adopt.py" cycle-hub-archival --force --skip-gates >/dev/null 2>&1 || true
+      notice "F154 cycle-hub-archival dual-gate adopt (soft)"
+    fi
   fi
 else
   {

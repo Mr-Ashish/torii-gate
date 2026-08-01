@@ -48,3 +48,4 @@ Also mirrored from LOOP.md budget/observability: each fire records metrics (reca
 - F151: recon-warm hub demote-eval paper metric + doctor/scorecard surface
 - F152: recon-warm hub soft re-prompt under F108 (budgeted recovery before demote-only)
 - F153: F152 signals propose hub-archival skill + dual-gate tool blob (compound next PR)
+- F154: cycle-hub-archival adopt + always_priority 95 under F119 budget
