@@ -367,6 +367,36 @@ def _sig_key(s: dict[str, Any]) -> str:
 def merge_tp_signatures(
     existing: list[dict[str, Any]], incoming: list[dict[str, Any]]
 ) -> list[dict[str, Any]]:
+    """Merge TP signatures; prefer F93 Mem0-style event policy when available."""
+    # F93: ADD/UPDATE/DELETE/NONE write path (soft fallback to legacy union)
+    try:
+        import importlib.util
+
+        pol = Path(__file__).resolve().parent / "memory_event_policy.py"
+        if pol.is_file() and (os.environ.get("TORII_MEMORY_EVENTS") or "1").strip().lower() not in (
+            "0",
+            "false",
+            "off",
+            "no",
+        ):
+            spec = importlib.util.spec_from_file_location("memory_event_policy", pol)
+            if spec and spec.loader:
+                mod = importlib.util.module_from_spec(spec)
+                sys.modules["memory_event_policy"] = mod
+                spec.loader.exec_module(mod)
+                if mod.enabled():
+                    for s in existing + incoming:
+                        if isinstance(s, dict):
+                            s.setdefault("kind", "tp")
+                    events = mod.plan_events(existing, incoming, candidate_kind="tp")
+                    store = mod.apply_events({"items": list(existing), "history": []}, events)
+                    return [
+                        i
+                        for i in (store.get("items") or [])
+                        if isinstance(i, dict) and not i.get("deleted")
+                    ]
+    except Exception:
+        pass
     best: dict[str, dict[str, Any]] = {}
     for s in existing + incoming:
         if not isinstance(s, dict):

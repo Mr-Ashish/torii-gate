@@ -168,6 +168,7 @@ RUNTIME_SCRIPTS=(
   skill_dual_rollout.py
   skill_attribution.py
   skill_loop_status.py
+  memory_event_policy.py
 )
 
 copy_file() {

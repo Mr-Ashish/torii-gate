@@ -1,0 +1,29 @@
+{
+  "feature": "F93",
+  "fixture_pass": true,
+  "counts_tp": {
+    "ADD": 1,
+    "UPDATE": 1,
+    "DELETE": 0,
+    "NONE": 1
+  },
+  "counts_fp": {
+    "ADD": 1,
+    "UPDATE": 0,
+    "DELETE": 1,
+    "NONE": 0
+  },
+  "none_ok": true,
+  "update_ok": true,
+  "add_ok": true,
+  "delete_ok": true,
+  "supersede_ok": true,
+  "cmdi_present": true,
+  "pickle_not_active": true,
+  "active_ids": [
+    "cmdi-run",
+    "fp-pickle-ok",
+    "sqli-search"
+  ],
+  "store": "/var/folders/2b/l8r1b38n75jd77wtd44p4ycr0000gn/T/tmp9ato4gkg/tp-signatures.json"
+}

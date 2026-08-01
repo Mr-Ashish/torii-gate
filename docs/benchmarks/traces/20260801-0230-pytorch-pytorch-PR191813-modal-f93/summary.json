@@ -1,0 +1,16 @@
+{
+  "feature": "F93",
+  "repo": "pytorch/pytorch",
+  "pr": 191813,
+  "model": "deepseek/deepseek-v4-pro",
+  "runtime": "modal",
+  "bit3": true,
+  "log_streaming": true,
+  "elapsed_s": 105.2,
+  "post_comment": 0,
+  "memory_event_policy": true,
+  "captured_at": "2026-08-01T02:33:14Z",
+  "verdict_preview": "REQUEST_CHANGES",
+  "modal_app": "https://modal.com/apps/mr-ashish/main/ap-2xFilwDuR6a8HEl0ZRNOMq",
+  "tool_call_turns": 9
+}

@@ -218,6 +218,10 @@ capabilities:
     feature: F91
     script: scripts/skill_loop_status.py
     one_liner: Skill compound loop readiness scorecard L0–L3
+  - id: memory_event_policy
+    feature: F93
+    script: scripts/memory_event_policy.py
+    one_liner: Mem0-style ADD/UPDATE/DELETE/NONE write policy for TP/FP
   - id: eval_trace_report
     feature: F83
     script: scripts/eval_trace_report.py
@@ -261,4 +265,5 @@ pack_scripts:
   - skill_dual_rollout.py
   - skill_attribution.py
   - skill_loop_status.py
+  - memory_event_policy.py
   - smoke-torii-gate.sh

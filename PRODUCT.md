@@ -42,7 +42,7 @@ Torii Gate is a PR/CI **security merge authority**: agent review with tools, pat
 
 **Checker.** A deterministic second-agent panel (path evidence, chain revalidation, trajectory fitness, scoped memory, optional LLM critic) re-scores every run and demotes weak APPROVE without path evidence — default path is free (no extra LLM).
 
-**Compound memory.** FP rules, TP signatures, and privacy-safe federated themes compound across PRs and tenants; scoped recall keeps prompt context budgeted.
+**Compound memory (F93).** Write-path Mem0-style events (ADD/UPDATE/DELETE/NONE): path-anchored FP can supersede overlapping TP so deleted noise does not resurface. **Compound memory.** FP rules, TP signatures, and privacy-safe federated themes compound across PRs and tenants; scoped recall keeps prompt context budgeted.
 
 **Measured gate.** Multi-corpus labeled benches score recall before shipping harness changes.
 

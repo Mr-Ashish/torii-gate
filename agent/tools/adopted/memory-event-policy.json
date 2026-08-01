@@ -1,0 +1,7 @@
+{
+  "id": "memory-event-policy",
+  "feature": "F93",
+  "script": "scripts/memory_event_policy.py",
+  "status": "adopted",
+  "one_liner": "ADD/UPDATE/DELETE/NONE write policy for TP/FP with FP supersede"
+}

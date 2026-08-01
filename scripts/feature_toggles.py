@@ -544,6 +544,15 @@ REGISTRY: list[ToggleSpec] = [
         "F75",
     ),
     ToggleSpec(
+        "memory_events",
+        "TORII_MEMORY_EVENTS",
+        "bool",
+        True,
+        "product",
+        "F93 Mem0-style ADD/UPDATE/DELETE/NONE policy on TP/FP writes",
+        "F93",
+    ),
+    ToggleSpec(
         "trace_vault",
         "TORII_TRACE_VAULT",
         "bool",

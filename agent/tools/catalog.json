@@ -1,8 +1,8 @@
 {
   "schema_version": 1,
-  "feature": "F89",
+  "feature": "F93",
   "description": "Torii agent tool catalog \u2014 research \u2192 eval \u2192 adopt pipeline",
-  "updated_at": "2026-08-01T02:08:52Z",
+  "updated_at": "2026-08-01T02:30:52Z",
   "tools": [
     {
       "id": "terminal",
@@ -318,6 +318,15 @@
       "script": "scripts/skill_attribution.py",
       "feature": "F88",
       "source": "research",
+      "adopted_at": "2026-08-01"
+    },
+    {
+      "id": "memory-event-policy",
+      "name": "Mem0-style memory event policy (F93)",
+      "status": "adopted",
+      "script": "scripts/memory_event_policy.py",
+      "feature": "F93",
+      "source": "memory_oss",
       "adopted_at": "2026-08-01"
     }
   ],

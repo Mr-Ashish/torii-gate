@@ -1,5 +1,33 @@
 # Torii research → product log
 
+## 2026-08-01 — F93 Mem0-style ADD/UPDATE/DELETE/NONE memory write policy
+
+### Papers / posts / OSS
+- **Mem0** (Apache-2.0): UPDATE_MEMORY prompt — ADD|UPDATE|DELETE|NONE; supersession chains.
+- Prior Torii F75 conflict-at-recall; F70/F64 writes were naive append/union.
+
+### OSS / eng patterns
+1. plan_events: duplicate→NONE, merge→UPDATE, new→ADD, path FP→DELETE TP.
+2. superseded_by audit field; deleted items excluded from active store.
+3. Soft-wire merge_tp_signatures when TORII_MEMORY_EVENTS=1.
+
+### Insight
+Recall-time conflict without write-path events lets deleted noise re-enter. Highest ROI: **Mem0 event policy on TP/FP writes**.
+
+### Feature shipped (F93)
+- `scripts/memory_event_policy.py` plan/apply/promote/fixture
+- bench_security_gate merge uses events; pack + PRODUCT
+
+### Loop-engineering practice used
+**Tools-as-code memory** — explicit events over silent append.
+
+### Metric
+- Offline: fixture_pass (NONE+UPDATE+ADD+DELETE); bench fixture; 530 pytest; smoke PASS
+- Live: **Modal** pytorch#191813 deepseek/deepseek-v4-pro BIT3_OK ~105s; log_streaming=true; POST_COMMENT=0
+
+### SHA
+_PENDING_
+
 ## 2026-08-01 — F92 smoke skill-loop L3 + CI job-summary annotation
 
 ### Papers / posts / OSS
