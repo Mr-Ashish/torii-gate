@@ -5275,3 +5275,25 @@ Gap #2 (customer quieter vault) was docs-only; local_runs_n stayed 0. Highest RO
 
 ### SHA
 `6df7f3650e46dd93393504c58831eca5c40c0e85`
+
+## 2026-08-01 — FS_VAULT_ALWAYS quieter when git publish off
+
+### Papers / posts
+- Customer quieter vault must not depend on branch-protection bot pushes.
+- Modal dogfood sets TORII_LOCAL_PUBLISH=0 — prior FS path exited early.
+- Loop Engineering: measure local_runs_n after every live path.
+
+### Insight
+FS publish was behind LOCAL_PUBLISH=0 early-return. Highest ROI: always run FS vault (default on); git clone/push remains optional.
+
+### Feature shipped (FS_VAULT_ALWAYS)
+- publish-run-local: FS block before git skip
+- Modal TORII_LOCAL_FS_PUBLISH=1
+- hermetic hub-ingest local layout writes runs/
+
+### Metric
+- Offline FS ingest writes .torii/runs/{trace}
+- Live Modal shows Local FS vault publish notice
+
+### SHA
+`PENDING_PUSH`

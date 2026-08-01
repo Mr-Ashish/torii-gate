@@ -600,7 +600,11 @@ def review_pr(
         "TORII_HERMES_COMMIT": HERMES_PIN,
         # F66 prod defaults: local memory in-container; hub opt-in via Modal secret/env
         "TORII_MEMORY_MODE": os.environ.get("TORII_MEMORY_MODE", "local"),
+        # Git push of .torii off by default on Modal; FS quieter vault still on
         "TORII_LOCAL_PUBLISH": os.environ.get("TORII_LOCAL_PUBLISH", "0"),
+        "TORII_LOCAL_FS_PUBLISH": os.environ.get("TORII_LOCAL_FS_PUBLISH", "1"),
+        # Container workspace = torii checkout (publish-run-local FS root)
+        "TORII_LOCAL_FS_ROOT": os.environ.get("TORII_LOCAL_FS_ROOT", ""),
         "TORII_HUB_PUBLISH": os.environ.get("TORII_HUB_PUBLISH", "0"),
         # F65 multi-tenant hub namespace (empty = classic shared layout)
         "TORII_MEMORY_TENANT": os.environ.get("TORII_MEMORY_TENANT", ""),

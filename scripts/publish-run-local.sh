@@ -6,7 +6,9 @@
 #
 # Env:
 #   TORII_MEMORY_MODE   local|hub|both  (default local)
-#   TORII_LOCAL_PUBLISH 0 to skip (default: on when mode is local|both)
+#   TORII_LOCAL_PUBLISH 0 to skip *git clone/push* (default: on when mode is local|both)
+#   TORII_LOCAL_FS_PUBLISH 1 (default) write .torii/runs on workspace even when git publish is off
+#   TORII_LOCAL_FS_ROOT   override workspace root for FS quieter vault
 #   TORII_MEMORY_PATH   default .torii
 #   REPO / GITHUB_REPOSITORY  target repo owner/name
 #   GITHUB_TOKEN / GH_TOKEN    contents:write on target
@@ -18,7 +20,7 @@ notice() { echo "::notice::$*" >&2; log "$*"; }
 
 MODE="${TORII_MEMORY_MODE:-local}"
 MODE="$(printf '%s' "$MODE" | tr '[:upper:]' '[:lower:]')"
-# Local publish default: on for local|both
+# Local *git* publish default: on for local|both (FS vault is independent)
 if [[ -z "${TORII_LOCAL_PUBLISH:-}" ]]; then
   case "$MODE" in
     hub) TORII_LOCAL_PUBLISH=0 ;;
@@ -35,12 +37,6 @@ record_mh() {
   echo "$1"
 }
 
-if [[ "${TORII_LOCAL_PUBLISH}" == "0" ]]; then
-  log "TORII_LOCAL_PUBLISH=0; skip local .torii publish"
-  record_mh "LOCAL_PUBLISH=skipped"
-  exit 0
-fi
-
 TOKEN="${TORII_LOCAL_TOKEN:-${GH_TOKEN:-${GITHUB_TOKEN:-}}}"
 SOURCE_REPO="${REPO:-${GITHUB_REPOSITORY:-}}"
 MEM_PATH="${TORII_MEMORY_PATH:-.torii}"
@@ -48,6 +44,7 @@ MEM_PATH="${TORII_MEMORY_PATH:-.torii}"
 BRANCH="${TORII_MEMORY_BRANCH:-}"
 record_mh "MEMORY_MODE=${MODE}"
 record_mh "MEMORY_PATH=${MEM_PATH}"
+FS_ONLY_OK=0
 
 command -v python3 >/dev/null 2>&1 || {
   log "python3 not found; skip"
@@ -69,13 +66,12 @@ print(sys.argv[2])
 PY
 
 # ------------------------------------------------------------------
-# Customer quieter vault (FS path): write .torii/runs into the Actions
-# workspace (or TORII_LOCAL_FS_ROOT) without clone/push. Guarantees the
-# quieter chart has a local row even when branch protection blocks bots.
+# Customer quieter vault (FS path) — ALWAYS preferred when enabled.
+# Runs even if TORII_LOCAL_PUBLISH=0 (Modal hub dogfood, no git push).
 # ------------------------------------------------------------------
 FS_ROOT="${TORII_LOCAL_FS_ROOT:-${GITHUB_WORKSPACE:-}}"
-if [[ -z "$FS_ROOT" && -d "$TORII_ROOT/.git" ]]; then
-  # dogfood/local: torii checkout itself
+if [[ -z "$FS_ROOT" ]]; then
+  # Modal/dogfood: torii checkout is the workspace
   FS_ROOT="$TORII_ROOT"
 fi
 case "${TORII_LOCAL_FS_PUBLISH:-1}" in
@@ -95,7 +91,7 @@ if [[ -n "$FS_ROOT" && -d "$FS_ROOT" ]]; then
   set -e
   if [[ $FS_RC -eq 0 ]]; then
     record_mh "LOCAL_FS_PUBLISH=ok"
-    # Ensure vault README exists for operators
+    FS_ONLY_OK=1
     if [[ ! -f "$FS_ROOT/${MEM_PATH}/runs/README.md" ]]; then
       mkdir -p "$FS_ROOT/${MEM_PATH}/runs"
       cat >"$FS_ROOT/${MEM_PATH}/runs/README.md" <<'EOF'
@@ -112,15 +108,21 @@ See `docs/QUIETER.md`. Do not hand-edit run packs — they are written by the ga
 EOF
     fi
     notice "Wrote local quieter vault under ${FS_ROOT}/${MEM_PATH}/runs"
-    # If no token, FS path is enough for quieter chart on this runner/workspace
-    if [[ -z "$TOKEN" || -z "$SOURCE_REPO" ]]; then
-      record_mh "LOCAL_PUBLISH=fs_only"
-      exit 0
-    fi
   else
-    log "Local FS vault publish failed rc=${FS_RC} (will try git clone path if token present)"
+    log "Local FS vault publish failed rc=${FS_RC} (will try git clone path if enabled)"
     record_mh "LOCAL_FS_PUBLISH=error"
   fi
+fi
+
+# Git clone/push path (optional — often blocked by branch protection)
+if [[ "${TORII_LOCAL_PUBLISH}" == "0" ]]; then
+  log "TORII_LOCAL_PUBLISH=0; skip git clone/push of .torii (FS vault rc independent)"
+  record_mh "LOCAL_PUBLISH=skipped_git"
+  if [[ "$FS_ONLY_OK" == "1" ]]; then
+    record_mh "LOCAL_PUBLISH=fs_only"
+    exit 0
+  fi
+  exit 0
 fi
 
 if [[ -z "$SOURCE_REPO" ]]; then

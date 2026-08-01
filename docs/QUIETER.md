@@ -10,7 +10,7 @@ install pack → require status check torii/gate → review PRs → quieter char
 
 ## 0. Customer vault bootstrap
 
-Install stamps **`.torii/runs/README.md`**. After the first reviews, slim packs land under `.torii/runs/{trace_id}/` on **your** repo (Actions workspace write + optional commit). Hub dogfood is optional.
+Install stamps **`.torii/runs/README.md`**. After the first reviews, slim packs land under `.torii/runs/{trace_id}/` on **your** repo via **FS workspace write** (`TORII_LOCAL_FS_PUBLISH=1`, default) even when git push of `.torii` is off (`TORII_LOCAL_PUBLISH=0`). Optional commit/push still available when tokens allow. Hub dogfood is optional.
 
 | Empty vault | Ready vault |
 |-------------|-------------|
