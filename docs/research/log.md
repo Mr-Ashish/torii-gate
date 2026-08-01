@@ -1,3 +1,34 @@
+## 2026-08-01 — F178 GEPA refine full brand+EVAL pack (F165–F177)
+
+### Papers / posts
+- Loop Engineering: design the loop, get a score — package full compound loops.
+- F174 pack stopped at F173; F175–F177 revive gates product-real but paper-orphan.
+- Mem0 discipline: measure what you ship on operator/paper surfaces.
+
+### OSS design patterns stolen
+1. f178 EVAL pack rolls F165–F177 live Modal proofs + revive demote rows.
+2. scorecard metrics free_rider_revive_ok · revive_pp_gate_ok · demote paper.
+3. brand_lines pipeline through free-rider + pp-floor.
+4. SEE-F178 pointer from F174 historical pack.
+
+### Insight
+Partial EVAL packs become script archaeology when the loop extends. Highest ROI: one F165–F177 paper pack + scorecard revive gate rows operators actually read.
+
+### Feature shipped (F178)
+- f178-gepa-refine-full-eval-pack/
+- torii scorecard brand rows F175–F177 + demote paper
+- PRODUCT/landing/TORII brand pack refresh
+
+### Loop-engineering
+Package the full measured loop — including revive free-rider and contribution_pp floors.
+
+### Metric
+- Offline: scorecard L3 brand_ready; free_rider_revive_ok; revive_pp_gate_ok; demote paper true
+- Live Modal: pytorch#191836 BIT3_OK ~46.9s POST_COMMENT=0 log_streaming=true
+
+### SHA
+`920401dd5a647957e7dc5fa1f489db9b3dc1a8c7`
+
 ## 2026-08-01 — F177 contribution_pp floor for dual_pass revive
 
 ### Papers / posts

@@ -307,7 +307,7 @@ util gap → GEPA refine → dual-gate LOO → dual_pp → federate promote
 
 **One-liner (AppSec):** *Idle recovery skills cannot silently APPROVE after GEPA refine inject.*
 
-**Brand pack (F170/F174):** PRODUCT + landing + scorecard-metrics surface `refine_loop_ok` (F165–F177 contribution_pp revive floor); paper EVAL pack rolls F165–F173 live Modal proofs (`f170` + `f174` refresh with decay rows). F175 closes decay→revive.
+**Brand pack (F170/F174/F178):** PRODUCT + landing + scorecard-metrics surface `refine_loop_ok` (F165–F177) plus `refine_dual_revive_ok` / `free_rider_revive_ok` / `revive_pp_gate_ok` and demote paper rows; paper EVAL pack rolls F165–F177 live Modal proofs (`f178-gepa-refine-full-eval-pack/`, supersedes F174 scope).
 
 **Ops:** `python3 scripts/torii.py doctor` / `scorecard` → `refine_loop_ok` next to `hub_archival_loop_ok`.
 
@@ -320,6 +320,8 @@ util gap → GEPA refine → dual-gate LOO → dual_pp → federate promote
 **Dual_pass revive (F175):** when dual_pass recovers contribution_pp after prior decay, clear local multi_tenant_decay + restore always-priority; privacy-safe federate revive bins; multi-tenant promote re-boosts and supersedes decay themes.
 
 **Free-rider multi-tenant revive gate (F176):** local dual_pass after multi_tenant_decay is sticky — sets `local_revive_pending_mt` + soft boost only; full clear + always re-boost requires FederatedSkill promote (≥2 tenants). Critic `f176_free_rider_revive` demotes free-rider APPROVE; demote-eval `free_rider_revive_idle_demoted`.
+
+**Full GEPA refine EVAL pack (F178):** scorecard brand rows for revive gates + paper pack F165–F177 (decay→revive→free-rider→pp-floor).
 
 **Revive contribution_pp floor (F177):** SkillOpt-style validation — dual_pass with `refine_tool_contribution_pp` below `TORII_REFINE_REVIVE_MIN_PP` (default 10) sets `revive_pp_blocked` and does not re-enter always budget; multi-tenant promote also requires the floor. Critic `f177_revive_pp_gate` demotes low-pp recovery APPROVE; demote-eval `low_pp_revive_idle_demoted`. `refine_loop_ok` ANDs F165–F177.
 

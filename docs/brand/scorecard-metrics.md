@@ -1,6 +1,6 @@
-# Torii Gate — measured scorecard (F129/F130/F164/F170)
+# Torii Gate — measured scorecard (F129/F130/F164/F170/F178)
 
-_Generated: `2026-08-01T12:45:24Z` · level **L3** · brand_ready=True_
+_Generated: `2026-08-01T13:10:55Z` · level **L3** · brand_ready=True_
 
 Measured gate readiness: dual compound (skill+memory) + workflow graph + demote_rate=1.0 + memory_util_delta=0.85 + hub-archival loop (util→reprompt→fitness→hub inject).
 
@@ -41,7 +41,12 @@ Measured gate readiness: dual compound (skill+memory) + workflow graph + demote_
 | refine_decay_fed_ok | True |
 | refine_dual_fail_idle_demoted | True |
 | refine_decay_hub_idle_demoted | True |
+| refine_dual_revive_ok | True |
+| free_rider_revive_ok | True |
+| revive_pp_gate_ok | True |
+| free_rider_revive_idle_demoted | True |
+| low_pp_revive_idle_demoted | True |
 
-Source: `python3 scripts/torii.py scorecard` · workflow F131 · demote F128/F151 · util F130 · hub-archival F155–F163 (F164) · GEPA refine F165–F173 (F170/F173).
+Source: `python3 scripts/torii.py scorecard` · workflow F131 · demote F128/F151 · util F130 · hub-archival F155–F163 (F164) · GEPA refine F165–F177 (F170/F178).
 
 These are **measured** offline/ops metrics — not marketing pass rates.

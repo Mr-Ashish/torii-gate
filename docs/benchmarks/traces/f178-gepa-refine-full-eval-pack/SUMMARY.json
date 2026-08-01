@@ -1,0 +1,57 @@
+{
+  "feature": "F178",
+  "title": "GEPA refine full brand+EVAL pack F165\u2013F177 (revive gates)",
+  "scored_at": "2026-08-01T13:10:55Z",
+  "brand": {
+    "refine_loop_ok": true,
+    "product_mental_model": "E",
+    "scope": "F165\u2013F177",
+    "scorecard_metrics": "docs/brand/scorecard-metrics.md",
+    "landing": "docs/brand/landing.html",
+    "torii_md": "docs/brand/TORII.md",
+    "supersedes": "F174"
+  },
+  "pack": {
+    "fires": [
+      "F165",
+      "F166",
+      "F167",
+      "F168",
+      "F169",
+      "F170",
+      "F171",
+      "F172",
+      "F173",
+      "F174",
+      "F175",
+      "F176",
+      "F177"
+    ],
+    "trace_dirs": [
+      "f165-gepa-lite-skill-refine",
+      "f166-gepa-refine-dual-gate-attr",
+      "f167-gepa-refine-dual-rollout",
+      "f168-refine-dual-federate-promote",
+      "f169-refine-dual-hub-critic",
+      "f170-gepa-refine-eval-pack",
+      "f171-refine-dual-fail-decay",
+      "f172-refine-decay-federate",
+      "f173-refine-decay-hub-critic",
+      "f174-gepa-refine-full-eval-pack",
+      "f175-refine-dual-pass-revive",
+      "f176-free-rider-revive-gate",
+      "f177-revive-pp-floor"
+    ],
+    "modal_bit3_ok_n": 13,
+    "includes_decay": true,
+    "includes_revive": true,
+    "includes_free_rider_gate": true,
+    "includes_pp_floor": true
+  },
+  "demote_paper": [
+    "refine_dual_fail_idle_demoted",
+    "refine_decay_hub_idle_demoted",
+    "free_rider_revive_idle_demoted",
+    "low_pp_revive_idle_demoted"
+  ]
+}
