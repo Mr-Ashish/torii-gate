@@ -1,8 +1,8 @@
 {
   "schema_version": 1,
-  "feature": "F97",
+  "feature": "F98",
   "description": "Torii agent tool catalog \u2014 research \u2192 eval \u2192 adopt pipeline",
-  "updated_at": "2026-08-01T03:01:30Z",
+  "updated_at": "2026-08-01T03:08:55Z",
   "tools": [
     {
       "id": "terminal",
@@ -367,6 +367,16 @@
       "script": "scripts/memory_tiers.py",
       "feature": "F97",
       "source": "memory_oss",
+      "adopted_at": "2026-08-01"
+    },
+    {
+      "id": "archival-memory-search",
+      "name": "MemGPT-style archival search + promote-to-core (F98)",
+      "status": "adopted",
+      "script": "scripts/archival_memory_search.py",
+      "feature": "F98",
+      "source": "memory_oss",
+      "toolset": "terminal",
       "adopted_at": "2026-08-01"
     }
   ],

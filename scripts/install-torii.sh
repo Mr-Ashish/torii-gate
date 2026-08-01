@@ -172,6 +172,7 @@ RUNTIME_SCRIPTS=(
   memory_consolidate.py
   memory_loop_status.py
   memory_tiers.py
+  archival_memory_search.py
 )
 
 copy_file() {

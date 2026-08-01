@@ -380,6 +380,40 @@ try:
 except Exception:
     scoped_memory_on = "0"
 
+# F98: MemGPT-style archival search → promote hits into core inject (soft)
+archival_search_on = "0"
+archival_search_hits = "0"
+try:
+    import sys as _sys_f98
+    _sys_f98.path.insert(0, str(torii_root / "scripts"))
+    from archival_memory_search import (  # type: ignore
+        enabled as archival_enabled,
+        auto_from_paths as archival_auto,
+        render_promote_section as archival_render,
+        inject_section as archival_inject,
+    )
+
+    if archival_enabled():
+        _paths_f98 = []
+        for f in files:
+            pth = f.get("path") or f.get("filename") or ""
+            if pth:
+                _paths_f98.append(pth)
+        if not _paths_f98 and "scoped_memory_on" in dir():
+            pass
+        _arch = archival_auto(_paths_f98 or [], root=torii_root)
+        (out_dir / "archival-search.json").write_text(
+            __import__("json").dumps(_arch, indent=2) + "\n", encoding="utf-8"
+        )
+        if int(_arch.get("hit_count") or 0) > 0:
+            _sec = archival_render(_arch)
+            if archival_inject(Path(os.environ["PROMPT_PATH"]), _sec):
+                archival_search_on = "1"
+                archival_search_hits = str(_arch.get("hit_count") or 0)
+                prompt = Path(os.environ["PROMPT_PATH"]).read_text(encoding="utf-8")
+except Exception:
+    archival_search_on = "0"
+
 # F71: deterministic source→sink prefilter + federated sanitized signals
 taint_prefilter_on = "0"
 taint_candidates = "0"
@@ -686,6 +720,8 @@ meta = {
     "SCOPED_MEMORY": scoped_memory_on,
     "SCOPED_MEMORY_TP": scoped_memory_tp,
     "SCOPED_MEMORY_FP": scoped_memory_fp,
+    "ARCHIVAL_SEARCH": archival_search_on,
+    "ARCHIVAL_SEARCH_HITS": archival_search_hits,
     "TAINT_PREFILTER": taint_prefilter_on,
     "TAINT_CANDIDATES": taint_candidates,
     "FEDERATED_SIGNALS": federated_signals_on,

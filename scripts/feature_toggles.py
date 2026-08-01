@@ -580,6 +580,15 @@ REGISTRY: list[ToggleSpec] = [
         "F97",
     ),
     ToggleSpec(
+        "archival_search",
+        "TORII_ARCHIVAL_SEARCH",
+        "bool",
+        True,
+        "product",
+        "F98 MemGPT-style archival search + promote-to-core inject",
+        "F98",
+    ),
+    ToggleSpec(
         "trace_vault",
         "TORII_TRACE_VAULT",
         "bool",

@@ -1,0 +1,6 @@
+{
+  "id": "archival-memory-search",
+  "feature": "F98",
+  "status": "adopted",
+  "one_liner": "Search cold TP/FP/federated/MEMORY.md and promote hits into core inject"
+}

@@ -1,6 +1,34 @@
 # Torii research → product log
 
 
+## 2026-08-01 — F98 MemGPT-style archival search + promote-to-core
+
+### Papers / posts / OSS
+- **MemGPT/Letta:** `archival_memory_search` + core append — agent pages cold facts on demand.
+- Torii F97 archival tier had no retrieval path; MEMORY.md distill was append-only.
+
+### OSS / eng patterns
+1. Deterministic keyword score over TP/FP/federated + MEMORY.md recall blocks.
+2. `auto` from changed basenames; promote inject section for current PR.
+3. Soft wire assemble-context after F75; privacy redaction on index.
+
+### Insight
+Tiers without search leave cold knowledge dead. Highest ROI: **just-in-time archival search → core inject**.
+
+### Feature shipped (F98)
+- `scripts/archival_memory_search.py` search/promote/auto/fixture
+- assemble-context soft; memory_loop stage; pack + PRODUCT
+
+### Loop-engineering practice used
+**On-demand tools over full dump** — retrieve when path tokens match, not always-on prose.
+
+### Metric
+- Offline: fixture TP+FP+MEMORY; memory_loop L3 (8 stages); 550 pytest; smoke PASS
+- Live: **Modal** pytorch#191813 deepseek/deepseek-v4-pro BIT3_OK ~96s; log_streaming=true; POST_COMMENT=0
+
+### SHA
+PENDING
+
 ## 2026-08-01 — F97 Letta-style core/archival memory tiers + CI memory-loop summary
 
 ### Papers / posts / OSS
