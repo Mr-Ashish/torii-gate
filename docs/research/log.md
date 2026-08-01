@@ -1,3 +1,33 @@
+## 2026-08-01 — MODEL_ALIAS_TOOLUSE: deepseek-chat-v4-pro → v4-pro (tools)
+
+### Papers / posts
+- Buyer JTBD: fail-closed on 0 tools is correct, but wrong model slug made dogfood always COMMENT.
+- Live vault: deepseek-v4-pro had tools; deepseek-chat-v4-pro on PR191842 had 0 tools after F49.
+
+### Decide / copy / skip
+- **Copy:** alias in run-hermes-review.sh + modal_app._normalize_model.
+- **Copy:** INSTALL recommend deepseek/deepseek-v4-pro.
+- **Skip:** F185+; changing DEFAULT_TORII_MODEL away from opus.
+
+### Feature shipped (MODEL_ALIAS_TOOLUSE)
+- chat-v4-pro → deepseek/deepseek-v4-pro
+- Live: pytorch#191840 tool_call_turns=4 · APPROVE · BIT3_OK
+
+### Metric
+- Offline: alias case maps
+- Live Modal: tools 4 · model deepseek/deepseek-v4-pro · ~281s
+- Traces: docs/benchmarks/traces/20260801-1908-pytorch-pytorch-PR191840-modal-model-alias-tooluse/
+- Modal: https://modal.com/apps/mr-ashish/main/ap-2ErJQgQfHm1ey9pp8sGFSl
+
+### scorecard_target
+JTBD (#3) · tool-use · technical trust
+
+### dim_lift
+Dogfood agentic reviews use tools again under the chat model slug
+
+### SHA
+(pending)
+
 ## 2026-08-01 — PILOT_PATH: design partner + paid pilot surface (Phase B #8)
 
 ### Papers / posts

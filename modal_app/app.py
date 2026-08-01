@@ -36,6 +36,20 @@ TORII_MODAL_VERSION = "0.8.0-f67"
 HERMES_PIN = "53559aaf86b84dadae83cd9bb605ca476f9a0606"
 # OpenRouter — keep Modal compute cheap AND LLM spend low
 DEFAULT_MODEL = "openai/gpt-4.1-mini"
+# Dogfood: deepseek-chat-v4-pro often yields 0 tool turns; prefer v4-pro tool-use slug.
+_MODEL_ALIASES = {
+    "deepseek/deepseek-chat-v4-pro": "deepseek/deepseek-v4-pro",
+    "deepseek-chat-v4-pro": "deepseek/deepseek-v4-pro",
+    "deepseek/deepseek-chat-v4": "deepseek/deepseek-v4-pro",
+    "deepseek-chat-v4": "deepseek/deepseek-v4-pro",
+}
+
+
+def _normalize_model(model: str) -> str:
+    m = (model or "").strip()
+    return _MODEL_ALIASES.get(m, m)
+
+
 _REPO_ROOT = Path(__file__).resolve().parent.parent
 
 # Slim image: no build-essential/python3-dev (not needed if hermes install works without)
@@ -527,6 +541,7 @@ def review_pr(
     until a tiny orch_*_tail at the end.
     """
     t0 = time.time()
+    model = _normalize_model(model or DEFAULT_MODEL)
     _banner(
         "review_pr",
         f"repo={repo} pr={pr_number} model={model} post={post_comment} v={TORII_MODAL_VERSION}",
@@ -1214,6 +1229,7 @@ def main(
         print("BIT2_OK")
         return
     if bit == 3:
+        model = _normalize_model(model or DEFAULT_MODEL)
         print(f"CHEAP review_pr {repo}#{pr} model={model}")
         result = review_pr.remote(repo, pr, model=model, post_comment=post_comment, llm_critic=llm_critic)
         slim = {k: v for k, v in result.items() if k != "review_preview"}

@@ -37,6 +37,14 @@ OUT_DIR="${OUT_DIR:-$TORII_ROOT/.torii-out}"
 HERMES_HOME="${HERMES_HOME:-$TORII_ROOT/.torii-hermes-home}"
 WORKSPACE_ROOT="${WORKSPACE_ROOT:-$TORII_ROOT}"
 MODEL="${TORII_MODEL:-${OPENROUTER_MODEL:-$DEFAULT_TORII_MODEL}}"
+# MODEL_ALIAS_TOOLUSE: deepseek-chat-v4-pro dogfood often yields 0 tool turns;
+# deepseek/deepseek-v4-pro uses workspace tools (buyer JTBD / fail-closed less often).
+case "$MODEL" in
+  deepseek/deepseek-chat-v4-pro|deepseek-chat-v4-pro|deepseek/deepseek-chat-v4|deepseek-chat-v4)
+    echo "notice: model alias $MODEL → deepseek/deepseek-v4-pro (tool-use)" >&2
+    MODEL="deepseek/deepseek-v4-pro"
+    ;;
+esac
 TOOLSETS="${TORII_TOOLSETS:-terminal}"
 PIN_HELPER="$TORII_ROOT/scripts/hermes-pin.sh"
 MODEL_TIER_HELPER="$TORII_ROOT/scripts/model_tier.py"

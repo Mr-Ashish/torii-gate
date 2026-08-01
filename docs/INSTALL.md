@@ -36,7 +36,7 @@ GitHub → **Settings → Secrets and variables → Actions**
 | Name | Required |
 |------|----------|
 | `OPENROUTER_API_KEY` | **yes** |
-| `TORII_MODEL` (variable) | optional · `deepseek/deepseek-chat-v4-pro` |
+| `TORII_MODEL` (variable) | optional · prefer `deepseek/deepseek-v4-pro` for tool-use (alias maps `deepseek-chat-v4-pro` → v4-pro) |
 
 ## 3. Required check (≈1 min)
 
