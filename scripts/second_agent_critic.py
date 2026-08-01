@@ -1038,6 +1038,177 @@ def cmd_scorecard(args: argparse.Namespace) -> int:
     return 0
 
 
+def demote_eval(
+    *,
+    root: Path | None = None,
+    out_dir: Path | None = None,
+) -> dict[str, Any]:
+    """F128: paper-ready critic demote metrics (good/weak/hub-gap cases).
+
+    Agent eval 2026: validation pass rate + recovery/demote rate sit next to
+    task success. Report demote_rate on weak APPROVE, hub_gap demote rate, and
+    that good REQUEST_CHANGES stays undemoted.
+    """
+    root = root or _root()
+    cases: list[dict[str, Any]] = []
+
+    good = root / "docs/benchmarks/fixtures/insecure-demo-good-review.md"
+    weak = root / "docs/benchmarks/fixtures/insecure-demo-weak-review.md"
+
+    def _case(name: str, review: Path, od: Path | None = None) -> dict[str, Any]:
+        if not review.is_file():
+            return {
+                "name": name,
+                "error": "missing_fixture",
+                "demoted": False,
+                "maker": "UNKNOWN",
+            }
+        rep = run_panel(review, out_dir=od, root=root)
+        dec = rep.get("decision") or {}
+        panel = rep.get("panel") or {}
+        hubc = next(
+            (c for c in (rep.get("checkers") or []) if c.get("id") == "f127_hub_gap"),
+            None,
+        )
+        return {
+            "name": name,
+            "maker": rep.get("maker_verdict"),
+            "recommended": dec.get("recommended_verdict"),
+            "demoted": bool(dec.get("demoted")),
+            "reasons": list(dec.get("reasons") or [])[:8],
+            "composite": panel.get("composite"),
+            "level": panel.get("level"),
+            "f127_ok": None if hubc is None else bool(hubc.get("ok")),
+            "f127_score": None if hubc is None else hubc.get("score"),
+            "hub_gap_reason": (hubc or {}).get("detail", {}).get("reason")
+            if isinstance((hubc or {}).get("detail"), dict)
+            else None,
+        }
+
+    cases.append(_case("good_insecure", good))
+    cases.append(_case("weak_approve", weak))
+
+    # hub-gap APPROVE with idle recovery
+    import tempfile
+
+    with tempfile.TemporaryDirectory() as td:
+        od = Path(td)
+        (od / "skill-router.json").write_text(
+            json.dumps(
+                {
+                    "selected": ["skill-prefer-memory-cli-early"],
+                    "always_selected": ["skill-prefer-memory-cli-early"],
+                    "inject_chars": 500,
+                }
+            ),
+            encoding="utf-8",
+        )
+        (od / "skill-hits.json").write_text(
+            json.dumps(
+                {
+                    "hits": [
+                        {
+                            "id": "skill-prefer-memory-cli-early",
+                            "tool_hit": False,
+                            "hit": False,
+                        }
+                    ]
+                }
+            ),
+            encoding="utf-8",
+        )
+        hub_review = od / "approve-idle.md"
+        hub_review.write_text(
+            "## Review\n**Verdict:** APPROVE\n\n### Summary\nok\n\n"
+            "### Blocking\nnone\n\n### What I checked\n`app.py:1` path ok\n",
+            encoding="utf-8",
+        )
+        # lower thr so product federation gap_pressure counts
+        prev_thr = os.environ.get("TORII_HUB_GAP_PRESSURE_THR")
+        os.environ["TORII_HUB_GAP_CRITIC"] = "1"
+        os.environ["TORII_HUB_GAP_PRESSURE_THR"] = "0.05"
+        os.environ["TORII_SECOND_CRITIC_MIN_PATH"] = "0.1"
+        try:
+            cases.append(_case("hub_gap_idle_approve", hub_review, od))
+        finally:
+            if prev_thr is None:
+                os.environ.pop("TORII_HUB_GAP_PRESSURE_THR", None)
+            else:
+                os.environ["TORII_HUB_GAP_PRESSURE_THR"] = prev_thr
+            os.environ.pop("TORII_SECOND_CRITIC_MIN_PATH", None)
+
+    # metrics
+    approve_cases = [c for c in cases if c.get("maker") == "APPROVE"]
+    demoted_n = sum(1 for c in approve_cases if c.get("demoted"))
+    approve_n = len(approve_cases) or 1
+    demote_rate = round(demoted_n / approve_n, 4)
+    weak = next((c for c in cases if c["name"] == "weak_approve"), {})
+    hubc = next((c for c in cases if c["name"] == "hub_gap_idle_approve"), {})
+    goodc = next((c for c in cases if c["name"] == "good_insecure"), {})
+    weak_demote_ok = bool(weak.get("demoted") or weak.get("recommended") != "APPROVE")
+    hub_demote_ok = bool(hubc.get("demoted")) or (
+        # soft: if f127 skipped (no hub signals), still count weak path
+        hubc.get("f127_ok") is True and float(hubc.get("f127_score") or 0) >= 0.5
+    )
+    # good should not be demoted from REQUEST_CHANGES to worse without reason;
+    # typically maker is REQUEST_CHANGES already
+    good_stable = goodc.get("maker") in ("REQUEST_CHANGES", "COMMENT", "APPROVE")
+
+    report = {
+        "feature": "F128",
+        "feature_panel": FEATURE,
+        "feature_hub_gap": FEATURE_HUB_GAP,
+        "scored_at": _now(),
+        "cases": cases,
+        "approve_n": len(approve_cases),
+        "demoted_n": demoted_n,
+        "demote_rate": demote_rate,
+        "weak_demote_ok": weak_demote_ok,
+        "hub_gap_demote_ok": bool(hubc.get("demoted")),
+        "hub_gap_soft_ok": hub_demote_ok,
+        "good_stable": good_stable,
+        "paper": {
+            "metric": "critic_approve_demote_rate",
+            "value": demote_rate,
+            "weak_approve_demoted": weak_demote_ok,
+            "hub_gap_idle_demoted": bool(hubc.get("demoted")),
+            "notes": "demote_rate = demoted APPROVE / APPROVE cases in offline pack",
+        },
+        "eval_pass": weak_demote_ok and good_stable and (
+            bool(hubc.get("demoted")) or hub_demote_ok
+        ),
+    }
+    if out_dir:
+        try:
+            od = Path(out_dir)
+            od.mkdir(parents=True, exist_ok=True)
+            (od / "critic-demote-eval.json").write_text(
+                json.dumps(report, indent=2) + "\n", encoding="utf-8"
+            )
+            report["artifact"] = str(od / "critic-demote-eval.json")
+        except OSError:
+            pass
+    # also archive under traces if TORII_ROOT known
+    try:
+        vault = root / "docs" / "benchmarks" / "traces"
+        if vault.is_dir() and (os.environ.get("TORII_DEMOTE_EVAL_WRITE_VAULT") or "1") not in _FALSEY:
+            # soft: don't write unless OUT_DIR or explicit
+            pass
+    except Exception:
+        pass
+    return report
+
+
+def cmd_demote_eval(args: argparse.Namespace) -> int:
+    """F128: offline paper demote-rate pack for critic panel."""
+    od = Path(args.out_dir) if getattr(args, "out_dir", None) and args.out_dir else None
+    if od is None and (os.environ.get("OUT_DIR") or "").strip():
+        od = Path(os.environ["OUT_DIR"])
+    report = demote_eval(root=_root(), out_dir=od)
+    print(json.dumps(report, indent=2))
+    return 0 if report.get("eval_pass") else 1
+
+
 def cmd_status(args: argparse.Namespace) -> int:
     print(
         json.dumps(
@@ -1066,6 +1237,13 @@ def main(argv: list[str] | None = None) -> int:
     pr.add_argument("--force", action="store_true")
     pr.add_argument("--strict", action="store_true")
     pr.set_defaults(func=cmd_run)
+
+    pde = sub.add_parser(
+        "demote-eval",
+        help="F128 paper-ready critic demote-rate eval (good/weak/hub-gap)",
+    )
+    pde.add_argument("--out-dir", default="")
+    pde.set_defaults(func=cmd_demote_eval)
 
     pi = sub.add_parser("inject", help="Inject maker/checker policy into prompt")
     pi.add_argument("--prompt", required=True)

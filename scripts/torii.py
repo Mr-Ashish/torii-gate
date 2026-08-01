@@ -283,6 +283,7 @@ def cmd_doctor(args: argparse.Namespace) -> int:
     all_ok = True
     recovery_ok: bool | None = None
     recovery_active: list[str] = []
+    recovery_hub_gap_ok: bool | None = None
 
     checks: list[tuple[str, list[str]]] = [
         ("memory", [sys.executable, str(_scripts_dir(root) / "torii_memory.py"), "status"]),
@@ -335,6 +336,7 @@ def cmd_doctor(args: argparse.Namespace) -> int:
                 if name.endswith("loop") and "level" in data:
                     ok = ok and data.get("level") in ("L2", "L3")
                 # F124: skill loop must report recovery_ok (memory/product/critic active)
+                # F128: recovery_hub_gap_ok (f127 critic + demote-eval paper path)
                 if name == "skill_loop":
                     if "recovery_ok" in data:
                         recovery_ok = bool(data.get("recovery_ok"))
@@ -343,12 +345,20 @@ def cmd_doctor(args: argparse.Namespace) -> int:
                     else:
                         recovery_ok = False
                         ok = False
+                    recovery_hub_gap_ok = data.get("recovery_hub_gap_ok")
+                    if recovery_hub_gap_ok is not None:
+                        ok = ok and bool(recovery_hub_gap_ok)
+                    else:
+                        # fail closed if scorecard too old for F128
+                        recovery_hub_gap_ok = False
+                        ok = False
             except (json.JSONDecodeError, TypeError):
-                pass
+                recovery_hub_gap_ok = None
             entry: dict[str, Any] = {"check": name, "ok": ok, "rc": r.returncode}
             if name == "skill_loop":
                 entry["recovery_ok"] = recovery_ok
                 entry["recovery_active"] = recovery_active
+                entry["recovery_hub_gap_ok"] = recovery_hub_gap_ok
             results.append(entry)
             if not ok:
                 all_ok = False
@@ -356,14 +366,20 @@ def cmd_doctor(args: argparse.Namespace) -> int:
             results.append({"check": name, "ok": False, "error": str(exc)[:120]})
             all_ok = False
 
+    # surface last recovery_hub_gap_ok if set on skill_loop entry
+    hub_gap = None
+    for e in results:
+        if e.get("check") == "skill_loop" and "recovery_hub_gap_ok" in e:
+            hub_gap = e.get("recovery_hub_gap_ok")
     print(
         json.dumps(
             {
                 "feature": FEATURE,
-                "feature_recovery": "F124",
+                "feature_recovery": "F128",
                 "doctor_pass": all_ok,
                 "recovery_ok": recovery_ok,
                 "recovery_active": recovery_active,
+                "recovery_hub_gap_ok": hub_gap,
                 "results": results,
                 "scored_at": _now(),
             },

@@ -1,0 +1,30 @@
+{
+  "feature": "F128",
+  "scored_at": "2026-08-01T07:00:29Z",
+  "demote_rate": 1.0,
+  "eval_pass": true,
+  "weak_demote_ok": true,
+  "hub_gap_demote_ok": true,
+  "doctor_pass": true,
+  "recovery_hub_gap_ok": true,
+  "skill_loop_level": "L3",
+  "paper": {
+    "metric": "critic_approve_demote_rate",
+    "value": 1.0,
+    "weak_approve_demoted": true,
+    "hub_gap_idle_demoted": true,
+    "notes": "demote_rate = demoted APPROVE / APPROVE cases in offline pack"
+  },
+  "model": "deepseek/deepseek-v4-pro",
+  "e2e": {
+    "repo": "pytorch/pytorch",
+    "pr": 191813,
+    "modal": true,
+    "bit3": "BIT3_OK",
+    "elapsed_s": 111.9,
+    "log_streaming": true,
+    "verdict": "REQUEST_CHANGES",
+    "post_comment": 0,
+    "modal_app": "https://modal.com/apps/mr-ashish/main/ap-SHc4g5yyzGxn0ndzL7i4m9"
+  }
+}

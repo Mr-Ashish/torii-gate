@@ -106,6 +106,14 @@ LOOP_STAGES: list[dict[str, Any]] = [
         "one_liner": "Hub recovery-util post-score → always priority compound",
         "soft_cmd": True,
     },
+    {
+        "id": "recovery_hub_gap",
+        "feature": "F127/F128",
+        "script": "second_agent_critic.py",
+        "cmd": ["demote-eval", "--help"],
+        "one_liner": "Hub gap critic + paper demote-rate eval",
+        "soft_cmd": True,
+    },
 ]
 
 
@@ -246,6 +254,21 @@ def assess(root: Path | None = None, *, deep: bool = True) -> dict[str, Any]:
             if (root / "scripts" / "skill_router.py").is_file()
             else ""
         ),
+        # F127/F128: hub gap critic wired in second-agent panel + demote-eval
+        "critic_hub_gap": "f127_hub_gap" in (
+            (root / "scripts" / "second_agent_critic.py").read_text(
+                encoding="utf-8", errors="replace"
+            )
+            if (root / "scripts" / "second_agent_critic.py").is_file()
+            else ""
+        ),
+        "critic_demote_eval": "demote-eval" in (
+            (root / "scripts" / "second_agent_critic.py").read_text(
+                encoding="utf-8", errors="replace"
+            )
+            if (root / "scripts" / "second_agent_critic.py").is_file()
+            else ""
+        ),
     }
     wire_ok = all(wire.values())
 
@@ -294,15 +317,17 @@ def assess(root: Path | None = None, *, deep: bool = True) -> dict[str, Any]:
 
     return {
         "feature": FEATURE,
-        "feature_recovery": "F125",
+        "feature_recovery": "F128",
         "schema": SCHEMA,
-        "loop": "route → hit → fitness → dual → attr → inject → util → re-prompt → hub compound",
+        "loop": "route → hit → fitness → dual → attr → inject → util → re-prompt → hub → critic demote",
         "scored_at": _now(),
         "level": level,
         "recovery_active": recovery_active,
         "recovery_ok": recovery_ok,
         "recovery_hub_ok": bool(wire.get("save_trace_recovery_hub"))
         and bool(wire.get("router_hub_score_cmd")),
+        "recovery_hub_gap_ok": bool(wire.get("critic_hub_gap"))
+        and bool(wire.get("critic_demote_eval")),
         "pct": pct,
         "points": points,
         "max_points": max_points,
@@ -344,6 +369,7 @@ def to_markdown(report: dict[str, Any]) -> str:
             f"({', '.join((report.get('active_skills') or [])[:6]) or 'none'})",
             f"- Recovery skills (memory/product/critic): **{'ok' if report.get('recovery_ok') else 'gap'}** "
             f"({', '.join(report.get('recovery_active') or []) or 'none'})",
+            f"- Recovery hub gap critic/demote-eval (F128): **{'ok' if report.get('recovery_hub_gap_ok') else 'gap'}**",
             f"- Wiring (assemble/run/hermes/save-trace): **{'ok' if report.get('wiring_ok') else 'gap'}**",
             f"- Deep fixtures: **{'ok' if report.get('deep_ok') else 'skipped/fail'}**",
             f"- Ready: **{report.get('ready')}**",
@@ -374,6 +400,8 @@ def cmd_scorecard(args: argparse.Namespace) -> int:
                 "skills_n": report["active_skills_n"],
                 "recovery_ok": report.get("recovery_ok"),
                 "recovery_active": report.get("recovery_active"),
+                "recovery_hub_ok": report.get("recovery_hub_ok"),
+                "recovery_hub_gap_ok": report.get("recovery_hub_gap_ok"),
                 "wiring_ok": report["wiring_ok"],
                 "deep_ok": report.get("deep_ok"),
                 "loop": report["loop"],
@@ -404,13 +432,14 @@ def cmd_fixture(args: argparse.Namespace) -> int:
         and report.get("wiring_ok")
         and report.get("deep_ok")
         and report.get("recovery_ok")
+        and report.get("recovery_hub_gap_ok")
         and report.get("level") in ("L2", "L3")
     )
     print(
         json.dumps(
             {
                 "feature": FEATURE,
-                "feature_recovery": "F123",
+                "feature_recovery": "F128",
                 "fixture_pass": fixture_pass,
                 "level": report["level"],
                 "pct": report["pct"],
@@ -419,6 +448,8 @@ def cmd_fixture(args: argparse.Namespace) -> int:
                 "skills_n": report["active_skills_n"],
                 "recovery_ok": report.get("recovery_ok"),
                 "recovery_active": report.get("recovery_active"),
+                "recovery_hub_ok": report.get("recovery_hub_ok"),
+                "recovery_hub_gap_ok": report.get("recovery_hub_gap_ok"),
                 "wiring_ok": report["wiring_ok"],
                 "deep_ok": report["deep_ok"],
                 "ready": report["ready"],

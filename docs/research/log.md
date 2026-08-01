@@ -1,5 +1,37 @@
 # Torii research → product log
 
+## 2026-08-01 — F128 doctor recovery_hub_gap_ok + demote-eval paper metric
+
+### Papers / posts
+- Agent eval 2026 scoreboards: recovery rate + validation/demote rate next to task success.
+- Loop-eng doctor: day-2 habit must surface critic demote path readiness.
+- F127 hub gap checker without scorecard is invisible to installers and paper vault.
+
+### OSS design patterns stolen
+1. skill_loop recovery_hub_gap_ok (f127 critic + demote-eval wire).
+2. torii doctor fails closed without recovery_hub_gap_ok.
+3. second_agent_critic demote-eval: good/weak/hub-gap → critic_approve_demote_rate.
+4. save-trace + run-torii-review stage critic_demote_eval.
+
+### Insight
+Checker code without doctor/scorecard and paper demote_rate does not compound install or evaluation discipline. Highest ROI: fail-closed doctor + offline demote pack for EVAL.
+
+### Feature shipped (F128)
+- skill_loop_status recovery_hub_gap stage + scorecard fields
+- torii.py doctor recovery_hub_gap_ok
+- demote-eval CLI + artifact; PRODUCT + research note
+- traces f128-doctor-demote-eval/
+
+### Metric
+- Offline: demote_rate=1.0 eval_pass; doctor_pass; pytest
+- Live: Modal pytorch e2e POST_COMMENT=0
+
+### Loop-engineering / Hermes practice used
+**Doctor + scorecard habit** — demote path is install-day and paper-day visible.
+
+### SHA
+`PENDING`
+
 ## 2026-08-01 — F127 hub gap critic + hub_ingested attribution
 
 ### Papers / posts

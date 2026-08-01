@@ -1,0 +1,20 @@
+{
+  "feature": "F91",
+  "feature_recovery": "F128",
+  "level": "L3",
+  "pct": 100.0,
+  "ready": true,
+  "stages_ok": "11/11",
+  "skills_n": 9,
+  "recovery_ok": true,
+  "recovery_active": [
+    "skill-prefer-memory-cli-early",
+    "skill-prefer-product-cli",
+    "skill-prefer-critic-early"
+  ],
+  "recovery_hub_ok": true,
+  "recovery_hub_gap_ok": true,
+  "wiring_ok": true,
+  "deep_ok": null,
+  "loop": "route \u2192 hit \u2192 fitness \u2192 dual \u2192 attr \u2192 inject \u2192 util \u2192 re-prompt \u2192 hub \u2192 critic demote"
+}

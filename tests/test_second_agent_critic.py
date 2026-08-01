@@ -94,6 +94,21 @@ class SecondAgentCriticTests(unittest.TestCase):
         self.assertTrue(data["enabled"])
         self.assertEqual(data.get("feature_hub_gap"), "F127")
 
+    def test_f128_demote_eval(self):
+        """F128: paper demote-rate pack demotes weak + hub-gap APPROVE."""
+        with tempfile.TemporaryDirectory() as td:
+            r = _run(["demote-eval", "--out-dir", td])
+            self.assertEqual(r.returncode, 0, r.stderr + r.stdout)
+            data = json.loads(r.stdout)
+            self.assertEqual(data.get("feature"), "F128")
+            self.assertTrue(data.get("eval_pass"), data)
+            self.assertTrue(data.get("weak_demote_ok"), data)
+            self.assertGreaterEqual(float(data.get("demote_rate") or 0), 0.5)
+            paper = data.get("paper") or {}
+            self.assertEqual(paper.get("metric"), "critic_approve_demote_rate")
+            art = Path(td) / "critic-demote-eval.json"
+            self.assertTrue(art.is_file())
+
     def test_f127_hub_gap_demotes_approve(self):
         """F127: high hub gap + idle recovery demotes maker APPROVE."""
         with tempfile.TemporaryDirectory() as td:

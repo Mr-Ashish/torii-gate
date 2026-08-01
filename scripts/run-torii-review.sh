@@ -211,6 +211,9 @@ if [[ -f "$SCRIPTS/second_agent_critic.py" ]]; then
           ;;
       esac
       fi
+      # F128: paper-ready critic demote-rate pack (good/weak/hub-gap)
+      stage critic_demote_eval \
+        python3 "$SCRIPTS/second_agent_critic.py" demote-eval --out-dir "$OUT_DIR" || true
       ;;
   esac
 fi

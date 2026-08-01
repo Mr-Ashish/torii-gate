@@ -71,13 +71,14 @@ class ToriiProductCliTests(unittest.TestCase):
 
 
     def test_doctor_recovery_ok(self):
-        """F124: product doctor requires recovery_ok from skill loop."""
+        """F124/F128: doctor requires recovery_ok + recovery_hub_gap_ok."""
         r = _run(["doctor"])
         self.assertEqual(r.returncode, 0, r.stderr + r.stdout)
         data = json.loads(r.stdout)
         self.assertTrue(data.get("doctor_pass"), data)
         self.assertTrue(data.get("recovery_ok"), data)
-        self.assertEqual(data.get("feature_recovery"), "F124")
+        self.assertTrue(data.get("recovery_hub_gap_ok"), data)
+        self.assertEqual(data.get("feature_recovery"), "F128")
         self.assertIn("skill-prefer-product-cli", data.get("recovery_active") or [])
 
 

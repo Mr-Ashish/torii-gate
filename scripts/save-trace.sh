@@ -94,6 +94,8 @@ fi
 copy_if "$OUT_DIR/recovery-hub-score.json" "$TRACE_DIR/recovery-hub-score.json"
 # F126: hub gap re-prompt decide + fitness compound artifact
 copy_if "$OUT_DIR/recovery-reprompt-decide.json" "$TRACE_DIR/recovery-reprompt-decide.json"
+# F128: paper critic demote-rate eval
+copy_if "$OUT_DIR/critic-demote-eval.json" "$TRACE_DIR/critic-demote-eval.json"
 copy_if "$OUT_DIR/memory-tool-reprompt.env" "$TRACE_DIR/memory-tool-reprompt.env"
 copy_if "$OUT_DIR/memory-tool-audit.json" "$TRACE_DIR/memory-tool-audit.json"
 copy_if "$OUT_DIR/reprompt-budget.json" "$TRACE_DIR/reprompt-budget.json"
