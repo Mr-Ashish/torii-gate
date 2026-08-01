@@ -1,5 +1,39 @@
 # Torii research → product log
 
+## 2026-08-01 — F171 chronic refine dual_fail always-priority decay
+
+### Papers / posts
+- **Assay** (arXiv 2606.15390): zero/negative skill effect must be suppressed.
+- F158 chronic util gap demote: longitudinal fitness for idle always skills.
+- F166 refine shield without expiry left chronic dual_fail always-boosted.
+- F169 per-run demote does not change next-PR always budget alone.
+
+### OSS design patterns stolen
+1. ingest_refine_dual dual_pass/fail rates + chronic flag after min_n.
+2. apply_demotions lifts F166 shield on chronic dual_fail; soft demote.
+3. post_score_refine_dual_hub negative priority_deltas from fitness decay.
+4. hermes soft ingest-refine-dual after F167; skill_loop refine_dual_decay_ok.
+
+### Insight
+Refine + promote without chronic decay freezes bad skills in always slots. Highest ROI: dual_fail_rate ≥ thr decays always priority until tools recover contribution_pp.
+
+### Feature shipped (F171)
+- skill_fitness ingest-refine-dual + demote decay
+- skill_router hub negative Δprio for chronic_fail
+- hermes soft wire; PRODUCT Mental model E line
+
+### Metric
+- Offline: f171_ok chronic demote Δprio=-25
+- Live local: recall=1.0 util_rate=1.0 F171 hermes ingest-refine-dual
+- Modal pytorch#191831 BIT3_OK ~67.6s POST_COMMENT=0 log_streaming=true
+
+### Loop-engineering / Hermes practice used
+**Longitudinal scorecard demote** — zombies leave always budget.
+
+### SHA
+`(pending)`
+
+
 ## 2026-08-01 — F170 GEPA refine brand + paper EVAL pack
 
 ### Papers / posts

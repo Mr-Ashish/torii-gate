@@ -917,10 +917,50 @@ def post_score_refine_dual_hub(
         if bin_:
             ent["util_rate_bin"] = bin_
 
+    # F171: chronic dual_fail from fitness ledger → always-priority decay
+    fitness_decay: dict[str, int] = {}
+    try:
+        fit_path = root / ".torii" / "skill-fitness.json"
+        envf = (os.environ.get("TORII_SKILL_FITNESS_FILE") or "").strip()
+        if envf:
+            fit_path = Path(envf)
+        if fit_path.is_file():
+            fit = json.loads(fit_path.read_text(encoding="utf-8"))
+            for sid, ent in (fit.get("skills") or {}).items():
+                if not isinstance(ent, dict):
+                    continue
+                if ent.get("refine_dual_chronic_fail") or int(
+                    ent.get("refine_priority_decay") or 0
+                ) < 0:
+                    decay = int(ent.get("refine_priority_decay") or -15)
+                    if decay >= 0:
+                        decay = -15
+                    fitness_decay[str(sid)] = decay
+                    # ensure skill row exists for display
+                    se = skills.setdefault(
+                        str(sid),
+                        {
+                            "skill_id": str(sid),
+                            "hits": int(ent.get("refine_dual_selected_n") or 0),
+                            "tenants": 0,
+                            "tool_contrib_pp": float(ent.get("last_refine_tool_pp") or 0),
+                            "promoted": False,
+                            "dual_fail_n": int(ent.get("refine_dual_fail_n") or 0),
+                            "dual_pass_n": int(ent.get("refine_dual_pass_n") or 0),
+                            "priority_delta": 0,
+                            "util_rate_bin": "neg",
+                        },
+                    )
+                    se["chronic_fail"] = True
+                    se["dual_fail_rate"] = float(ent.get("refine_dual_fail_rate") or 0)
+                    se["fitness_decay"] = decay
+    except (OSError, json.JSONDecodeError, TypeError, ValueError):
+        fitness_decay = {}
+
     priority_deltas: dict[str, int] = {}
     for sid, ent in skills.items():
         delta = 0
-        if ent["promoted"]:
+        if ent["promoted"] and not ent.get("chronic_fail"):
             # multi-tenant promoted refine dual — keep in always budget
             delta = 20 + min(20, 4 * min(5, int(ent["tenants"])))
             if float(ent["tool_contrib_pp"]) >= 50:
@@ -932,20 +972,34 @@ def post_score_refine_dual_hub(
         # dual_fail without promote does not boost
         if int(ent["dual_fail_n"]) >= 1 and not ent["promoted"]:
             delta = min(delta, 0)
+        # F171: chronic dual_fail decays always priority (negative delta)
+        if sid in fitness_decay:
+            delta = min(delta, int(fitness_decay[sid]))
+            ent["chronic_fail"] = True
+            ent["fitness_decay"] = fitness_decay[sid]
+        # also decay when local dual_fail_n dominates dual_pass_n (run-level chronic)
+        df = int(ent["dual_fail_n"])
+        dp = int(ent["dual_pass_n"])
+        if df >= 2 and df > dp and not ent.get("promoted"):
+            delta = min(delta, -10 - min(10, df))
+            ent["chronic_fail"] = True
         ent["priority_delta"] = int(delta)
-        if delta:
+        # always record non-zero deltas (including negative F171 decay)
+        if delta != 0:
             priority_deltas[sid] = int(delta)
 
     fail_pressure = 0.0
     if fail_hits + ok_hits > 0:
         fail_pressure = round(fail_hits / max(1, fail_hits + ok_hits), 4)
     high_fail = fail_pressure >= 0.5 and fail_hits >= 1
+    chronic_n = sum(1 for e in skills.values() if e.get("chronic_fail"))
 
     blob = json.dumps({"skills": list(skills.keys()), "deltas": priority_deltas})
     privacy_ok = "/Users/" not in blob and "/home/" not in blob
 
     return {
         "feature": FEATURE_REFINE_DUAL_HUB,
+        "feature_decay": "F171",
         "enabled": True,
         "signals_n": len(signals),
         "skills": skills,
@@ -954,6 +1008,8 @@ def post_score_refine_dual_hub(
         "fail_hits": fail_hits,
         "fail_pressure": fail_pressure,
         "high_fail": high_fail,
+        "chronic_fail_n": chronic_n,
+        "fitness_decay": fitness_decay,
         "privacy_ok": privacy_ok,
         "hub_ok": privacy_ok and (len(priority_deltas) >= 1 or fail_hits >= 0),
     }
@@ -978,11 +1034,17 @@ def render_refine_dual_hub_section(hub: dict[str, Any]) -> str:
             lines.append(
                 f"- `{e.get('skill_id')}`: {promo} hits={e.get('hits')} "
                 f"tenants={e.get('tenants')} tool_pp={e.get('tool_contrib_pp')} "
-                f"Δprio=+{e.get('priority_delta')} fail_n={e.get('dual_fail_n')}"
+                f"Δprio={int(e.get('priority_delta') or 0):+d} fail_n={e.get('dual_fail_n')}"
+                + (" chronic_decay" if e.get("chronic_fail") else "")
             )
     else:
         lines.append(
             "- (no promoted refine dual themes yet — keep hub_boost tools when GEPA refine is active)"
+        )
+    if int(hub.get("chronic_fail_n") or 0) >= 1:
+        lines.append(
+            f"- **F171 chronic dual_fail decay** on {int(hub.get('chronic_fail_n') or 0)} skill(s) — "
+            "always budget demotes until hub_boost tools recover contribution_pp."
         )
     if hub.get("high_fail"):
         lines.append(

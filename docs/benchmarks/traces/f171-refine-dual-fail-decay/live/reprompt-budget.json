@@ -1,0 +1,14 @@
+{
+  "schema": 1,
+  "feature": "F108",
+  "feature_adaptive": "F159",
+  "enabled": true,
+  "max_extra": 1,
+  "base_max_extra": 1,
+  "used": 0,
+  "remaining": 1,
+  "attempts": [],
+  "blocked": [],
+  "adaptive_expanded": false,
+  "updated_at": "2026-08-01T12:19:43Z"
+}

@@ -1,0 +1,46 @@
+{
+  "feature": "F105",
+  "schema": 1,
+  "score": 1.0,
+  "level": "L3",
+  "hit_count": 4,
+  "tools_used": [
+    "archival_search",
+    "torii_product_memory"
+  ],
+  "by_tool": {
+    "torii_product_memory": 3,
+    "archival_search": 1
+  },
+  "cli_subcmds": {
+    "search": 6
+  },
+  "inject_offered": true,
+  "utilization_gap": false,
+  "tool_call_turns": 2,
+  "feedback": [
+    "memory_tools_used=2 hits=4 tools=['archival_search', 'torii_product_memory']"
+  ],
+  "scored_at": "2026-08-01T12:19:43Z",
+  "hits_detail": [
+    {
+      "tool": "torii_product_memory",
+      "snip": "=1.00** \u2014 prefer early `python3 scripts/torii.py memory -- search` before re-raising themes. <!-- /torii-f142-memory-util-hub --> # Ta"
+    },
+    {
+      "tool": "archival_search",
+      "snip": "{\"command\": \"python3 scripts/archival_memory_search.py auto --files demo/insecure/app.py 2>&1 | head -100\", \"timeout\": 30, \"workdir\":"
+    },
+    {
+      "tool": "torii_product_memory",
+      "snip": "{\"command\": \"python3 scripts/torii.py memory -- search -- -q \\\"hub warm themes\\\" 2>&1 | head -100\", \"timeout\": 30, \"workdir\""
+    },
+    {
+      "tool": "torii_product_memory",
+      "snip": "{\"command\": \"python3 scripts/torii.py memory -- search -- -q \\\"sql injection OR pickle OR command injection OR secret OR ins"
+    }
+  ],
+  "out_dir": "docs/benchmarks/traces/f171-refine-dual-fail-decay/live",
+  "loop_path": "docs/benchmarks/traces/f171-refine-dual-fail-decay/live/agent-loop/agent-loop.json",
+  "enabled": true
+}

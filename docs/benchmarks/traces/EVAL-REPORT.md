@@ -136,3 +136,8 @@ Generated: `2026-08-01T09:45:56Z`
 - doctor/scorecard refine_loop_ok; Mental model E
 - EVAL pack rolls F165–F169 live Modal BIT3 proofs
 - scorecard-metrics.md GEPA refine rows
+
+## F171 chronic refine dual_fail always-priority decay
+- Offline f171_ok chronic demote Δprio<0
+- Live F171 ingest-refine-dual notice; recall=1.0
+- Modal pytorch#191831 BIT3_OK ~67.6s POST_COMMENT=0

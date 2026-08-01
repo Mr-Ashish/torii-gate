@@ -113,6 +113,20 @@ def refine_fitness_enabled() -> bool:
     return raw not in _FALSEY
 
 
+def refine_dual_decay_enabled() -> bool:
+    """F171: chronic dual_fail decays always priority + lifts refine shield."""
+    raw = (os.environ.get("TORII_SKILL_FITNESS_REFINE_DUAL_DECAY") or "1").strip().lower()
+    return raw not in _FALSEY
+
+
+def refine_dual_fail_thr() -> float:
+    """F171: dual_fail_rate ≥ thr after min samples → decay (default 0.67)."""
+    try:
+        return float(os.environ.get("TORII_SKILL_FITNESS_REFINE_DUAL_FAIL_THR") or "0.67")
+    except (TypeError, ValueError):
+        return 0.67
+
+
 def hub_fitness_enabled() -> bool:
     """F126: fold hub recovery-util post-score into local fitness ledger."""
     raw = (os.environ.get("TORII_SKILL_FITNESS_HUB") or "1").strip().lower()
@@ -461,7 +475,7 @@ def ingest_refine(
             "reason": "no_refine_doc",
             "privacy_ok": True,
         }
-    ledger = ledger if ledger is not None else load_ledger(root)
+    ledger = ledger if ledger is not None else load_ledger(ledger_path(root))
     skills = ledger.setdefault("skills", {})
     ingested = 0
     ids: list[str] = []
@@ -502,6 +516,111 @@ def ingest_refine(
         "feature": "F166",
         "ingested_n": ingested,
         "skill_ids": ids,
+        "privacy_ok": privacy_ok,
+        "ledger": str(path) if path else None,
+    }
+
+
+def ingest_refine_dual(
+    report: dict[str, Any] | None = None,
+    ledger: dict[str, Any] | None = None,
+    *,
+    root: Path | None = None,
+    out_dir: Path | None = None,
+    save: bool = True,
+) -> dict[str, Any]:
+    """F171: fold F167 refine dual pass/fail into fitness (chronic dual_fail decay fuel).
+
+    dual_pass → dual_pass_n++; dual_fail or tool_pp≤0 → dual_fail_n++.
+    Computes dual_fail_rate for apply_demotions / always-priority decay.
+    """
+    root = root or _root()
+    if not refine_dual_decay_enabled() and not refine_fitness_enabled():
+        return {
+            "feature": "F171",
+            "ingested_n": 0,
+            "reason": "refine_dual_decay_off",
+            "privacy_ok": True,
+        }
+    if report is None and out_dir is not None:
+        p = Path(out_dir) / "refine-dual.json"
+        if p.is_file():
+            try:
+                report = json.loads(p.read_text(encoding="utf-8"))
+            except (OSError, json.JSONDecodeError):
+                report = None
+    if not isinstance(report, dict):
+        return {
+            "feature": "F171",
+            "ingested_n": 0,
+            "reason": "no_refine_dual",
+            "privacy_ok": True,
+        }
+    ledger = ledger if ledger is not None else load_ledger(ledger_path(root))
+    skills = ledger.setdefault("skills", {})
+    skill_ids = [str(s) for s in (report.get("refined_skill_ids") or []) if str(s).startswith("skill-")]
+    if not skill_ids:
+        # still count known recovery refine targets from dual report selection
+        skill_ids = [str(s) for s in (report.get("selected") or []) if "prefer-" in str(s)]
+    dual_pass = bool(report.get("refine_dual_pass"))
+    tool_pp = float(report.get("refine_tool_contribution_pp") or 0)
+    probe_d = int(report.get("refine_probe_delta") or 0)
+    # treat non-positive contribution as fail even if flag true
+    effective_pass = dual_pass and (tool_pp > 0 or probe_d > 0)
+    ingested = 0
+    decayed: list[str] = []
+    for sid in skill_ids or ["skill-prefer-hub-archival-early"]:
+        if not sid.startswith("skill-"):
+            continue
+        e = skills.setdefault(sid, {"id": sid})
+        e["refine_dual_selected_n"] = int(e.get("refine_dual_selected_n") or 0) + 1
+        if effective_pass:
+            e["refine_dual_pass_n"] = int(e.get("refine_dual_pass_n") or 0) + 1
+            e["last_refine_dual_pass"] = True
+        else:
+            e["refine_dual_fail_n"] = int(e.get("refine_dual_fail_n") or 0) + 1
+            e["last_refine_dual_pass"] = False
+        sel = int(e.get("refine_dual_selected_n") or 0)
+        fail_n = int(e.get("refine_dual_fail_n") or 0)
+        pass_n = int(e.get("refine_dual_pass_n") or 0)
+        e["refine_dual_fail_rate"] = round(fail_n / sel, 4) if sel else 0.0
+        e["refine_dual_pass_rate"] = round(pass_n / sel, 4) if sel else 0.0
+        e["last_refine_dual_at"] = _now()
+        e["last_refine_tool_pp"] = tool_pp
+        # soft decay stamp for router
+        thr = refine_dual_fail_thr()
+        min_n = _int_env("TORII_SKILL_FITNESS_MIN_N", 3)
+        if sel >= min_n and float(e["refine_dual_fail_rate"]) >= thr:
+            e["refine_dual_chronic_fail"] = True
+            # negative always-priority fuel (router post_score reads this)
+            e["hub_priority_delta"] = min(int(e.get("hub_priority_delta") or 0), -12)
+            e["refine_priority_decay"] = -15 - min(15, int(10 * float(e["refine_dual_fail_rate"])))
+            decayed.append(sid)
+        elif effective_pass and pass_n >= 1:
+            e["refine_dual_chronic_fail"] = False
+            if int(e.get("refine_priority_decay") or 0) < 0 and float(e["refine_dual_fail_rate"]) < thr:
+                e["refine_priority_decay"] = 0
+        ingested += 1
+    ledger["last_refine_dual_ingest"] = {
+        "at": _now(),
+        "feature": "F171",
+        "ingested_n": ingested,
+        "effective_pass": effective_pass,
+        "tool_pp": tool_pp,
+        "decayed": decayed,
+        "skill_ids": skill_ids,
+    }
+    path = None
+    if save and ingested:
+        path = save_ledger(ledger, ledger_path(root))
+    blob = json.dumps(ledger.get("last_refine_dual_ingest") or {})
+    privacy_ok = "/Users/" not in blob and "/home/" not in blob
+    return {
+        "feature": "F171",
+        "ingested_n": ingested,
+        "effective_pass": effective_pass,
+        "decayed": decayed,
+        "skill_ids": skill_ids,
         "privacy_ok": privacy_ok,
         "ledger": str(path) if path else None,
     }
@@ -792,10 +911,17 @@ def apply_demotions(ledger: dict[str, Any]) -> dict[str, Any]:
         was = bool(ent.get("demoted"))
         # F116: tool-effective skills (any tool_hit with samples) never demote
         tool_shield = bool(tool_fitness_enabled() and tool_n >= 1 and n >= 1)
-        # F166: recently GEPA-refined skills (dual-gate constraint_ok) shield demote
+        # F166: recently GEPA-refined skills shield demote — F171 lifts on chronic dual_fail
+        chronic_dual_fail = bool(
+            refine_dual_decay_enabled()
+            and ent.get("refine_dual_chronic_fail")
+            and int(ent.get("refine_dual_selected_n") or 0) >= min_n
+            and float(ent.get("refine_dual_fail_rate") or 0) >= refine_dual_fail_thr()
+        )
         refine_shield = bool(
             refine_fitness_enabled()
             and (ent.get("gepa_refined") or int(ent.get("refined_n") or 0) >= 1)
+            and not chronic_dual_fail
         )
         if (tool_shield or refine_shield) and was:
             ent["demoted"] = False
@@ -805,6 +931,15 @@ def apply_demotions(ledger: dict[str, Any]) -> dict[str, Any]:
         if tool_shield or refine_shield:
             ent["demoted"] = False
             shielded.append(sid)
+            continue
+        # F171: chronic refine dual_fail → soft demote + priority decay (Assay: not all skills help)
+        if chronic_dual_fail:
+            ent["demoted"] = True
+            demoted.append(sid)
+            ent["refine_priority_decay"] = int(
+                ent.get("refine_priority_decay")
+                or (-15 - min(15, int(10 * float(ent.get("refine_dual_fail_rate") or 0))))
+            )
             continue
         # F158: hub-archival chronic util gap (inject ≠ hub_boost) → demote
         # even when always:true — soft demote hits fitness_boosts / router, not inject flag
@@ -1687,6 +1822,14 @@ def main(argv: list[str] | None = None) -> int:
     prf.add_argument("--refine", default="", help="path to skill-refine.json")
     prf.set_defaults(func=cmd_ingest_refine)
 
+    prd = sub.add_parser(
+        "ingest-refine-dual",
+        help="F171 ingest refine-dual.json pass/fail for chronic dual_fail decay",
+    )
+    prd.add_argument("--out-dir", default="", help="dir with refine-dual.json")
+    prd.add_argument("--report", default="", help="path to refine-dual.json")
+    prd.set_defaults(func=cmd_ingest_refine_dual)
+
     pha = sub.add_parser(
         "ingest-hub-archival",
         help="F158 fold recovery hub-archival util gap/hit into fitness ledger",
@@ -1718,6 +1861,32 @@ def cmd_ingest_refine(args: argparse.Namespace) -> int:
     out_dir = (getattr(args, "out_dir", "") or "").strip()
     od = Path(out_dir) if out_dir else None
     result = ingest_refine(refine_doc, root=root, out_dir=od, save=True)
+    print(json.dumps(result, indent=2))
+    return 0 if result.get("privacy_ok", True) else 1
+
+
+def cmd_ingest_refine_dual(args: argparse.Namespace) -> int:
+    """F171: ingest refine-dual.json into fitness for chronic dual_fail decay."""
+    root = _root()
+    report = None
+    rp = (getattr(args, "report", "") or "").strip()
+    if rp:
+        p = Path(rp)
+        if p.is_file():
+            try:
+                report = json.loads(p.read_text(encoding="utf-8"))
+            except (OSError, json.JSONDecodeError):
+                report = None
+    out_dir = (getattr(args, "out_dir", "") or "").strip()
+    od = Path(out_dir) if out_dir else None
+    result = ingest_refine_dual(report, root=root, out_dir=od, save=True)
+    # soft demote pass after ingest
+    if result.get("ingested_n"):
+        ledger = load_ledger(ledger_path(root))
+        apply_demotions(ledger)
+        save_ledger(ledger, ledger_path(root))
+        result["demote_applied"] = True
+        result["demoted"] = list(ledger.get("demoted") or [])[:16]
     print(json.dumps(result, indent=2))
     return 0 if result.get("privacy_ok", True) else 1
 

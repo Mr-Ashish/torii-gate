@@ -302,6 +302,8 @@ util gap → GEPA refine body → dual-gate LOO floor → dual contribution_pp
 
 **Ops:** `python3 scripts/torii.py doctor` / `scorecard` → `refine_loop_ok` next to `hub_archival_loop_ok`.
 
+**Chronic dual_fail decay (F171):** after min samples, high `refine_dual_fail_rate` lifts the F166 refine shield, soft-demotes the skill, and applies **negative always-priority** (`refine_priority_decay`) so idle refined skills fall out of the always budget until hub_boost tools recover contribution_pp.
+
 ---
 
 ## Self-evolution (F82 + F87/F88)

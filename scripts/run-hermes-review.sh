@@ -1065,6 +1065,16 @@ if [[ -f "$SKILL_ROUTER_HELPER" && $TIMED_OUT -eq 0 && "${HERMES_CLI_ARGV_BROKEN
                 *)
                   python3 "$TORII_ROOT/scripts/skill_dual_rollout.py" refine-dual --out-dir "$OUT_DIR" >/dev/null 2>&1 || true
                   notice "F167 refine dual-rollout contribution_pp · refine-dual.json"
+                  # F171: chronic dual_fail → fitness decay + always-priority demote fuel
+                  if [[ -f "$TORII_ROOT/scripts/skill_fitness.py" ]]; then
+                    case "${TORII_SKILL_FITNESS_REFINE_DUAL_DECAY:-1}" in
+                      0|false|no|off) ;;
+                      *)
+                        python3 "$TORII_ROOT/scripts/skill_fitness.py" ingest-refine-dual --out-dir "$OUT_DIR" >/dev/null 2>&1 || true
+                        notice "F171 refine dual chronic-fail decay (soft) · ingest-refine-dual"
+                        ;;
+                    esac
+                  fi
                   # F168: federate bins + multi-tenant promote (FederatedSkill gate)
                   case "${TORII_SKILL_REFINE_PROMOTE:-1}" in
                     0|false|no|off) ;;

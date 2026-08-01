@@ -1,0 +1,38 @@
+{
+  "feature": "F171",
+  "title": "chronic refine dual_fail always-priority decay",
+  "scored_at": "2026-08-01T12:20:47Z",
+  "pattern": "dual_fail_rate \u2265 thr \u2192 demote + negative always \u0394prio",
+  "offline": {
+    "f171_ok": true
+  },
+  "live_local": {
+    "recall": 1.0,
+    "tp": 4,
+    "verdict": "REQUEST_CHANGES",
+    "util_rate": 1.0,
+    "recovery_injected_n": 3,
+    "refine_dual_pass": true,
+    "refine_tool_contribution_pp": 50.0,
+    "last_refine_dual_ingest": {
+      "at": "2026-08-01T12:19:43Z",
+      "feature": "F171",
+      "ingested_n": 1,
+      "effective_pass": true,
+      "tool_pp": 50.0,
+      "decayed": [],
+      "skill_ids": [
+        "skill-prefer-memory-cli-early"
+      ]
+    },
+    "model": "deepseek/deepseek-v4-pro"
+  },
+  "modal": {
+    "repo": "pytorch/pytorch",
+    "pr": 191831,
+    "outcome": "BIT3_OK",
+    "elapsed_s": 67.6,
+    "log_streaming": true,
+    "post_comment": 0
+  }
+}
