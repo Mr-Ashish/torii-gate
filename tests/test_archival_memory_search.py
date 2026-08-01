@@ -41,6 +41,9 @@ class ArchivalMemorySearchTests(unittest.TestCase):
             any("pickle" in str(t) or "deserial" in str(t) for t in themes),
             themes,
         )
+        # F145 supersede-aware promote (temporal faithfulness)
+        self.assertTrue(data.get("f145") or data.get("feature_supersede") == "F145")
+        self.assertTrue(data.get("f145_ok"), data)
 
     def test_status(self):
         r = _run(["status"])

@@ -206,6 +206,8 @@ budget always → compact body → score tool_hit → util gap? → budgeted re-
 
 **Graph multi-hop → archival promote (F144):** temporal graph multi-hop themes expand MemGPT-style archival auto-query (`TORII_ARCHIVAL_GRAPH_HOPS=2`) so cold TP themes linked only via co_path/same_theme page into core inject — Zep hop + Letta archival paging compound.
 
+**Supersede-aware archival promote (F145):** MemoTime/Zep temporal faithfulness — multi-hop expanded hits that match active `supersedes` (F101/F102 multi-hop index) are **filtered before core inject** (`TORII_ARCHIVAL_SUPERSEDE_FILTER=1`). Resolved FPs cannot re-page as blocking via co_path kinship.
+
 **Ops:** `python3 scripts/memory_loop_status.py scorecard` → L0–L3. Smoke requires L3 on the hub tree. CI job summary annotates readiness; optional advisory `torii/memory-loop` via `TORII_MEMORY_LOOP_STATUS_COMMIT=1`.
 
 ---

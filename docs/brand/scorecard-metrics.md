@@ -110,3 +110,12 @@ Source: `second_agent_critic.py` panel.
 | mode | auto_graph when themes present |
 
 Source: `archival_memory_search.py auto` / fixture.
+
+## F145 supersede-aware archival promote
+
+| Metric | Meaning |
+|--------|---------|
+| superseded_filtered | Hits dropped for active multi-hop supersedes |
+| f145_ok | Fixture: cold pickle supersedes not in core promote |
+
+Source: `archival_memory_search.py filter_superseded_hits` / fixture.

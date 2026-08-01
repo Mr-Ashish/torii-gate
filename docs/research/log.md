@@ -1,5 +1,36 @@
 # Torii research → product log
 
+## 2026-08-01 — F145 supersede-aware archival promote
+
+### Papers / posts
+- **MemoTime** (arXiv 2510.13614): temporal faithfulness in multi-hop TKG reasoning — operator-aware paths must not revive invalid facts.
+- Zep/F100–F102 supersedes + multi-hop path kinship; F144 multi-hop archival expand without filter.
+- Graph agent memory survey (arXiv 2602.05665): temporal edges need retrieval-time validity checks.
+
+### OSS design patterns stolen
+1. `filter_superseded_hits` over F101/F102 `superseded_index` (multi-hop path seeds).
+2. Promote section lists F145 filtered hits as do-not-re-raise (not core).
+3. `TORII_ARCHIVAL_SUPERSEDE_FILTER=1`; `--no-supersede` CLI; fixture f145_ok.
+4. PRODUCT/research/brand + traces f145-archival-supersede-filter/.
+
+### Insight
+F144 multi-hop paging without supersede filter resurrects resolved cold TPs as core inject. Highest ROI: MemoTime-style temporal faithfulness on the promote path so critic and paging share one validity index.
+
+### Feature shipped (F145)
+- archival_memory_search supersede filter on auto/promote
+- fixture f145_ok + tests; PRODUCT/research
+
+### Metric
+- Offline: fixture f145_ok; pytest 619 passed
+- Live: Modal pytorch#191813 BIT3_OK ~80s REQUEST_CHANGES POST_COMMENT=0 log_streaming=true
+
+### Loop-engineering / Hermes practice used
+**Temporal validity on retrieval** — multi-hop expand compounds with supersede demote before inject.
+
+### SHA
+`PENDING`
+
+
 ## 2026-08-01 — F144 graph multi-hop → archival promote
 
 ### Papers / posts
