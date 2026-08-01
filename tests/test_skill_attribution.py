@@ -44,6 +44,73 @@ class SkillAttributionTests(unittest.TestCase):
         self.assertEqual(r.returncode, 0, r.stderr + r.stdout)
         self.assertEqual(json.loads(r.stdout)["feature"], "F88")
 
+    def test_f127_hub_ingested_floor(self):
+        """F127: fitness hub_ingested skills get contribution floor, not free-rider."""
+        prev = {
+            k: os.environ.get(k)
+            for k in ("TORII_ROOT", "TORII_SKILL_ATTR_HUB", "TORII_SKILL_ATTR_TOOL")
+        }
+        try:
+            with tempfile.TemporaryDirectory() as td:
+                root = Path(td)
+                (root / ".torii").mkdir()
+                (root / ".torii" / "skill-fitness.json").write_text(
+                    json.dumps(
+                        {
+                            "skills": {
+                                "skill-prefer-product-cli": {
+                                    "hub_ingested_n": 2,
+                                    "tool_hit_n": 2,
+                                    "hub_priority_delta": 24,
+                                    "last_hub_at": "2026-08-01T00:00:00Z",
+                                }
+                            }
+                        }
+                    )
+                    + "\n",
+                    encoding="utf-8",
+                )
+                active = root / "agent" / "skills" / "active"
+                active.mkdir(parents=True)
+                (active / "skill-prefer-product-cli.md").write_text(
+                    "---\nid: skill-prefer-product-cli\nalways: true\n---\n\nproduct cli\n",
+                    encoding="utf-8",
+                )
+                (active / "skill-zombie-free.md").write_text(
+                    "---\nid: skill-zombie-free\n---\n\nzombie free rider\n",
+                    encoding="utf-8",
+                )
+                os.environ["TORII_ROOT"] = str(root)
+                os.environ["TORII_SKILL_ATTR_HUB"] = "1"
+                os.environ["TORII_SKILL_ATTR_TOOL"] = "0"
+                sys.path.insert(0, str(ROOT / "scripts"))
+                import skill_attribution as sa  # type: ignore
+
+                rep = sa.attribute(
+                    "LGTM no findings APPROVE",
+                    root=root,
+                    paths=["x.py"],
+                    selected=["skill-prefer-product-cli", "skill-zombie-free"],
+                    tool_blob="",
+                )
+                self.assertEqual(rep.get("feature_hub"), "F127")
+                self.assertIn(
+                    "skill-prefer-product-cli", rep.get("hub_contributors") or []
+                )
+                row = next(
+                    r for r in rep["skills"] if r["id"] == "skill-prefer-product-cli"
+                )
+                self.assertGreaterEqual(float(row["contribution"]), 0.75)
+                self.assertFalse(row["free_rider"])
+                z = next(r for r in rep["skills"] if r["id"] == "skill-zombie-free")
+                self.assertTrue(z["free_rider"])
+        finally:
+            for k, v in prev.items():
+                if v is None:
+                    os.environ.pop(k, None)
+                else:
+                    os.environ[k] = v
+
     def test_gate_includes_f88(self):
         r = _run(ADOPT, ["gate"])
         self.assertEqual(r.returncode, 0, r.stderr + r.stdout)

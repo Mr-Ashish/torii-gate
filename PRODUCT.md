@@ -170,6 +170,8 @@ budget always → compact body → score tool_hit → util gap? → budgeted re-
 
 **Hub gap re-prompt + fitness (F126):** multi-tenant `gap_pressure` biases F122 soft re-prompt when recovery tools are only partially used (idle skill ids), and hub tool-hit themes soft-ingest into the skill fitness ledger (demote shield + boost) under the shared F108 budget.
 
+**Hub gap critic + hub attribution (F127):** second-agent critic panel weights multi-tenant recovery gap pressure (`f127_hub_gap`) and demotes weak APPROVE when hub gap is high and recovery tools are idle; skill attribution floors hub_ingested fitness skills so multi-tenant tool evidence is not free-rider demoted.
+
 **Ops:** `python3 scripts/memory_loop_status.py scorecard` → L0–L3. Smoke requires L3 on the hub tree. CI job summary annotates readiness; optional advisory `torii/memory-loop` via `TORII_MEMORY_LOOP_STATUS_COMMIT=1`.
 
 ---

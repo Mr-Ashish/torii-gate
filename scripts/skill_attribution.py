@@ -30,6 +30,7 @@ Env:
   TORII_SKILL_ATTRIBUTION     1 (default) | 0
   TORII_SKILL_ATTR_MIN        default 0.01 — min contribution to count
   TORII_SKILL_ATTR_TOOL       1 (default) | 0 — F115 tool-outcome LOO credit
+  TORII_SKILL_ATTR_HUB        1 (default) | 0 — F127 floor for hub_ingested fitness skills
 """
 
 from __future__ import annotations
@@ -46,6 +47,7 @@ from typing import Any
 
 FEATURE = "F88"
 FEATURE_TOOL = "F115"
+FEATURE_HUB = "F127"
 SCHEMA = 1
 LEDGER_NAME = "skill-attribution.json"
 
@@ -181,6 +183,49 @@ def _resolve_tool_blob(
         return ""
 
 
+def hub_attr_enabled() -> bool:
+    """F127: floor contribution for fitness hub_ingested recovery skills."""
+    raw = (os.environ.get("TORII_SKILL_ATTR_HUB") or "1").strip().lower()
+    return raw not in _FALSEY
+
+
+def _load_hub_ingested_skills(root: Path) -> dict[str, dict[str, Any]]:
+    """skill_id → fitness entry fields (hub_ingested_n, tool_hit_n) privacy-safe."""
+    out: dict[str, dict[str, Any]] = {}
+    if not hub_attr_enabled():
+        return out
+    candidates = [
+        root / ".torii" / "skill-fitness.json",
+    ]
+    env = (os.environ.get("TORII_SKILL_FITNESS_FILE") or "").strip()
+    if env:
+        candidates.insert(0, Path(env))
+    for p in candidates:
+        if not p.is_file():
+            continue
+        try:
+            data = json.loads(p.read_text(encoding="utf-8"))
+        except (OSError, json.JSONDecodeError):
+            continue
+        skills = data.get("skills") if isinstance(data, dict) else None
+        if not isinstance(skills, dict):
+            continue
+        for sid, ent in skills.items():
+            if not isinstance(sid, str) or "/" in sid or not isinstance(ent, dict):
+                continue
+            hub_n = int(ent.get("hub_ingested_n") or 0)
+            tool_n = int(ent.get("tool_hit_n") or 0)
+            if hub_n < 1 and not ent.get("last_hub_at"):
+                continue
+            out[sid] = {
+                "hub_ingested_n": hub_n,
+                "tool_hit_n": tool_n,
+                "hub_priority_delta": int(ent.get("hub_priority_delta") or 0),
+            }
+        break
+    return out
+
+
 def attribute(
     review_text: str,
     *,
@@ -192,12 +237,13 @@ def attribute(
     log_path: Path | None = None,
     out_dir: Path | None = None,
 ) -> dict[str, Any]:
-    """Leave-one-out + unique keyword + F115 tool-outcome attribution."""
+    """Leave-one-out + unique keyword + F115 tool-outcome + F127 hub floor."""
     root = root or _root()
     sr = _import_mod("skill_router")
     paths = paths or list(DEMO_PATHS)
     cards = sr.catalog(root)
     by_id = {c.id: c for c in cards}
+    hub_skills = _load_hub_ingested_skills(root)
 
     if selected is None:
         sel = sr.select_skills(cards, paths)
@@ -238,6 +284,7 @@ def attribute(
     # union of matches excluding each skill for unique calc (prose only;
     # tool unique = tool matched for this skill and not others)
     rows: list[dict[str, Any]] = []
+    hub_floored: list[str] = []
     for sid in selected:
         card = by_id[sid]
         solo_m = full_matched[sid]
@@ -271,12 +318,25 @@ def attribute(
         # always-on skills get floor so we don't demote core tools
         if getattr(card, "always", False):
             score = max(score, 0.5)
-        # free-rider: selected but no prose/tool solo and no unique
+        # F127: hub_ingested recovery themes get floor (multi-tenant tool evidence)
+        hub_ent = hub_skills.get(sid)
+        hub_floor = False
+        if hub_ent and hub_attr_enabled():
+            hub_floor = True
+            # floor 0.75 + small delta from priority; never invent prose hits
+            floor = 0.75 + min(0.5, float(hub_ent.get("hub_priority_delta") or 0) / 80.0)
+            if int(hub_ent.get("tool_hit_n") or 0) >= 1:
+                floor = max(floor, 1.0)
+            if score < floor:
+                score = floor
+                hub_floored.append(sid)
+        # free-rider: selected but no prose/tool solo and no unique and not hub-floored
         free_rider = (
             (not solo_hit)
             and (len(unique) == 0)
             and (len(tool_unique) == 0)
             and not getattr(card, "always", False)
+            and not hub_floor
         )
         rows.append(
             {
@@ -295,6 +355,8 @@ def attribute(
                 "contribution": round(score, 3),
                 "free_rider": free_rider,
                 "always": bool(getattr(card, "always", False)),
+                "hub_ingested": bool(hub_ent),
+                "hub_floor": hub_floor and sid in hub_floored,
             }
         )
 
@@ -303,10 +365,12 @@ def attribute(
     contributing = [r["id"] for r in rows if float(r["contribution"]) > min_c and not r["free_rider"]]
     free_riders = [r["id"] for r in rows if r["free_rider"]]
     tool_contributors = [r["id"] for r in rows if r.get("tool_hit") and not r["free_rider"]]
+    hub_contributors = [r["id"] for r in rows if r.get("hub_ingested") and not r["free_rider"]]
 
     return {
         "feature": FEATURE,
         "feature_tool": FEATURE_TOOL if use_tools else None,
+        "feature_hub": FEATURE_HUB if hub_attr_enabled() else None,
         "schema": SCHEMA,
         "scored_at": _now(),
         "paths": paths,
@@ -316,6 +380,8 @@ def attribute(
         "tool_outcome": use_tools,
         "tool_hit_n": tool_hit_n,
         "tool_contributors": tool_contributors,
+        "hub_contributors": hub_contributors,
+        "hub_floored": hub_floored,
         "skills": rows,
         "contributing": contributing,
         "free_riders": free_riders,

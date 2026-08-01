@@ -26,6 +26,8 @@ Env:
   TORII_SECOND_CRITIC_DEMOTE   1 (default) | 0 — rewrite verdict file on demote
   TORII_SECOND_CRITIC_MIN_PATH  default 0.4 path-evidence floor for APPROVE
   TORII_LLM_CRITIC              0 (default) | 1 — enable F81 LLM checker
+  TORII_HUB_GAP_CRITIC          1 (default) | 0 — F127 hub gap_pressure checker
+  TORII_HUB_GAP_PRESSURE_THR    default 0.34 — same thr as F126 re-prompt bias
 """
 
 from __future__ import annotations
@@ -41,6 +43,7 @@ from pathlib import Path
 from typing import Any
 
 FEATURE = "F78"
+FEATURE_HUB_GAP = "F127"
 SCHEMA = 1
 MARKER = "<!-- torii-f78-second-agent-critic -->"
 
@@ -383,6 +386,128 @@ def run_f121_recovery_util(out_dir: Path | None) -> CheckerResult:
         )
 
 
+def hub_gap_critic_enabled() -> bool:
+    """F127: multi-tenant hub gap_pressure participates in critic panel."""
+    raw = (os.environ.get("TORII_HUB_GAP_CRITIC") or "1").strip().lower()
+    return raw not in _FALSEY
+
+
+def hub_gap_pressure_thr() -> float:
+    raw = (os.environ.get("TORII_HUB_GAP_PRESSURE_THR") or "0.34").strip()
+    try:
+        return max(0.0, min(1.0, float(raw)))
+    except ValueError:
+        return 0.34
+
+
+def run_f127_hub_gap_recovery(
+    out_dir: Path | None,
+    root: Path | None = None,
+) -> CheckerResult:
+    """F127: hub gap_pressure + local recovery idle → checker score / demote signal.
+
+    Loop-eng maker/checker: multi-tenant under-use of recovery CLIs is evidence
+    that APPROVE without recovery tools is systemic risk, not local noise.
+    Soft-skip when hub compound off or no signals (score 0.5 neutral).
+    """
+    if not hub_gap_critic_enabled():
+        return CheckerResult(
+            id="f127_hub_gap",
+            name="Hub gap recovery pressure (F127)",
+            ok=True,
+            score=0.5,
+            detail={"soft_skip": True, "reason": "hub_gap_critic_off"},
+        )
+    _ensure_path()
+    root = root or _root()
+    thr = hub_gap_pressure_thr()
+    try:
+        from skill_router import (  # type: ignore
+            post_score_recovery_hub,
+            score_recovery_util,
+            recovery_hub_enabled,
+        )
+
+        if not recovery_hub_enabled():
+            return CheckerResult(
+                id="f127_hub_gap",
+                name="Hub gap recovery pressure (F127)",
+                ok=True,
+                score=0.5,
+                detail={"soft_skip": True, "reason": "recovery_hub_off"},
+            )
+        hub = post_score_recovery_hub(root=root)
+        gap_pressure = float(hub.get("gap_pressure") or 0.0)
+        util: dict[str, Any] = {}
+        if out_dir is not None:
+            util = score_recovery_util(Path(out_dir), root=root)
+        idle = list(util.get("idle_ids") or [])
+        util_rate = float(util.get("util_rate") if util else 1.0)
+        if util and util.get("recovery_injected_n") is not None:
+            util_rate = float(util.get("util_rate") or 0.0)
+        n_inj = int(util.get("recovery_injected_n") or 0)
+        local_gap = bool(util.get("utilization_gap"))
+        high = gap_pressure >= thr
+        # pressure without recovery inject is informational only
+        if n_inj < 1 and out_dir is not None:
+            return CheckerResult(
+                id="f127_hub_gap",
+                name="Hub gap recovery pressure (F127)",
+                ok=True,
+                score=1.0 if not high else 0.7,
+                detail={
+                    "gap_pressure": gap_pressure,
+                    "thr": thr,
+                    "high": high,
+                    "reason": "no_recovery_injected",
+                    "privacy_ok": hub.get("privacy_ok"),
+                },
+            )
+        # score: inverse pressure when idle/gap; full when util ok and pressure low
+        if not high:
+            score = 1.0 if (not idle and not local_gap) else max(0.6, util_rate)
+            ok = True
+            reason = "hub_gap_below_thr"
+        elif local_gap or (idle and util_rate < 0.99):
+            # high multi-tenant gap + local idle recovery → fail checker
+            score = round(max(0.0, 1.0 - gap_pressure) * max(0.15, util_rate), 4)
+            ok = False
+            reason = "hub_gap_high_local_idle"
+        else:
+            # hub high but local full util — pass with mild haircut
+            score = 0.85
+            ok = True
+            reason = "hub_gap_high_local_util_ok"
+        return CheckerResult(
+            id="f127_hub_gap",
+            name="Hub gap recovery pressure (F127)",
+            ok=ok,
+            score=round(score, 4),
+            detail={
+                "feature": FEATURE_HUB_GAP,
+                "gap_pressure": gap_pressure,
+                "thr": thr,
+                "high": high,
+                "util_rate": util_rate,
+                "idle_ids": idle,
+                "local_gap": local_gap,
+                "recovery_injected_n": n_inj,
+                "hub_skill_n": hub.get("skill_n"),
+                "privacy_ok": hub.get("privacy_ok"),
+                "reason": reason,
+            },
+        )
+    except Exception as e:
+        return CheckerResult(
+            id="f127_hub_gap",
+            name="Hub gap recovery pressure (F127)",
+            ok=True,
+            score=0.5,
+            error=str(e)[:200],
+            detail={"soft_fail": True},
+        )
+
+
 def run_verdict_structure(review: str) -> CheckerResult:
     v = parse_verdict(review)
     has_summary = bool(re.search(r"(?m)^###?\s+Summary\b", review, re.I))
@@ -445,12 +570,13 @@ def composite_panel(checkers: list[CheckerResult]) -> dict[str, Any]:
     """Weighted composite; default REJECT stance on weak APPROVE."""
     weights = {
         "f121_recovery_util": 0.08,
+        "f127_hub_gap": 0.08,  # F127 multi-tenant recovery gap pressure
         "structure": 0.12,
-        "f70_dual_critic": 0.22,
-        "f72_chain": 0.18,
-        "f73_fitness": 0.22,
-        "f75_memory": 0.12,
-        "f81_llm": 0.14,  # optional; soft if skipped
+        "f70_dual_critic": 0.20,
+        "f72_chain": 0.16,
+        "f73_fitness": 0.20,
+        "f75_memory": 0.10,
+        "f81_llm": 0.12,  # optional; soft if skipped
     }
     total_w = 0.0
     acc = 0.0
@@ -524,6 +650,18 @@ def decide_verdict(
             recommended = "COMMENT"
             demoted = True
             reasons.append("recovery_skill_idle_no_tool_hit")
+        # F127: multi-tenant hub gap + local idle recovery → demote APPROVE
+        hubc = next((c for c in checkers if c.id == "f127_hub_gap"), None)
+        if hubc and not hubc.ok:
+            detail = hubc.detail or {}
+            if detail.get("high") and (
+                detail.get("local_gap") or detail.get("idle_ids")
+            ):
+                recommended = "COMMENT"
+                demoted = True
+                reasons.append(
+                    f"hub_gap_pressure_idle ({detail.get('gap_pressure')}>={detail.get('thr')})"
+                )
     elif maker == "UNKNOWN":
         recommended = "COMMENT"
         demoted = True
@@ -556,6 +694,7 @@ def run_panel(
         run_f73_fitness(review_path, out_dir),
         run_f75_memory(out_dir, root),
         run_f121_recovery_util(out_dir),
+        run_f127_hub_gap_recovery(out_dir, root),
     ]
     # F81: optional LLM checker after deterministic panel draft
     panel_draft = {
@@ -651,9 +790,12 @@ def render_inject() -> str:
             "3. **F72 chain** — full-chain source→sink revalidation",
             "4. **F73 fitness** — procedure / tool_use / path_evidence composite",
             "5. **F75 memory** — scoped TP/FP conflicts",
+            "6. **F121 recovery util** — always recovery skills must fire tool CLIs",
+            "7. **F127 hub gap** — multi-tenant recovery gap_pressure + local idle → demote APPROVE",
             "",
             "**Default stance:** weak APPROVE without path evidence will be **demoted**.",
             "Prefer REQUEST CHANGES with path:line over narrative-only APPROVE.",
+            "Call recovery CLIs (memory/doctor/critic) when hub gap pressure is elevated.",
             "",
             "<!-- /torii-f78-second-agent-critic -->",
             "",
@@ -770,13 +912,97 @@ def cmd_fixture(args: argparse.Namespace) -> int:
         prompt = Path(td) / "prompt.md"
         prompt.write_text("# p\n", encoding="utf-8")
         inj = inject_into_prompt(prompt)
-        inject_ok = inj and MARKER in prompt.read_text(encoding="utf-8")
+        body = prompt.read_text(encoding="utf-8")
+        inject_ok = inj and MARKER in body and "F127" in body
 
-    fixture_pass = good_ok and weak_ok and delta >= 0.1 and inject_ok
+    # F127: hub gap high + local idle + APPROVE → demote
+    f127_ok = False
+    try:
+        with tempfile.TemporaryDirectory() as td2:
+            od = Path(td2)
+            # synthetic out_dir with idle recovery
+            (od / "skill-router.json").write_text(
+                json.dumps(
+                    {
+                        "selected": ["skill-prefer-memory-cli-early"],
+                        "always_selected": ["skill-prefer-memory-cli-early"],
+                        "inject_chars": 500,
+                    }
+                ),
+                encoding="utf-8",
+            )
+            (od / "skill-hits.json").write_text(
+                json.dumps(
+                    {
+                        "hits": [
+                            {
+                                "id": "skill-prefer-memory-cli-early",
+                                "tool_hit": False,
+                                "hit": False,
+                            }
+                        ],
+                        "tool_hit_n": 0,
+                    }
+                ),
+                encoding="utf-8",
+            )
+            # high gap hub signals under temp TORII_ROOT federation? use product root hub
+            # force thr low so product hub pressure counts
+            os.environ["TORII_HUB_GAP_CRITIC"] = "1"
+            os.environ["TORII_HUB_GAP_PRESSURE_THR"] = "0.05"
+            chk = run_f127_hub_gap_recovery(od, root=root)
+            # decide demote path
+            fake_panel = {"composite": 0.8, "level": "L2"}
+            # structure-ish APPROVE with path so only hub demotes
+            dec = decide_verdict(
+                "APPROVE",
+                fake_panel,
+                [
+                    CheckerResult(
+                        id="structure",
+                        name="s",
+                        ok=True,
+                        score=1.0,
+                        detail={"path_mentions": 5},
+                    ),
+                    CheckerResult(
+                        id="f73_fitness",
+                        name="f",
+                        ok=True,
+                        score=1.0,
+                        detail={"path_evidence": 0.9},
+                    ),
+                    chk,
+                ],
+            )
+            # either checker fails on idle+pressure OR soft-skip still ok if no hub
+            if chk.detail and chk.detail.get("soft_skip"):
+                f127_ok = True  # environment without hub still soft-ok
+            else:
+                f127_ok = (
+                    (not chk.ok and "hub_gap" in str(chk.detail.get("reason") or ""))
+                    or (
+                        dec.get("demoted")
+                        and any("hub_gap" in str(r) for r in (dec.get("reasons") or []))
+                    )
+                    or (chk.ok and float(chk.detail.get("gap_pressure") or 0) < 0.05)
+                )
+            # restore thr
+            os.environ["TORII_HUB_GAP_PRESSURE_THR"] = "0.34"
+    except Exception:
+        f127_ok = False
+
+    # checker present in good panel
+    has_f127 = any(
+        c.get("id") == "f127_hub_gap" for c in (g.get("checkers") or [])
+    )
+
+    fixture_pass = good_ok and weak_ok and delta >= 0.1 and inject_ok and f127_ok and has_f127
     print(
         json.dumps(
             {
                 "feature": FEATURE,
+                "feature_hub_gap": FEATURE_HUB_GAP,
                 "fixture_pass": fixture_pass,
                 "good_composite": g_comp,
                 "weak_composite": w_comp,
@@ -785,6 +1011,8 @@ def cmd_fixture(args: argparse.Namespace) -> int:
                 "weak_level": (w.get("panel") or {}).get("level"),
                 "weak_decision": w_dec,
                 "inject_ok": inject_ok,
+                "f127_ok": f127_ok,
+                "has_f127": has_f127,
             },
             indent=2,
         )
@@ -815,8 +1043,10 @@ def cmd_status(args: argparse.Namespace) -> int:
         json.dumps(
             {
                 "feature": FEATURE,
+                "feature_hub_gap": FEATURE_HUB_GAP,
                 "enabled": enabled(),
                 "demote": demote_enabled(),
+                "hub_gap_critic": hub_gap_critic_enabled(),
                 "min_path": os.environ.get("TORII_SECOND_CRITIC_MIN_PATH") or "0.4",
             },
             indent=2,

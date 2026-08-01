@@ -1,5 +1,37 @@
 # Torii research → product log
 
+## 2026-08-01 — F127 hub gap critic + hub_ingested attribution
+
+### Papers / posts
+- QASecClaw / VulAgent: maker/checker — multi-tenant hub gap confirms local recovery idle is systemic.
+- FederatedSkill + F126: gap_pressure re-prompt alone does not demote weak APPROVE.
+- Assay LOO attribution: hub_ingested fitness skills need floor or free-rider demote kills recovery.
+- Loop-eng verifier panel: weighted independent checkers.
+
+### OSS design patterns stolen
+1. f127_hub_gap checker (weight 0.08) on gap_pressure × local idle.
+2. decide_verdict demotes APPROVE with hub_gap_pressure_idle reason.
+3. skill_attribution hub floor from fitness hub_ingested_n / last_hub_at.
+4. Inject policy lists F121+F127; fixture + unit demote proof.
+
+### Insight
+Re-prompt spends budget; critic must still fail closed when hub says recovery is under-used and tools stayed idle. Attribution without hub floor undoes F126 fitness ingest.
+
+### Feature shipped (F127)
+- second_agent_critic run_f127_hub_gap_recovery + demote + inject
+- skill_attribution hub_ingested contribution floor
+- PRODUCT + research note; traces f127-hub-gap-critic-attr/
+
+### Metric
+- Offline: fixture f127_ok; demote unit; attr floor; pytest pass
+- Live: Modal pytorch e2e POST_COMMENT=0
+
+### Loop-engineering / Hermes practice used
+**Verifier panel weight** — hub multi-tenant signal is a first-class checker.
+
+### SHA
+`PENDING`
+
 ## 2026-08-01 — F126 hub gap_pressure re-prompt + fitness ingest
 
 ### Papers / posts

@@ -92,6 +92,98 @@ class SecondAgentCriticTests(unittest.TestCase):
         data = json.loads(r.stdout)
         self.assertEqual(data["feature"], "F78")
         self.assertTrue(data["enabled"])
+        self.assertEqual(data.get("feature_hub_gap"), "F127")
+
+    def test_f127_hub_gap_demotes_approve(self):
+        """F127: high hub gap + idle recovery demotes maker APPROVE."""
+        with tempfile.TemporaryDirectory() as td:
+            root = Path(td)
+            # hub signals with high gap pressure
+            fed = root / "memory" / "federation"
+            fed.mkdir(parents=True)
+            (fed / "recovery-util-signals.json").write_text(
+                json.dumps(
+                    {
+                        "signals": [
+                            {
+                                "id": "recovery-util-gap",
+                                "theme": "recovery-util-gap",
+                                "tags": ["recovery_util", "utilization_gap"],
+                                "hits": 8,
+                                "tenants": 3,
+                                "util_rate_bin": "gap",
+                                "source": "recovery_skill_util",
+                            },
+                            {
+                                "id": "recovery-util-ok",
+                                "theme": "recovery-util-ok",
+                                "tags": ["recovery_util"],
+                                "hits": 1,
+                                "util_rate_bin": "full",
+                                "source": "recovery_skill_util",
+                            },
+                        ]
+                    }
+                )
+                + "\n",
+                encoding="utf-8",
+            )
+            od = root / "out"
+            od.mkdir()
+            (od / "skill-router.json").write_text(
+                json.dumps(
+                    {
+                        "selected": ["skill-prefer-memory-cli-early"],
+                        "always_selected": ["skill-prefer-memory-cli-early"],
+                        "inject_chars": 600,
+                    }
+                ),
+                encoding="utf-8",
+            )
+            (od / "skill-hits.json").write_text(
+                json.dumps(
+                    {
+                        "hits": [
+                            {
+                                "id": "skill-prefer-memory-cli-early",
+                                "tool_hit": False,
+                                "hit": False,
+                            }
+                        ]
+                    }
+                ),
+                encoding="utf-8",
+            )
+            review = root / "approve.md"
+            review.write_text(
+                "## Review\n**Verdict:** APPROVE\n\n### Summary\nok\n\n"
+                "### Blocking\nnone\n\n### What I checked\n`app.py:1` ok\n",
+                encoding="utf-8",
+            )
+            env = {
+                "TORII_ROOT": str(root),
+                "TORII_HUB_GAP_CRITIC": "1",
+                "TORII_HUB_GAP_PRESSURE_THR": "0.2",
+                "TORII_RECOVERY_HUB_COMPOUND": "1",
+                "TORII_SECOND_CRITIC_MIN_PATH": "0.1",
+            }
+            r = _run(
+                ["run", "--review", str(review), "--out-dir", str(od), "--force"],
+                env=env,
+            )
+            self.assertEqual(r.returncode, 0, r.stderr + r.stdout)
+            data = json.loads(r.stdout)
+            ids = [c["id"] for c in data.get("checkers") or []]
+            self.assertIn("f127_hub_gap", ids)
+            hubc = next(c for c in data["checkers"] if c["id"] == "f127_hub_gap")
+            self.assertFalse(hubc["ok"], hubc)
+            self.assertTrue(
+                data["decision"]["demoted"]
+                or data["decision"]["recommended_verdict"] != "APPROVE",
+                data["decision"],
+            )
+            reasons = " ".join(data["decision"].get("reasons") or [])
+            self.assertIn("hub_gap", reasons)
 
 
 if __name__ == "__main__":

@@ -1,14 +1,14 @@
 # Torii eval-trace report (F83)
 
-Generated: `2026-08-01T06:45:33Z`
+Generated: `2026-08-01T06:50:30Z`
 
 ## Aggregate
 
-- runs: **55** (modal=35, local=20)
+- runs: **56** (modal=35, local=21)
 - log_streaming true: **4**
 - fitness composite n=8
 - composite mean/median/min/max: **0.842** / 0.8494 / 0.77 / 0.8694
-- levels: `{"L2": 4, "L3": 4, "modal-f80-live": 1, "modal-f81-llm-critic": 1, "modal-f82-skills": 1, "modal-f83-pack-eval": 1, "\u2014": 43}`
+- levels: `{"L2": 4, "L3": 4, "modal-f80-live": 1, "modal-f81-llm-critic": 1, "modal-f82-skills": 1, "modal-f83-pack-eval": 1, "\u2014": 44}`
 - models: `deepseek/deepseek-v4-pro`, `fixture`
 
 ## Runs
@@ -70,6 +70,7 @@ Generated: `2026-08-01T06:45:33Z`
 | — | local | — | — | `—` | — | — | — | `f124-recovery-util-federate` |
 | — | local | — | — | `deepseek/deepseek-v4-pro` | — | — | F125 | `f125-recovery-hub-compound` |
 | — | local | — | — | `deepseek/deepseek-v4-pro` | — | — | F126 | `f126-hub-gap-reprompt-fitness` |
+| — | local | — | — | `deepseek/deepseek-v4-pro` | — | — | F127 | `f127-hub-gap-critic-attr` |
 
 ## Notes
 

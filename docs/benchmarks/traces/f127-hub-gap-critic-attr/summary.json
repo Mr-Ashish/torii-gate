@@ -1,0 +1,20 @@
+{
+  "feature": "F127",
+  "scored_at": "2026-08-01T06:52:56Z",
+  "critic_fixture_pass": true,
+  "f127_ok": true,
+  "checker_ok": false,
+  "gap_pressure": 0.4,
+  "model": "deepseek/deepseek-v4-pro",
+  "e2e": {
+    "repo": "pytorch/pytorch",
+    "pr": 191813,
+    "modal": true,
+    "bit3": "BIT3_OK",
+    "elapsed_s": 95.1,
+    "log_streaming": true,
+    "verdict": "REQUEST_CHANGES",
+    "post_comment": 0,
+    "modal_app": "https://modal.com/apps/mr-ashish/main/ap-ikffBijWJpMtTI8v7Gckl4"
+  }
+}

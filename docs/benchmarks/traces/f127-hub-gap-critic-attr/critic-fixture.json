@@ -1,0 +1,24 @@
+{
+  "feature": "F78",
+  "feature_hub_gap": "F127",
+  "fixture_pass": true,
+  "good_composite": 0.7009,
+  "weak_composite": 0.4369,
+  "delta": 0.264,
+  "good_level": "L2",
+  "weak_level": "L1",
+  "weak_decision": {
+    "maker_verdict": "APPROVE",
+    "recommended_verdict": "COMMENT",
+    "demoted": true,
+    "reasons": [
+      "composite_below_0.5 (0.4369)",
+      "path_evidence_below_0.4 (0.3)"
+    ],
+    "path_evidence": 0.3,
+    "composite": 0.4369
+  },
+  "inject_ok": true,
+  "f127_ok": true,
+  "has_f127": true
+}

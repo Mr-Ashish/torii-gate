@@ -1,0 +1,20 @@
+{
+  "id": "f127_hub_gap",
+  "ok": false,
+  "score": 0.09,
+  "detail": {
+    "feature": "F127",
+    "gap_pressure": 0.4,
+    "thr": 0.34,
+    "high": true,
+    "util_rate": 0.0,
+    "idle_ids": [
+      "skill-prefer-memory-cli-early"
+    ],
+    "local_gap": true,
+    "recovery_injected_n": 1,
+    "hub_skill_n": 2,
+    "privacy_ok": true,
+    "reason": "hub_gap_high_local_idle"
+  }
+}
