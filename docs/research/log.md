@@ -31,7 +31,7 @@ F121 demote alone is passive. Highest ROI: budgeted soft re-prompt that forces r
 **Budgeted recovery loop** — one extra paid attempt max, kind-once accounting.
 
 ### SHA
-`a52678dda2ce4fe559e9ca369f44a6a26f22fe6d`
+`c331627e570351d75bcb4aa8eb09d53114c9f4fb`
 ## 2026-08-01 — F121 recovery skill utilization critic (inject ≠ tools)
 
 ### Papers / posts
