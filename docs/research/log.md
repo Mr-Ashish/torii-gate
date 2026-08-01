@@ -28,7 +28,7 @@ Graph multi-hop without archival expand leaves cold related vulns unpaged. Highe
 **Compound retrieval paths** — temporal hop feeds archival paging.
 
 ### SHA
-`PENDING`
+`0925b30362ad935d63d3bdfe25ea763827d889f5`
 
 
 ## 2026-08-01 — F143 memory util hub gap critic
