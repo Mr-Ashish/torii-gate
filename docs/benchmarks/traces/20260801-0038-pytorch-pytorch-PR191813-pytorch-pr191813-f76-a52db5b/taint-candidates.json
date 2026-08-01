@@ -1,0 +1,283 @@
+{
+  "schema_version": 1,
+  "feature": "F71",
+  "scanned_at": "2026-08-01T00:38:02Z",
+  "file_count": 1,
+  "hit_count": 8,
+  "candidate_count": 4,
+  "files": [
+    "/Users/[REDACTED]/Documents/experiments/torii/demo/insecure/app.py"
+  ],
+  "hits": [
+    {
+      "rule_id": "src-flask-request",
+      "kind": "source",
+      "theme": "untrusted_input",
+      "cwe": [
+        "CWE-20"
+      ],
+      "tags": [
+        "source",
+        "web",
+        "flask"
+      ],
+      "path": "demo/insecure/app.py",
+      "line": 15,
+      "snippet": "q = request.args.get(\"q\", \"\")",
+      "keywords": []
+    },
+    {
+      "rule_id": "sink-sqli",
+      "kind": "sink",
+      "theme": "sql_injection",
+      "cwe": [
+        "CWE-89"
+      ],
+      "tags": [
+        "sink",
+        "sqli",
+        "injection"
+      ],
+      "path": "demo/insecure/app.py",
+      "line": 18,
+      "snippet": "cur.execute(f\"SELECT * FROM items WHERE name = '{q}'\")",
+      "keywords": [
+        "sql injection",
+        "sqli",
+        "f-string",
+        "execute(f",
+        "cwe-89"
+      ]
+    },
+    {
+      "rule_id": "src-flask-request",
+      "kind": "source",
+      "theme": "untrusted_input",
+      "cwe": [
+        "CWE-20"
+      ],
+      "tags": [
+        "source",
+        "web",
+        "flask"
+      ],
+      "path": "demo/insecure/app.py",
+      "line": 25,
+      "snippet": "data = request.data",
+      "keywords": []
+    },
+    {
+      "rule_id": "sink-pickle",
+      "kind": "sink",
+      "theme": "insecure_deserialization",
+      "cwe": [
+        "CWE-502"
+      ],
+      "tags": [
+        "sink",
+        "pickle",
+        "deserialize"
+      ],
+      "path": "demo/insecure/app.py",
+      "line": 26,
+      "snippet": "return {\"obj\": str(pickle.loads(data))}",
+      "keywords": [
+        "pickle",
+        "deserialize",
+        "unsafe load",
+        "cwe-502",
+        "pickle.loads"
+      ]
+    },
+    {
+      "rule_id": "src-flask-request",
+      "kind": "source",
+      "theme": "untrusted_input",
+      "cwe": [
+        "CWE-20"
+      ],
+      "tags": [
+        "source",
+        "web",
+        "flask"
+      ],
+      "path": "demo/insecure/app.py",
+      "line": 32,
+      "snippet": "cmd = request.args.get(\"cmd\", \"echo hi\")",
+      "keywords": []
+    },
+    {
+      "rule_id": "sink-cmdi",
+      "kind": "sink",
+      "theme": "command_injection",
+      "cwe": [
+        "CWE-78"
+      ],
+      "tags": [
+        "sink",
+        "rce",
+        "shell"
+      ],
+      "path": "demo/insecure/app.py",
+      "line": 33,
+      "snippet": "return {\"out\": subprocess.check_output(cmd, shell=True).decode()}",
+      "keywords": [
+        "command injection",
+        "shell=true",
+        "subprocess",
+        "rce",
+        "cwe-78"
+      ]
+    },
+    {
+      "rule_id": "src-cli-env",
+      "kind": "source",
+      "theme": "untrusted_input",
+      "cwe": [
+        "CWE-20"
+      ],
+      "tags": [
+        "source",
+        "cli",
+        "env"
+      ],
+      "path": "demo/insecure/app.py",
+      "line": 38,
+      "snippet": "return {\"key\": os.environ.get(\"OPENROUTER_API_KEY\", \"missing\")}",
+      "keywords": []
+    },
+    {
+      "rule_id": "sink-secret-expose",
+      "kind": "sink",
+      "theme": "secrets_exposure",
+      "cwe": [
+        "CWE-200",
+        "CWE-798"
+      ],
+      "tags": [
+        "sink",
+        "secrets",
+        "api_key"
+      ],
+      "path": "demo/insecure/app.py",
+      "line": 38,
+      "snippet": "return {\"key\": os.environ.get(\"OPENROUTER_API_KEY\", \"missing\")}",
+      "keywords": [
+        "secret",
+        "api key",
+        "api_key",
+        "credential",
+        "exposure",
+        "openrouter"
+      ]
+    }
+  ],
+  "candidates": [
+    {
+      "id": "sql_injection:app.py:18",
+      "theme": "sql_injection",
+      "cwe": [
+        "CWE-89"
+      ],
+      "path": "demo/insecure/app.py",
+      "source_line": 15,
+      "sink_line": 18,
+      "source_rule": "src-flask-request",
+      "sink_rule": "sink-sqli",
+      "confidence": "high",
+      "keywords": [
+        "sql injection",
+        "sqli",
+        "f-string",
+        "execute(f",
+        "cwe-89"
+      ],
+      "tags": [
+        "sink",
+        "sqli",
+        "injection",
+        "flow"
+      ]
+    },
+    {
+      "id": "insecure_deserialization:app.py:26",
+      "theme": "insecure_deserialization",
+      "cwe": [
+        "CWE-502"
+      ],
+      "path": "demo/insecure/app.py",
+      "source_line": 25,
+      "sink_line": 26,
+      "source_rule": "src-flask-request",
+      "sink_rule": "sink-pickle",
+      "confidence": "high",
+      "keywords": [
+        "pickle",
+        "deserialize",
+        "unsafe load",
+        "cwe-502",
+        "pickle.loads"
+      ],
+      "tags": [
+        "sink",
+        "pickle",
+        "deserialize",
+        "flow"
+      ]
+    },
+    {
+      "id": "command_injection:app.py:33",
+      "theme": "command_injection",
+      "cwe": [
+        "CWE-78"
+      ],
+      "path": "demo/insecure/app.py",
+      "source_line": 32,
+      "sink_line": 33,
+      "source_rule": "src-flask-request",
+      "sink_rule": "sink-cmdi",
+      "confidence": "high",
+      "keywords": [
+        "command injection",
+        "shell=true",
+        "subprocess",
+        "rce",
+        "cwe-78"
+      ],
+      "tags": [
+        "sink",
+        "rce",
+        "shell",
+        "flow"
+      ]
+    },
+    {
+      "id": "secrets_exposure:app.py:38",
+      "theme": "secrets_exposure",
+      "cwe": [
+        "CWE-200",
+        "CWE-798"
+      ],
+      "path": "demo/insecure/app.py",
+      "source_line": 38,
+      "sink_line": 38,
+      "source_rule": "src-cli-env",
+      "sink_rule": "sink-secret-expose",
+      "confidence": "high",
+      "keywords": [
+        "secret",
+        "api key",
+        "api_key",
+        "credential",
+        "exposure",
+        "openrouter"
+      ],
+      "tags": [
+        "sink",
+        "secrets",
+        "api_key",
+        "flow"
+      ]
+    }
+  ]
+}

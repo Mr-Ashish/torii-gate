@@ -1,5 +1,38 @@
 # Torii research → product log
 
+## 2026-08-01 — F76 multi-corpus bench + Juice Shop synthetic
+
+### Papers / posts / OSS
+- OWASP Juice Shop challenge taxonomy (themes only — no fork).
+- Prior Torii F70 labeled pack + F71 JS taint sinks.
+- 2026 AI PR review market: security-gate differentiation vs general code-quality bots.
+
+### OSS / eng patterns
+1. Multi-pack ground truth registry → aggregate offline recall.
+2. License-safe synthetic Express routes for JS vulns.
+3. Expand taint catalog (express sources, XSS, hardcoded JWT/API key).
+
+### Insight
+Single Python demo under-tests JS/web packs. Highest ROI: **second labeled corpus** + corpus runner so every gate feature is measured on PY+JS.
+
+### Feature shipped (F76)
+- `demo/juice-shop-synthetic/` (routes.js + stubs)
+- `docs/benchmarks/cases/juice-shop-synthetic.json` (5 required cases)
+- good/weak fixtures; `scripts/bench_corpus.py` list/fixture/all/taint/index
+- F71 JS rules: src-js-express, sink-js-xss, sink-js-hardcoded-secret
+- Adopted tool `bench-corpus`
+
+### Loop-engineering practice used
+**Measured multi-pack scorecard** — all packs must fixture_pass; average delta_recall tracked.
+
+### Metric
+- Offline: insecure-demo + juice-shop-synthetic all_pass; good_recall=1.0 weak=0; avg_delta_recall=1.0; taint_ok
+- Live: pytorch/pytorch#191813 deepseek/deepseek-v4-pro fitness 0.8294 L2; POST_COMMENT=0; Modal blocked (torii-github secret) → local Hermes
+- pytest: 472 passed
+
+### SHA
+`(pending push)`
+
 ## 2026-08-01 — F75 scoped memory recall (Mem0 multi-scope TP/FP)
 
 ### Papers / posts / OSS

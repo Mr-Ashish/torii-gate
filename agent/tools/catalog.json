@@ -1,8 +1,8 @@
 {
   "schema_version": 1,
-  "feature": "F75",
+  "feature": "F76",
   "description": "Torii agent tool catalog \u2014 research \u2192 eval \u2192 adopt pipeline",
-  "updated_at": "2026-08-01T00:29:20Z",
+  "updated_at": "2026-08-01T00:37:25Z",
   "tools": [
     {
       "id": "terminal",
@@ -160,6 +160,18 @@
       "rationale": "F75: path+scope ranked TP/FP recall with conflict resolution and budget",
       "feature": "F75",
       "adopted_at": "2026-08-01T00:30:00Z"
+    },
+    {
+      "id": "bench-corpus",
+      "name": "Multi-corpus security bench (Juice Shop synthetic + insecure-demo)",
+      "status": "adopted",
+      "source": "research_oss",
+      "kind": "workflow_tool",
+      "toolset": "terminal",
+      "script": "scripts/bench_corpus.py",
+      "rationale": "F76 labeled multi-pack offline recall fixtures + taint on JS synthetic",
+      "feature": "F76",
+      "adopted_at": "2026-08-01T00:37:00Z"
     }
   ],
   "candidates": [

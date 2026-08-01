@@ -1,0 +1,128 @@
+{
+  "schema_version": 1,
+  "feature": "F76",
+  "id": "juice-shop-synthetic",
+  "description": "License-safe Juice Shop–theme ground truth for demo/juice-shop-synthetic (not a Juice Shop fork).",
+  "source_paths": [
+    "demo/juice-shop-synthetic/routes.js",
+    "demo/juice-shop-synthetic/db-stub.js"
+  ],
+  "expected_verdict": "REQUEST_CHANGES",
+  "license_note": "Original Torii demo; themes inspired by OWASP Juice Shop challenge classes.",
+  "cases": [
+    {
+      "id": "js-sqli",
+      "theme": "sql_injection",
+      "cwe": ["CWE-89"],
+      "tags": ["sqli", "injection", "js", "juice-shop-theme"],
+      "path_substrings": [
+        "demo/juice-shop-synthetic/routes.js",
+        "juice-shop-synthetic/routes.js",
+        "routes.js"
+      ],
+      "must_match_any": [
+        "sql injection",
+        "sqli",
+        "cwe-89",
+        "like '%",
+        "template",
+        "string concat",
+        "products/search",
+        "interpolat"
+      ],
+      "severity_floor": "high",
+      "required": true
+    },
+    {
+      "id": "js-xss",
+      "theme": "xss",
+      "cwe": ["CWE-79"],
+      "tags": ["xss", "injection", "js", "juice-shop-theme"],
+      "path_substrings": [
+        "demo/juice-shop-synthetic/routes.js",
+        "juice-shop-synthetic/routes.js",
+        "routes.js"
+      ],
+      "must_match_any": [
+        "xss",
+        "cross-site",
+        "cwe-79",
+        "reflected",
+        "unsanitized",
+        "innerhtml",
+        "feedback",
+        "html injection"
+      ],
+      "severity_floor": "high",
+      "required": true
+    },
+    {
+      "id": "js-cmdi",
+      "theme": "command_injection",
+      "cwe": ["CWE-78"],
+      "tags": ["command_injection", "rce", "js", "juice-shop-theme"],
+      "path_substrings": [
+        "demo/juice-shop-synthetic/routes.js",
+        "juice-shop-synthetic/routes.js",
+        "routes.js"
+      ],
+      "must_match_any": [
+        "command injection",
+        "child_process",
+        "exec(",
+        "cwe-78",
+        "shell",
+        "rce",
+        "ping"
+      ],
+      "severity_floor": "high",
+      "required": true
+    },
+    {
+      "id": "js-secret",
+      "theme": "secrets_exposure",
+      "cwe": ["CWE-798", "CWE-321"],
+      "tags": ["secrets", "hardcoded", "jwt", "juice-shop-theme"],
+      "path_substrings": [
+        "demo/juice-shop-synthetic/routes.js",
+        "juice-shop-synthetic/routes.js",
+        "routes.js"
+      ],
+      "must_match_any": [
+        "hardcoded",
+        "jwt",
+        "secret",
+        "cwe-798",
+        "api key",
+        "api_key",
+        "JWT_SECRET",
+        "sk-demo"
+      ],
+      "severity_floor": "high",
+      "required": true
+    },
+    {
+      "id": "js-authz",
+      "theme": "broken_access_control",
+      "cwe": ["CWE-639", "CWE-284"],
+      "tags": ["idor", "authz", "js", "juice-shop-theme"],
+      "path_substrings": [
+        "demo/juice-shop-synthetic/routes.js",
+        "juice-shop-synthetic/routes.js",
+        "routes.js"
+      ],
+      "must_match_any": [
+        "idor",
+        "access control",
+        "authorization",
+        "authz",
+        "ownership",
+        "cwe-639",
+        "basket",
+        "broken access"
+      ],
+      "severity_floor": "high",
+      "required": true
+    }
+  ]
+}

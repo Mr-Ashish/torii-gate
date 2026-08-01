@@ -1,0 +1,26 @@
+{
+  "id": "bench-corpus",
+  "name": "Multi-corpus security bench (F76)",
+  "status": "adopted",
+  "source": "research_oss",
+  "kind": "workflow_tool",
+  "toolset": "terminal",
+  "script": "scripts/bench_corpus.py",
+  "rationale": "Labeled multi-pack offline bench: insecure-demo + Juice Shop–theme synthetic (license-safe); aggregate recall/delta; taint scan on JS routes",
+  "eval": {
+    "scored_at": "2026-08-01T00:37:00Z",
+    "dims": {
+      "signal": 5,
+      "safety": 5,
+      "effort": 4,
+      "torii_fit": 5,
+      "cost": 5
+    },
+    "total": 24,
+    "max": 25,
+    "recommend": "adopt",
+    "notes": "all_pass 2 packs delta_recall=1.0; taint candidates>=2 on juice routes"
+  },
+  "adopted_at": "2026-08-01T00:37:00Z",
+  "feature": "F76"
+}

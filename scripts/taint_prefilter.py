@@ -204,6 +204,52 @@ RULES: list[dict[str, Any]] = [
         ],
         "keywords": ["command injection", "child_process", "rce", "cwe-78"],
     },
+    # F76: Juice Shop–theme JS sinks (XSS, hardcoded secrets, express sources)
+    {
+        "id": "src-js-express",
+        "kind": "source",
+        "theme": "untrusted_input",
+        "cwe": ["CWE-20"],
+        "tags": ["source", "web", "express"],
+        "langs": ["js", "ts"],
+        "patterns": [
+            r"\breq\.query\b",
+            r"\breq\.body\b",
+            r"\breq\.params\b",
+            r"\breq\.headers\b",
+            r"\breq\.cookies\b",
+        ],
+    },
+    {
+        "id": "sink-js-xss",
+        "kind": "sink",
+        "theme": "xss",
+        "cwe": ["CWE-79"],
+        "tags": ["sink", "xss"],
+        "langs": ["js", "ts"],
+        "patterns": [
+            r"\binnerHTML\s*=",
+            r"\bdocument\.write\s*\(",
+            r"\.send\s*\(\s*`[^`]*\$\{",
+            r'res\.type\s*\(\s*["\']html["\']\s*\)',
+            r"\.send\s*\(\s*`[^`]*<(?:div|script)",
+        ],
+        "keywords": ["xss", "reflected", "cwe-79", "unsanitized", "html"],
+    },
+    {
+        "id": "sink-js-hardcoded-secret",
+        "kind": "sink",
+        "theme": "secrets_exposure",
+        "cwe": ["CWE-798", "CWE-321"],
+        "tags": ["sink", "secrets", "jwt"],
+        "langs": ["js", "ts"],
+        "patterns": [
+            r'(?:JWT_SECRET|API_KEY|SECRET|PASSWORD)\s*=\s*["\'][^"\']{8,}["\']',
+            r'=\s*["\']sk-[A-Za-z0-9_-]{8,}["\']',
+            r"hardcoded-secret",
+        ],
+        "keywords": ["hardcoded", "jwt", "secret", "api key", "cwe-798"],
+    },
 ]
 
 

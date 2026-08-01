@@ -1,74 +1,55 @@
-# Juice Shop harness (stub)
+# Juice Shop harness (F76)
 
-Lightweight plan to dogfood Torii Gate against [OWASP Juice Shop](https://github.com/juice-shop/juice-shop) without building a full ASPM product.
+Dogfood Torii Gate against **Juice Shop challenge themes** using a **license-safe synthetic** mini-app — not a fork of [OWASP Juice Shop](https://github.com/juice-shop/juice-shop).
 
-## Goal
-
-Measure whether Torii Gate surfaces **path-evidenced** security findings on realistic vulnerable app PRs, with low false-positive rate via `.torii/` memory.
-
-## Non-goals (v1)
-
-- Full CTF solve automation
-- Live exploit execution against deployed Juice Shop
-- Replacing SAST/DAST pipelines
-
-## Proposed layout (not implemented)
+## Layout
 
 ```text
-docs/benchmarks/juice-shop/
-  cases.json          # id, path globs, expected CWE/tags, severity floor
-  fixtures/           # optional minimal diffs (synthetic, license-safe)
-scripts/bench-juice-shop-gate.py   # offline: score review.md vs cases.json
+demo/juice-shop-synthetic/          # original Express-style vulns (do not deploy)
+docs/benchmarks/cases/juice-shop-synthetic.json
+docs/benchmarks/fixtures/juice-shop-synthetic-{good,weak}-review.md
+docs/benchmarks/juice-shop/INDEX.md
+scripts/bench_corpus.py             # multi-pack: insecure-demo + juice-shop-synthetic
 ```
 
-## Case sketch
+## Themes → cases
 
-| id | Theme | Expected signal |
-|----|--------|-----------------|
-| js-sqli | SQL/NoSQL injection in search/login | REQUEST CHANGES or Security audit concern |
-| js-xss | Reflected/stored XSS | path + payload shape |
-| js-authz | Broken access control | authz fail-open / IDOR |
-| js-secret | Hardcoded token / weak crypto | secrets / crypto lens |
+| id | Theme | CWE |
+|----|--------|-----|
+| js-sqli | SQL injection in product search | CWE-89 |
+| js-xss | Reflected XSS in feedback | CWE-79 |
+| js-cmdi | `child_process.exec` ping | CWE-78 |
+| js-secret | Hardcoded JWT / API key | CWE-798 |
+| js-authz | IDOR on basket | CWE-639 |
 
-## Offline path (today) — F70 labeled bench
-
-In-repo ground truth + dual-pass critic + TP signature compound memory:
+## Offline
 
 ```bash
-# Offline e2e: good vs weak review fixtures scored against demo/insecure cases
-python3 scripts/bench_security_gate.py fixture
-# → .torii-out/bench-f70/bench-metrics.json (recall, delta_recall, fixture_pass)
-# → tp-signatures.json promoted from confirmed TPs
+# Single pack
+python3 scripts/bench_corpus.py fixture --pack juice-shop-synthetic
 
+# All packs (insecure-demo + juice-shop-synthetic)
+python3 scripts/bench_corpus.py all
+# → .torii-out/bench-f76/corpus-metrics.json  all_pass=1
+
+# Taint prefilter on synthetic routes
+python3 scripts/bench_corpus.py taint --pack juice-shop-synthetic
+
+# F70 scorer direct
 python3 scripts/bench_security_gate.py score \
-  --review docs/benchmarks/fixtures/insecure-demo-good-review.md \
-  --cases docs/benchmarks/cases/insecure-demo.json --json
-
-./scripts/smoke-torii-gate.sh          # gate decision + fixture integrity
-# Live PR path:
-# open PR touching demo/insecure/app.py → @torii review this pr
-# Optional live agent bench (needs OPENROUTER_API_KEY):
-# python3 scripts/bench_security_gate.py live --timeout 180
+  --review docs/benchmarks/fixtures/juice-shop-synthetic-good-review.md \
+  --cases docs/benchmarks/cases/juice-shop-synthetic.json --json
 ```
 
-Cases pack: `docs/benchmarks/cases/insecure-demo.json` (SQLi, pickle, cmdi, secrets).
+## Live path
 
-## Live path (later)
+1. Open a PR touching `demo/juice-shop-synthetic/routes.js` (or review that tree in workspace).
+2. `@torii review this pr` with security pack; POST_COMMENT as needed.
+3. Prefer path-evidenced findings matching the five required cases.
+4. Archive traces under `docs/benchmarks/traces/` (F73 vault).
 
-1. Fork or vendor a **pinned** Juice Shop commit (record SHA + license).
-2. Open synthetic PRs that re-introduce one vuln class at a time (or review historical fix PRs reversed).
-3. Run Torii Gate; store redacted review under `docs/showcase/juice-shop-<case>/`.
-4. Score: TP if expected theme appears with path evidence; FP if invented vulns or wrong file.
+## Non-goals
 
-## Success metrics
-
-| Metric | Target (draft) |
-|--------|----------------|
-| Time-to-first-signal | &lt; review budget (see `TORII_MAX_COST_USD`) |
-| TP on seeded cases | ≥ 3/4 themes on first pass |
-| Invented-vuln rate | 0 on fixture-only smoke; track on live |
-
-## Status
-
-**F70 scorer live** for `demo/insecure` labeled cases (`scripts/bench_security_gate.py`).
-Juice Shop vendor checkout still deferred; use insecure-demo pack as the measured e2e path.
+- Full Juice Shop CTF automation
+- Vendoring the real Juice Shop monorepo
+- Live exploit against a deployed shop
