@@ -85,3 +85,4 @@ Paper/eval-safe slim traces (redacted). Large raw logs may be gitignored; always
 - `f149-hub-warm-archival-query/` — F149 hub warm→archival query; Modal pytorch e2e POST_COMMENT=0
 - `f150-recon-warm-hub-critic/` — F150 recon-warm hub critic demote; Modal pytorch e2e POST_COMMENT=0
 - `f151-recon-warm-hub-demote-eval/` — F151 recon-warm hub demote-eval + doctor; Modal pytorch e2e POST_COMMENT=0
+- `f152-recon-warm-hub-reprompt/` — F152 recon-warm hub soft re-prompt F108; Modal pytorch e2e POST_COMMENT=0

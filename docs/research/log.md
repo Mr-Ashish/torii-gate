@@ -1,5 +1,36 @@
 # Torii research → product log
 
+## 2026-08-01 — F152 recon-warm hub soft re-prompt (F108)
+
+### Papers / posts
+- F108 shared soft re-prompt budget; F122/F137 recovery paths.
+- F150/F151 demote when hub heat ignored — demote-only leaves no mid-run recovery.
+- Agent cost guides: one paid attempt max under budget.
+
+### OSS design patterns stolen
+1. should_reprompt_recon_warm via F150 checker (heat + local_idle + tool_turns).
+2. F108 kind=f152 shared with f49/f106/f122/f137.
+3. reprompt-write marker + hermes soft second pass.
+4. fixture f152_ok; TORII_RECON_WARM_REPROMPT.
+
+### Insight
+Critic demote without budgeted re-prompt is post-mortem only. Highest ROI: one F108 soft re-prompt to honor multi-tenant warm themes before final verdict.
+
+### Feature shipped (F152)
+- archival_memory_search reprompt-decide/write; reprompt_budget f152; hermes wire
+- fixture f152_ok; PRODUCT/research
+
+### Metric
+- Offline: fixture f152_ok; pytest 620
+- Live: Modal pytorch#191813 BIT3_OK ~57s REQUEST_CHANGES POST_COMMENT=0 log_streaming=true
+
+### Loop-engineering / Hermes practice used
+**Budgeted recovery before reject** — shared attempt ceiling compounds quality without runaway spend.
+
+### SHA
+`PENDING`
+
+
 ## 2026-08-01 — F151 recon-warm hub demote-eval + doctor surface
 
 ### Papers / posts

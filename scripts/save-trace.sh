@@ -102,6 +102,9 @@ copy_if "$OUT_DIR/recovery-hub-score.json" "$TRACE_DIR/recovery-hub-score.json"
 copy_if "$OUT_DIR/recovery-reprompt-decide.json" "$TRACE_DIR/recovery-reprompt-decide.json"
 # F137: scorecard util soft re-prompt decide + prompt
 copy_if "$OUT_DIR/scorecard-reprompt-decide.json" "$TRACE_DIR/scorecard-reprompt-decide.json"
+copy_if "$OUT_DIR/recon-warm-reprompt-decide.json" "$TRACE_DIR/recon-warm-reprompt-decide.json"
+copy_if "$OUT_DIR/prompt-recon-warm-reprompt.md" "$TRACE_DIR/prompt-recon-warm-reprompt.md"
+copy_if "$OUT_DIR/recon-warm-reprompt.env" "$TRACE_DIR/recon-warm-reprompt.env"
 copy_if "$OUT_DIR/prompt-recovery-reprompt.md" "$TRACE_DIR/prompt-recovery-reprompt.md"
 # F138: scorecard hub post-score priority compound
 copy_if "$OUT_DIR/scorecard-hub-score.json" "$TRACE_DIR/scorecard-hub-score.json"

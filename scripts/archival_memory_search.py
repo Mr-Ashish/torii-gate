@@ -41,6 +41,7 @@ Env:
   TORII_ARCHIVAL_RECONSOLIDATE     1 (default) | 0  — F146 reconsolidation on promote
   TORII_RECON_WARM_FEDERATE        1 (default) | 0  — F148 federate recon-warm themes
   TORII_RECON_WARM_HUB_QUERY       1 (default) | 0  — F149 hub themes expand auto-query
+  TORII_RECON_WARM_REPROMPT        1 (default) | 0  — F152 soft re-prompt on hub heat idle
   TORII_MEMORY_TENANT              optional tenant id (hashed only for hub)
   TORII_TP_SIGNATURES_FILE / TORII_FP_RULES_FILE / TORII_FEDERATED_SIGNALS_FILE
   TORII_MEMORY_MD              path to MEMORY.md (else hermes home / agent seed)
@@ -64,8 +65,10 @@ FEATURE_SUPERSEDE = "F145"
 FEATURE_RECON = "F146"
 FEATURE_RECON_FED = "F148"
 FEATURE_HUB_QUERY = "F149"
+FEATURE_REPROMPT = "F152"
 SCHEMA = 1
 MARKER = "<!-- torii-f98-archival-search -->"
+REPROMPT_MARKER = "<!-- torii-f152-recon-warm-reprompt -->"
 RECON_LEDGER = "archival-reconsolidation.json"
 RECON_FED_NAME = "recon-warm-signals.json"
 RECON_EFF_BUMP = 0.03
@@ -1650,6 +1653,9 @@ def cmd_fixture(args: argparse.Namespace) -> int:
             ),
             "TORII_RECON_WARM_FEDERATE": os.environ.get("TORII_RECON_WARM_FEDERATE"),
             "TORII_RECON_WARM_HUB_QUERY": os.environ.get("TORII_RECON_WARM_HUB_QUERY"),
+            "TORII_RECON_WARM_REPROMPT": os.environ.get("TORII_RECON_WARM_REPROMPT"),
+            "TORII_RECON_WARM_HUB_CRITIC": os.environ.get("TORII_RECON_WARM_HUB_CRITIC"),
+            "TORII_RECON_WARM_HUB_THR": os.environ.get("TORII_RECON_WARM_HUB_THR"),
             "TORII_MEMORY_TENANT": os.environ.get("TORII_MEMORY_TENANT"),
         }
         try:
@@ -2445,6 +2451,106 @@ def cmd_fixture(args: argparse.Namespace) -> int:
                 f149_ok = False
                 f149_hub_themes = [str(exc)[:80]]
 
+            # F152: soft re-prompt decide when hub heat idle + tools ran
+            f152_ok = False
+            try:
+                od_r = td_path / "out-reprompt"
+                od_r.mkdir(parents=True)
+                fed_dir = td_path / "memory" / "federation"
+                fed_dir.mkdir(parents=True, exist_ok=True)
+                (fed_dir / RECON_FED_NAME).write_text(
+                    json.dumps(
+                        {
+                            "schema_version": 1,
+                            "feature": FEATURE_RECON_FED,
+                            "privacy_ok": True,
+                            "signals": [
+                                {
+                                    "id": "recon-warm-ok",
+                                    "theme": "recon-warm-ok",
+                                    "tags": ["recon_warm", "f148"],
+                                    "hits": 5,
+                                    "tenants": 3,
+                                    "tenant_hashes": ["t1", "t2", "t3"],
+                                    "path_basenames": [],
+                                },
+                                {
+                                    "id": "recon-warm-theme-sql",
+                                    "theme": "sql_injection",
+                                    "tags": ["recon_warm", "warm_theme", "f148"],
+                                    "hits": 3,
+                                    "tenants": 2,
+                                    "tenant_hashes": ["t1", "t2"],
+                                    "path_basenames": [],
+                                },
+                            ],
+                        }
+                    )
+                    + "\n",
+                    encoding="utf-8",
+                )
+                (od_r / "archival-search.json").write_text(
+                    json.dumps(
+                        {
+                            "mode": "auto",
+                            "hit_count": 1,
+                            "hub_boost_n": 0,
+                            "hub_themes": [],
+                            "hub_query": {"enabled": False},
+                        }
+                    )
+                    + "\n",
+                    encoding="utf-8",
+                )
+                (od_r / "agent-loop.json").write_text(
+                    json.dumps({"tool_call_turns": 3}),
+                    encoding="utf-8",
+                )
+                os.environ["TORII_RECON_WARM_REPROMPT"] = "1"
+                os.environ["TORII_RECON_WARM_HUB_CRITIC"] = "1"
+                os.environ["TORII_RECON_WARM_HUB_THR"] = "0.2"
+                os.environ["TORII_RECON_WARM_FEDERATE"] = "1"
+                dec_gap = should_reprompt_recon_warm(
+                    od_r, root=td_path, already_reprompted=False, tool_call_turns=3
+                )
+                dec_already = should_reprompt_recon_warm(
+                    od_r, root=td_path, already_reprompted=True, tool_call_turns=3
+                )
+                dec_zero = should_reprompt_recon_warm(
+                    od_r, root=td_path, already_reprompted=False, tool_call_turns=0
+                )
+                # clear heat for no-gap
+                (fed_dir / RECON_FED_NAME).write_text(
+                    json.dumps({"signals": [], "privacy_ok": True}) + "\n",
+                    encoding="utf-8",
+                )
+                dec_ok_hub = should_reprompt_recon_warm(
+                    od_r, root=td_path, already_reprompted=False, tool_call_turns=3
+                )
+                prompt_in = od_r / "prompt.md"
+                prompt_in.write_text("# review prompt\n", encoding="utf-8")
+                prompt_out = od_r / "prompt-recon-warm-reprompt.md"
+                wrote = write_recon_warm_reprompt_prompt(
+                    prompt_in,
+                    prompt_out,
+                    themes=["sql_injection"],
+                    heat=1.0,
+                    hub_boost_n=0,
+                )
+                body = prompt_out.read_text(encoding="utf-8") if wrote else ""
+                write_ok = wrote and REPROMPT_MARKER in body and "F152" in body
+                f152_ok = (
+                    int(dec_gap.get("reprompt") or 0) == 1
+                    and int(dec_already.get("reprompt") or 0) == 0
+                    and int(dec_zero.get("reprompt") or 0) == 0
+                    and int(dec_ok_hub.get("reprompt") or 0) == 0
+                    and write_ok
+                    and dec_gap.get("feature") == FEATURE_REPROMPT
+                )
+            except Exception as exc:
+                f152_ok = False
+                f149_hub_themes = f149_hub_themes + [f"f152:{str(exc)[:60]}"]
+
             fixture_pass = all(
                 [
                     hit_tp,
@@ -2459,6 +2565,7 @@ def cmd_fixture(args: argparse.Namespace) -> int:
                     f146_ok,
                     f148_ok,
                     f149_ok,
+                    f152_ok,
                 ]
             )
             print(
@@ -2470,11 +2577,13 @@ def cmd_fixture(args: argparse.Namespace) -> int:
                         "feature_recon": FEATURE_RECON,
                         "feature_recon_fed": FEATURE_RECON_FED,
                         "feature_hub_query": FEATURE_HUB_QUERY,
+                        "feature_reprompt": FEATURE_REPROMPT,
                         "f144": True,
                         "f145": True,
                         "f146": True,
                         "f148": True,
                         "f149": True,
+                        "f152": True,
                         "fixture_pass": fixture_pass,
                         "hit_tp": hit_tp,
                         "hit_fp": hit_fp,
@@ -2488,6 +2597,7 @@ def cmd_fixture(args: argparse.Namespace) -> int:
                         "f146_ok": f146_ok,
                         "f148_ok": f148_ok,
                         "f149_ok": f149_ok,
+                        "f152_ok": f152_ok,
                         "f144_graph_themes": graph_themes,
                         "f145_filtered_ids": f145_filtered,
                         "f146_recon_ids": f146_ids,
@@ -2518,7 +2628,9 @@ def cmd_status(args: argparse.Namespace) -> int:
         json.dumps(
             {
                 "feature": FEATURE,
+                "feature_reprompt": FEATURE_REPROMPT,
                 "enabled": enabled(),
+                "reprompt_enabled": recon_warm_reprompt_enabled(),
                 "records": len(recs),
                 "by_source": by_src,
                 "tp": str(default_tp_path(root)),
@@ -2531,6 +2643,202 @@ def cmd_status(args: argparse.Namespace) -> int:
         )
     )
     return 0
+
+
+def recon_warm_reprompt_enabled() -> bool:
+    """F152: soft re-prompt once when multi-tenant hub heat ignored (F150)."""
+    raw = (os.environ.get("TORII_RECON_WARM_REPROMPT") or "1").strip().lower()
+    return raw not in _FALSEY
+
+
+def should_reprompt_recon_warm(
+    out_dir: Path | None = None,
+    *,
+    root: Path | None = None,
+    already_reprompted: bool = False,
+    tool_call_turns: int | None = None,
+) -> dict[str, Any]:
+    """F152: re-prompt when F150-style hub heat high + local hub archival idle.
+
+    Shares F108 budget (kind=f152). Soft-skip when no multi-tenant heat or
+    hub warm already applied. Requires tools already ran (tool_call_turns≥1)
+    so zero-tool recovery stays F49.
+    """
+    root = root or _root()
+    out: dict[str, Any] = {
+        "feature": FEATURE_REPROMPT,
+        "enabled": recon_warm_reprompt_enabled(),
+        "reprompt": 0,
+        "reason": "",
+        "high": False,
+        "local_idle": False,
+        "heat": 0.0,
+        "hub_boost_n": 0,
+        "theme_n": 0,
+        "tool_call_turns": int(tool_call_turns or 0),
+        "already_reprompted": bool(already_reprompted),
+    }
+    if not recon_warm_reprompt_enabled():
+        out["reason"] = "reprompt_off"
+        return out
+    if already_reprompted:
+        out["reason"] = "already_reprompted"
+        return out
+    try:
+        # reuse F150 checker logic when available
+        sys.path.insert(0, str(Path(__file__).resolve().parent))
+        from second_agent_critic import (  # type: ignore
+            run_f150_recon_warm_hub,
+            recon_warm_hub_critic_enabled,
+        )
+
+        if not recon_warm_hub_critic_enabled():
+            out["reason"] = "f150_critic_off"
+            return out
+        chk = run_f150_recon_warm_hub(out_dir, root=root)
+        detail = chk.detail or {}
+        if detail.get("soft_skip") or detail.get("soft_fail"):
+            out["reason"] = str(detail.get("reason") or "soft_skip")
+            out["heat"] = float(detail.get("heat") or 0)
+            return out
+        high = bool(detail.get("high"))
+        local_idle = bool(detail.get("local_idle"))
+        out["high"] = high
+        out["local_idle"] = local_idle
+        out["heat"] = float(detail.get("heat") or 0)
+        out["hub_boost_n"] = int(detail.get("hub_boost_n") or 0)
+        out["theme_n"] = int(detail.get("theme_n") or 0)
+        out["max_tenants"] = int(detail.get("max_tenants") or 0)
+        if tool_call_turns is None:
+            turns = 0
+            if out_dir is not None:
+                for p in (
+                    Path(out_dir) / "agent-loop" / "agent-loop.json",
+                    Path(out_dir) / "agent-loop.json",
+                ):
+                    if p.is_file():
+                        try:
+                            data = json.loads(p.read_text(encoding="utf-8"))
+                            turns = int(data.get("tool_call_turns") or 0)
+                        except (OSError, json.JSONDecodeError, TypeError, ValueError):
+                            turns = 0
+                        break
+        else:
+            turns = int(tool_call_turns)
+        out["tool_call_turns"] = turns
+        if turns < 1:
+            out["reason"] = "no_tool_turns_use_f49"
+            return out
+        if high and local_idle:
+            out["reprompt"] = 1
+            out["reason"] = "recon_warm_hub_heat_idle"
+            out["themes"] = list(
+                (post_score_recon_warm_hub(root=root).get("themes") or [])[:8]
+            )
+            return out
+        out["reason"] = str(detail.get("reason") or "no_gap")
+        return out
+    except Exception as exc:
+        out["reason"] = f"soft_error:{str(exc)[:80]}"
+        return out
+
+
+def build_recon_warm_reprompt_suffix(
+    *,
+    themes: list[str] | None = None,
+    heat: float = 0.0,
+    hub_boost_n: int = 0,
+) -> str:
+    th = [t for t in (themes or []) if t and "/" not in str(t)][:8]
+    theme_line = ", ".join(f"`{t}`" for t in th) if th else "_(hub warm themes)_"
+    return (
+        f"\n{REPROMPT_MARKER}\n"
+        "## Recon-warm hub soft re-prompt (F152)\n\n"
+        f"Multi-tenant **retrieval-hot** themes are elevated (heat={heat:.2f}) but this "
+        f"run ignored hub archival boost (hub_boost_n={hub_boost_n}).\n\n"
+        f"**Hub warm themes:** {theme_line}\n\n"
+        "Before finalizing:\n"
+        "1. Call archival/memory CLI with hub-aware paging "
+        "(`torii.py memory -- search` or archival auto with hub query on).\n"
+        "2. Re-check findings against multi-tenant warm themes (do not invent paths).\n"
+        "3. Prefer REQUEST CHANGES with path:line over narrative APPROVE when themes apply.\n"
+        "4. Do **not** re-raise superseded cold TPs (F145).\n\n"
+        f"<!-- /torii-f152-recon-warm-reprompt -->\n"
+    )
+
+
+def write_recon_warm_reprompt_prompt(
+    prompt_in: Path,
+    prompt_out: Path,
+    *,
+    themes: list[str] | None = None,
+    heat: float = 0.0,
+    hub_boost_n: int = 0,
+) -> bool:
+    path_in = Path(prompt_in)
+    if not path_in.is_file():
+        return False
+    text = path_in.read_text(encoding="utf-8")
+    if REPROMPT_MARKER in text:
+        return False
+    suffix = build_recon_warm_reprompt_suffix(
+        themes=themes, heat=heat, hub_boost_n=hub_boost_n
+    )
+    out = Path(prompt_out)
+    out.parent.mkdir(parents=True, exist_ok=True)
+    out.write_text(text.rstrip() + suffix, encoding="utf-8")
+    return True
+
+
+def cmd_reprompt_decide(args: argparse.Namespace) -> int:
+    """F152: key=value decide soft re-prompt on recon-warm hub idle."""
+    od = Path(args.out_dir) if args.out_dir else None
+    if od is None and (os.environ.get("OUT_DIR") or "").strip():
+        od = Path(os.environ["OUT_DIR"])
+    already = bool(getattr(args, "already_reprompted", False))
+    if getattr(args, "already_env", None) and Path(args.already_env).is_file():
+        txt = Path(args.already_env).read_text(encoding="utf-8", errors="replace")
+        if "attempted=1" in txt or "reprompt=1" in txt:
+            already = True
+    turns = int(args.tool_turns) if getattr(args, "tool_turns", None) is not None else None
+    dec = should_reprompt_recon_warm(
+        od, root=_root(), already_reprompted=already, tool_call_turns=turns
+    )
+    # optional JSON artifact
+    if od is not None:
+        try:
+            od.mkdir(parents=True, exist_ok=True)
+            (od / "recon-warm-reprompt-decide.json").write_text(
+                json.dumps(dec, indent=2) + "\n", encoding="utf-8"
+            )
+        except OSError:
+            pass
+    print(f"reprompt={dec.get('reprompt')}")
+    print(f"enabled={int(bool(dec.get('enabled')))}")
+    print(f"reason={dec.get('reason')}")
+    print(f"high={int(bool(dec.get('high')))}")
+    print(f"local_idle={int(bool(dec.get('local_idle')))}")
+    print(f"heat={dec.get('heat')}")
+    print(f"hub_boost_n={dec.get('hub_boost_n')}")
+    print(f"theme_n={dec.get('theme_n')}")
+    print(f"tool_call_turns={dec.get('tool_call_turns')}")
+    print(f"themes={','.join(dec.get('themes') or [])}")
+    print(f"feature={FEATURE_REPROMPT}")
+    return 0
+
+
+def cmd_reprompt_write(args: argparse.Namespace) -> int:
+    """F152: append recon-warm hub nudge to prompt."""
+    themes = [t.strip() for t in (args.themes or "").split(",") if t.strip()]
+    ok = write_recon_warm_reprompt_prompt(
+        Path(args.prompt_in),
+        Path(args.prompt_out),
+        themes=themes,
+        heat=float(args.heat or 0),
+        hub_boost_n=int(args.hub_boost_n or 0),
+    )
+    print(json.dumps({"feature": FEATURE_REPROMPT, "wrote": ok, "out": args.prompt_out}))
+    return 0 if ok else 1
 
 
 def main(argv: list[str] | None = None) -> int:
@@ -2607,6 +2915,27 @@ def main(argv: list[str] | None = None) -> int:
 
     sub.add_parser("fixture").set_defaults(func=cmd_fixture)
     sub.add_parser("status").set_defaults(func=cmd_status)
+
+    prd = sub.add_parser(
+        "reprompt-decide",
+        help="F152: decide soft re-prompt when recon-warm hub heat ignored",
+    )
+    prd.add_argument("--out-dir", default="")
+    prd.add_argument("--already-reprompted", action="store_true")
+    prd.add_argument("--already-env", default="")
+    prd.add_argument("--tool-turns", type=int, default=None)
+    prd.set_defaults(func=cmd_reprompt_decide)
+
+    prw = sub.add_parser(
+        "reprompt-write",
+        help="F152: append recon-warm hub re-prompt section to prompt",
+    )
+    prw.add_argument("--prompt-in", required=True)
+    prw.add_argument("--prompt-out", required=True)
+    prw.add_argument("--themes", default="")
+    prw.add_argument("--heat", type=float, default=0.0)
+    prw.add_argument("--hub-boost-n", type=int, default=0)
+    prw.set_defaults(func=cmd_reprompt_write)
 
     args = p.parse_args(argv)
     return int(args.func(args))

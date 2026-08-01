@@ -220,6 +220,8 @@ budget always → compact body → score tool_hit → util gap? → budgeted re-
 
 **Recon-warm hub demote-eval + doctor (F151):** `second_agent_critic demote-eval` paper metric `recon_warm_hub_idle_demoted`; skill-loop/doctor surface `recon_warm_hub_ok`; product scorecard lists recon-warm demote next to hub_gap demote — paper-ready, not slogans.
 
+**Recon-warm hub soft re-prompt (F152):** when multi-tenant retrieval heat is high but hub archival boost was idle, Hermes gets **one** soft re-prompt under shared F108 budget (`kind=f152`, `TORII_RECON_WARM_REPROMPT=1`) to call hub-aware memory/archival CLIs before finalizing — demote alone is not the only recovery path.
+
 **Ops:** `python3 scripts/memory_loop_status.py scorecard` → L0–L3. Smoke requires L3 on the hub tree. CI job summary annotates readiness; optional advisory `torii/memory-loop` via `TORII_MEMORY_LOOP_STATUS_COMMIT=1`.
 
 ---

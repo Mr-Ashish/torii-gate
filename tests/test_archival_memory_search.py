@@ -68,6 +68,9 @@ class ArchivalMemorySearchTests(unittest.TestCase):
             ),
             data.get("f149_hub_themes"),
         )
+        # F152 recon-warm hub soft re-prompt
+        self.assertTrue(data.get("f152") or data.get("feature_reprompt") == "F152")
+        self.assertTrue(data.get("f152_ok"), data)
 
     def test_status(self):
         r = _run(["status"])

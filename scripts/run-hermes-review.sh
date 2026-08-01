@@ -1243,6 +1243,104 @@ else
   } >"$OUT_DIR/recovery-skill-reprompt.env" || true
 fi
 
+# F152: recon-warm hub heat idle soft re-prompt (shared F108 budget, kind=f152)
+# Fires only when F122/F137 did not already consume the paid attempt.
+ARCHIVAL_HELPER="${ARCHIVAL_HELPER:-$TORII_ROOT/scripts/archival_memory_search.py}"
+RW_REPROMPT_ATTEMPTED=0
+RW_REPROMPT_REASON="skipped"
+if [[ -f "$ARCHIVAL_HELPER" && "${TORII_RECON_WARM_REPROMPT:-1}" != "0" ]]; then
+  _rw_already=0
+  [[ -f "$OUT_DIR/recovery-skill-reprompt.env" ]] && grep -qE '^(attempted|reprompt)=1' "$OUT_DIR/recovery-skill-reprompt.env" 2>/dev/null && _rw_already=1
+  [[ -f "$OUT_DIR/tool-turns-reprompt.env" ]] && grep -qE '^(attempted|reprompt)=1' "$OUT_DIR/tool-turns-reprompt.env" 2>/dev/null && _rw_already=1
+  _rw_args=(reprompt-decide --out-dir "$OUT_DIR" --tool-turns "${TOOL_CALL_TURNS:-0}")
+  [[ "$_rw_already" == "1" ]] && _rw_args+=(--already-reprompted)
+  _rw_kv="$(python3 "$ARCHIVAL_HELPER" "${_rw_args[@]}" 2>/dev/null || true)"
+  _rw_do="$(printf '%s\n' "$_rw_kv" | sed -n 's/^reprompt=//p' | head -1)"
+  RW_REPROMPT_REASON="$(printf '%s\n' "$_rw_kv" | sed -n 's/^reason=//p' | head -1)"
+  _rw_heat="$(printf '%s\n' "$_rw_kv" | sed -n 's/^heat=//p' | head -1)"
+  _rw_boost="$(printf '%s\n' "$_rw_kv" | sed -n 's/^hub_boost_n=//p' | head -1)"
+  _rw_themes="$(printf '%s\n' "$_rw_kv" | sed -n 's/^themes=//p' | head -1)"
+  if [[ "$_rw_do" == "1" || "$_rw_do" == "true" ]] && [[ -f "$REPROMPT_BUDGET_HELPER" ]]; then
+    _rbud_kv="$(python3 "$REPROMPT_BUDGET_HELPER" allow --out-dir "$OUT_DIR" --kind f152 2>/dev/null || true)"
+    _rbud_allow="$(printf '%s\n' "$_rbud_kv" | sed -n 's/^allow=//p' | head -1)"
+    if [[ "$_rbud_allow" != "1" && "$_rbud_allow" != "true" ]]; then
+      _rbud_reason="$(printf '%s\n' "$_rbud_kv" | sed -n 's/^reason=//p' | head -1)"
+      notice "F108 re-prompt budget blocked F152 · reason=${_rbud_reason:-budget}"
+      RW_REPROMPT_REASON="budget_blocked:${_rbud_reason:-exhausted}"
+      _rw_do="0"
+    fi
+  fi
+  if [[ "$_rw_do" == "1" || "$_rw_do" == "true" ]]; then
+    RW_REPROMPT_ATTEMPTED=1
+    notice "F152 recon-warm hub soft re-prompt · heat=${_rw_heat:-?} boost=${_rw_boost:-0} reason=${RW_REPROMPT_REASON:-gap}"
+    if [[ -f "$REPROMPT_BUDGET_HELPER" ]]; then
+      python3 "$REPROMPT_BUDGET_HELPER" consume --out-dir "$OUT_DIR" --kind f152 --note "attempt_start" >/dev/null 2>&1 || true
+    fi
+    _rw_base="$PROMPT_PATH"
+    [[ -s "$OUT_DIR/prompt-memory-reprompt.md" ]] && _rw_base="$OUT_DIR/prompt-memory-reprompt.md"
+    [[ -s "$OUT_DIR/prompt-reprompt.md" ]] && _rw_base="$OUT_DIR/prompt-reprompt.md"
+    [[ -s "$OUT_DIR/prompt-recovery-reprompt.md" ]] && _rw_base="$OUT_DIR/prompt-recovery-reprompt.md"
+    RW_REPROMPT_PROMPT="$OUT_DIR/prompt-recon-warm-reprompt.md"
+    python3 "$ARCHIVAL_HELPER" reprompt-write \
+      --prompt-in "$_rw_base" \
+      --prompt-out "$RW_REPROMPT_PROMPT" \
+      --themes "${_rw_themes:-}" \
+      --heat "${_rw_heat:-0}" \
+      --hub-boost-n "${_rw_boost:-0}" >/dev/null 2>&1 || true
+    if [[ -s "$RW_REPROMPT_PROMPT" ]]; then
+      PROMPT="$(cat "$RW_REPROMPT_PROMPT")"
+      # Soft second pass: rewrite RAW_OUT if hermes available (same as recovery path abbreviated)
+      if command -v hermes >/dev/null 2>&1 || type _hermes_wrap >/dev/null 2>&1; then
+        if [[ ! -f "$OUT_DIR/review-${PR_NUMBER}.attempt1.raw.md" ]]; then
+          cp -f "$RAW_OUT" "$OUT_DIR/review-${PR_NUMBER}.attempt1.raw.md" 2>/dev/null || true
+        fi
+        STDERR_FILE_RW="$OUT_DIR/hermes-${PR_NUMBER}.recon-warm-reprompt.stderr"
+        set +e
+        (
+          cd "$WORKSPACE_ROOT"
+          if [[ ${STREAM_LOGS:-0} -eq 1 ]]; then
+            _hermes_wrap hermes -z "$PROMPT" \
+              --provider openrouter \
+              --model "$MODEL" \
+              -t "$TOOLSETS" \
+              --usage-file "$USAGE_FILE" \
+              >"$RAW_OUT" 2> >(tee -a "$STDERR_FILE_RW" >&2)
+          else
+            _hermes_wrap hermes -z "$PROMPT" \
+              --provider openrouter \
+              --model "$MODEL" \
+              -t "$TOOLSETS" \
+              --usage-file "$USAGE_FILE" \
+              >"$RAW_OUT" 2>>"$STDERR_FILE_RW"
+          fi
+        )
+        set -e
+        notice "F152 recon-warm re-prompt hermes pass done"
+        if [[ -f "$REPROMPT_BUDGET_HELPER" ]]; then
+          python3 "$REPROMPT_BUDGET_HELPER" consume --out-dir "$OUT_DIR" --kind f152 --recovered --note "f152_ran" >/dev/null 2>&1 || true
+        fi
+      fi
+    fi
+  fi
+  {
+    echo "reprompt=${_rw_do:-0}"
+    echo "enabled=1"
+    echo "reason=${RW_REPROMPT_REASON:-skipped}"
+    echo "attempted=$RW_REPROMPT_ATTEMPTED"
+    echo "heat=${_rw_heat:-0}"
+    echo "hub_boost_n=${_rw_boost:-0}"
+    echo "feature=F152"
+  } >"$OUT_DIR/recon-warm-reprompt.env" || true
+else
+  {
+    echo "reprompt=0"
+    echo "enabled=${TORII_RECON_WARM_REPROMPT:-1}"
+    echo "reason=helper_missing_or_off"
+    echo "attempted=0"
+    echo "feature=F152"
+  } >"$OUT_DIR/recon-warm-reprompt.env" || true
+fi
+
 # F46 / H13: detect Hermes actually blocking SOUL.md at load time
 # F48 / H16: only scan *this invocation* artifacts (offset-sliced hermes-run.log +
 # stderr). Do NOT scan the full Hermes agent.log / errors.log history — capture

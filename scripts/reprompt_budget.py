@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""F108: Shared soft-re-prompt budget across F49 + F106 + F122 (cost control).
+"""F108: Shared soft-re-prompt budget across F49 + F106 + F122 + F137 + F152.
 
 Research drivers:
   - Agent cost guides (2026): multi-turn re-prompts double LLM spend; need kill
@@ -11,12 +11,12 @@ Research drivers:
 Product thesis:
   Soft re-prompts recover quality, but unbounded stacking burns budget.
   Highest ROI: one deterministic **shared attempt budget** (default max_extra=1)
-  so F49 and F106 cannot both fire full paid re-runs unless operators raise the
-  ceiling.
+  so F49/F106/F122/F137/F152 cannot all fire full paid re-runs unless operators
+  raise the ceiling.
 
 Commands:
   init     — write budget state file for a run
-  allow    — decide if kind (f49|f106|f122) may re-prompt (stdout key=value)
+  allow    — decide if kind (f49|f106|f122|f137|f152) may re-prompt (stdout key=value)
   consume  — record a successful/attempted re-prompt
   status   — show state
   fixture  — hermetic: max=1 allows first, blocks second
@@ -40,8 +40,8 @@ from typing import Any
 FEATURE = "F108"
 SCHEMA = 1
 STATE_NAME = "reprompt-budget.json"
-# f122 = recovery skill util re-prompt (F121 gap → soft re-run)
-KINDS = frozenset({"f49", "f106", "f122", "other"})
+# f122 = recovery skill util; f137 = scorecard util; f152 = recon-warm hub idle
+KINDS = frozenset({"f49", "f106", "f122", "f137", "f152", "other"})
 
 _FALSEY = frozenset({"0", "false", "no", "off", "disabled", "n", "none", ""})
 
