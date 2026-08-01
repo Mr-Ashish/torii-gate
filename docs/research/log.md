@@ -1,5 +1,41 @@
 # Torii research → product log
 
+## 2026-08-01 — F72 full-chain revalidation (maker/checker)
+
+### Papers / posts
+- **VulAgent** (ACL Findings 2026): hypothesis-validation multi-agent — decouple discovery from confirmation; FPR cuts when checker is separate.
+- **QASecClaw** (arXiv 2605.01885): multi-agent SAST + coding-LLM contextual review for FP reduction (~88% FP cut on OWASP-style benches while holding recall).
+- **Argus** (arXiv 2604.06633): multi-agent full-chain vuln detection — dependency + source→sink orchestration, not single-shot prose.
+- **AutoPatch** (arXiv 2505.04195): taint similarity as symbolic flow match for verification.
+- Loop Engineering (cobusgreyling): **Maker/Checker split** + readiness scorecard (checklist §4 / §9).
+
+### OSS / eng patterns
+1. deepsec revalidation pass after AI investigation.
+2. Semgrep Assistant Memories compound triage — here: chain evidence is code, not only memory prose.
+3. Loop-ready scorecard: mechanical `passed/total` + level rather than vibes.
+
+### Insight
+F70/F71 measure and surface evidence; the agent could still **self-approve** weak claims. Highest ROI: a **deterministic checker** that re-scores findings on path + theme + taint chain and demotes `unvalidated` narrative.
+
+### Feature shipped (F72)
+- `scripts/chain_revalidate.py` — `revalidate` / `score` / `inject` / `fixture` / `scorecard`
+- Hypothesis catalog (CWE/theme keywords) + document path inheritance
+- Confidence ladder: full_chain → theme_path → path_only → unvalidated / likely_fp
+- Independent `verdict_checker` + Loop-Ready scorecard (L0–L3)
+- Prompt inject `<!-- torii-f72-chain-revalidate -->`; assemble-context soft wire
+- Toggle `TORII_CHAIN_REVALIDATE`; adopted tool `chain-revalidate`
+
+### Loop-engineering practice used
+**Maker/Checker split + scorecard** — agent is maker; `chain_revalidate` is isolated checker; scorecard command mirrors Loop Ready levels.
+
+### Metric
+- Offline fixture: good full_chain_rate=1.0 recall=1.0; weak precision=0; fixture_pass=1
+- Live Hermes e2e: F70 recall=1.0 tp=4 fn=0; F72 full_chain_rate=1.0 scorecard L3 (6/6)
+- pytest: 451 passed
+
+### SHA
+_(filled after push)_
+
 ## 2026-08-01 — F71 deterministic taint prefilter + federated sanitized signals
 
 ### Papers / posts

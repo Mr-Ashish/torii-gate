@@ -1,0 +1,26 @@
+{
+  "id": "chain-revalidate",
+  "name": "Full-chain revalidation checker (F72)",
+  "status": "adopted",
+  "source": "research_oss",
+  "kind": "workflow_tool",
+  "toolset": "terminal",
+  "script": "scripts/chain_revalidate.py",
+  "rationale": "VulAgent/QASecClaw/Argus + Loop Engineering maker/checker: separate deterministic checker revalidates findings against path+theme+taint chain; demotes unvalidated narrative claims",
+  "eval": {
+    "scored_at": "2026-08-01T05:40:00Z",
+    "dims": {
+      "signal": 5,
+      "safety": 5,
+      "effort": 4,
+      "torii_fit": 5,
+      "cost": 5
+    },
+    "total": 24,
+    "max": 25,
+    "recommend": "adopt",
+    "notes": "offline good full_chain_rate>=0.5; weak precision low; case recall=1.0 on good"
+  },
+  "adopted_at": "2026-08-01T05:40:00Z",
+  "feature": "F72"
+}

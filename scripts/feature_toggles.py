@@ -408,6 +408,15 @@ REGISTRY: list[ToggleSpec] = [
         "F71 inject privacy-safe federated TP/prefilter signals into prompt",
         "F71",
     ),
+    ToggleSpec(
+        "chain_revalidate",
+        "TORII_CHAIN_REVALIDATE",
+        "bool",
+        True,
+        "product",
+        "F72 full-chain maker/checker revalidation inject + post-review gate",
+        "F72",
+    ),
     # --- numeric knobs (still registry-documented) ---
     ToggleSpec(
         "issue_context_max",

@@ -372,6 +372,30 @@ try:
 except Exception:
     taint_prefilter_on = "0"
 
+# F72: full-chain revalidation checker brief (maker/checker split)
+chain_revalidate_on = "0"
+try:
+    import sys as _sys_f72
+    _sys_f72.path.insert(0, str(torii_root / "scripts"))
+    from chain_revalidate import (  # type: ignore
+        enabled as chain_enabled,
+        inject_into_prompt as inject_chain,
+    )
+
+    if chain_enabled():
+        _scan_f72 = {}
+        _tc = out_dir / "taint-candidates.json"
+        if _tc.is_file():
+            try:
+                _scan_f72 = __import__("json").loads(_tc.read_text(encoding="utf-8"))
+            except Exception:
+                _scan_f72 = {}
+        if inject_chain(Path(os.environ["PROMPT_PATH"]), _scan_f72 if _scan_f72 else None):
+            chain_revalidate_on = "1"
+            prompt = Path(os.environ["PROMPT_PATH"]).read_text(encoding="utf-8")
+except Exception:
+    chain_revalidate_on = "0"
+
 # F57: Mermaid architecture from changed files (soft)
 mermaid_on = "0"
 mermaid_nodes = "0"
@@ -530,6 +554,7 @@ meta = {
     "TAINT_PREFILTER": taint_prefilter_on,
     "TAINT_CANDIDATES": taint_candidates,
     "FEDERATED_SIGNALS": federated_signals_on,
+    "CHAIN_REVALIDATE": chain_revalidate_on,
 }
 with open(os.environ["META_PATH"], "w") as fh:
     for k, v in meta.items():
