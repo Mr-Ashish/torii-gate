@@ -1072,6 +1072,10 @@ if [[ -f "$SKILL_ROUTER_HELPER" && $TIMED_OUT -eq 0 && "${HERMES_CLI_ARGV_BROKEN
                       *)
                         python3 "$TORII_ROOT/scripts/skill_fitness.py" ingest-refine-dual --out-dir "$OUT_DIR" >/dev/null 2>&1 || true
                         notice "F171 refine dual chronic-fail decay (soft) · ingest-refine-dual"
+                        # F172: multi-tenant federate/promote of decay bins (FederatedSkill)
+                        python3 "$TORII_ROOT/scripts/skill_fitness.py" federate-refine-decay >/dev/null 2>&1 || true
+                        python3 "$TORII_ROOT/scripts/skill_fitness.py" promote-refine-decay >/dev/null 2>&1 || true
+                        notice "F172 refine dual decay federate+promote (soft)"
                         ;;
                     esac
                   fi

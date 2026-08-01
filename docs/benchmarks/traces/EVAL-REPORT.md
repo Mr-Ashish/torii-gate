@@ -141,3 +141,8 @@ Generated: `2026-08-01T09:45:56Z`
 - Offline f171_ok chronic demote Δprio<0
 - Live F171 ingest-refine-dual notice; recall=1.0
 - Modal pytorch#191831 BIT3_OK ~67.6s POST_COMMENT=0
+
+## F172 multi-tenant federate chronic dual_fail decay
+- Offline f172_ok multi promote / single blocked
+- Live F172 federate+promote hermes notice; recall=1.0
+- Modal pytorch#191832 BIT3_OK ~75.2s POST_COMMENT=0

@@ -1,0 +1,41 @@
+{
+  "feature": "F121",
+  "feature_hub_archival_util": "F155",
+  "feature_router_synth": null,
+  "schema": 1,
+  "scored_at": "2026-08-01T12:24:55Z",
+  "recovery_ids": [
+    "skill-prefer-critic-early",
+    "skill-prefer-hub-archival-early",
+    "skill-prefer-memory-cli-early",
+    "skill-prefer-product-cli"
+  ],
+  "recovery_injected": [
+    "skill-prefer-memory-cli-early",
+    "skill-prefer-hub-archival-early",
+    "skill-prefer-product-cli"
+  ],
+  "recovery_injected_n": 3,
+  "tool_hit_ids": [
+    "skill-prefer-memory-cli-early",
+    "skill-prefer-hub-archival-early",
+    "skill-prefer-product-cli"
+  ],
+  "prose_only_ids": [],
+  "idle_ids": [],
+  "tool_hit_n": 3,
+  "util_rate": 1.0,
+  "utilization_gap": false,
+  "inject_chars": 3327,
+  "f120_chars_saved": 1425,
+  "ok": true,
+  "score": 1.0,
+  "hub_archival_id": "skill-prefer-hub-archival-early",
+  "hub_archival_injected": true,
+  "hub_archival_tool_hit": true,
+  "hub_archival_idle": false,
+  "hub_archival_util_gap": false,
+  "hub_archival_ok": true,
+  "router_synthesized": false,
+  "router_synth_mode": null
+}

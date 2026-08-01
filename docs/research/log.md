@@ -1,5 +1,38 @@
 # Torii research → product log
 
+## 2026-08-01 — F172 multi-tenant federate chronic dual_fail decay
+
+### Papers / posts
+- **FederatedSkill** (arXiv 2606.03143): multi-tenant promote only when clients agree.
+- F168 positive refine_pp promote; F171 local decay without multi-tenant compound.
+- Assay: multi-tenant idle evidence should strengthen local demote.
+
+### OSS design patterns stolen
+1. federate_refine_dual_decay privacy-safe fail_rate bins + tenant hash.
+2. promote_refine_dual_decay min_tenants=2 amplifies local refine_priority_decay.
+3. post_score_refine_dual_hub loads promoted decay themes into negative Δprio.
+4. hermes soft federate+promote after F171; skill_loop refine_decay_fed_ok.
+
+### Insight
+Local chronic decay without federation cannot compound multi-tenant evidence. Highest ROI: FederatedSkill gate on dual_fail decay so ≥2 tenants demote always budget harder.
+
+### Feature shipped (F172)
+- federate/promote-refine-decay CLIs
+- hub negative Δprio from multi-tenant decay
+- hermes soft wire; PRODUCT F172 line
+
+### Metric
+- Offline: f172_ok multi promote / single blocked
+- Live local: recall=1.0 util_rate=1.0 F172 hermes federate+promote
+- Modal pytorch#191832 BIT3_OK ~75.2s POST_COMMENT=0 log_streaming=true
+
+### Loop-engineering / Hermes practice used
+**Federate → multi-tenant gate → amplify demote** — FederatedSkill for GEPA decay.
+
+### SHA
+`(pending)`
+
+
 ## 2026-08-01 — F171 chronic refine dual_fail always-priority decay
 
 ### Papers / posts

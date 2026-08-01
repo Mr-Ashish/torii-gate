@@ -615,7 +615,7 @@ def ingest_refine_dual(
         path = save_ledger(ledger, ledger_path(root))
     blob = json.dumps(ledger.get("last_refine_dual_ingest") or {})
     privacy_ok = "/Users/" not in blob and "/home/" not in blob
-    return {
+    result = {
         "feature": "F171",
         "ingested_n": ingested,
         "effective_pass": effective_pass,
@@ -623,6 +623,320 @@ def ingest_refine_dual(
         "skill_ids": skill_ids,
         "privacy_ok": privacy_ok,
         "ledger": str(path) if path else None,
+    }
+    # F172: soft federate chronic dual_fail decay bins (privacy-safe)
+    if decayed and refine_dual_decay_enabled():
+        try:
+            fed = federate_refine_dual_decay(root=root, skill_ids=decayed, ledger=ledger)
+            result["federate_decay"] = {
+                "federated_n": fed.get("federated_n"),
+                "privacy_ok": fed.get("privacy_ok"),
+            }
+            prom = promote_refine_dual_decay(root=root)
+            result["promote_decay"] = {
+                "promoted_n": prom.get("promoted_n"),
+                "privacy_ok": prom.get("privacy_ok"),
+            }
+        except Exception as exc:
+            result["federate_decay"] = {"error": str(exc)[:80]}
+    return result
+
+
+def _tenant_hash_fitness(root: Path) -> str:
+    import hashlib
+
+    return hashlib.sha256(str(root.resolve()).encode("utf-8")).hexdigest()[:12]
+
+
+def _fail_rate_bin(rate: float) -> str:
+    if rate >= 0.9:
+        return "crit"
+    if rate >= 0.67:
+        return "high"
+    if rate >= 0.34:
+        return "mid"
+    if rate > 0:
+        return "low"
+    return "zero"
+
+
+def federate_refine_dual_decay(
+    root: Path | None = None,
+    *,
+    skill_ids: list[str] | None = None,
+    ledger: dict[str, Any] | None = None,
+    tenant_hash: str | None = None,
+) -> dict[str, Any]:
+    """F172: privacy-safe multi-tenant federate of F171 chronic dual_fail decay.
+
+    Emits skill id + fail_rate bin + decay only — no paths/bodies.
+    """
+    root = root or _root()
+    if not refine_dual_decay_enabled():
+        return {
+            "feature": "F172",
+            "federated_n": 0,
+            "reason": "decay_off",
+            "privacy_ok": True,
+        }
+    ledger = ledger if ledger is not None else load_ledger(ledger_path(root))
+    skills = ledger.get("skills") or {}
+    th = tenant_hash or _tenant_hash_fitness(root)
+    dest = root / "memory" / "federation" / "skill-refine-dual-decay-signals.json"
+    dest.parent.mkdir(parents=True, exist_ok=True)
+    existing: dict[str, Any] = {
+        "schema_version": SCHEMA,
+        "feature": "F172",
+        "signals": [],
+    }
+    if dest.is_file():
+        try:
+            data = json.loads(dest.read_text(encoding="utf-8"))
+            if isinstance(data, dict):
+                existing = data
+                existing.setdefault("signals", [])
+        except (OSError, json.JSONDecodeError):
+            pass
+    by_key: dict[str, dict[str, Any]] = {}
+    for s in existing.get("signals") or []:
+        if isinstance(s, dict):
+            key = f"{s.get('skill_id') or s.get('theme')}|{s.get('tenant_hash') or ''}"
+            by_key[key] = s
+
+    targets = skill_ids or [
+        sid
+        for sid, e in skills.items()
+        if isinstance(e, dict) and e.get("refine_dual_chronic_fail")
+    ]
+    federated = 0
+    for sid in targets:
+        if not str(sid).startswith("skill-"):
+            continue
+        ent = skills.get(sid) if isinstance(skills.get(sid), dict) else {}
+        if not ent.get("refine_dual_chronic_fail") and sid not in (skill_ids or []):
+            # still federate if explicitly listed as decayed this run
+            if sid not in (skill_ids or []):
+                continue
+        key = f"{sid}|{th}"
+        prev = by_key.get(key) if isinstance(by_key.get(key), dict) else {}
+        fail_rate = float(ent.get("refine_dual_fail_rate") or prev.get("fail_rate") or 1.0)
+        decay = int(ent.get("refine_priority_decay") or prev.get("decay") or -15)
+        if decay >= 0:
+            decay = -15
+        entry = {
+            "id": f"refine-decay-{sid}"[:64],
+            "theme": sid,
+            "skill_id": sid,
+            "tags": [
+                "refine_dual_decay",
+                "f171",
+                "f172",
+                "chronic_fail",
+                "federated_skill",
+            ],
+            "source": "skill_refine_dual_decay",
+            "hits": int(prev.get("hits") or 0) + 1,
+            "tenants": 1,
+            "tenant_hash": th,
+            "tenant_hashes": sorted(set(list(prev.get("tenant_hashes") or []) + [th]))[
+                :16
+            ],
+            "fail_rate": fail_rate,
+            "fail_rate_bin": _fail_rate_bin(fail_rate),
+            "decay": decay,
+            "util_rate_bin": "neg",
+            "dual_pass": False,
+            "updated_at": _now(),
+            "feature": "F172",
+        }
+        by_key[key] = entry
+        federated += 1
+
+    signals = list(by_key.values())[-200:]
+    doc = {
+        "schema_version": SCHEMA,
+        "feature": "F172",
+        "scope": "skill_refine_dual_decay",
+        "updated_at": _now(),
+        "privacy": "skill_id_fail_bin_tenant_hash_only",
+        "privacy_ok": True,
+        "signals": signals,
+    }
+    blob = json.dumps(doc)
+    if "/Users/" in blob or "/home/" in blob:
+        doc["privacy_ok"] = False
+        doc["signals"] = []
+        federated = 0
+    dest.write_text(json.dumps(doc, indent=2) + "\n", encoding="utf-8")
+    return {
+        "feature": "F172",
+        "path": str(dest),
+        "federated_n": federated,
+        "signals_n": len(doc["signals"]),
+        "privacy_ok": doc["privacy_ok"],
+        "tenant_hash": th,
+    }
+
+
+def promote_refine_dual_decay(
+    root: Path | None = None,
+    *,
+    min_tenants: int | None = None,
+    min_hits: int | None = None,
+) -> dict[str, Any]:
+    """F172: FederatedSkill gate — multi-tenant chronic dual_fail → local decay amplify.
+
+    When ≥min_tenants report chronic decay for a skill, write promoted decay themes
+    and apply stronger local fitness decay so always budget demotes harder.
+    """
+    root = root or _root()
+    if not refine_dual_decay_enabled():
+        return {
+            "feature": "F172",
+            "promoted_n": 0,
+            "reason": "decay_off",
+            "privacy_ok": True,
+            "themes": [],
+        }
+    min_t = (
+        min_tenants
+        if min_tenants is not None
+        else _int_env("TORII_SKILL_PROMOTE_MIN_TENANTS", 2)
+    )
+    min_h = (
+        min_hits if min_hits is not None else _int_env("TORII_SKILL_PROMOTE_MIN_HITS", 2)
+    )
+    path = root / "memory" / "federation" / "skill-refine-dual-decay-signals.json"
+    sigs: list[dict[str, Any]] = []
+    if path.is_file():
+        try:
+            data = json.loads(path.read_text(encoding="utf-8"))
+            raw = data.get("signals") if isinstance(data, dict) else data
+            if isinstance(raw, list):
+                sigs = [s for s in raw if isinstance(s, dict)]
+        except (OSError, json.JSONDecodeError):
+            sigs = []
+
+    by_sid: dict[str, dict[str, Any]] = {}
+    for s in sigs:
+        sid = str(s.get("skill_id") or s.get("theme") or "")
+        if not sid.startswith("skill-"):
+            continue
+        ent = by_sid.setdefault(
+            sid,
+            {
+                "skill_id": sid,
+                "tenant_hashes": set(),
+                "hits": 0,
+                "fail_rate": 0.0,
+                "decay": 0,
+            },
+        )
+        ths = s.get("tenant_hashes") or (
+            [s.get("tenant_hash")] if s.get("tenant_hash") else []
+        )
+        for th in ths:
+            if th:
+                ent["tenant_hashes"].add(str(th))
+        if not ths:
+            ent["tenant_hashes"].add(f"anon-{s.get('id') or sid}")
+        ent["hits"] += max(1, int(s.get("hits") or 1))
+        ent["fail_rate"] = max(float(ent["fail_rate"]), float(s.get("fail_rate") or 0))
+        ent["decay"] = min(int(ent["decay"] or 0), int(s.get("decay") or -15))
+
+    clean: list[dict[str, Any]] = []
+    blocked: list[str] = []
+    for sid, ent in by_sid.items():
+        tenants = len(ent["tenant_hashes"])
+        hits = int(ent["hits"])
+        if tenants >= min_t and hits >= min_h and float(ent["fail_rate"]) >= 0.34:
+            decay = int(ent["decay"])
+            if decay >= 0:
+                decay = -20
+            # multi-tenant amplify
+            decay = min(decay, -20 - min(15, 5 * tenants))
+            clean.append(
+                {
+                    "id": f"promoted-decay-{sid}"[:64],
+                    "theme": sid,
+                    "skill_id": sid,
+                    "tags": [
+                        "promoted_refine_dual_decay",
+                        "f172",
+                        "f171",
+                        "chronic_fail",
+                        "federated_skill",
+                    ],
+                    "source": "skill_refine_dual_decay_promote",
+                    "hits": hits,
+                    "tenants": tenants,
+                    "tenant_hashes": sorted(ent["tenant_hashes"])[:16],
+                    "fail_rate": float(ent["fail_rate"]),
+                    "fail_rate_bin": _fail_rate_bin(float(ent["fail_rate"])),
+                    "decay": decay,
+                    "util_rate_bin": "neg",
+                    "feature": "F172",
+                }
+            )
+        else:
+            blocked.append(sid)
+
+    out = root / "memory" / "federation" / "promoted-refine-dual-decay-themes.json"
+    out.parent.mkdir(parents=True, exist_ok=True)
+    doc = {
+        "schema_version": SCHEMA,
+        "feature": "F172",
+        "scope": "promoted_refine_dual_decay_themes",
+        "updated_at": _now(),
+        "min_tenants": min_t,
+        "min_hits": min_h,
+        "source_skill_n": len(by_sid),
+        "promoted_n": len(clean),
+        "blocked": blocked[:32],
+        "privacy": "skill_id_fail_bin_tenant_hash_only",
+        "privacy_ok": True,
+        "signals": clean,
+    }
+    blob = json.dumps(doc)
+    if "/Users/" in blob or "/home/" in blob:
+        doc["privacy_ok"] = False
+        doc["signals"] = []
+        doc["promoted_n"] = 0
+        clean = []
+    out.write_text(json.dumps(doc, indent=2) + "\n", encoding="utf-8")
+
+    # amplify local fitness decay for multi-tenant promoted chronic fails
+    amplified: list[str] = []
+    if clean:
+        ledger = load_ledger(ledger_path(root))
+        skills = ledger.setdefault("skills", {})
+        for c in clean:
+            sid = str(c["skill_id"])
+            e = skills.setdefault(sid, {"id": sid})
+            e["refine_dual_chronic_fail"] = True
+            e["refine_priority_decay"] = min(
+                int(e.get("refine_priority_decay") or 0), int(c.get("decay") or -20)
+            )
+            e["hub_priority_delta"] = min(int(e.get("hub_priority_delta") or 0), -20)
+            e["multi_tenant_decay"] = True
+            e["multi_tenant_decay_tenants"] = int(c.get("tenants") or 0)
+            amplified.append(sid)
+        if amplified:
+            apply_demotions(ledger)
+            save_ledger(ledger, ledger_path(root))
+
+    return {
+        "feature": "F172",
+        "path": str(out),
+        "source_skill_n": len(by_sid),
+        "promoted_n": doc["promoted_n"],
+        "blocked_n": len(blocked),
+        "blocked": blocked[:16],
+        "min_tenants": min_t,
+        "min_hits": min_h,
+        "privacy_ok": doc["privacy_ok"],
+        "themes": [s.get("theme") for s in clean[:16]],
+        "amplified": amplified,
     }
 
 
@@ -1830,6 +2144,25 @@ def main(argv: list[str] | None = None) -> int:
     prd.add_argument("--report", default="", help="path to refine-dual.json")
     prd.set_defaults(func=cmd_ingest_refine_dual)
 
+    pfd = sub.add_parser(
+        "federate-refine-decay",
+        help="F172 privacy-safe federate of chronic dual_fail decay bins",
+    )
+    pfd.add_argument(
+        "--skills",
+        default="",
+        help="comma skill ids (default: chronic_fail from ledger)",
+    )
+    pfd.set_defaults(func=cmd_federate_refine_decay)
+
+    ppd = sub.add_parser(
+        "promote-refine-decay",
+        help="F172 multi-tenant promote gate for chronic dual_fail decay",
+    )
+    ppd.add_argument("--min-tenants", type=int, default=None)
+    ppd.add_argument("--min-hits", type=int, default=None)
+    ppd.set_defaults(func=cmd_promote_refine_decay)
+
     pha = sub.add_parser(
         "ingest-hub-archival",
         help="F158 fold recovery hub-archival util gap/hit into fitness ledger",
@@ -1887,6 +2220,26 @@ def cmd_ingest_refine_dual(args: argparse.Namespace) -> int:
         save_ledger(ledger, ledger_path(root))
         result["demote_applied"] = True
         result["demoted"] = list(ledger.get("demoted") or [])[:16]
+    print(json.dumps(result, indent=2))
+    return 0 if result.get("privacy_ok", True) else 1
+
+
+def cmd_federate_refine_decay(args: argparse.Namespace) -> int:
+    """F172: federate chronic dual_fail decay bins."""
+    skills_raw = (getattr(args, "skills", "") or "").strip()
+    skill_ids = [s.strip() for s in skills_raw.split(",") if s.strip()] or None
+    result = federate_refine_dual_decay(_root(), skill_ids=skill_ids)
+    print(json.dumps(result, indent=2))
+    return 0 if result.get("privacy_ok", True) else 1
+
+
+def cmd_promote_refine_decay(args: argparse.Namespace) -> int:
+    """F172: multi-tenant promote chronic dual_fail decay."""
+    result = promote_refine_dual_decay(
+        _root(),
+        min_tenants=getattr(args, "min_tenants", None),
+        min_hits=getattr(args, "min_hits", None),
+    )
     print(json.dumps(result, indent=2))
     return 0 if result.get("privacy_ok", True) else 1
 

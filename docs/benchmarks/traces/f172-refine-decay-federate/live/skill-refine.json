@@ -1,0 +1,43 @@
+{
+  "feature": "F165",
+  "scored_at": "2026-08-01T12:24:54Z",
+  "enabled": true,
+  "apply": true,
+  "targets": [
+    {
+      "skill_id": "skill-prefer-memory-cli-early",
+      "reasons": [
+        "chronic_tool_miss"
+      ],
+      "feature": "F165",
+      "tool_hit_rate": 0.5,
+      "selected_n": 42
+    }
+  ],
+  "refined": [],
+  "skipped": [
+    {
+      "skill_id": "skill-prefer-memory-cli-early",
+      "reasons": [
+        "chronic_tool_miss"
+      ],
+      "changed": false,
+      "constraint": {
+        "ok": true,
+        "skill_id": "skill-prefer-memory-cli-early",
+        "size": 1164,
+        "max_bytes": 15360,
+        "id_ok": true,
+        "missing_probes": [],
+        "errors": [],
+        "feature": "F165"
+      },
+      "path": "agent/skills/active/skill-prefer-memory-cli-early.md",
+      "reason": "already_refined"
+    }
+  ],
+  "constraint_failures": [],
+  "ok": true,
+  "refined_n": 0,
+  "target_n": 1
+}

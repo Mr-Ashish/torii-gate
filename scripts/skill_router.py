@@ -917,7 +917,7 @@ def post_score_refine_dual_hub(
         if bin_:
             ent["util_rate_bin"] = bin_
 
-    # F171: chronic dual_fail from fitness ledger → always-priority decay
+    # F171/F172: chronic dual_fail from fitness + multi-tenant decay promote → always Δprio
     fitness_decay: dict[str, int] = {}
     try:
         fit_path = root / ".torii" / "skill-fitness.json"
@@ -936,13 +936,12 @@ def post_score_refine_dual_hub(
                     if decay >= 0:
                         decay = -15
                     fitness_decay[str(sid)] = decay
-                    # ensure skill row exists for display
                     se = skills.setdefault(
                         str(sid),
                         {
                             "skill_id": str(sid),
                             "hits": int(ent.get("refine_dual_selected_n") or 0),
-                            "tenants": 0,
+                            "tenants": int(ent.get("multi_tenant_decay_tenants") or 0),
                             "tool_contrib_pp": float(ent.get("last_refine_tool_pp") or 0),
                             "promoted": False,
                             "dual_fail_n": int(ent.get("refine_dual_fail_n") or 0),
@@ -954,6 +953,58 @@ def post_score_refine_dual_hub(
                     se["chronic_fail"] = True
                     se["dual_fail_rate"] = float(ent.get("refine_dual_fail_rate") or 0)
                     se["fitness_decay"] = decay
+                    if ent.get("multi_tenant_decay"):
+                        se["multi_tenant_decay"] = True
+                        se["tenants"] = max(
+                            int(se.get("tenants") or 0),
+                            int(ent.get("multi_tenant_decay_tenants") or 0),
+                        )
+        # F172: multi-tenant promoted decay themes (privacy-safe federate)
+        for rel in (
+            "promoted-refine-dual-decay-themes.json",
+            "skill-refine-dual-decay-signals.json",
+        ):
+            p = root / "memory" / "federation" / rel
+            if not p.is_file():
+                continue
+            try:
+                data = json.loads(p.read_text(encoding="utf-8"))
+            except (OSError, json.JSONDecodeError):
+                continue
+            for s in data.get("signals") or []:
+                if not isinstance(s, dict):
+                    continue
+                sid = str(s.get("skill_id") or s.get("theme") or "")
+                if not sid.startswith("skill-"):
+                    continue
+                decay = int(s.get("decay") or -20)
+                if decay >= 0:
+                    decay = -20
+                prev = fitness_decay.get(sid, 0)
+                fitness_decay[sid] = min(prev if prev < 0 else 0, decay)
+                se = skills.setdefault(
+                    sid,
+                    {
+                        "skill_id": sid,
+                        "hits": int(s.get("hits") or 1),
+                        "tenants": int(s.get("tenants") or 1),
+                        "tool_contrib_pp": 0.0,
+                        "promoted": False,
+                        "dual_fail_n": 1,
+                        "dual_pass_n": 0,
+                        "priority_delta": 0,
+                        "util_rate_bin": "neg",
+                    },
+                )
+                se["chronic_fail"] = True
+                se["fitness_decay"] = fitness_decay[sid]
+                se["multi_tenant_decay"] = "promoted" in rel or bool(
+                    s.get("tenants", 0) >= 2
+                )
+                se["tenants"] = max(int(se.get("tenants") or 0), int(s.get("tenants") or 1))
+                se["dual_fail_rate"] = max(
+                    float(se.get("dual_fail_rate") or 0), float(s.get("fail_rate") or 0.67)
+                )
     except (OSError, json.JSONDecodeError, TypeError, ValueError):
         fitness_decay = {}
 

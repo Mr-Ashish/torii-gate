@@ -1,77 +1,77 @@
 {
   "schema_version": 1,
   "feature": "F85",
-  "updated_at": "2026-08-01T12:19:43Z",
+  "updated_at": "2026-08-01T12:24:55Z",
   "skills": {
     "skill-prefer-memory-cli-early": {
       "id": "skill-prefer-memory-cli-early",
-      "selected_n": 38,
-      "hit_n": 19,
+      "selected_n": 42,
+      "hit_n": 21,
       "miss_n": 0,
       "hit_rate": 0.5,
       "demoted": false,
-      "last_seen": "2026-08-01T12:19:43Z",
-      "tool_hit_n": 19,
+      "last_seen": "2026-08-01T12:24:54Z",
+      "tool_hit_n": 21,
       "tool_hit_rate": 0.5,
-      "hub_ingested_n": 10,
+      "hub_ingested_n": 11,
       "hub_priority_delta": 40,
-      "last_hub_at": "2026-08-01T12:19:43Z",
-      "refine_dual_selected_n": 1,
-      "refine_dual_pass_n": 1,
+      "last_hub_at": "2026-08-01T12:24:54Z",
+      "refine_dual_selected_n": 2,
+      "refine_dual_pass_n": 2,
       "last_refine_dual_pass": true,
       "refine_dual_fail_rate": 0.0,
       "refine_dual_pass_rate": 1.0,
-      "last_refine_dual_at": "2026-08-01T12:19:43Z",
+      "last_refine_dual_at": "2026-08-01T12:24:55Z",
       "last_refine_tool_pp": 50.0,
       "refine_dual_chronic_fail": false
     },
     "skill-prefer-product-cli": {
       "id": "skill-prefer-product-cli",
+      "selected_n": 21,
+      "hit_n": 21,
+      "miss_n": 0,
+      "hit_rate": 1.0,
+      "demoted": false,
+      "last_seen": "2026-08-01T12:24:54Z",
+      "tool_hit_n": 21,
+      "tool_hit_rate": 1.0,
+      "hub_ingested_n": 11,
+      "hub_priority_delta": 32,
+      "last_hub_at": "2026-08-01T12:24:54Z"
+    },
+    "skill-prefer-hub-archival-early": {
+      "id": "skill-prefer-hub-archival-early",
+      "selected_n": 40,
+      "hit_n": 40,
+      "miss_n": 0,
+      "hit_rate": 1.0,
+      "demoted": false,
+      "last_seen": "2026-08-01T12:24:54Z",
+      "hub_archival_selected_n": 20,
+      "tool_hit_n": 40,
+      "hub_archival_hit_n": 20,
+      "tool_hit_rate": 1.0,
+      "hub_archival_util_rate": 1.0,
+      "hub_archival_gap_rate": 0.0,
+      "last_hub_archival_at": "2026-08-01T12:24:54Z",
+      "hub_archival_ops": true,
+      "hub_ingested_n": 10,
+      "hub_priority_delta": 32,
+      "last_hub_at": "2026-08-01T12:24:54Z"
+    },
+    "skill-f74-exploit-scenario": {
+      "id": "skill-f74-exploit-scenario",
       "selected_n": 19,
       "hit_n": 19,
       "miss_n": 0,
       "hit_rate": 1.0,
       "demoted": false,
-      "last_seen": "2026-08-01T12:19:43Z",
-      "tool_hit_n": 19,
-      "tool_hit_rate": 1.0,
-      "hub_ingested_n": 10,
-      "hub_priority_delta": 32,
-      "last_hub_at": "2026-08-01T12:19:43Z"
-    },
-    "skill-prefer-hub-archival-early": {
-      "id": "skill-prefer-hub-archival-early",
-      "selected_n": 36,
-      "hit_n": 36,
-      "miss_n": 0,
-      "hit_rate": 1.0,
-      "demoted": false,
-      "last_seen": "2026-08-01T12:19:43Z",
-      "hub_archival_selected_n": 18,
-      "tool_hit_n": 36,
-      "hub_archival_hit_n": 18,
-      "tool_hit_rate": 1.0,
-      "hub_archival_util_rate": 1.0,
-      "hub_archival_gap_rate": 0.0,
-      "last_hub_archival_at": "2026-08-01T12:19:43Z",
-      "hub_archival_ops": true,
+      "last_seen": "2026-08-01T12:24:54Z",
+      "tool_hit_rate": 0.4737,
+      "tool_hit_n": 9,
       "hub_ingested_n": 9,
-      "hub_priority_delta": 32,
-      "last_hub_at": "2026-08-01T12:19:43Z"
-    },
-    "skill-f74-exploit-scenario": {
-      "id": "skill-f74-exploit-scenario",
-      "selected_n": 17,
-      "hit_n": 17,
-      "miss_n": 0,
-      "hit_rate": 1.0,
-      "demoted": false,
-      "last_seen": "2026-08-01T12:19:43Z",
-      "tool_hit_rate": 0.4706,
-      "tool_hit_n": 8,
-      "hub_ingested_n": 8,
       "hub_priority_delta": 29,
-      "last_hub_at": "2026-08-01T12:19:43Z"
+      "last_hub_at": "2026-08-01T12:24:54Z"
     }
   },
   "history": [
@@ -824,29 +824,84 @@
       "util_gap": 0,
       "hub_archival_gap_n": 0,
       "hub_archival_hit_n": 18
+    },
+    {
+      "at": "2026-08-01T12:24:54Z",
+      "run_id": "hub_archival_util",
+      "feature": "F158",
+      "skill_id": "skill-prefer-hub-archival-early",
+      "tool_hit": 1,
+      "util_gap": 0,
+      "hub_archival_gap_n": 0,
+      "hub_archival_hit_n": 19
+    },
+    {
+      "at": "2026-08-01T12:24:54Z",
+      "run_id": "docs/benchmarks/traces/f172-refine-decay-federate/live",
+      "hit_rate": 1.0,
+      "selected_n": 4,
+      "hit_n": 4,
+      "tool_hit_n": 3,
+      "tool_hit_rate": 0.75,
+      "themes": [
+        "skill-prefer-memory-cli-early",
+        "skill-prefer-hub-archival-early",
+        "skill-prefer-product-cli",
+        "skill-f74-exploit-scenario"
+      ]
+    },
+    {
+      "at": "2026-08-01T12:24:54Z",
+      "run_id": "hub_recovery",
+      "feature": "F126",
+      "ingested_n": 4,
+      "skills": [
+        "skill-prefer-memory-cli-early",
+        "skill-prefer-hub-archival-early",
+        "skill-prefer-product-cli",
+        "skill-f74-exploit-scenario"
+      ],
+      "gap_pressure": 0.3176
+    },
+    {
+      "at": "2026-08-01T12:24:54Z",
+      "run_id": "scorecard_skills",
+      "feature": "F135",
+      "ingested_n": 0,
+      "skills": []
+    },
+    {
+      "at": "2026-08-01T12:24:54Z",
+      "run_id": "hub_archival_util",
+      "feature": "F158",
+      "skill_id": "skill-prefer-hub-archival-early",
+      "tool_hit": 1,
+      "util_gap": 0,
+      "hub_archival_gap_n": 0,
+      "hub_archival_hit_n": 20
     }
   ],
   "demoted": [],
   "last_hub_ingest": {
-    "at": "2026-08-01T12:19:43Z",
+    "at": "2026-08-01T12:24:54Z",
     "feature": "F126",
     "skills": [
-      "skill-prefer-hub-archival-early",
       "skill-prefer-memory-cli-early",
+      "skill-prefer-hub-archival-early",
       "skill-prefer-product-cli",
       "skill-f74-exploit-scenario"
     ],
     "n": 4
   },
   "last_scorecard_ingest": {
-    "at": "2026-08-01T12:19:43Z",
+    "at": "2026-08-01T12:24:54Z",
     "feature": "F135",
     "skills": [],
     "n": 0,
     "privacy_ok": true
   },
   "last_demote": {
-    "at": "2026-08-01T12:19:43Z",
+    "at": "2026-08-01T12:24:55Z",
     "min_n": 3,
     "threshold": 0.25,
     "newly_demoted": [],
@@ -864,17 +919,17 @@
     "feature_hub_archival": "F158"
   },
   "last_hub_archival_ingest": {
-    "at": "2026-08-01T12:19:43Z",
+    "at": "2026-08-01T12:24:54Z",
     "feature": "F158",
     "skill_id": "skill-prefer-hub-archival-early",
     "tool_hit": 1,
     "util_gap": 0,
     "gap_n": 0,
-    "hit_n": 18,
+    "hit_n": 20,
     "util_rate": 1.0
   },
   "last_refine_dual_ingest": {
-    "at": "2026-08-01T12:19:43Z",
+    "at": "2026-08-01T12:24:55Z",
     "feature": "F171",
     "ingested_n": 1,
     "effective_pass": true,

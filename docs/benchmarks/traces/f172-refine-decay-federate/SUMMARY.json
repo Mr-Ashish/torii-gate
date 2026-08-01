@@ -1,0 +1,29 @@
+{
+  "feature": "F172",
+  "title": "multi-tenant federate chronic dual_fail decay",
+  "scored_at": "2026-08-01T12:25:58Z",
+  "pattern": "federate decay bins \u2192 min_tenants promote \u2192 amplify local always demote",
+  "offline": {
+    "f172_ok": true
+  },
+  "live_local": {
+    "recall": 1.0,
+    "tp": 4,
+    "verdict": "REQUEST_CHANGES",
+    "util_rate": 1.0,
+    "recovery_injected_n": 3,
+    "refine_dual_pass": true,
+    "refine_tool_contribution_pp": 50.0,
+    "decay_signals_present": true,
+    "promoted_decay_present": true,
+    "model": "deepseek/deepseek-v4-pro"
+  },
+  "modal": {
+    "repo": "pytorch/pytorch",
+    "pr": 191832,
+    "outcome": "BIT3_OK",
+    "elapsed_s": 75.2,
+    "log_streaming": true,
+    "post_comment": 0
+  }
+}

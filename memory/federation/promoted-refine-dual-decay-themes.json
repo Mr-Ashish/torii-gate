@@ -1,0 +1,14 @@
+{
+  "schema_version": 1,
+  "feature": "F172",
+  "scope": "promoted_refine_dual_decay_themes",
+  "updated_at": "2026-08-01T12:24:55Z",
+  "min_tenants": 2,
+  "min_hits": 2,
+  "source_skill_n": 0,
+  "promoted_n": 0,
+  "blocked": [],
+  "privacy": "skill_id_fail_bin_tenant_hash_only",
+  "privacy_ok": true,
+  "signals": []
+}

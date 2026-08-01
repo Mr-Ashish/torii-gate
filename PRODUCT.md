@@ -304,6 +304,8 @@ util gap → GEPA refine body → dual-gate LOO floor → dual contribution_pp
 
 **Chronic dual_fail decay (F171):** after min samples, high `refine_dual_fail_rate` lifts the F166 refine shield, soft-demotes the skill, and applies **negative always-priority** (`refine_priority_decay`) so idle refined skills fall out of the always budget until hub_boost tools recover contribution_pp.
 
+**Multi-tenant decay federate (F172):** FederatedSkill gate for F171 — privacy-safe `skill-refine-dual-decay-signals.json` (skill id + fail_rate bin + decay + tenant hash); `promote-refine-decay` requires ≥2 tenants before amplifying local decay and always demotion. Single-tenant chronic fails stay local-only.
+
 ---
 
 ## Self-evolution (F82 + F87/F88)
