@@ -26,7 +26,7 @@ JTBD (#3) · simplicity (#12) · trust (#5)
 Operators see tool-use + pilot + eval pin on one day-2 screen
 
 ### SHA
-(pending)
+`ba24cf82ecbd5844ba2d127ce1cea03a8ee1fcb6`
 
 ## 2026-08-01 — MODEL_ALIAS_TOOLUSE: deepseek-chat-v4-pro → v4-pro (tools)
 

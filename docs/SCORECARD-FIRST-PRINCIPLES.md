@@ -11,7 +11,7 @@ _Scored: `2026-08-01T19:38:40Z` · commercial **8.5** · overall **8.0** (cap un
 | Rank | Gap | Status |
 |-----:|-----|--------|
 | 1–8 | packaging queue | **shipped** |
-| — | Model alias + day-2 tool-use surface | **this fire** |
+| — | Model alias + day-2 tool-use surface | **shipped** `ba24cf8` |
 | 9 | First closed paid pilot | human GTM |
 | 10 | No F185+ without customer win | standing |
 
