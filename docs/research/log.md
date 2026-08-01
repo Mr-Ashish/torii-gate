@@ -28,7 +28,7 @@ Soft re-prompt without skill proposal is one-shot. Highest ROI: F153 proposes hu
 **Trajectory → skill compound** — recovery signals become always-on procedure.
 
 ### SHA
-`PENDING`
+`bd2a2cccdbbe8d833eede5f414d7317a131a4d24`
 
 
 ## 2026-08-01 — F152 recon-warm hub soft re-prompt (F108)
