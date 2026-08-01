@@ -87,6 +87,7 @@ stages:
     phase: memory
     feature: F82
     when: TORII_SKILL_AUTO_ADOPT=1
+    note: F87 dual contribution gate default on (TORII_SKILL_AUTO_ADOPT_DUAL)
   - id: skill_router_score
     script: scripts/skill_router.py
     soft: true
@@ -194,6 +195,10 @@ capabilities:
     feature: F82
     script: scripts/skill_auto_adopt.py
     one_liner: Safe auto-adopt of validated F74 skills with regression gates
+  - id: skill_auto_adopt_dual
+    feature: F87
+    script: scripts/skill_auto_adopt.py
+    one_liner: Dual-rollout contribution_pp>0 required before skill adopt (gate)
   - id: eval_trace_report
     feature: F83
     script: scripts/eval_trace_report.py

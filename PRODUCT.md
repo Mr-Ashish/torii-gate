@@ -31,6 +31,10 @@ Platform / AppSec engineer who needs every PR checked for security without drown
 
 **Measured gate.** Multi-corpus labeled benches (Python insecure-demo + Juice Shop synthetic) score recall before shipping harness changes.
 
+## Adopt only if skills contribute (F87)
+
+Skill auto-adopt (F82) now requires the F86 dual-rollout gate: `skill_contribution_pp > 0` (with-skills vs ablated). Zero-contribution libraries never enter `agent/skills/active/` even if F74 validate says adopt.
+
 ## Dual-rollout skills (F86)
 
 SkillsBench-style **with vs ablated** contribution: skill hit_rate delta must stay positive while F70 recall holds. Multi-tenant promote of skill themes requires ≥2 tenants before hub promotion.

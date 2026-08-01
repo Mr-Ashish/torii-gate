@@ -1,19 +1,20 @@
 #!/usr/bin/env python3
-"""F82: Safe skill auto-adopt with regression gates (self-evolution close-loop).
+"""F82/F87: Safe skill auto-adopt with regression + dual-rollout contribution gates.
 
 Research drivers:
   - SkillOpt / Hermes self-evolution: adopt only when held-out score improves
   - Loop Engineering: default REJECT; verifier before merge into active skills
+  - SkillsBench / F86 dual-rollout: contribution_pp must be > 0 (with vs ablated)
   - Prior Torii F74 proposals sit at validated_adopt but never enter active/
 
 Product thesis:
   Closing the evolution loop without regression: before copying a proposal into
-  agent/skills/active/, re-run offline gates (F78 critic fixture, optional
-  corpus). Malicious / low-score proposals still rejected by F74 validate.
+  agent/skills/active/, re-run offline gates (F78 critic, F86 dual contribution,
+  optional corpus). Malicious / zero-contribution skills stay out of active/.
 
 Commands:
   candidates — list F74 proposals eligible for adopt
-  gate       — run regression gates (critic fixture [+ corpus])
+  gate       — run regression gates (critic + dual-rollout [+ corpus])
   adopt      — adopt one or all candidates if gates pass
   cycle      — candidates → gate → adopt (soft default no force)
   fixture    — hermetic: validated good adopts; malicious blocked; gates pass
@@ -22,6 +23,7 @@ Commands:
 Env:
   TORII_SKILL_AUTO_ADOPT     0 (default) | 1 — enable cycle in CI/post-run
   TORII_SKILL_AUTO_ADOPT_CORPUS  0 (default) | 1 — also require bench_corpus all
+  TORII_SKILL_AUTO_ADOPT_DUAL    1 (default) | 0 — require F86 dual contribution_pp>0
   TORII_SKILL_AUTO_ADOPT_MAX     default 3 skills per cycle
   TORII_ROOT
 """
@@ -65,6 +67,12 @@ def enabled() -> bool:
 def corpus_gate_enabled() -> bool:
     raw = (os.environ.get("TORII_SKILL_AUTO_ADOPT_CORPUS") or "0").strip().lower()
     return raw not in _FALSEY and raw != ""
+
+
+def dual_gate_enabled() -> bool:
+    """F87: SkillsBench-style contribution gate (default on)."""
+    raw = (os.environ.get("TORII_SKILL_AUTO_ADOPT_DUAL") or "1").strip().lower()
+    return raw not in _FALSEY
 
 
 def _int_env(name: str, default: int) -> int:
@@ -153,13 +161,18 @@ def list_candidates(root: Path) -> list[dict[str, Any]]:
 
 
 def run_regression_gates(root: Path) -> dict[str, Any]:
-    """Offline gates that must stay green after skill adopt."""
-    results: dict[str, Any] = {"feature": FEATURE, "gates": []}
+    """Offline gates that must stay green after skill adopt (F82 + F87 dual)."""
+    results: dict[str, Any] = {
+        "feature": FEATURE,
+        "f87": True,
+        "gates": [],
+        "dual_contribution_pp": None,
+    }
 
-    def run(name: str, cmd: list[str]) -> dict[str, Any]:
+    def run(name: str, cmd: list[str], *, cwd: Path | None = None) -> dict[str, Any]:
         r = subprocess.run(
             cmd,
-            cwd=str(root),
+            cwd=str(cwd or root),
             capture_output=True,
             text=True,
             env={
@@ -171,14 +184,14 @@ def run_regression_gates(root: Path) -> dict[str, Any]:
             timeout=180,
         )
         ok = r.returncode == 0
-        entry = {
+        entry: dict[str, Any] = {
             "name": name,
             "ok": ok,
             "rc": r.returncode,
             "stdout_tail": (r.stdout or "")[-400:],
             "stderr_tail": (r.stderr or "")[-200:],
         }
-        # try parse fixture_pass
+        # try parse fixture_pass / dual metrics
         try:
             data = json.loads(r.stdout)
             if "fixture_pass" in data:
@@ -187,7 +200,23 @@ def run_regression_gates(root: Path) -> dict[str, Any]:
             if "all_pass" in data:
                 entry["all_pass"] = data["all_pass"]
                 entry["ok"] = entry["ok"] and bool(data["all_pass"])
-        except (json.JSONDecodeError, TypeError):
+            # F87: dual-rollout contribution gate
+            if "dual_pass" in data:
+                entry["dual_pass"] = data["dual_pass"]
+                entry["ok"] = entry["ok"] and bool(data["dual_pass"])
+            if "skill_contribution_pp" in data:
+                cpp = float(data["skill_contribution_pp"] or 0)
+                entry["skill_contribution_pp"] = cpp
+                results["dual_contribution_pp"] = cpp
+                # reject zero/negative contribution even if dual_pass missing
+                if cpp <= 0:
+                    entry["ok"] = False
+                    entry["error"] = "contribution_pp_non_positive"
+            if data.get("with_skills") and isinstance(data["with_skills"], dict):
+                entry["with_hit_rate"] = data["with_skills"].get("hit_rate")
+            if data.get("ablated") and isinstance(data["ablated"], dict):
+                entry["ablated_hit_rate"] = data["ablated"].get("hit_rate")
+        except (json.JSONDecodeError, TypeError, ValueError):
             pass
         results["gates"].append(entry)
         return entry
@@ -200,13 +229,42 @@ def run_regression_gates(root: Path) -> dict[str, Any]:
         "f74_fitness_fixture",
         [sys.executable, str(_scripts() / "fitness_gate_evolve.py"), "fixture", "--tmpdir"],
     )
+    # F87: SkillsBench dual-rollout — skills must beat ablated baseline
+    dual_script = _scripts() / "skill_dual_rollout.py"
+    if dual_gate_enabled() and dual_script.is_file():
+        # Prefer full dual on real pack fixtures (needs cases under TORII_ROOT)
+        # When root is hermetic temp without cases, dual may fail — callers use skip_gates
+        dual_cases = root / "docs" / "benchmarks" / "cases" / "insecure-demo.json"
+        if dual_cases.is_file():
+            run(
+                "f86_dual_contribution",
+                [sys.executable, str(dual_script), "dual"],
+            )
+        else:
+            # source-tree scripts but fixtures live in product root: use script's parent
+            product = Path(__file__).resolve().parents[1]
+            if (product / "docs/benchmarks/cases/insecure-demo.json").is_file():
+                run(
+                    "f86_dual_contribution",
+                    [sys.executable, str(dual_script), "dual"],
+                    cwd=product,
+                )
+            else:
+                results["gates"].append(
+                    {
+                        "name": "f86_dual_contribution",
+                        "ok": False,
+                        "error": "missing_dual_fixtures",
+                        "rc": 2,
+                    }
+                )
     if corpus_gate_enabled():
         run(
             "f76_corpus_all",
             [sys.executable, str(_scripts() / "bench_corpus.py"), "all"],
         )
 
-    results["passed"] = all(g.get("ok") for g in results["gates"])
+    results["passed"] = all(g.get("ok") for g in results["gates"]) if results["gates"] else False
     results["at"] = _now()
     return results
 
@@ -233,6 +291,7 @@ def adopt_one(root: Path, proposal_id: str, *, force: bool = False) -> dict[str,
                 "at": _now(),
                 "id": proposal_id,
                 "feature": FEATURE,
+                "f87": True,
                 "total": vr.total,
                 "forced": force,
             }
@@ -300,12 +359,14 @@ def cycle(
 
     return {
         "feature": FEATURE,
+        "f87": True,
         "ok": True,
         "candidates": [c["id"] for c in candidates],
         "adopted": adopted,
         "rejected": rejected,
         "gates_pre": gates,
         "gates_post": post_gates,
+        "dual_contribution_pp": (gates or {}).get("dual_contribution_pp"),
         "active_f74": sorted(
             p.stem
             for p in (root / "agent" / "skills" / "active").glob("skill-f74-*.md")
@@ -384,7 +445,9 @@ def cmd_status(args: argparse.Namespace) -> int:
         json.dumps(
             {
                 "feature": FEATURE,
+                "f87": True,
                 "enabled": enabled(),
+                "dual_gate": dual_gate_enabled(),
                 "corpus_gate": corpus_gate_enabled(),
                 "candidates": len(cands),
                 "candidate_ids": [c["id"] for c in cands],

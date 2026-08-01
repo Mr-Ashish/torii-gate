@@ -445,6 +445,15 @@ REGISTRY: list[ToggleSpec] = [
         "F82",
     ),
     ToggleSpec(
+        "skill_auto_adopt_dual",
+        "TORII_SKILL_AUTO_ADOPT_DUAL",
+        "bool",
+        True,
+        "product",
+        "F87 require SkillsBench dual contribution_pp>0 before skill auto-adopt",
+        "F87",
+    ),
+    ToggleSpec(
         "skill_router",
         "TORII_SKILL_ROUTER",
         "bool",

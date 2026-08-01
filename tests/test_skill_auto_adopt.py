@@ -58,6 +58,26 @@ class SkillAutoAdoptTests(unittest.TestCase):
         for i in ids:
             self.assertNotIn("malicious", i)
 
+    def test_gate_includes_f86_dual_contribution(self):
+        """F87: auto-adopt regression gates require dual contribution_pp > 0."""
+        r = _run(["gate"])
+        self.assertEqual(r.returncode, 0, r.stderr + r.stdout)
+        data = json.loads(r.stdout)
+        self.assertTrue(data.get("passed"), data)
+        names = [g.get("name") for g in data.get("gates") or []]
+        self.assertIn("f86_dual_contribution", names)
+        dual = next(g for g in data["gates"] if g["name"] == "f86_dual_contribution")
+        self.assertTrue(dual.get("dual_pass"))
+        self.assertGreater(float(dual.get("skill_contribution_pp") or 0), 0)
+        self.assertGreater(float(data.get("dual_contribution_pp") or 0), 0)
+
+    def test_status_f87_flags(self):
+        r = _run(["status"])
+        self.assertEqual(r.returncode, 0, r.stderr + r.stdout)
+        data = json.loads(r.stdout)
+        self.assertTrue(data.get("f87"))
+        self.assertTrue(data.get("dual_gate"))
+
 
 if __name__ == "__main__":
     unittest.main()

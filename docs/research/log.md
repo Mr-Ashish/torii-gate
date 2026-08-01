@@ -1,5 +1,34 @@
 # Torii research → product log
 
+## 2026-08-01 — F87 dual contribution gate on skill auto-adopt
+
+### Papers / posts / OSS
+- **SkillsBench**: with vs without is the only honest skill utility metric.
+- SkillOpt / Loop Engineering: default REJECT until held-out gates pass.
+- Prior F82: critic+fitness fixtures; F86 dual metrics not wired into adopt.
+
+### OSS / eng patterns
+1. `run_regression_gates` runs `skill_dual_rollout dual` as f86_dual_contribution.
+2. Fail adopt when dual_pass false or skill_contribution_pp ≤ 0.
+3. Toggle TORII_SKILL_AUTO_ADOPT_DUAL (default on).
+
+### Insight
+Auto-adopt without contribution proof reintroduces dead skills. Highest ROI: **wire F86 dual into F82 gates**.
+
+### Feature shipped (F87)
+- skill_auto_adopt regression gates + dual contribution_pp>0
+- status dual_gate flag; tests for gate/status; PRODUCT + workflow
+
+### Loop-engineering practice used
+**Verifier before promote** — dual-rollout is a hard pre-adopt gate.
+
+### Metric
+- Offline: gate passed; dual contribution_pp=50; fixture_pass; 516 pytest
+- Live: **Modal** pytorch#191813 deepseek/deepseek-v4-pro BIT3_OK ~84s; log_streaming=true; POST_COMMENT=0
+
+### SHA
+_PENDING_
+
 ## 2026-08-01 — F86 dual-rollout skill contribution + multi-tenant skill promote
 
 ### Papers / posts / OSS

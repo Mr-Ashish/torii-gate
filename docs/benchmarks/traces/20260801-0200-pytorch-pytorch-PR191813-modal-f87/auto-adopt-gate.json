@@ -1,0 +1,21 @@
+{
+  "passed": true,
+  "dual_contribution_pp": 50.0,
+  "gates": [
+    {
+      "name": "f78_critic_fixture",
+      "ok": true,
+      "skill_contribution_pp": null
+    },
+    {
+      "name": "f74_fitness_fixture",
+      "ok": true,
+      "skill_contribution_pp": null
+    },
+    {
+      "name": "f86_dual_contribution",
+      "ok": true,
+      "skill_contribution_pp": 50.0
+    }
+  ]
+}
