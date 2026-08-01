@@ -31,6 +31,10 @@ Platform / AppSec engineer who needs every PR checked for security without drown
 
 **Measured gate.** Multi-corpus labeled benches (Python insecure-demo + Juice Shop synthetic) score recall before shipping harness changes.
 
+## Skill fitness (F85)
+
+Post-run skill hit rates compound into `.torii/skill-fitness.json`. Chronically unused skills are **index-only** (not full-injected); high-hit skills get router boosts. Privacy-safe skill themes federate to the hub (ids + hits, no bodies/paths).
+
 ## Progressive skills (F84)
 
 Active skills are **indexed** into the prompt; full skill bodies load only for path-relevant themes (extensions + triggers). Post-run **skill hit rate** measures which skills actually fire — fuel for F74/F82 evolution without context bloat.

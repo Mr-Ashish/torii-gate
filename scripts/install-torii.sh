@@ -164,6 +164,7 @@ RUNTIME_SCRIPTS=(
   skill_auto_adopt.py
   eval_trace_report.py
   skill_router.py
+  skill_fitness.py
 )
 
 copy_file() {

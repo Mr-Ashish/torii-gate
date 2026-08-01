@@ -94,6 +94,13 @@ stages:
     feature: F84
     command: score
     note: measure selected skill keyword hits in review
+  - id: skill_fitness
+    script: scripts/skill_fitness.py
+    soft: true
+    phase: memory
+    feature: F85
+    command: cycle
+    note: ledger hits → demote zombies → federate skill themes
   - id: federated_hub
     script: scripts/federated_hub_ingest.py
     soft: true
@@ -188,6 +195,10 @@ capabilities:
     feature: F84
     script: scripts/skill_router.py
     one_liner: Progressive skill disclosure by path themes + post-run hit scoring
+  - id: skill_fitness
+    feature: F85
+    script: scripts/skill_fitness.py
+    one_liner: Skill hit-rate ledger demotes zombies and federates skill themes
 
 # Scripts that pack install must ship for intelligence path (F79)
 pack_scripts:
@@ -211,4 +222,5 @@ pack_scripts:
   - skill_auto_adopt.py
   - eval_trace_report.py
   - skill_router.py
+  - skill_fitness.py
   - smoke-torii-gate.sh

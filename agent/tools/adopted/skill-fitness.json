@@ -1,0 +1,7 @@
+{
+  "id": "skill-fitness",
+  "feature": "F85",
+  "script": "scripts/skill_fitness.py",
+  "status": "adopted",
+  "one_liner": "Skill hit-rate ledger demotes zombies and federates skill themes"
+}

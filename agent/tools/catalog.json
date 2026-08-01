@@ -1,8 +1,8 @@
 {
   "schema_version": 1,
-  "feature": "F84",
+  "feature": "F85",
   "description": "Torii agent tool catalog \u2014 research \u2192 eval \u2192 adopt pipeline",
-  "updated_at": "2026-08-01T01:41:52Z",
+  "updated_at": "2026-08-01T01:46:51Z",
   "tools": [
     {
       "id": "terminal",
@@ -282,6 +282,23 @@
       "adopted_at": "2026-08-01",
       "script": "scripts/skill_router.py",
       "feature": "F84"
+    },
+    {
+      "id": "skill-fitness",
+      "name": "Skill fitness ledger (F85)",
+      "status": "adopted",
+      "source": "research",
+      "kind": "workflow_tool",
+      "toolset": "terminal",
+      "rationale": "Compound F84 hit rates; demote zombies; federate skill themes",
+      "eval": {
+        "total": 24,
+        "max": 25,
+        "recommend": "adopt"
+      },
+      "script": "scripts/skill_fitness.py",
+      "feature": "F85",
+      "adopted_at": "2026-08-01"
     }
   ],
   "candidates": [

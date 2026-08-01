@@ -393,7 +393,38 @@ def themes_from_paths(paths: list[str]) -> set[str]:
     return themes
 
 
-def score_skill(card: SkillCard, path_themes: set[str], paths: list[str]) -> float:
+def _load_fitness() -> tuple[dict[str, float], set[str]]:
+    """F85: optional fitness boosts + demoted set from skill_fitness ledger."""
+    raw = (os.environ.get("TORII_SKILL_FITNESS") or "1").strip().lower()
+    if raw in _FALSEY:
+        return {}, set()
+    try:
+        # import sibling module without requiring package install
+        import importlib.util
+
+        path = Path(__file__).resolve().parent / "skill_fitness.py"
+        if not path.is_file():
+            return {}, set()
+        spec = importlib.util.spec_from_file_location("skill_fitness", path)
+        if spec is None or spec.loader is None:
+            return {}, set()
+        mod = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(mod)
+        if not mod.enabled():
+            return {}, set()
+        ledger = mod.load_ledger()
+        return mod.fitness_boosts(ledger), mod.demoted_set(ledger)
+    except Exception:
+        return {}, set()
+
+
+def score_skill(
+    card: SkillCard,
+    path_themes: set[str],
+    paths: list[str],
+    *,
+    fitness_boost: float = 0.0,
+) -> float:
     if card.always:
         return 1000.0
     score = 0.0
@@ -413,6 +444,8 @@ def score_skill(card: SkillCard, path_themes: set[str], paths: list[str]) -> flo
     code_exts = path_exts - {".md", ".txt", ".rst"}
     if code_exts and card.id.startswith("skill-f74"):
         score += 1.0
+    # F85 fitness from historical hit rates
+    score += float(fitness_boost or 0.0)
     return score
 
 
@@ -423,20 +456,27 @@ def select_skills(
 ) -> dict[str, Any]:
     max_full = max_full if max_full is not None else _int_env("TORII_SKILL_ROUTER_MAX", 4)
     path_themes = themes_from_paths(paths)
+    boosts, demoted = _load_fitness()
     ranked: list[tuple[float, SkillCard]] = []
     for c in cards:
-        s = score_skill(c, path_themes, paths)
+        s = score_skill(
+            c, path_themes, paths, fitness_boost=boosts.get(c.id, 0.0)
+        )
         ranked.append((s, c))
     ranked.sort(key=lambda x: (-x[0], x[1].id))
 
     selected: list[SkillCard] = []
-    # always first
+    skipped_demoted: list[str] = []
+    # always first (never blocked by demote)
     for s, c in ranked:
         if c.always and c not in selected:
             selected.append(c)
-    # then top by score until max_full (always count toward max)
+    # then top by score until max_full; demoted → index-only (skip full body)
     for s, c in ranked:
         if c in selected:
+            continue
+        if c.id in demoted and not c.always:
+            skipped_demoted.append(c.id)
             continue
         if s <= 0 and len(selected) >= 1:
             continue
@@ -444,9 +484,14 @@ def select_skills(
             break
         selected.append(c)
 
-    # if nothing selected, take top 2 by score or first always
+    # if nothing selected, take top 2 non-demoted by score or first always
     if not selected and ranked:
-        selected = [c for _, c in ranked[: min(2, len(ranked))]]
+        fallback = [
+            c
+            for _, c in ranked
+            if c.always or c.id not in demoted
+        ][: min(2, len(ranked))]
+        selected = fallback or [c for _, c in ranked[: min(2, len(ranked))]]
 
     return {
         "feature": FEATURE,
@@ -457,8 +502,16 @@ def select_skills(
         "catalog_n": len(cards),
         "selected": [c.id for c in selected],
         "selected_cards": selected,
+        "demoted_skipped": skipped_demoted,
+        "fitness_boosts": {k: boosts[k] for k in boosts if any(c.id == k for c in cards)},
         "ranking": [
-            {"id": c.id, "score": round(s, 2), "always": c.always} for s, c in ranked
+            {
+                "id": c.id,
+                "score": round(s, 2),
+                "always": c.always,
+                "demoted": c.id in demoted and not c.always,
+            }
+            for s, c in ranked
         ],
     }
 

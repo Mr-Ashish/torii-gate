@@ -1,5 +1,37 @@
 # Torii research → product log
 
+## 2026-08-01 — F85 skill fitness ledger + federated skill themes
+
+### Papers / posts / OSS
+- **FederatedSkill** (arXiv 2606.03143): skill library as federation unit; privacy-safe themes (+44% success).
+- **Agent Skill Evaluation & Evolution** (arXiv 2606.11435): longitudinal skill quality; drop non-contributors.
+- MUSE-Autoskill lifecycle evaluate → demote/refine.
+- Prior Torii F84: skill-hits.json with no durable demote/federate action.
+
+### OSS / eng patterns
+1. Compound hits into `.torii/skill-fitness.json` (selected_n / hit_n / hit_rate).
+2. Soft demote low hit_rate after min samples → index-only in F84 router.
+3. Federate skill themes as F77 signals (id + hits + tenant_hash only).
+
+### Insight
+Measure without action is theater. Highest ROI: **fitness ledger closes F84 → demote zombies + federate winners**.
+
+### Feature shipped (F85)
+- `scripts/skill_fitness.py` — ingest/demote/boosts/federate/cycle/fixture
+- skill_router applies boosts + skips demoted full inject
+- run-torii-review stage; pack + workflow + toggle; PRODUCT fitness model
+
+### Loop-engineering practice used
+**Verifier-driven evolution** — hit_rate is the fitness signal; demote is the gate.
+
+### Metric
+- Offline: fixture_pass; zombie demoted; good boost 2.0; privacy_ok; router skips demoted
+- Live: **Modal** pytorch#191813 deepseek/deepseek-v4-pro BIT3_OK ~92s; log_streaming=true; POST_COMMENT=0
+- pytest: 510 passed
+
+### SHA
+_PENDING_
+
 ## 2026-08-01 — F84 progressive skill router + hit scoring
 
 ### Papers / posts / OSS

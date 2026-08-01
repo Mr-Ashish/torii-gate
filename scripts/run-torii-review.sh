@@ -259,6 +259,17 @@ if [[ -f "$SCRIPTS/skill_router.py" ]]; then
   esac
 fi
 
+# F85: skill fitness ledger — demote zombies + federate skill themes
+if [[ -f "$SCRIPTS/skill_fitness.py" ]]; then
+  case "${TORII_SKILL_FITNESS:-1}" in
+    0|false|no|off) ;;
+    *)
+      stage skill_fitness \
+        python3 "$SCRIPTS/skill_fitness.py" cycle --out-dir "$OUT_DIR" || true
+      ;;
+  esac
+fi
+
 # F77/F83: promote multi-tenant federated signals (soft)
 if [[ -f "$SCRIPTS/federated_hub_ingest.py" ]]; then
   case "${TORII_FED_PROMOTE:-1}" in

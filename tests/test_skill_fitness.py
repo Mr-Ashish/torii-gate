@@ -1,0 +1,144 @@
+"""Tests for F85 skill fitness ledger."""
+
+from __future__ import annotations
+
+import json
+import os
+import subprocess
+import sys
+import tempfile
+import unittest
+from pathlib import Path
+
+ROOT = Path(__file__).resolve().parents[1]
+SCRIPT = ROOT / "scripts" / "skill_fitness.py"
+INSTALL = ROOT / "scripts" / "install-torii.sh"
+
+
+def _run(args: list[str], env: dict | None = None) -> subprocess.CompletedProcess[str]:
+    base = {**os.environ, "TORII_SKILL_FITNESS": "1"}
+    if env:
+        base.update(env)
+    return subprocess.run(
+        [sys.executable, str(SCRIPT), *args],
+        cwd=str(ROOT),
+        capture_output=True,
+        text=True,
+        env=base,
+    )
+
+
+class SkillFitnessTests(unittest.TestCase):
+    def test_fixture(self):
+        r = _run(["fixture"])
+        self.assertEqual(r.returncode, 0, r.stderr + r.stdout)
+        data = json.loads(r.stdout)
+        self.assertTrue(data["fixture_pass"], data)
+        self.assertTrue(data["zombie_demoted"])
+        self.assertTrue(data["good_not_demoted"])
+        self.assertTrue(data["privacy_ok"])
+
+    def test_status(self):
+        r = _run(["status"])
+        self.assertEqual(r.returncode, 0, r.stderr + r.stdout)
+        data = json.loads(r.stdout)
+        self.assertEqual(data["feature"], "F85")
+
+    def test_install_ships_script(self):
+        with tempfile.TemporaryDirectory() as td:
+            dest = Path(td) / "target"
+            dest.mkdir()
+            r = subprocess.run(
+                ["bash", str(INSTALL), "--dest", str(dest), "--force"],
+                cwd=str(ROOT),
+                capture_output=True,
+                text=True,
+            )
+            self.assertEqual(r.returncode, 0, r.stderr + r.stdout)
+            self.assertTrue((dest / "scripts" / "skill_fitness.py").is_file())
+
+    def test_router_skips_demoted(self):
+        """Integration: demoted skill not selected for full body (unless always)."""
+        with tempfile.TemporaryDirectory() as td:
+            root = Path(td)
+            active = root / "agent" / "skills" / "active"
+            active.mkdir(parents=True)
+            (active / "skill-good.md").write_text(
+                "---\nid: skill-good\ntitle: Good skill\nthemes: python,taint\n---\n\n"
+                "## Skill good\nUse **taint chain** evidence.\n",
+                encoding="utf-8",
+            )
+            (active / "skill-zombie.md").write_text(
+                "---\nid: skill-zombie\ntitle: Zombie skill\nthemes: python,taint\n---\n\n"
+                "## Skill zombie\nNever used docs.\n",
+                encoding="utf-8",
+            )
+            (active / "skill-tool-depth-hunks.md").write_text(
+                "---\nid: skill-tool-depth-hunks\ntitle: Depth\nalways: true\n---\n\n"
+                "## Skill depth\n**diff** hunks.\n",
+                encoding="utf-8",
+            )
+            torii = root / ".torii"
+            torii.mkdir()
+            # seed ledger: zombie demoted after many misses
+            (torii / "skill-fitness.json").write_text(
+                json.dumps(
+                    {
+                        "schema_version": 1,
+                        "feature": "F85",
+                        "skills": {
+                            "skill-good": {
+                                "id": "skill-good",
+                                "selected_n": 5,
+                                "hit_n": 5,
+                                "miss_n": 0,
+                                "hit_rate": 1.0,
+                                "demoted": False,
+                            },
+                            "skill-zombie": {
+                                "id": "skill-zombie",
+                                "selected_n": 5,
+                                "hit_n": 0,
+                                "miss_n": 5,
+                                "hit_rate": 0.0,
+                                "demoted": True,
+                            },
+                        },
+                        "demoted": ["skill-zombie"],
+                        "history": [],
+                    }
+                ),
+                encoding="utf-8",
+            )
+            env = {
+                **os.environ,
+                "TORII_ROOT": str(root),
+                "TORII_SKILL_FITNESS": "1",
+                "TORII_SKILL_ROUTER": "1",
+                "TORII_SKILL_ROUTER_MAX": "4",
+            }
+            r = subprocess.run(
+                [
+                    sys.executable,
+                    str(ROOT / "scripts" / "skill_router.py"),
+                    "select",
+                    "--paths",
+                    "src/app.py",
+                    "--max",
+                    "4",
+                ],
+                cwd=str(ROOT),
+                capture_output=True,
+                text=True,
+                env=env,
+            )
+            self.assertEqual(r.returncode, 0, r.stderr + r.stdout)
+            data = json.loads(r.stdout)
+            sel = set(data["selected"])
+            self.assertIn("skill-good", sel)
+            self.assertNotIn("skill-zombie", sel)
+            self.assertIn("skill-zombie", set(data.get("demoted_skipped") or ["skill-zombie"]))
+
+
+if __name__ == "__main__":
+    unittest.main()

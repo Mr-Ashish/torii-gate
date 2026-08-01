@@ -454,6 +454,15 @@ REGISTRY: list[ToggleSpec] = [
         "F84",
     ),
     ToggleSpec(
+        "skill_fitness",
+        "TORII_SKILL_FITNESS",
+        "bool",
+        True,
+        "product",
+        "F85 skill hit-rate ledger: demote zombies, boost winners, federate skill themes",
+        "F85",
+    ),
+    ToggleSpec(
         "chain_revalidate",
         "TORII_CHAIN_REVALIDATE",
         "bool",
