@@ -27,7 +27,7 @@ Supersession without a graph is invisible at inject. Highest ROI: **temporal edg
 - Live: **Modal** pytorch#191813 deepseek/deepseek-v4-pro BIT3_OK ~86s; log_streaming=true; POST_COMMENT=0
 
 ### SHA
-PENDING
+0ba3f704ccb272b75ac06e91b02beefc7030b54c
 
 ## 2026-08-01 — F99 brand dual compound loops (skills + memory)
 
