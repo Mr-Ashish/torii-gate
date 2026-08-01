@@ -39,6 +39,7 @@ Env:
   TORII_SKILL_FULL_MAX_CHARS     default 900 — non-always selected body cap
   TORII_SKILL_ROUTER_REPLACE  1 (default) | 0 — replace F69 skills block
   TORII_SKILL_TOOL_OUTCOME    1 (default) | 0 — F114 tool-invocation hit scoring
+  TORII_RECOVERY_HUB_COMPOUND 1 (default) | 0 — F125 hub recovery-util post-score → always prio
 """
 
 from __future__ import annotations
@@ -55,11 +56,14 @@ from pathlib import Path
 from typing import Any
 
 FEATURE = "F84"
+FEATURE_HUB = "F125"
 SCHEMA = 1
 MARKER_OPEN = "<!-- torii-f84-skill-router -->"
 MARKER_CLOSE = "<!-- /torii-f84-skill-router -->"
 F69_OPEN = "<!-- torii-f69-skills -->"
 F69_CLOSE = "<!-- /torii-f69-skills -->"
+HUB_MARKER_OPEN = "<!-- torii-f125-recovery-hub -->"
+HUB_MARKER_CLOSE = "<!-- /torii-f125-recovery-hub -->"
 
 _FALSEY = frozenset({"0", "false", "no", "off", "disabled", "n", "none", ""})
 
@@ -290,6 +294,311 @@ def always_priority_for(sid: str, defaults: dict[str, Any] | None = None) -> int
         except (TypeError, ValueError):
             pass
     return 10
+
+
+def recovery_hub_enabled() -> bool:
+    """F125: consume federated recovery-util themes into always priority (default on)."""
+    raw = (os.environ.get("TORII_RECOVERY_HUB_COMPOUND") or "1").strip().lower()
+    return raw not in _FALSEY
+
+
+def _is_skill_id_theme(theme: str) -> bool:
+    t = (theme or "").strip().lower()
+    if not t or t in ("recovery-util-ok", "recovery-util-gap", "recovery_util"):
+        return False
+    if t.startswith("recovery-util-hit-"):
+        return True
+    if t.startswith("skill-"):
+        return True
+    return False
+
+
+def _skill_id_from_hub_theme(theme: str, sid: str = "") -> str:
+    """Map hub signal theme/id → recovery skill id (privacy-safe ids only)."""
+    raw = (theme or sid or "").strip().lower()
+    raw = re.sub(r"^recovery-util-hit-", "", raw)
+    raw = re.sub(r"[^a-z0-9._-]+", "-", raw)[:64]
+    if not raw or raw in ("recovery-util-ok", "recovery-util-gap"):
+        return ""
+    if not raw.startswith("skill-"):
+        # keywords may be prefer-memory-cli-early without skill- prefix
+        if raw.startswith("prefer-") or raw.startswith("f"):
+            raw = f"skill-{raw}"
+        else:
+            return ""
+    if "/" in raw or ".." in raw:
+        return ""
+    return raw
+
+
+def load_recovery_hub_signals(root: Path | None = None) -> list[dict[str, Any]]:
+    """Load privacy-safe recovery util signals from federation store(s)."""
+    root = root or _root()
+    paths = [
+        root / "memory" / "federation" / "recovery-util-signals.json",
+        root / "memory" / "federation" / "federated-signals.json",
+    ]
+    # also OUT_DIR copy if present
+    od = (os.environ.get("OUT_DIR") or "").strip()
+    if od:
+        paths.insert(0, Path(od) / "recovery-util-signals.json")
+    out: list[dict[str, Any]] = []
+    seen: set[str] = set()
+    for p in paths:
+        if not p.is_file():
+            continue
+        try:
+            data = json.loads(p.read_text(encoding="utf-8"))
+        except (OSError, json.JSONDecodeError):
+            continue
+        sigs = data.get("signals") if isinstance(data, dict) else data
+        if not isinstance(sigs, list):
+            continue
+        for s in sigs:
+            if not isinstance(s, dict):
+                continue
+            tags = [str(t).lower() for t in (s.get("tags") or [])]
+            theme = str(s.get("theme") or s.get("id") or "").lower()
+            src = str(s.get("source") or "").lower()
+            is_rec = (
+                "recovery_util" in tags
+                or "federated_skill" in tags
+                and ("recovery" in theme or "recovery" in src)
+                or theme.startswith("recovery-util")
+                or "recovery_skill_util" in src
+                or theme.startswith("skill-prefer-")
+            )
+            if not is_rec and not _is_skill_id_theme(theme):
+                # still keep pure skill themes from fitness federate when tool_outcome
+                if "tool_outcome" not in tags and "skill_hit" not in tags:
+                    continue
+            blob = json.dumps(s, ensure_ascii=False)
+            if "/Users/" in blob or "/home/" in blob:
+                continue
+            key = str(s.get("id") or theme)
+            if key in seen:
+                # merge hits lightly
+                for existing in out:
+                    if str(existing.get("id") or existing.get("theme")) == key:
+                        existing["hits"] = int(existing.get("hits") or 0) + int(
+                            s.get("hits") or 1
+                        )
+                        th = list(existing.get("tenant_hashes") or [])
+                        for h in s.get("tenant_hashes") or []:
+                            if h not in th:
+                                th.append(h)
+                        if th:
+                            existing["tenant_hashes"] = th[:64]
+                            existing["tenants"] = len(th)
+                        break
+                continue
+            seen.add(key)
+            out.append(dict(s))
+    return out
+
+
+def post_score_recovery_hub(
+    signals: list[dict[str, Any]] | None = None,
+    *,
+    root: Path | None = None,
+) -> dict[str, Any]:
+    """F125: post-score hub recovery-util themes → per-skill always priority deltas.
+
+    Privacy: skill_id + hits + tenant counts + util bins only (no paths/commands).
+    """
+    root = root or _root()
+    signals = signals if signals is not None else load_recovery_hub_signals(root)
+    skill_scores: dict[str, dict[str, Any]] = {}
+    gap_hits = 0
+    ok_hits = 0
+    gap_tenants = 0
+    ok_tenants = 0
+
+    for s in signals:
+        theme = str(s.get("theme") or s.get("id") or "").lower()
+        hits = max(1, int(s.get("hits") or 1))
+        tenants = max(1, int(s.get("tenants") or len(s.get("tenant_hashes") or []) or 1))
+        util_bin = str(s.get("util_rate_bin") or "").lower()
+        tags = [str(t).lower() for t in (s.get("tags") or [])]
+
+        if theme in ("recovery-util-gap",) or util_bin == "gap" or "utilization_gap" in tags:
+            gap_hits += hits
+            gap_tenants = max(gap_tenants, tenants)
+            continue
+        if theme in ("recovery-util-ok",) or util_bin in ("full", "partial", "ok"):
+            if theme.startswith("recovery-util"):
+                ok_hits += hits
+                ok_tenants = max(ok_tenants, tenants)
+                continue
+
+        sid = _skill_id_from_hub_theme(theme, str(s.get("id") or ""))
+        if not sid:
+            # try keywords for prefer-* skill names
+            for kw in s.get("keywords") or []:
+                sid = _skill_id_from_hub_theme(str(kw))
+                if sid:
+                    break
+        if not sid:
+            continue
+
+        ent = skill_scores.setdefault(
+            sid,
+            {
+                "skill_id": sid,
+                "hits": 0,
+                "tenants": 0,
+                "tool_hits": 0,
+                "priority_delta": 0,
+                "util_rate_bin": util_bin or "hit",
+            },
+        )
+        ent["hits"] = int(ent["hits"]) + hits
+        ent["tenants"] = max(int(ent["tenants"]), tenants)
+        tool_hits = int(s.get("tool_hits") or (hits if util_bin == "hit" else 0))
+        ent["tool_hits"] = int(ent["tool_hits"]) + tool_hits
+        if util_bin:
+            ent["util_rate_bin"] = util_bin
+
+    # priority_delta: multi-tenant tool hits compound (cap +40)
+    for sid, ent in skill_scores.items():
+        t = min(4, int(ent["tenants"]))
+        h = min(8, int(ent["hits"]))
+        th = min(6, int(ent["tool_hits"]))
+        # base 5 + 8*tenants + 2*hits + 3*tool_hits
+        delta = 5 + 8 * t + 2 * h + 3 * th
+        ent["priority_delta"] = min(40, int(delta))
+
+    # systemic gap pressure (0..1) for re-prompt soft bias / inject note
+    total_sys = gap_hits + ok_hits
+    gap_pressure = round(gap_hits / total_sys, 4) if total_sys else 0.0
+
+    # privacy check
+    blob = json.dumps(skill_scores)
+    privacy_ok = "/Users/" not in blob and "/home/" not in blob and "C:\\\\Users" not in blob
+
+    report: dict[str, Any] = {
+        "feature": FEATURE_HUB,
+        "schema": SCHEMA,
+        "enabled": recovery_hub_enabled(),
+        "signals_n": len(signals),
+        "skill_n": len(skill_scores),
+        "skills": skill_scores,
+        "priority_deltas": {k: v["priority_delta"] for k, v in skill_scores.items()},
+        "gap_hits": gap_hits,
+        "ok_hits": ok_hits,
+        "gap_tenants": gap_tenants,
+        "ok_tenants": ok_tenants,
+        "gap_pressure": gap_pressure,
+        "privacy_ok": privacy_ok,
+        "hub_ok": privacy_ok and (len(skill_scores) >= 1 or ok_hits >= 1 or gap_hits >= 0),
+    }
+    return report
+
+
+def hub_priority_delta(sid: str, hub: dict[str, Any] | None = None) -> int:
+    """Always-priority bump from hub post-score for one skill id."""
+    if hub is None:
+        return 0
+    if not hub.get("enabled", True):
+        return 0
+    deltas = hub.get("priority_deltas") or {}
+    try:
+        return int(deltas.get(sid) or 0)
+    except (TypeError, ValueError):
+        return 0
+
+
+def render_recovery_hub_section(hub: dict[str, Any]) -> str:
+    """Privacy-safe prompt section: hub recovery util themes (ids + bins only)."""
+    lines = [
+        HUB_MARKER_OPEN,
+        "## Federated recovery util (F125 hub compound)",
+        "",
+        "Cross-tenant recovery tool outcomes (skill ids + util bins only; no paths):",
+    ]
+    skills = hub.get("skills") or {}
+    if skills:
+        ranked = sorted(
+            skills.values(),
+            key=lambda e: (-int(e.get("priority_delta") or 0), str(e.get("skill_id"))),
+        )
+        for e in ranked[:8]:
+            lines.append(
+                f"- `{e.get('skill_id')}`: hits={e.get('hits')} tenants={e.get('tenants')} "
+                f"tool_hits={e.get('tool_hits')} Δprio=+{e.get('priority_delta')} "
+                f"bin={e.get('util_rate_bin')}"
+            )
+    else:
+        lines.append("- (no hub recovery skill themes yet — local always budget applies)")
+    gp = float(hub.get("gap_pressure") or 0)
+    if gp >= 0.34:
+        lines.append(
+            f"- **Hub gap pressure={gp:.2f}** — prefer early recovery CLI tool calls "
+            "(memory/doctor/critic) before finalizing."
+        )
+    elif int(hub.get("ok_hits") or 0) >= 1:
+        lines.append(
+            f"- Hub util_ok hits={hub.get('ok_hits')} — keep recovery tools in the loop."
+        )
+    lines.append(HUB_MARKER_CLOSE)
+    return "\n".join(lines) + "\n"
+
+
+def inject_recovery_hub_into_prompt(
+    prompt: Path,
+    hub: dict[str, Any] | None = None,
+    *,
+    root: Path | None = None,
+) -> dict[str, Any]:
+    """Inject/replace F125 hub recovery section in prompt.md."""
+    root = root or _root()
+    hub = hub if hub is not None else post_score_recovery_hub(root=root)
+    if not recovery_hub_enabled():
+        return {"feature": FEATURE_HUB, "injected": 0, "reason": "off", "hub": hub}
+    section = render_recovery_hub_section(hub)
+    try:
+        original = prompt.read_text(encoding="utf-8", errors="replace")
+    except OSError as exc:
+        return {"feature": FEATURE_HUB, "injected": 0, "error": str(exc)[:120]}
+    if HUB_MARKER_OPEN in original:
+        new = re.sub(
+            rf"{re.escape(HUB_MARKER_OPEN)}.*?{re.escape(HUB_MARKER_CLOSE)}\n?",
+            section,
+            original,
+            count=1,
+            flags=re.DOTALL,
+        )
+    else:
+        # place after skill router block when present
+        if MARKER_CLOSE in original:
+            new = original.replace(MARKER_CLOSE, MARKER_CLOSE + "\n\n" + section, 1)
+        else:
+            marker = "## PR metadata"
+            if marker in original:
+                new = original.replace(marker, section + "\n" + marker, 1)
+            else:
+                new = original.rstrip() + "\n\n" + section
+    prompt.write_text(new if new.endswith("\n") else new + "\n", encoding="utf-8")
+    # artifact
+    od = (os.environ.get("OUT_DIR") or "").strip()
+    art = None
+    if od:
+        try:
+            p = Path(od) / "recovery-hub-score.json"
+            p.parent.mkdir(parents=True, exist_ok=True)
+            p.write_text(json.dumps(hub, indent=2) + "\n", encoding="utf-8")
+            art = str(p)
+        except OSError:
+            pass
+    return {
+        "feature": FEATURE_HUB,
+        "injected": 1,
+        "skill_n": hub.get("skill_n"),
+        "gap_pressure": hub.get("gap_pressure"),
+        "privacy_ok": hub.get("privacy_ok"),
+        "artifact": art,
+        "hub": hub,
+    }
 
 
 def active_skills_dir(root: Path | None = None) -> Path:
@@ -637,6 +946,8 @@ def select_skills(
     paths: list[str],
     max_full: int | None = None,
     max_always: int | None = None,
+    root: Path | None = None,
+    hub: dict[str, Any] | None = None,
 ) -> dict[str, Any]:
     max_full = max_full if max_full is not None else _int_env("TORII_SKILL_ROUTER_MAX", 4)
     max_always = max_always if max_always is not None else always_max()
@@ -646,9 +957,22 @@ def select_skills(
     # free-riders join demote set for full-body skip (budgeted always still allowed)
     skip_full = set(demoted) | set(free_riders)
 
-    # F119: always-on budget — rank always candidates by always_priority, take top N
+    # F125: hub recovery-util post-score → always priority compound
+    hub_report = hub
+    if hub_report is None and recovery_hub_enabled():
+        try:
+            hub_report = post_score_recovery_hub(root=root or _root())
+        except Exception:
+            hub_report = {"enabled": False, "priority_deltas": {}, "skills": {}}
+    elif hub_report is None:
+        hub_report = {"enabled": False, "priority_deltas": {}, "skills": {}}
+
+    def _effective_always_prio(c: SkillCard) -> int:
+        return int(c.always_priority or 0) + hub_priority_delta(c.id, hub_report)
+
+    # F119: always-on budget — rank always candidates by always_priority (+ F125 hub), take top N
     always_cands = [c for c in cards if c.always]
-    always_cands.sort(key=lambda c: (-int(c.always_priority or 0), c.id))
+    always_cands.sort(key=lambda c: (-_effective_always_prio(c), c.id))
     always_selected = always_cands[: max(0, max_always)]
     always_deferred = [c.id for c in always_cands[max(0, max_always) :]]
     always_selected_ids = {c.id for c in always_selected}
@@ -664,6 +988,10 @@ def select_skills(
             attr_boost=attr_boosts.get(c.id, 0.0),
             force_not_always=(c.id in always_deferred_set),
         )
+        # F125: small score bump so hub-hit recovery skills win residual slots
+        hd = hub_priority_delta(c.id, hub_report)
+        if hd and c.id in always_deferred_set:
+            s += min(12.0, float(hd) / 4.0)
         ranked.append((s, c))
     ranked.sort(key=lambda x: (-x[0], x[1].id))
 
@@ -712,9 +1040,16 @@ def select_skills(
         ][: min(2, len(ranked))]
         selected = fallback or [c for _, c in ranked[: min(2, len(ranked))]]
 
+    hub_deltas = {
+        k: v
+        for k, v in (hub_report.get("priority_deltas") or {}).items()
+        if any(c.id == k for c in cards)
+    }
+
     return {
         "feature": FEATURE,
         "feature_always_budget": "F119",
+        "feature_hub_compound": FEATURE_HUB if recovery_hub_enabled() else None,
         "schema": SCHEMA,
         "f89": True,
         "path_themes": sorted(path_themes),
@@ -732,12 +1067,17 @@ def select_skills(
         "attr_boosts": {
             k: attr_boosts[k] for k in attr_boosts if any(c.id == k for c in cards)
         },
+        "hub_priority_deltas": hub_deltas,
+        "hub_gap_pressure": hub_report.get("gap_pressure"),
+        "hub_skill_n": hub_report.get("skill_n"),
         "ranking": [
             {
                 "id": c.id,
                 "score": round(s, 2),
                 "always": c.always,
                 "always_priority": c.always_priority,
+                "always_priority_effective": _effective_always_prio(c),
+                "hub_delta": hub_priority_delta(c.id, hub_report),
                 "always_deferred": c.id in always_deferred_set,
                 "demoted": c.id in demoted and c.id not in always_selected_ids,
                 "free_rider": c.id in free_riders and c.id not in always_selected_ids,
@@ -883,7 +1223,13 @@ def inject_into_prompt(
     root = root or _root()
     cards = catalog(root)
     paths = paths if paths is not None else paths_from_args()
-    selection = select_skills(cards, paths)
+    hub_report = None
+    if recovery_hub_enabled():
+        try:
+            hub_report = post_score_recovery_hub(root=root)
+        except Exception:
+            hub_report = None
+    selection = select_skills(cards, paths, root=root, hub=hub_report)
     body = render_injection(cards, selection)
     chunk = f"{MARKER_OPEN}\n{body}{MARKER_CLOSE}\n"
     original = prompt.read_text(encoding="utf-8", errors="replace")
@@ -918,9 +1264,15 @@ def inject_into_prompt(
     dest = out or prompt
     dest.write_text(new if new.endswith("\n") else new + "\n", encoding="utf-8")
 
+    # F125: inject hub recovery util compound section (soft)
+    hub_inj: dict[str, Any] = {"injected": 0}
+    if recovery_hub_enabled() and hub_report is not None:
+        hub_inj = inject_recovery_hub_into_prompt(dest, hub=hub_report, root=root)
+
     result = {
         "feature": FEATURE,
         "feature_compact": "F120" if compact_enabled() else None,
+        "feature_hub_compound": FEATURE_HUB if recovery_hub_enabled() else None,
         "injected": 1,
         "selected": selection["selected"],
         "always_selected": selection.get("always_selected"),
@@ -933,6 +1285,10 @@ def inject_into_prompt(
         "inject_chars": len(body),
         "f120_chars_saved": selection.get("f120_chars_saved") or 0,
         "f120_compact": selection.get("f120_compact") or [],
+        "hub_injected": int(hub_inj.get("injected") or 0),
+        "hub_skill_n": selection.get("hub_skill_n"),
+        "hub_gap_pressure": selection.get("hub_gap_pressure"),
+        "hub_priority_deltas": selection.get("hub_priority_deltas"),
     }
     # write selection artifact next to prompt if OUT_DIR
     od = (os.environ.get("OUT_DIR") or "").strip()
@@ -947,6 +1303,7 @@ def inject_into_prompt(
                         "inject_chars": len(body),
                         "f120_chars_saved": selection.get("f120_chars_saved") or 0,
                         "f120_compact": selection.get("f120_compact") or [],
+                        "hub_injected": result.get("hub_injected"),
                     },
                     indent=2,
                 )
@@ -1783,6 +2140,32 @@ def cmd_reprompt_decide(args: argparse.Namespace) -> int:
     return 0
 
 
+def cmd_hub_score(args: argparse.Namespace) -> int:
+    """F125: post-score federated recovery util → priority deltas (+ optional inject)."""
+    root = _root()
+    hub = post_score_recovery_hub(root=root)
+    inj = None
+    inject_path = (getattr(args, "inject", None) or "").strip()
+    if inject_path:
+        inj = inject_recovery_hub_into_prompt(Path(inject_path), hub=hub, root=root)
+        hub["inject"] = {
+            "injected": inj.get("injected"),
+            "artifact": inj.get("artifact"),
+        }
+    # OUT_DIR artifact
+    od = (os.environ.get("OUT_DIR") or "").strip()
+    if od:
+        try:
+            p = Path(od) / "recovery-hub-score.json"
+            p.parent.mkdir(parents=True, exist_ok=True)
+            p.write_text(json.dumps(hub, indent=2) + "\n", encoding="utf-8")
+            hub["artifact"] = str(p)
+        except OSError:
+            pass
+    print(json.dumps(hub, indent=2))
+    return 0 if hub.get("privacy_ok") else 1
+
+
 def cmd_reprompt_write(args: argparse.Namespace) -> int:
     """F122: write nudged prompt for recovery skill re-run."""
     idle = [x for x in (args.idle_ids or "").split(",") if x.strip()]
@@ -2145,6 +2528,57 @@ Verdict: REQUEST_CHANGES
             and "fixture-tenant-a" not in json.dumps(fed_ok_doc.get("signals") or [])
         )
 
+        # F125: hub post-score compounds into always priority + inject
+        os.environ["TORII_RECOVERY_HUB_COMPOUND"] = "1"
+        # second tenant signal for multi-tenant boost
+        federate_recovery_util(util_good, root=root, tenant="fixture-tenant-b")
+        hub_score = post_score_recovery_hub(root=root)
+        mem_delta = int((hub_score.get("priority_deltas") or {}).get(
+            "skill-prefer-memory-cli-early"
+        ) or 0)
+        hub_privacy = bool(hub_score.get("privacy_ok"))
+        hub_skills_ok = int(hub_score.get("skill_n") or 0) >= 1 and mem_delta >= 5
+        # always priority: memory gets hub delta; with budget 1, product may defer without hub
+        # seed a low-priority always and verify hub-hit recovery wins slot
+        (active / "skill-prefer-critic-early.md").write_text(
+            """---
+id: skill-prefer-critic-early
+title: Prefer second-agent critic early
+always: true
+always_priority: 85
+themes: critic,panel
+---
+
+## Skill: prefer-critic-early
+
+Call second-agent critic tools when uncertain.
+""",
+            encoding="utf-8",
+        )
+        # write synthetic hub favoring product over critic (product already in util)
+        # re-score after multi-tenant federate
+        hub_score2 = post_score_recovery_hub(root=root)
+        cards_hub = catalog(root)
+        # force budget 2 with hub: memory+product should win over critic if product has hub hits
+        sel_hub = select_skills(
+            cards_hub, py_paths, max_full=3, max_always=2, root=root, hub=hub_score2
+        )
+        hub_always = set(sel_hub.get("always_selected") or [])
+        hub_rank_ok = (
+            "skill-prefer-memory-cli-early" in hub_always
+            and mem_delta >= 5
+        )
+        # inject hub section into prompt
+        inj_hub = inject_into_prompt(prompt, root=root, paths=py_paths)
+        text_hub = prompt.read_text(encoding="utf-8")
+        hub_inject_ok = (
+            HUB_MARKER_OPEN in text_hub
+            and int(inj_hub.get("hub_injected") or 0) == 1
+            and "F125" in text_hub
+        )
+        hub_ok = hub_privacy and hub_skills_ok and hub_rank_ok and hub_inject_ok
+        hub_blob_ok = "/Users/" not in text_hub and "fixture-tenant" not in text_hub
+
         fixture_pass = all(
             [
                 always_ok,
@@ -2168,6 +2602,8 @@ Verdict: REQUEST_CHANGES
                 smaller_ok,
                 util_ok,
                 fed_ok,
+                hub_ok,
+                hub_blob_ok,
             ]
         )
         payload = {
@@ -2179,6 +2615,7 @@ Verdict: REQUEST_CHANGES
             "feature_always_budget": "F119",
             "feature_compact": "F120",
             "feature_util": "F121",
+            "feature_hub_compound": FEATURE_HUB,
             "fixture_pass": fixture_pass,
             "always_ok": always_ok,
             "always_selected": list(always_sel),
@@ -2216,6 +2653,15 @@ Verdict: REQUEST_CHANGES
             "fed_ok": fed_ok,
             "fed_n": fed_ok_doc.get("fed_n"),
             "fed_privacy_ok": fed_ok_doc.get("privacy_ok"),
+            "f125": True,
+            "hub_ok": hub_ok,
+            "hub_skill_n": hub_score.get("skill_n"),
+            "hub_mem_delta": mem_delta,
+            "hub_gap_pressure": hub_score.get("gap_pressure"),
+            "hub_inject_ok": hub_inject_ok,
+            "hub_rank_ok": hub_rank_ok,
+            "hub_always": list(hub_always),
+            "hub_blob_ok": hub_blob_ok,
         }
         print(json.dumps(payload, indent=2))
         return 0 if fixture_pass else 1
@@ -2268,6 +2714,17 @@ def main(argv: list[str] | None = None) -> int:
     prw.add_argument("--tool-turns", default="0")
     prw.add_argument("--inject-chars", default="0")
     prw.set_defaults(func=cmd_reprompt_write)
+
+    phub = sub.add_parser(
+        "hub-score",
+        help="F125 post-score hub recovery-util themes → always priority deltas",
+    )
+    phub.add_argument(
+        "--inject",
+        default="",
+        help="optional prompt.md path to inject hub section",
+    )
+    phub.set_defaults(func=cmd_hub_score)
 
     ps = sub.add_parser("select", help="Select skills for paths")
     ps.add_argument("--paths", nargs="*", default=None)

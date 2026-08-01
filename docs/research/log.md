@@ -1,5 +1,38 @@
 # Torii research → product log
 
+## 2026-08-01 — F125 hub recovery-util post-score compound
+
+### Papers / posts
+- **FederatedSkill** (arXiv 2606.03143): multi-tenant skill themes compound only when consumed into policy.
+- **HASP** (arXiv 2605.17734): skills as state-action interventions — hub scores must change next-loop always priority.
+- **MMG2Skill**: attempt/skill budget + early analyzer — util bins guide which recovery skills keep always slots.
+- Loop-eng readiness: measure → feedback; write-only federation is theater.
+
+### OSS design patterns stolen
+1. post_score_recovery_hub: skill_id → priority_delta from multi-tenant hits/tool_hits.
+2. select_skills always rank uses effective priority (base + hub Δ).
+3. inject `<!-- torii-f125-recovery-hub -->` + recovery-hub-score.json artifact.
+4. run-torii-review stage recovery_hub_score; save-trace archives hub score.
+
+### Insight
+F124 federated recovery util themes but next run ignored them. Highest ROI: close the compound loop — hub post-score → always budget + prompt inject so multi-tenant tool hits rank recovery skills under SkillReducer caps.
+
+### Feature shipped (F125)
+- `skill_router.py` hub-score / post_score_recovery_hub / inject_recovery_hub
+- always priority compound + residual score bump for deferred hub hits
+- skill_loop_status recovery_hub stage; PRODUCT mental model; research note
+- traces `f125-recovery-hub-compound/`
+
+### Metric
+- Offline: fixture hub_ok privacy; mem Δprio≥5; hub inject; pytest targeted pass
+- Live: Modal pytorch e2e POST_COMMENT=0 (see fire status)
+
+### Loop-engineering / Hermes practice used
+**Measure → feedback path** — federated util is not write-only; doctor/scorecard surfaces hub wire.
+
+### SHA
+`PENDING`
+
 
 ## 2026-08-01 — F124 recovery util federate + doctor recovery_ok
 

@@ -1,0 +1,36 @@
+{
+  "feature": "F125",
+  "schema": 1,
+  "enabled": true,
+  "signals_n": 4,
+  "skill_n": 2,
+  "skills": {
+    "skill-prefer-memory-cli-early": {
+      "skill_id": "skill-prefer-memory-cli-early",
+      "hits": 5,
+      "tenants": 2,
+      "tool_hits": 1,
+      "priority_delta": 34,
+      "util_rate_bin": "hit"
+    },
+    "skill-prefer-product-cli": {
+      "skill_id": "skill-prefer-product-cli",
+      "hits": 1,
+      "tenants": 1,
+      "tool_hits": 0,
+      "priority_delta": 15,
+      "util_rate_bin": "hit"
+    }
+  },
+  "priority_deltas": {
+    "skill-prefer-memory-cli-early": 34,
+    "skill-prefer-product-cli": 15
+  },
+  "gap_hits": 3,
+  "ok_hits": 6,
+  "gap_tenants": 1,
+  "ok_tenants": 2,
+  "gap_pressure": 0.3333,
+  "privacy_ok": true,
+  "hub_ok": true
+}

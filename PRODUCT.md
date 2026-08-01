@@ -166,6 +166,8 @@ budget always → compact body → score tool_hit → util gap? → budgeted re-
 
 **Federate + doctor (F124):** privacy-safe recovery util themes (skill id + util bins + tenant hash only) federate to the hub; `torii.py doctor` fails closed unless recovery skills are active (`recovery_ok`).
 
+**Hub recovery compound (F125):** federated recovery-util themes are post-scored into always-priority deltas and a privacy-safe prompt section (`hub-score` / inject) so multi-tenant tool hits compound into the next run's recovery skill budget — not write-only federation.
+
 **Ops:** `python3 scripts/memory_loop_status.py scorecard` → L0–L3. Smoke requires L3 on the hub tree. CI job summary annotates readiness; optional advisory `torii/memory-loop` via `TORII_MEMORY_LOOP_STATUS_COMMIT=1`.
 
 ---

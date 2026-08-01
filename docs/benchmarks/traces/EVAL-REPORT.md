@@ -1,14 +1,14 @@
 # Torii eval-trace report (F83)
 
-Generated: `2026-08-01T06:12:11Z`
+Generated: `2026-08-01T06:37:18Z`
 
 ## Aggregate
 
-- runs: **50** (modal=35, local=15)
+- runs: **54** (modal=35, local=19)
 - log_streaming true: **4**
 - fitness composite n=8
 - composite mean/median/min/max: **0.842** / 0.8494 / 0.77 / 0.8694
-- levels: `{"L2": 4, "L3": 4, "modal-f80-live": 1, "modal-f81-llm-critic": 1, "modal-f82-skills": 1, "modal-f83-pack-eval": 1, "\u2014": 38}`
+- levels: `{"L2": 4, "L3": 4, "modal-f80-live": 1, "modal-f81-llm-critic": 1, "modal-f82-skills": 1, "modal-f83-pack-eval": 1, "\u2014": 42}`
 - models: `deepseek/deepseek-v4-pro`, `fixture`
 
 ## Runs
@@ -65,6 +65,10 @@ Generated: `2026-08-01T06:12:11Z`
 | — | local | — | — | `—` | — | — | — | `f119-always-budget` |
 | — | local | — | — | `—` | — | — | — | `f120-skill-compact` |
 | — | local | — | — | `—` | — | — | — | `f121-recovery-util` |
+| — | local | — | — | `—` | — | — | — | `f122-recovery-reprompt` |
+| — | local | — | — | `—` | — | — | — | `f123-recovery-loop-packaging` |
+| — | local | — | — | `—` | — | — | — | `f124-recovery-util-federate` |
+| — | local | — | — | `deepseek/deepseek-v4-pro` | — | — | F125 | `f125-recovery-hub-compound` |
 
 ## Notes
 

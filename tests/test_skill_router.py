@@ -376,6 +376,69 @@ class SkillRouterTests(unittest.TestCase):
             self.assertNotIn("/Users/", blob)
             self.assertNotIn("tenant-z", blob)
 
+    def test_f125_hub_score_compound(self):
+        """F125: hub post-score yields priority deltas + privacy-safe inject."""
+        with tempfile.TemporaryDirectory() as td:
+            root = Path(td)
+            fed = root / "memory" / "federation"
+            fed.mkdir(parents=True)
+            (fed / "recovery-util-signals.json").write_text(
+                json.dumps(
+                    {
+                        "schema_version": 1,
+                        "feature": "F124",
+                        "signals": [
+                            {
+                                "id": "recovery-util-hit-skill-prefer-memory-cli-early",
+                                "theme": "skill-prefer-memory-cli-early",
+                                "tags": ["recovery_util", "tool_outcome", "f124"],
+                                "keywords": ["prefer-memory-cli-early", "recovery-util"],
+                                "hits": 3,
+                                "tool_hits": 3,
+                                "tenants": 2,
+                                "tenant_hashes": ["aaa", "bbb"],
+                                "util_rate_bin": "hit",
+                                "source": "recovery_skill_util",
+                            },
+                            {
+                                "id": "recovery-util-gap",
+                                "theme": "recovery-util-gap",
+                                "tags": ["recovery_util", "utilization_gap"],
+                                "hits": 1,
+                                "util_rate_bin": "gap",
+                                "source": "recovery_skill_util",
+                            },
+                        ],
+                    }
+                )
+                + "\n",
+                encoding="utf-8",
+            )
+            prompt = root / "prompt.md"
+            prompt.write_text("## PR metadata\nrepo: t\n", encoding="utf-8")
+            env = {
+                **os.environ,
+                "TORII_ROOT": str(root),
+                "TORII_RECOVERY_HUB_COMPOUND": "1",
+                "OUT_DIR": str(root / "out"),
+            }
+            (root / "out").mkdir(exist_ok=True)
+            r = _run(["hub-score", "--inject", str(prompt)], env=env)
+            self.assertEqual(r.returncode, 0, r.stderr + r.stdout)
+            data = json.loads(r.stdout)
+            self.assertEqual(data.get("feature"), "F125")
+            self.assertTrue(data.get("privacy_ok"), data)
+            self.assertGreaterEqual(int(data.get("skill_n") or 0), 1)
+            deltas = data.get("priority_deltas") or {}
+            self.assertIn("skill-prefer-memory-cli-early", deltas)
+            self.assertGreaterEqual(int(deltas["skill-prefer-memory-cli-early"]), 5)
+            text = prompt.read_text(encoding="utf-8")
+            self.assertIn("torii-f125-recovery-hub", text)
+            self.assertIn("skill-prefer-memory-cli-early", text)
+            self.assertNotIn("/Users/", text)
+            blob = json.dumps(data)
+            self.assertNotIn("/Users/", blob)
+
 
 if __name__ == "__main__":
     unittest.main()

@@ -1,0 +1,18 @@
+{
+  "feature": "F91",
+  "feature_recovery": "F125",
+  "level": "L3",
+  "pct": 100.0,
+  "ready": true,
+  "stages_ok": "10/10",
+  "skills_n": 9,
+  "recovery_ok": true,
+  "recovery_active": [
+    "skill-prefer-memory-cli-early",
+    "skill-prefer-product-cli",
+    "skill-prefer-critic-early"
+  ],
+  "wiring_ok": true,
+  "deep_ok": true,
+  "loop": "route \u2192 hit \u2192 fitness \u2192 dual \u2192 attr \u2192 inject \u2192 util \u2192 re-prompt \u2192 hub compound"
+}

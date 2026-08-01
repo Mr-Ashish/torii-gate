@@ -90,6 +90,8 @@ copy_if "$OUT_DIR/recovery-util-signals.json" "$TRACE_DIR/recovery-util-signals.
 if [[ -f "$TORII_ROOT/memory/federation/recovery-util-signals.json" ]]; then
   copy_if "$TORII_ROOT/memory/federation/recovery-util-signals.json" "$TRACE_DIR/recovery-util-signals.fed.json"
 fi
+# F125: hub recovery-util post-score → always priority compound
+copy_if "$OUT_DIR/recovery-hub-score.json" "$TRACE_DIR/recovery-hub-score.json"
 copy_if "$OUT_DIR/memory-tool-reprompt.env" "$TRACE_DIR/memory-tool-reprompt.env"
 copy_if "$OUT_DIR/memory-tool-audit.json" "$TRACE_DIR/memory-tool-audit.json"
 copy_if "$OUT_DIR/reprompt-budget.json" "$TRACE_DIR/reprompt-budget.json"

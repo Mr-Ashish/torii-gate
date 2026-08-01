@@ -2,12 +2,89 @@
   "schema_version": 1,
   "feature": "F77",
   "scope": "global",
-  "updated_at": "2026-08-01T00:46:07Z",
-  "count": 4,
+  "updated_at": "2026-08-01T06:37:45Z",
+  "count": 9,
   "privacy": "theme_cwe_keywords_basenames_tenant_hash_only",
   "privacy_ok": true,
   "privacy_issues": [],
   "signals": [
+    {
+      "id": "recovery-util-ok",
+      "theme": "recovery-util-ok",
+      "cwe": [],
+      "tags": [
+        "recovery_util",
+        "util_ok",
+        "f124",
+        "federated_skill"
+      ],
+      "keywords": [
+        "recovery-util-ok"
+      ],
+      "path_basenames": [],
+      "hits": 6,
+      "source": "recovery_skill_util",
+      "tenant_hashes": [
+        "e28384f7c5c5",
+        "40f9e71e83d3"
+      ],
+      "tenants": 2
+    },
+    {
+      "id": "recovery-util-hit-skill-prefer-memory-cli-early",
+      "theme": "skill-prefer-memory-cli-early",
+      "cwe": [],
+      "tags": [
+        "recovery_util",
+        "tool_outcome",
+        "f124",
+        "federated_skill"
+      ],
+      "keywords": [
+        "prefer-memory-cli-early",
+        "recovery-util",
+        "tool-hit"
+      ],
+      "path_basenames": [],
+      "hits": 5,
+      "source": "recovery_skill_util",
+      "tenant_hashes": [
+        "e28384f7c5c5",
+        "40f9e71e83d3"
+      ],
+      "tenants": 2
+    },
+    {
+      "id": "tp-797f66626140",
+      "theme": "sql_injection",
+      "cwe": [
+        "CWE-89"
+      ],
+      "tags": [
+        "integrity_gated",
+        "f107",
+        "compound",
+        "repo:demo/insecure"
+      ],
+      "keywords": [
+        "sql",
+        "injection",
+        "execute",
+        "sqlite",
+        "sqli-search",
+        "pickle-load",
+        "secret-exposure"
+      ],
+      "path_basenames": [
+        "app.py"
+      ],
+      "hits": 298,
+      "source": "f104_integrity_compound",
+      "tenant_hashes": [
+        "a04cf8718dc6"
+      ],
+      "tenants": 1
+    },
     {
       "id": "command_injection",
       "theme": "command_injection",
@@ -137,8 +214,50 @@
         "6b311f5edb4f"
       ],
       "tenants": 1
+    },
+    {
+      "id": "recovery-util-gap",
+      "theme": "recovery-util-gap",
+      "cwe": [],
+      "tags": [
+        "recovery_util",
+        "utilization_gap",
+        "f124",
+        "federated_skill"
+      ],
+      "keywords": [
+        "recovery-util-gap",
+        "idle-recovery"
+      ],
+      "path_basenames": [],
+      "hits": 4,
+      "source": "recovery_skill_util",
+      "tenants": 1
+    },
+    {
+      "id": "recovery-util-hit-skill-prefer-product-cli",
+      "theme": "skill-prefer-product-cli",
+      "cwe": [],
+      "tags": [
+        "recovery_util",
+        "tool_outcome",
+        "f124",
+        "federated_skill"
+      ],
+      "keywords": [
+        "prefer-product-cli",
+        "recovery-util",
+        "tool-hit"
+      ],
+      "path_basenames": [],
+      "hits": 1,
+      "source": "recovery_skill_util",
+      "tenant_hashes": [
+        "40f9e71e83d3"
+      ],
+      "tenants": 1
     }
   ],
-  "last_source_repo": "pytorch/pytorch",
-  "last_tenant_hash": "6b311f5edb4f"
+  "last_source_repo": "demo/insecure",
+  "last_tenant_hash": "a04cf8718dc6"
 }

@@ -98,6 +98,14 @@ LOOP_STAGES: list[dict[str, Any]] = [
         "script": "reprompt_budget.py",
         "one_liner": "Shared budget includes f122 recovery re-prompt kind",
     },
+    {
+        "id": "recovery_hub",
+        "feature": "F125",
+        "script": "skill_router.py",
+        "cmd": ["hub-score", "--help"],
+        "one_liner": "Hub recovery-util post-score → always priority compound",
+        "soft_cmd": True,
+    },
 ]
 
 
@@ -229,6 +237,15 @@ def assess(root: Path | None = None, *, deep: bool = True) -> dict[str, Any]:
         "run_recovery_util": "recovery_skill_util" in run_sh or "util --out-dir" in run_sh,
         "hermes_f122_reprompt": "F122" in hermes_sh or "recovery-skill-reprompt" in hermes_sh,
         "save_trace_recovery": "recovery-skill-util.json" in save_tr,
+        # F125: hub recovery post-score compound (router inject path + trace archive)
+        "save_trace_recovery_hub": "recovery-hub-score.json" in save_tr,
+        "router_hub_score_cmd": "hub-score" in (
+            (root / "scripts" / "skill_router.py").read_text(
+                encoding="utf-8", errors="replace"
+            )
+            if (root / "scripts" / "skill_router.py").is_file()
+            else ""
+        ),
     }
     wire_ok = all(wire.values())
 
@@ -277,13 +294,15 @@ def assess(root: Path | None = None, *, deep: bool = True) -> dict[str, Any]:
 
     return {
         "feature": FEATURE,
-        "feature_recovery": "F123",
+        "feature_recovery": "F125",
         "schema": SCHEMA,
-        "loop": "route → hit → fitness → dual → attr → inject → util → budgeted re-prompt",
+        "loop": "route → hit → fitness → dual → attr → inject → util → re-prompt → hub compound",
         "scored_at": _now(),
         "level": level,
         "recovery_active": recovery_active,
         "recovery_ok": recovery_ok,
+        "recovery_hub_ok": bool(wire.get("save_trace_recovery_hub"))
+        and bool(wire.get("router_hub_score_cmd")),
         "pct": pct,
         "points": points,
         "max_points": max_points,
