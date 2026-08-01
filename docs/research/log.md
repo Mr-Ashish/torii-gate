@@ -30,7 +30,7 @@ Partial EVAL packs become script archaeology when the loop extends. Highest ROI:
 **Package the full measured loop** — including decay demote.
 
 ### SHA
-`(pending)`
+`80fba253b256115464c19e5865fc7278e115c11d`
 
 
 ## 2026-08-01 — F173 multi-tenant decay hub critic + refine_loop_ok extend
