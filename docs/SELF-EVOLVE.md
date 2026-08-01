@@ -31,8 +31,14 @@ Telemetry is **local vault only** (never federated) — [`enterprise/PRIVACY.md`
 ## Operator path
 
 ```bash
-# Status of trajectories / proposals / active skills
+# Day-2 readiness (JSON: active / pending / dual_gate_safe — no research IDs)
 python3 scripts/torii.py self-evolve -- status
+
+# Human ledger dump
+python3 scripts/self_evolve.py status --text
+
+# Day-2 one screen includes self-evolution
+python3 scripts/torii.py status --text
 
 # Offline hermetic fixture (CI-friendly)
 python3 scripts/torii.py self-evolve -- fixture
@@ -46,7 +52,7 @@ python3 scripts/skill_auto_adopt.py cycle-scorecard
 
 | Command | Use when |
 |---------|----------|
-| `status` | See ledger + active skills after dogfood |
+| `status` | Buyer JSON readiness after dogfood (`--text` for full ledger) |
 | `fixture` | Prove mine/score wiring offline |
 | `propose-scorecard` | Brand/ops metrics show a gap |
 | `refine-from-util` | Advanced: GEPA-lite body tweak from util traces (optional) |

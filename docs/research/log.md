@@ -5109,3 +5109,30 @@ GTM path compounds measured dogfood into pilot readiness — not a fake logo wal
 
 ### SHA
 `03c1baa254881d504b3d1bcdd9356faae2771822`
+
+## 2026-08-01 — SELF_EVOLVE_DAY2 buyer status without F-IDs
+
+### Papers / posts
+- Hermes self-evolution: measured adopt under gates, not free-form prompt drift.
+- Loop Engineering: surface readiness on the product CLI operators already open.
+- Buyer packaging: advanced ledger dumps hide day-2 value.
+
+### Insight
+self_evolve status was text-only engineer dump — day-2 status could not soft-peek JSON. Highest ROI: buyer JSON (dual_gate_safe · active/pending) + Day-2 CLI tier + status --text row without research IDs.
+
+### Feature shipped (SELF_EVOLVE_DAY2)
+- build_status_payload + JSON default status (--text for ledger)
+- self-evolve group tier=day2
+- torii status peeks self_evolve_ok / active / pending / dual_gate_safe
+- SELF-EVOLVE.md + PRODUCT day-2 path
+- SCORECARD-FIRST-PRINCIPLES dim 6 lift
+
+### Loop-engineering
+Self-evolution compounds only when operators can see dual-gate safety on the day-2 screen.
+
+### Metric
+- self_evolve_ok=True dual_gate_safe=True active>=1
+- Live Modal pytorch e2e this fire
+
+### SHA
+`PENDING_PUSH`

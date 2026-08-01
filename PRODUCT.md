@@ -74,7 +74,7 @@ Install path: [`docs/GOLDEN-PATH.md`](docs/GOLDEN-PATH.md) · metrics: [`docs/be
 
 **Federation (buyer JTBD):** privacy-safe multi-tenant heat compounds quieter gates → [`docs/FEDERATION.md`](docs/FEDERATION.md) · `python3 scripts/torii.py federation -- status`.
 
-**Self-evolution (day-2):** measured skill proposals + dual-gate adopt (not free-form drift) → [`docs/SELF-EVOLVE.md`](docs/SELF-EVOLVE.md) · `python3 scripts/torii.py self-evolve -- status`.
+**Self-evolution (day-2):** measured skill proposals + dual-gate adopt (not free-form drift) → [`docs/SELF-EVOLVE.md`](docs/SELF-EVOLVE.md) · `python3 scripts/torii.py self-evolve -- status` · shown on `status --text` (active/pending/dual_gate_safe).
 
 **Compound memory:** FP die twice · TP stay sharp (path-evidenced write, tiers, scoped recall) → [`docs/MEMORY.md`](docs/MEMORY.md) · `python3 scripts/torii.py memory -- doctor`.
 

@@ -1985,27 +1985,96 @@ def cmd_nudge_text(args: argparse.Namespace) -> int:
     return 0
 
 
+def build_status_payload(root: Path | None = None) -> dict[str, Any]:
+    """Buyer day-2 self-evolution status (no research F-IDs on the one-liner)."""
+    root = root or _root()
+    ledger = _load_ledger(root)
+    active = _active_skills(root)
+    trajs = list(ledger.get("trajectories") or [])
+    props = list(ledger.get("proposals") or [])
+    adopted = list(ledger.get("adopted") or [])
+    pending = [
+        p
+        for p in props
+        if str(p.get("status") or "").lower()
+        in {"proposal", "proposed", "pending", "eval", ""}
+    ]
+    adopted_status = [
+        p for p in props if str(p.get("status") or "").lower() in {"adopted", "active"}
+    ]
+    # Dual-gate discipline: default auto-adopt off; skills only land when gates pass
+    auto_adopt = (os.environ.get("TORII_SELF_EVOLVE_AUTO_ADOPT") or "0").strip() == "1"
+    dual_gate_default_safe = not auto_adopt
+    docs_ok = (root / "docs" / "SELF-EVOLVE.md").is_file()
+    # Readiness: ledger + active skills + docs + safe default
+    self_evolve_ok = (
+        docs_ok
+        and len(active) >= 1
+        and dual_gate_default_safe
+        and (len(trajs) >= 1 or len(adopted) >= 1 or len(active) >= 3)
+    )
+    active_names = [s.name for s in active]
+    # Prefer non-research skill names for buyer display (drop skill-fNN- prefix noise in summary)
+    buyer_skills = [
+        n.replace(".md", "")
+        for n in active_names
+        if not re.match(r"skill-f\d+", n, re.I)
+    ][:8]
+    return {
+        "feature": "SELF_EVOLVE",
+        "self_evolve_ok": self_evolve_ok,
+        "dual_gate_default_safe": dual_gate_default_safe,
+        "auto_adopt_enabled": auto_adopt,
+        "docs_ok": docs_ok,
+        "trajectories_n": len(trajs),
+        "proposals_n": len(props),
+        "pending_proposals_n": len(pending),
+        "adopted_ledger_n": len(adopted),
+        "adopted_proposals_n": len(adopted_status),
+        "active_skills_n": len(active),
+        "active_skills": active_names,
+        "buyer_skills": buyer_skills,
+        "evolution_root": str(_evo_root(root)),
+        "scorecard_target": "self-evolution / JTBD (dims 6 + 3)",
+        "dim_lift": "measured skill adopt without free-form prompt drift",
+        "one_liner": (
+            "Skills measure in under dual-gate adopt — not free-form drift "
+            f"(active={len(active)} · pending={len(pending)} · "
+            f"safe_default={dual_gate_default_safe})"
+        ),
+        "at": _now(),
+    }
+
+
 def cmd_status(args: argparse.Namespace) -> int:
     root = _root()
-    ledger = _load_ledger(root)
-    print(f"evolution_root={_evo_root(root)}")
-    print(f"trajectories={len(ledger.get('trajectories') or [])}")
-    print(f"proposals={len(ledger.get('proposals') or [])}")
-    print(f"adopted_ledger={len(ledger.get('adopted') or [])}")
-    print(f"active_skills={len(_active_skills(root))}")
-    for t in (ledger.get("trajectories") or [])[-5:]:
-        print(
-            f"  [traj] {t.get('trajectory_id')} tools={t.get('tool_call_turns')} "
-            f"signals={t.get('signals')}"
-        )
-    for p in ledger.get("proposals") or []:
-        rec = (p.get("eval") or {}).get("recommend", "-")
-        print(f"  [prop] {p.get('id')} status={p.get('status')} recommend={rec}")
-    for a in ledger.get("adopted") or []:
-        print(f"  [adopted] {a.get('id')} path={a.get('path')}")
-    for s in _active_skills(root):
-        print(f"  [active] {s.name}")
-    return 0
+    payload = build_status_payload(root)
+    if bool(getattr(args, "text", False)):
+        ledger = _load_ledger(root)
+        print(f"evolution_root={payload.get('evolution_root')}")
+        print(f"self_evolve_ok={payload.get('self_evolve_ok')}")
+        print(f"trajectories={payload.get('trajectories_n')}")
+        print(f"proposals={payload.get('proposals_n')}")
+        print(f"pending={payload.get('pending_proposals_n')}")
+        print(f"adopted_ledger={payload.get('adopted_ledger_n')}")
+        print(f"active_skills={payload.get('active_skills_n')}")
+        print(f"dual_gate_default_safe={payload.get('dual_gate_default_safe')}")
+        print(str(payload.get("one_liner") or ""))
+        for t in (ledger.get("trajectories") or [])[-5:]:
+            print(
+                f"  [traj] {t.get('trajectory_id')} tools={t.get('tool_call_turns')} "
+                f"signals={t.get('signals')}"
+            )
+        for p in ledger.get("proposals") or []:
+            rec = (p.get("eval") or {}).get("recommend", "-")
+            print(f"  [prop] {p.get('id')} status={p.get('status')} recommend={rec}")
+        for a in ledger.get("adopted") or []:
+            print(f"  [adopted] {a.get('id')} path={a.get('path')}")
+        for s in _active_skills(root):
+            print(f"  [active] {s.name}")
+        return 0 if payload.get("self_evolve_ok") else 1
+    print(json.dumps(payload, indent=2))
+    return 0 if payload.get("self_evolve_ok") else 1
 
 
 def cmd_mine_probes(args: argparse.Namespace) -> int:
@@ -2306,7 +2375,16 @@ def main(argv: list[str] | None = None) -> int:
     sub.add_parser("nudge-text", help="Print H10 soft nudge if warranted").set_defaults(
         func=cmd_nudge_text
     )
-    sub.add_parser("status", help="Ledger + active skills").set_defaults(func=cmd_status)
+    pst = sub.add_parser(
+        "status",
+        help="Day-2 self-evolution readiness (JSON; --text for ledger dump)",
+    )
+    pst.add_argument(
+        "--text",
+        action="store_true",
+        help="Human ledger dump (default: buyer JSON for torii.py soft peeks)",
+    )
+    pst.set_defaults(func=cmd_status)
     sub.add_parser("fixture", help="F117 hermetic mine+score fixture").set_defaults(
         func=cmd_fixture
     )

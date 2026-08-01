@@ -179,8 +179,8 @@ GROUPS: dict[str, dict[str, Any]] = {
     },
     "self-evolve": {
         "script": "self_evolve.py",
-        "help": "Self-evolution: propose/adopt skills from run evidence",
-        "tier": "advanced",
+        "help": "Self-evolution: dual-gated skill adopt (not free-form drift)",
+        "tier": "day2",
         "examples": [
             "self-evolve -- status",
             "self-evolve -- fixture",
@@ -243,7 +243,7 @@ GROUPS: dict[str, dict[str, Any]] = {
 _TIER_ORDER = ("day1", "day2", "advanced")
 _TIER_LABELS = {
     "day1": "Day-1 — install → first signal",
-    "day2": "Day-2 — quieter · cost · enterprise · pilot",
+    "day2": "Day-2 — quieter · cost · enterprise · pilot · self-evolve",
     "advanced": "Advanced — engineers (still one CLI)",
 }
 
@@ -292,7 +292,7 @@ def help_payload() -> dict[str, Any]:
         "entrypoint": "python3 scripts/torii.py",
         "one_liner": (
             "One product front door for Torii Gate — Day-1 install path first; "
-            "Day-2 quieter/cost/enterprise/pilot; Advanced for engineers."
+            "Day-2 quieter/cost/enterprise/pilot/self-evolve; Advanced for engineers."
         ),
         "usage": "python3 scripts/torii.py <group|help|status|doctor> [-- <args>]",
         "groups": groups,
@@ -509,6 +509,14 @@ def build_status_payload(root: Path | None = None) -> dict[str, Any]:
         day2["pilot_readiness_ok"] = pilot.get("readiness_ok")
         day2["pilot_ready_n"] = pilot.get("ready_n")
         day2["pilot_ready_total"] = pilot.get("ready_total")
+    # Self-evolution day-2 (dual-gate adopt — buyer language, no F-IDs)
+    sev = _soft_script_json(root, "self_evolve.py", ["status"], timeout=30)
+    if sev:
+        day2["self_evolve_ok"] = sev.get("self_evolve_ok")
+        day2["self_evolve_active_n"] = sev.get("active_skills_n")
+        day2["self_evolve_pending_n"] = sev.get("pending_proposals_n")
+        day2["self_evolve_dual_gate_safe"] = sev.get("dual_gate_default_safe")
+        day2["self_evolve_one_liner"] = sev.get("one_liner")
     # Model alias SoT present
     day2["model_alias_script"] = (_scripts_dir(root) / "model_alias.py").is_file()
     # Public eval freshness (soft) — normalize model id for display honesty
@@ -544,7 +552,7 @@ def build_status_payload(root: Path | None = None) -> dict[str, Any]:
         "day2": day2,
         "one_liner": (
             "Day-2 one screen: commercial · cost/PR · cert · quieter · tool-use · "
-            "fail-closed · enterprise · pilot · require torii/gate."
+            "fail-closed · enterprise · pilot · self-evolve · require torii/gate."
         ),
         "scored_at": _now(),
     }
@@ -627,6 +635,14 @@ def render_status_text(payload: dict[str, Any]) -> str:
                 f"readiness={day2.get('pilot_readiness_ok')} ({ratio}) · "
                 f"docs/PILOT.md · pre-revenue honest"
             )
+        if day2.get("self_evolve_ok") is not None:
+            lines.append(
+                f"- self-evolution: ok={day2.get('self_evolve_ok')} · "
+                f"active={day2.get('self_evolve_active_n')} · "
+                f"pending={day2.get('self_evolve_pending_n')} · "
+                f"dual_gate_safe={day2.get('self_evolve_dual_gate_safe')} "
+                f"(measured adopt · not free-form drift)"
+            )
     else:
         lines.append("- _(soft day-2 peeks unavailable — run doctor / commercial -- fixture)_")
 
@@ -644,6 +660,7 @@ def render_status_text(payload: dict[str, Any]) -> str:
         "- `python3 scripts/torii.py doctor` · `ops -- status` · `tool-use -- status`",
         "- `python3 scripts/torii.py quieter -- status` · `enterprise -- status`",
         "- Design partner: `pilot -- readiness` · docs/PILOT.md · Pages: https://mr-ashish.github.io/torii-gate/",
+        "- Self-evolve: `self-evolve -- status` · docs/SELF-EVOLVE.md",
         "- JSON: `python3 scripts/torii.py status --json`",
         "",
         str(payload.get("one_liner") or ""),
