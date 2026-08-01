@@ -1,0 +1,26 @@
+{
+  "feature": "F82",
+  "feature_tool": "F118",
+  "f118": true,
+  "fixture_pass": true,
+  "good_recommend": "adopt",
+  "bad_recommend": "reject",
+  "candidates": [
+    "skill-f74-path-evidence"
+  ],
+  "adopt_ok": true,
+  "active": [
+    "skill-f74-path-evidence.md"
+  ],
+  "bad_active": false,
+  "f118_free_without_tools": true,
+  "f118_tool_attr_ok": true,
+  "f118_adopt_ok": true,
+  "f118_prod_active": true,
+  "f118_attr": {
+    "tool_hit": true,
+    "contribution": 1.5,
+    "free_rider": false,
+    "feature_tool": "F118"
+  }
+}

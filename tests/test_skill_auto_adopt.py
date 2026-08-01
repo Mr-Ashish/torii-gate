@@ -40,6 +40,11 @@ class SkillAutoAdoptTests(unittest.TestCase):
         self.assertEqual(data["good_recommend"], "adopt")
         self.assertEqual(data["bad_recommend"], "reject")
         self.assertFalse(data["bad_active"])
+        # F118 tool-aware product-cli adopt
+        self.assertEqual(data.get("feature_tool"), "F118")
+        self.assertTrue(data.get("f118_tool_attr_ok"), data)
+        self.assertTrue(data.get("f118_free_without_tools"), data)
+        self.assertTrue(data.get("f118_prod_active"), data)
 
     def test_status(self):
         r = _run(["status"])
@@ -91,6 +96,21 @@ class SkillAutoAdoptTests(unittest.TestCase):
         data = json.loads(r.stdout)
         ids = [c["id"] for c in (data.get("candidates") or []) if isinstance(c, dict)]
         self.assertNotIn("skill-prefer-memory-cli-early", ids)
+
+    def test_f118_product_cli_skill_active(self):
+        """F118: tool-attr dual-gate adopted prefer-product-cli into active/."""
+        active = ROOT / "agent" / "skills" / "active" / "skill-prefer-product-cli.md"
+        self.assertTrue(active.is_file(), "expected F118 dual-gate adopt of product-cli skill")
+        body = active.read_text(encoding="utf-8")
+        self.assertIn("status: adopted", body)
+        self.assertIn("torii.py doctor", body)
+        self.assertTrue("F118" in body or "F117" in body)
+        critic = ROOT / "agent" / "skills" / "active" / "skill-prefer-critic-early.md"
+        self.assertTrue(critic.is_file(), "expected F118 adopt of critic-early skill")
+        r = _run(["candidates"])
+        data = json.loads(r.stdout)
+        ids = [c["id"] for c in (data.get("candidates") or []) if isinstance(c, dict)]
+        self.assertNotIn("skill-prefer-product-cli", ids)
 
 
 if __name__ == "__main__":

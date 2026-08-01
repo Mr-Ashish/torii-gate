@@ -145,6 +145,17 @@ TOOL_OUTCOME_PROBES: dict[str, list[re.Pattern[str]]] = {
         re.compile(r"archival_memory_search\.py\b", re.I),
         re.compile(r"memory_temporal_graph\.py\b", re.I),
     ],
+    # F118: F117 product/critic skills — baseline probes (also mined into durable ledger)
+    "skill-prefer-product-cli": [
+        re.compile(r"torii\.py\s+doctor\b", re.I),
+        re.compile(r"torii\.py\s+status\b", re.I),
+        re.compile(r"torii\.py\s+budget\b", re.I),
+    ],
+    "skill-prefer-critic-early": [
+        re.compile(r"second_agent_critic\.py\b", re.I),
+        re.compile(r"chain_revalidate\.py\b", re.I),
+        re.compile(r"llm_critic\.py\b", re.I),
+    ],
     "skill-tool-depth-hunks": [
         re.compile(r"\brg\s+-n\b", re.I),
         re.compile(r"\bsed\s+-n\b", re.I),

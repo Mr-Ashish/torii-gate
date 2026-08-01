@@ -1,0 +1,27 @@
+{
+  "feature": "F117",
+  "fixture_pass": true,
+  "observed_n": 3,
+  "observed_skills": [
+    "skill-prefer-critic-early",
+    "skill-prefer-memory-cli-early",
+    "skill-prefer-product-cli"
+  ],
+  "product_patterns": [
+    "torii\\.py\\s+doctor\\b"
+  ],
+  "critic_patterns": [
+    "second_agent_critic\\.py\\b"
+  ],
+  "mem_patterns": [
+    "torii\\.py\\s+memory\\b"
+  ],
+  "match_ok": true,
+  "prop_product": true,
+  "prop_critic": true,
+  "privacy_ok": true,
+  "proposed": [
+    "skill-prefer-product-cli",
+    "skill-prefer-critic-early"
+  ]
+}

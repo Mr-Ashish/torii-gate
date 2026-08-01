@@ -132,6 +132,8 @@ compound → write → consolidate → effective_critic → federate → scoped_
 
 **Tool-probe self-evolve (F117):** allowlisted CLI patterns observed mid-review are mined into `.torii/tool-outcome-probes.json` (merged by F114 scoring) and can propose `skill-prefer-product-cli` / `skill-prefer-critic-early` — no free-form regex from logs.
 
+**Tool dual-gate adopt (F118):** F117 product-cli/critic proposals adopt only when tool-aware attribution (synthetic allowlisted tool_blob) proves contribution — free-riders without tools stay proposals; active skills ship after dual+attr gates.
+
 **Ops:** `python3 scripts/memory_loop_status.py scorecard` → L0–L3. Smoke requires L3 on the hub tree. CI job summary annotates readiness; optional advisory `torii/memory-loop` via `TORII_MEMORY_LOOP_STATUS_COMMIT=1`.
 
 ---

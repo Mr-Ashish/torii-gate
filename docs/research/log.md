@@ -1,6 +1,38 @@
 # Torii research → product log
 
 
+## 2026-08-01 — F118 tool-aware dual-gate adopt of F117 product-cli/critic skills
+
+### Papers / posts
+- SkillsBench dual-rollout: contribution_pp > 0 before ship.
+- F88 LOO free-rider gate; F115 tool credit required for tool-only skills.
+- F117 mine/propose product-cli/critic — proposals blocked by prose-only attr.
+- Loop-eng: default REJECT until verifier evidence.
+
+### OSS design patterns stolen
+1. Static TOOL_OUTCOME_PROBES for product-cli + critic-early (F118 baseline).
+2. Synthetic allowlisted tool_blob per skill-prefer-* in adopt attribution.
+3. free_without tools vs tool_attr_ok proof in auto-adopt fixture.
+4. Smoke step 10: F117 mine fixture + F118 adopt fixture + active product-cli.
+
+### Insight
+Proposals without tool-aware adopt gates never leave `proposals/`. Highest ROI: dual-gate with synthetic tool transcripts so doctor/status/critic skills ship like F113 memory-cli.
+
+### Feature shipped (F118)
+- `skill_auto_adopt.py` tool-attr gate + F118 fixture; active product-cli/critic skills
+- `skill_router.py` static probes for product-cli/critic
+- smoke-torii-gate.sh [10/10]; PRODUCT + research note
+- traces `docs/benchmarks/traces/f118-tool-dual-gate-adopt/`
+
+### Metric
+- Offline: adopt fixture free_without + tool_attr_ok + prod_active; smoke PASS
+- pytest 597; Modal pytorch#191813 BIT3_OK ~62s log_streaming=true POST_COMMENT=0
+
+### Loop-engineering / Hermes practice used
+**Verifier dual-gate before active skill merge** — tool evidence required.
+
+### SHA
+`d0522ca14d5d91b1bd26fb7325cb3c3ce0ee0273`
 ## 2026-08-01 — F117 tool-probe self-evolve (allowlisted mine + propose)
 
 ### Papers / posts

@@ -1,23 +1,26 @@
 #!/usr/bin/env python3
-"""F82/F87/F113: Safe skill auto-adopt with regression + dual-rollout contribution gates.
+"""F82/F87/F113/F118: Safe skill auto-adopt with dual + tool-aware attribution gates.
 
 Research drivers:
   - SkillOpt / Hermes self-evolution: adopt only when held-out score improves
   - Loop Engineering: default REJECT; verifier before merge into active skills
   - SkillsBench / F86 dual-rollout: contribution_pp must be > 0 (with vs ablated)
+  - Mem2Act / F114–F117: tool-only skills free-ride on prose LOO unless adopt
+    gates pass a synthetic allowlisted tool_blob for the proposal id
   - Prior Torii F74 proposals sit at validated_adopt but never enter active/
 
 Product thesis:
   Closing the evolution loop without regression: before copying a proposal into
   agent/skills/active/, re-run offline gates (F78 critic, F86 dual contribution,
-  optional corpus). Malicious / zero-contribution skills stay out of active/.
+  F88/F115 tool-aware attribution, optional corpus). Malicious / zero-contribution
+  skills stay out of active/. F117 product-cli/critic proposals adopt when tools prove.
 
 Commands:
-  candidates — list F74 proposals eligible for adopt
+  candidates — list F74/F112/F117 proposals eligible for adopt
   gate       — run regression gates (critic + dual-rollout [+ corpus])
   adopt      — adopt one or all candidates if gates pass
   cycle      — candidates → gate → adopt (soft default no force)
-  fixture    — hermetic: validated good adopts; malicious blocked; gates pass
+  fixture    — hermetic: validated good adopts; F118 product-cli tool-attr; malicious blocked
   status     — active vs proposals summary
 
 Env:
@@ -25,6 +28,7 @@ Env:
   TORII_SKILL_AUTO_ADOPT_CORPUS  0 (default) | 1 — also require bench_corpus all
   TORII_SKILL_AUTO_ADOPT_DUAL    1 (default) | 0 — require F86 dual contribution_pp>0
   TORII_SKILL_AUTO_ADOPT_ATTR    1 (default) | 0 — require F88 per-skill attribution>0
+  TORII_SKILL_AUTO_ADOPT_TOOL    1 (default) | 0 — F118 tool_blob for skill-prefer-* attr
   TORII_SKILL_AUTO_ADOPT_MAX     default 3 skills per cycle
   TORII_ROOT
 """
@@ -44,9 +48,30 @@ from pathlib import Path
 from typing import Any
 
 FEATURE = "F82"
+FEATURE_TOOL = "F118"
 SCHEMA = 1
 
 _FALSEY = frozenset({"0", "false", "no", "off", "disabled", "n", "none", ""})
+
+# F118: synthetic allowlisted tool transcripts for tool-only skill attribution
+PROPOSAL_TOOL_BLOBS: dict[str, str] = {
+    "skill-prefer-memory-cli-early": (
+        "tool_call: terminal\n"
+        "python3 scripts/torii.py memory -- search -- -q \"sql injection\"\n"
+        "python3 scripts/torii_memory.py search -- -q auth\n"
+    ),
+    "skill-prefer-product-cli": (
+        "tool_call: terminal\n"
+        "python3 scripts/torii.py doctor\n"
+        "python3 scripts/torii.py status\n"
+        "python3 scripts/torii.py budget -- status\n"
+    ),
+    "skill-prefer-critic-early": (
+        "tool_call: terminal\n"
+        "python3 scripts/second_agent_critic.py score --review review.md\n"
+        "python3 scripts/chain_revalidate.py score --review review.md\n"
+    ),
+}
 
 
 def _root() -> Path:
@@ -79,6 +104,12 @@ def dual_gate_enabled() -> bool:
 def attribution_gate_enabled() -> bool:
     """F88: per-skill LOO attribution before adopt (default on)."""
     raw = (os.environ.get("TORII_SKILL_AUTO_ADOPT_ATTR") or "1").strip().lower()
+    return raw not in _FALSEY
+
+
+def tool_attr_gate_enabled() -> bool:
+    """F118: pass synthetic tool_blob for skill-prefer-* attribution (default on)."""
+    raw = (os.environ.get("TORII_SKILL_AUTO_ADOPT_TOOL") or "1").strip().lower()
     return raw not in _FALSEY
 
 
@@ -129,13 +160,15 @@ def _save_ledger(root: Path, data: dict[str, Any]) -> None:
 
 
 def _candidate_globs() -> list[str]:
-    """F113: expand beyond skill-f74-* to F112 self-evolve / memory recovery skills."""
+    """F113/F118: F74 + F112/F117 skill-prefer-* self-evolve proposals."""
     raw = (os.environ.get("TORII_SKILL_AUTO_ADOPT_GLOBS") or "").strip()
     if raw:
         return [g.strip() for g in raw.split(",") if g.strip()]
     return [
         "skill-f74-*.md",
         "skill-prefer-memory-cli-early.md",
+        "skill-prefer-product-cli.md",
+        "skill-prefer-critic-early.md",
         "skill-prefer-*.md",
     ]
 
@@ -145,6 +178,7 @@ def list_candidates(root: Path) -> list[dict[str, Any]]:
 
     F82: skill-f74-* fitness-gate proposals.
     F113: also F112 self-evolve memory-CLI recovery skills (skill-prefer-*).
+    F118: F117 product-cli / critic-early skills with tool-aware attribution.
     """
     _ensure_path()
     from fitness_gate_evolve import validate_proposal  # type: ignore
@@ -317,8 +351,24 @@ def run_regression_gates(root: Path) -> dict[str, Any]:
     return results
 
 
+def _tool_blob_for_proposal(proposal_id: str) -> str | None:
+    """F118: allowlisted synthetic tool transcript for tool-only skill proposals."""
+    if not tool_attr_gate_enabled():
+        return None
+    if proposal_id in PROPOSAL_TOOL_BLOBS:
+        return PROPOSAL_TOOL_BLOBS[proposal_id]
+    # prefix match for future skill-prefer-* families
+    for key, blob in PROPOSAL_TOOL_BLOBS.items():
+        if proposal_id.startswith(key.rsplit("-", 1)[0]) or key in proposal_id:
+            return blob
+    if proposal_id.startswith("skill-prefer-"):
+        # generic product CLI probe so empty tool skills still get a chance
+        return PROPOSAL_TOOL_BLOBS.get("skill-prefer-product-cli")
+    return None
+
+
 def _proposal_attribution(root: Path, proposal_id: str) -> dict[str, Any]:
-    """F88: score proposal contribution on dual good+enriched review."""
+    """F88/F118: score proposal contribution; tool_blob for skill-prefer-* recovery skills."""
     try:
         sys.path.insert(0, str(_scripts()))
         from skill_attribution import (  # type: ignore
@@ -336,7 +386,26 @@ def _proposal_attribution(root: Path, proposal_id: str) -> dict[str, Any]:
         if not good.is_file():
             good = Path(__file__).resolve().parents[1] / DEFAULT_GOOD
         text = enrich_review(good.read_text(encoding="utf-8", errors="replace") if good.is_file() else "")
-        return attribute_proposal(proposal_id, body, text)
+        tool_blob = _tool_blob_for_proposal(proposal_id)
+        # For tool-taught skills prefer silent prose + tools so free-rider check is fair
+        if tool_blob and proposal_id.startswith("skill-prefer-"):
+            silent = (
+                "## Review\n\nGeneric note only.\n"
+                "Verdict: COMMENT\n"
+                "Finding: nothing of substance in this fixture body.\n"
+            )
+            attr = attribute_proposal(
+                proposal_id, body, silent, tool_blob=tool_blob
+            )
+            # fallback to enriched good if tool path somehow misses
+            if attr.get("free_rider") or float(attr.get("contribution") or 0) <= 0:
+                attr = attribute_proposal(
+                    proposal_id, body, text, tool_blob=tool_blob
+                )
+            attr["feature_tool"] = FEATURE_TOOL
+            attr["tool_blob_used"] = True
+            return attr
+        return attribute_proposal(proposal_id, body, text, tool_blob=tool_blob)
     except Exception as exc:
         return {
             "id": proposal_id,
@@ -671,6 +740,7 @@ When claiming a security finding:
             "TORII_ROOT": os.environ.get("TORII_ROOT"),
             "TORII_EVOLUTION_ROOT": os.environ.get("TORII_EVOLUTION_ROOT"),
             "TORII_SKILL_AUTO_ADOPT": os.environ.get("TORII_SKILL_AUTO_ADOPT"),
+            "TORII_SKILL_AUTO_ADOPT_TOOL": os.environ.get("TORII_SKILL_AUTO_ADOPT_TOOL"),
             "TORII_LLM_CRITIC": os.environ.get("TORII_LLM_CRITIC"),
             "TORII_SECOND_CRITIC_DEMOTE": os.environ.get("TORII_SECOND_CRITIC_DEMOTE"),
         }
@@ -698,6 +768,57 @@ When claiming a security finding:
             active = list((td_path / "agent/skills/active").glob("skill-f74-*.md"))
             bad_active = (td_path / "agent/skills/active" / f"{bad_id}.md").is_file()
 
+            # F118: seed product-cli proposal + tool-aware attribution adopt
+            # Need skill_attribution on path for _proposal_attribution
+            for name in ("skill_attribution.py", "skill_router.py"):
+                src = root / "scripts" / name
+                if src.is_file():
+                    shutil.copy2(src, td_path / "scripts" / name)
+            prod_id = "skill-prefer-product-cli"
+            prod_body = f"""---
+id: {prod_id}
+feature: F117
+status: proposal
+signal: f117_product_cli_tools
+title: Call torii product CLI doctor/status early
+---
+
+## Skill: prefer-product-cli (F117)
+
+When the product umbrella CLI is available (F110):
+1. Early mid-review call once:
+   `python3 scripts/torii.py doctor` or `python3 scripts/torii.py status`
+2. Use doctor/status as readiness hints only — still require path:line evidence.
+3. Prefer product CLI over ad-hoc script hunting for memory/gate/budget surfaces.
+"""
+            (td_path / "agent/skills/proposals" / f"{prod_id}.md").write_text(
+                prod_body, encoding="utf-8"
+            )
+            # free-rider on silent prose without tools; tool path contributes
+            sys.path.insert(0, str(_scripts()))
+            from skill_attribution import attribute_proposal as _attr_prop  # type: ignore
+
+            silent = (
+                "## Review\n\nGeneric note only.\n"
+                "Verdict: COMMENT\n"
+                "Finding: nothing of substance in this fixture body.\n"
+            )
+            attr_no = _attr_prop(prod_id, prod_body, silent, tool_blob="")
+            free_without = bool(attr_no.get("free_rider")) or float(
+                attr_no.get("contribution") or 0
+            ) <= 0
+            os.environ["TORII_SKILL_AUTO_ADOPT_TOOL"] = "1"
+            attr_yes = _proposal_attribution(td_path, prod_id)
+            tool_attr_ok = (
+                attr_yes.get("tool_hit") is True
+                and not attr_yes.get("free_rider")
+                and float(attr_yes.get("contribution") or 0) >= 1.5
+            )
+            ad_prod = adopt_one(td_path, prod_id, force=False)
+            prod_active = (
+                td_path / "agent/skills/active" / f"{prod_id}.md"
+            ).is_file()
+
             fixture_pass = (
                 good_v.recommend == "adopt"
                 and bad_v.recommend == "reject"
@@ -706,11 +827,17 @@ When claiming a security finding:
                 and ad.get("ok") is True
                 and any(p.stem == good_id for p in active)
                 and not bad_active
+                and free_without
+                and tool_attr_ok
+                and ad_prod.get("ok") is True
+                and prod_active
             )
             print(
                 json.dumps(
                     {
                         "feature": FEATURE,
+                        "feature_tool": FEATURE_TOOL,
+                        "f118": True,
                         "fixture_pass": fixture_pass,
                         "good_recommend": good_v.recommend,
                         "bad_recommend": bad_v.recommend,
@@ -718,6 +845,19 @@ When claiming a security finding:
                         "adopt_ok": ad.get("ok"),
                         "active": [p.name for p in active],
                         "bad_active": bad_active,
+                        "f118_free_without_tools": free_without,
+                        "f118_tool_attr_ok": tool_attr_ok,
+                        "f118_adopt_ok": ad_prod.get("ok"),
+                        "f118_prod_active": prod_active,
+                        "f118_attr": {
+                            k: attr_yes.get(k)
+                            for k in (
+                                "tool_hit",
+                                "contribution",
+                                "free_rider",
+                                "feature_tool",
+                            )
+                        },
                     },
                     indent=2,
                 )

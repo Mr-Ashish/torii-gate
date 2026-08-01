@@ -11,6 +11,7 @@
 #   7. memory compound loop readiness L3 (F96)
 #   8. product CLI doctor (F110/F111)
 #   9. integrity compound + federate on insecure-demo good review (F104/F107)
+#  10. F117/F118 tool-probe mine + dual-gate product-cli adopt fixtures
 #
 # Usage:
 #   ./scripts/smoke-torii-gate.sh
@@ -18,6 +19,7 @@
 #   TORII_SMOKE_SKILL_LOOP=0 to skip deep skill-loop fixtures (shallow pack only)
 #   TORII_SMOKE_PRODUCT_CLI=0 to skip product doctor
 #   TORII_SMOKE_COMPOUND_FEDERATE=0 to skip compound/federate proof
+#   TORII_SMOKE_TOOL_EVOLVE=0 to skip F117/F118 mine+adopt fixtures
 #
 # Exit: 0 all green, 1 any check failed
 set -euo pipefail
@@ -328,6 +330,57 @@ case "${TORII_SMOKE_COMPOUND_FEDERATE:-1}" in
       else
         python3 "$COMPOUND" fixture 2>&1 | tail -25 || true
         fail "memory_compound_write fixture"
+      fi
+    fi
+    ;;
+esac
+
+# --- 10. F117/F118 tool-probe mine + dual-gate product-cli adopt ---
+SELF_EVOLVE="$ROOT/scripts/self_evolve.py"
+AUTO_ADOPT="$ROOT/scripts/skill_auto_adopt.py"
+log "[10/10] tool-probe mine + dual-gate adopt (F117/F118)"
+case "${TORII_SMOKE_TOOL_EVOLVE:-1}" in
+  0|false|FALSE|off|OFF|no|NO)
+    pass "skip tool-evolve fixtures (TORII_SMOKE_TOOL_EVOLVE=0)"
+    ;;
+  *)
+    if [[ ! -f "$SELF_EVOLVE" || ! -f "$AUTO_ADOPT" ]]; then
+      if [[ -f "$ROOT/scripts/torii.py" ]]; then
+        fail "missing self_evolve/skill_auto_adopt on hub tree"
+      else
+        pass "skip tool-evolve (not in pack tree)"
+      fi
+    else
+      if OUT="$(python3 "$SELF_EVOLVE" fixture 2>/dev/null)"; then
+        PASSF="$(python3 -c 'import json,sys; print(json.load(sys.stdin).get("fixture_pass",False))' <<<"$OUT" 2>/dev/null || echo False)"
+        if [[ "$PASSF" == "True" || "$PASSF" == "true" ]]; then
+          pass "self_evolve F117 fixture_pass"
+        else
+          log "  detail: $OUT"
+          fail "self_evolve fixture expected fixture_pass"
+        fi
+      else
+        python3 "$SELF_EVOLVE" fixture 2>&1 | tail -20 || true
+        fail "self_evolve fixture"
+      fi
+      if OUT="$(python3 "$AUTO_ADOPT" fixture 2>/dev/null)"; then
+        PASSF="$(python3 -c 'import json,sys; print(json.load(sys.stdin).get("fixture_pass",False))' <<<"$OUT" 2>/dev/null || echo False)"
+        F118="$(python3 -c 'import json,sys; print(json.load(sys.stdin).get("f118",False))' <<<"$OUT" 2>/dev/null || echo False)"
+        if [[ "$PASSF" == "True" || "$PASSF" == "true" ]]; then
+          pass "skill_auto_adopt F118 fixture_pass f118=$F118"
+        else
+          log "  detail: $OUT"
+          fail "skill_auto_adopt fixture expected fixture_pass"
+        fi
+      else
+        python3 "$AUTO_ADOPT" fixture 2>&1 | tail -25 || true
+        fail "skill_auto_adopt fixture"
+      fi
+      # active product-cli skill ships after F118 dual-gate adopt
+      if [[ -f "$ROOT/agent/skills/active/skill-prefer-product-cli.md" ]]; then
+        pass "active skill-prefer-product-cli"
+      else
+        fail "missing active skill-prefer-product-cli (F118 adopt)"
       fi
     fi
     ;;
