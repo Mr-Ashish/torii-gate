@@ -1,0 +1,38 @@
+{
+  "feature": "F166",
+  "scored_at": "2026-08-01T12:46:19Z",
+  "enabled": true,
+  "refine_floored_ids": [
+    "skill-prefer-hub-archival-early",
+    "skill-prefer-memory-cli-early"
+  ],
+  "n": 2,
+  "skills": {
+    "skill-prefer-hub-archival-early": {
+      "refined_n": 6,
+      "constraint_ok": true,
+      "kind": "gepa_refine",
+      "reasons": [
+        "chronic_tool_miss",
+        "ledger_last_refine",
+        "ledger_refine",
+        "active_marker",
+        "federate_refine"
+      ],
+      "hub_priority_delta": 12,
+      "tool_hit_n": 0
+    },
+    "skill-prefer-memory-cli-early": {
+      "refined_n": 2,
+      "constraint_ok": true,
+      "kind": "gepa_refine",
+      "reasons": [
+        "ledger_refine",
+        "active_marker"
+      ],
+      "hub_priority_delta": 12,
+      "tool_hit_n": 0
+    }
+  },
+  "ok": true
+}

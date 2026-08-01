@@ -918,7 +918,9 @@ def post_score_refine_dual_hub(
             ent["util_rate_bin"] = bin_
 
     # F171/F172: chronic dual_fail from fitness + multi-tenant decay promote → always Δprio
+    # F175: dual_pass revive re-boost supersedes decay
     fitness_decay: dict[str, int] = {}
+    revive_boost: dict[str, int] = {}
     try:
         fit_path = root / ".torii" / "skill-fitness.json"
         envf = (os.environ.get("TORII_SKILL_FITNESS_FILE") or "").strip()
@@ -1005,8 +1007,109 @@ def post_score_refine_dual_hub(
                 se["dual_fail_rate"] = max(
                     float(se.get("dual_fail_rate") or 0), float(s.get("fail_rate") or 0.67)
                 )
+        # F175: multi-tenant dual_pass revive supersedes chronic decay
+        revive_boost: dict[str, int] = {}
+        for rel in (
+            "promoted-refine-dual-revive-themes.json",
+            "skill-refine-dual-revive-signals.json",
+        ):
+            p = root / "memory" / "federation" / rel
+            if not p.is_file():
+                continue
+            try:
+                data = json.loads(p.read_text(encoding="utf-8"))
+            except (OSError, json.JSONDecodeError):
+                continue
+            for s in data.get("signals") or []:
+                if not isinstance(s, dict):
+                    continue
+                sid = str(s.get("skill_id") or s.get("theme") or "")
+                if not sid.startswith("skill-"):
+                    continue
+                if not (s.get("dual_pass") or "revive" in str(s.get("tags") or [])):
+                    continue
+                boost = int(s.get("boost") or 16)
+                if boost < 8:
+                    boost = 16
+                if "promoted" in rel:
+                    boost = max(boost, 20)
+                revive_boost[sid] = max(int(revive_boost.get(sid) or 0), boost)
+                # clear fitness decay for revived skills
+                if sid in fitness_decay:
+                    del fitness_decay[sid]
+                se = skills.setdefault(
+                    sid,
+                    {
+                        "skill_id": sid,
+                        "hits": int(s.get("hits") or 1),
+                        "tenants": int(s.get("tenants") or 1),
+                        "tool_contrib_pp": float(s.get("tool_pp") or 0),
+                        "promoted": True,
+                        "dual_fail_n": 0,
+                        "dual_pass_n": max(1, int(s.get("hits") or 1)),
+                        "priority_delta": 0,
+                        "util_rate_bin": "pos",
+                    },
+                )
+                se["chronic_fail"] = False
+                se["multi_tenant_decay"] = False
+                se["multi_tenant_revive"] = "promoted" in rel or int(
+                    s.get("tenants") or 0
+                ) >= 2
+                se["promoted"] = True
+                se["dual_pass_n"] = max(int(se.get("dual_pass_n") or 0), 1)
+                se["tool_contrib_pp"] = max(
+                    float(se.get("tool_contrib_pp") or 0), float(s.get("tool_pp") or 0)
+                )
+                se["tenants"] = max(int(se.get("tenants") or 0), int(s.get("tenants") or 1))
+                se["revive_boost"] = revive_boost[sid]
+        # also honor local fitness ledger revive flags
+        try:
+            fit_path2 = root / ".torii" / "skill-fitness.json"
+            envf2 = (os.environ.get("TORII_SKILL_FITNESS_FILE") or "").strip()
+            if envf2:
+                fit_path2 = Path(envf2)
+            if fit_path2.is_file():
+                fit2 = json.loads(fit_path2.read_text(encoding="utf-8"))
+                for sid, ent in (fit2.get("skills") or {}).items():
+                    if not isinstance(ent, dict):
+                        continue
+                    if ent.get("refine_dual_revived") or ent.get("multi_tenant_revive"):
+                        sid_s = str(sid)
+                        if sid_s in fitness_decay:
+                            del fitness_decay[sid_s]
+                        boost = max(12, int(ent.get("hub_priority_delta") or 12))
+                        revive_boost[sid_s] = max(
+                            int(revive_boost.get(sid_s) or 0), boost
+                        )
+                        se = skills.setdefault(
+                            sid_s,
+                            {
+                                "skill_id": sid_s,
+                                "hits": int(ent.get("refine_dual_selected_n") or 1),
+                                "tenants": int(
+                                    ent.get("multi_tenant_revive_tenants") or 1
+                                ),
+                                "tool_contrib_pp": float(
+                                    ent.get("last_refine_tool_pp") or 0
+                                ),
+                                "promoted": True,
+                                "dual_fail_n": 0,
+                                "dual_pass_n": int(ent.get("refine_dual_pass_n") or 1),
+                                "priority_delta": 0,
+                                "util_rate_bin": "pos",
+                            },
+                        )
+                        se["chronic_fail"] = False
+                        se["multi_tenant_decay"] = False
+                        se["multi_tenant_revive"] = bool(ent.get("multi_tenant_revive"))
+                        se["promoted"] = True
+                        se["revive_boost"] = revive_boost[sid_s]
+        except (OSError, json.JSONDecodeError, TypeError, ValueError):
+            pass
     except (OSError, json.JSONDecodeError, TypeError, ValueError):
         fitness_decay = {}
+        revive_boost = {}
 
     priority_deltas: dict[str, int] = {}
     for sid, ent in skills.items():
@@ -1024,14 +1127,30 @@ def post_score_refine_dual_hub(
         if int(ent["dual_fail_n"]) >= 1 and not ent["promoted"]:
             delta = min(delta, 0)
         # F171: chronic dual_fail decays always priority (negative delta)
-        if sid in fitness_decay:
+        if sid in fitness_decay and not ent.get("multi_tenant_revive"):
             delta = min(delta, int(fitness_decay[sid]))
             ent["chronic_fail"] = True
             ent["fitness_decay"] = fitness_decay[sid]
+        # F175: dual_pass revive re-boost supersedes decay
+        if sid in revive_boost or ent.get("multi_tenant_revive") or ent.get("revive_boost"):
+            rb = int(
+                revive_boost.get(sid)
+                or ent.get("revive_boost")
+                or 16
+            )
+            delta = max(delta, rb)
+            ent["chronic_fail"] = False
+            ent["multi_tenant_decay"] = False
         # also decay when local dual_fail_n dominates dual_pass_n (run-level chronic)
         df = int(ent["dual_fail_n"])
         dp = int(ent["dual_pass_n"])
-        if df >= 2 and df > dp and not ent.get("promoted"):
+        if (
+            df >= 2
+            and df > dp
+            and not ent.get("promoted")
+            and not ent.get("multi_tenant_revive")
+            and sid not in revive_boost
+        ):
             delta = min(delta, -10 - min(10, df))
             ent["chronic_fail"] = True
         ent["priority_delta"] = int(delta)

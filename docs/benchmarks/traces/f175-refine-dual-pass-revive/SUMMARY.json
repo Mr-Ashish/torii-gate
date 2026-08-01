@@ -1,0 +1,28 @@
+{
+  "feature": "F175",
+  "title": "dual_pass revive after multi-tenant decay",
+  "scored_at": "2026-08-01T12:47:43Z",
+  "offline": {
+    "fixture_refine_revive": true,
+    "refine_dual_revive_ok": true,
+    "refine_loop_ok": true
+  },
+  "live": {
+    "model": "deepseek/deepseek-v4-pro",
+    "recall": 1.0,
+    "passed": 1,
+    "verdict": "REQUEST_CHANGES",
+    "util_rate": 1.0,
+    "f175_hermes_soft": true,
+    "tp": null
+  },
+  "modal": {
+    "repo": "pytorch/pytorch",
+    "pr": 191836,
+    "bit3_ok": true,
+    "elapsed_s": 77.9,
+    "post_comment": 0,
+    "log_streaming": true,
+    "f175_soft_wire": true
+  }
+}

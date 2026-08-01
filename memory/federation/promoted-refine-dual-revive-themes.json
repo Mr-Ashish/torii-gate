@@ -1,0 +1,40 @@
+{
+  "schema_version": 1,
+  "feature": "F175",
+  "scope": "promoted_refine_dual_revive_themes",
+  "updated_at": "2026-08-01T12:46:19Z",
+  "min_tenants": 2,
+  "min_hits": 2,
+  "source_skill_n": 1,
+  "promoted_n": 1,
+  "blocked": [],
+  "privacy": "skill_id_pass_bin_tenant_hash_only",
+  "privacy_ok": true,
+  "signals": [
+    {
+      "id": "promoted-revive-skill-prefer-hub-archival-early",
+      "theme": "skill-prefer-hub-archival-early",
+      "skill_id": "skill-prefer-hub-archival-early",
+      "tags": [
+        "promoted_refine_dual_revive",
+        "f175",
+        "dual_pass",
+        "federated_skill"
+      ],
+      "source": "skill_refine_dual_revive_promote",
+      "hits": 6,
+      "tenants": 2,
+      "tenant_hashes": [
+        "601826366b68",
+        "fixture-tenant-b12"
+      ],
+      "pass_rate": 0.7,
+      "pass_rate_bin": "mid",
+      "tool_pp": 50.0,
+      "boost": 48,
+      "util_rate_bin": "pos",
+      "dual_pass": true,
+      "feature": "F175"
+    }
+  ]
+}

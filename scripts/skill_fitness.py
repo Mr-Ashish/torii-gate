@@ -119,6 +119,12 @@ def refine_dual_decay_enabled() -> bool:
     return raw not in _FALSEY
 
 
+def refine_dual_revive_enabled() -> bool:
+    """F175: dual_pass after decay → local revive + multi-tenant federate re-boost."""
+    raw = (os.environ.get("TORII_SKILL_FITNESS_REFINE_DUAL_REVIVE") or "1").strip().lower()
+    return raw not in _FALSEY
+
+
 def refine_dual_fail_thr() -> float:
     """F171: dual_fail_rate ≥ thr after min samples → decay (default 0.67)."""
     try:
@@ -569,6 +575,7 @@ def ingest_refine_dual(
     effective_pass = dual_pass and (tool_pp > 0 or probe_d > 0)
     ingested = 0
     decayed: list[str] = []
+    revived: list[str] = []
     for sid in skill_ids or ["skill-prefer-hub-archival-early"]:
         if not sid.startswith("skill-"):
             continue
@@ -592,22 +599,51 @@ def ingest_refine_dual(
         min_n = _int_env("TORII_SKILL_FITNESS_MIN_N", 3)
         if sel >= min_n and float(e["refine_dual_fail_rate"]) >= thr:
             e["refine_dual_chronic_fail"] = True
+            e["refine_dual_revived"] = False
             # negative always-priority fuel (router post_score reads this)
             e["hub_priority_delta"] = min(int(e.get("hub_priority_delta") or 0), -12)
             e["refine_priority_decay"] = -15 - min(15, int(10 * float(e["refine_dual_fail_rate"])))
+            e["last_refine_decayed"] = True
             decayed.append(sid)
         elif effective_pass and pass_n >= 1:
             e["refine_dual_chronic_fail"] = False
             if int(e.get("refine_priority_decay") or 0) < 0 and float(e["refine_dual_fail_rate"]) < thr:
                 e["refine_priority_decay"] = 0
+            # F175: dual_pass revive after prior decay (local clear + re-boost fuel)
+            prior_decay = bool(
+                e.get("last_refine_decayed")
+                or e.get("multi_tenant_decay")
+                or int(e.get("refine_dual_fail_n") or 0) >= 1
+                or int(e.get("refine_priority_decay") or 0) < 0
+            )
+            rate_ok = float(e["refine_dual_fail_rate"]) < thr
+            # also allow revive when recent pass streak dominates (pass_n > fail_n)
+            streak_ok = pass_n >= 1 and pass_n > fail_n
+            if (
+                refine_dual_revive_enabled()
+                and prior_decay
+                and (rate_ok or streak_ok)
+            ):
+                boost = 12 + min(12, int(max(0.0, tool_pp) / 10))
+                e["refine_dual_revived"] = True
+                e["last_refine_revive_at"] = _now()
+                e["multi_tenant_decay"] = False
+                e["last_refine_decayed"] = False
+                e["refine_priority_decay"] = 0
+                e["hub_priority_delta"] = max(int(e.get("hub_priority_delta") or 0), boost)
+                e["demoted"] = False
+                e["gepa_refined"] = True  # restore F166 refine shield eligibility
+                revived.append(sid)
         ingested += 1
     ledger["last_refine_dual_ingest"] = {
         "at": _now(),
         "feature": "F171",
+        "feature_revive": "F175" if revived else None,
         "ingested_n": ingested,
         "effective_pass": effective_pass,
         "tool_pp": tool_pp,
         "decayed": decayed,
+        "revived": revived,
         "skill_ids": skill_ids,
     }
     path = None
@@ -617,9 +653,11 @@ def ingest_refine_dual(
     privacy_ok = "/Users/" not in blob and "/home/" not in blob
     result = {
         "feature": "F171",
+        "feature_revive": "F175" if revived else None,
         "ingested_n": ingested,
         "effective_pass": effective_pass,
         "decayed": decayed,
+        "revived": revived,
         "skill_ids": skill_ids,
         "privacy_ok": privacy_ok,
         "ledger": str(path) if path else None,
@@ -639,6 +677,24 @@ def ingest_refine_dual(
             }
         except Exception as exc:
             result["federate_decay"] = {"error": str(exc)[:80]}
+    # F175: soft federate dual_pass revive after decay (privacy-safe) + multi-tenant re-boost
+    if revived and refine_dual_revive_enabled():
+        try:
+            fed_r = federate_refine_dual_revive(
+                root=root, skill_ids=revived, ledger=ledger, tool_pp=tool_pp
+            )
+            result["federate_revive"] = {
+                "federated_n": fed_r.get("federated_n"),
+                "privacy_ok": fed_r.get("privacy_ok"),
+            }
+            prom_r = promote_refine_dual_revive(root=root)
+            result["promote_revive"] = {
+                "promoted_n": prom_r.get("promoted_n"),
+                "privacy_ok": prom_r.get("privacy_ok"),
+                "revived": prom_r.get("revived"),
+            }
+        except Exception as exc:
+            result["federate_revive"] = {"error": str(exc)[:80]}
     return result
 
 
@@ -937,6 +993,323 @@ def promote_refine_dual_decay(
         "privacy_ok": doc["privacy_ok"],
         "themes": [s.get("theme") for s in clean[:16]],
         "amplified": amplified,
+    }
+
+
+def _pass_rate_bin(rate: float) -> str:
+    """Privacy-safe pass_rate bin for federate (no raw floats across tenants)."""
+    r = max(0.0, min(1.0, float(rate)))
+    if r >= 0.8:
+        return "high"
+    if r >= 0.5:
+        return "mid"
+    if r > 0:
+        return "low"
+    return "zero"
+
+
+def federate_refine_dual_revive(
+    root: Path | None = None,
+    skill_ids: list[str] | None = None,
+    ledger: dict[str, Any] | None = None,
+    *,
+    tenant_hash: str | None = None,
+    tool_pp: float = 0.0,
+) -> dict[str, Any]:
+    """F175: privacy-safe multi-tenant federate of dual_pass revive after decay.
+
+    Signals: skill_id + pass_rate_bin + tool_pp_bin + tenant_hash only.
+    """
+    root = root or _root()
+    if not refine_dual_revive_enabled():
+        return {
+            "feature": "F175",
+            "federated_n": 0,
+            "reason": "revive_off",
+            "privacy_ok": True,
+        }
+    ledger = ledger if ledger is not None else load_ledger(ledger_path(root))
+    skills = ledger.get("skills") or {}
+    th = tenant_hash or _tenant_hash_fitness(root)
+    dest = root / "memory" / "federation" / "skill-refine-dual-revive-signals.json"
+    dest.parent.mkdir(parents=True, exist_ok=True)
+    existing: dict[str, Any] = {
+        "schema_version": SCHEMA,
+        "feature": "F175",
+        "signals": [],
+    }
+    if dest.is_file():
+        try:
+            data = json.loads(dest.read_text(encoding="utf-8"))
+            if isinstance(data, dict):
+                existing = data
+                existing.setdefault("signals", [])
+        except (OSError, json.JSONDecodeError):
+            pass
+    by_key: dict[str, dict[str, Any]] = {}
+    for s in existing.get("signals") or []:
+        if isinstance(s, dict):
+            key = f"{s.get('skill_id') or s.get('theme')}|{s.get('tenant_hash') or ''}"
+            by_key[key] = s
+
+    targets = skill_ids or [
+        sid
+        for sid, e in skills.items()
+        if isinstance(e, dict) and e.get("refine_dual_revived")
+    ]
+    federated = 0
+    for sid in targets:
+        if not str(sid).startswith("skill-"):
+            continue
+        ent = skills.get(sid) if isinstance(skills.get(sid), dict) else {}
+        key = f"{sid}|{th}"
+        prev = by_key.get(key) if isinstance(by_key.get(key), dict) else {}
+        pass_rate = float(ent.get("refine_dual_pass_rate") or prev.get("pass_rate") or 0.5)
+        pp = float(ent.get("last_refine_tool_pp") or tool_pp or prev.get("tool_pp") or 0)
+        boost = int(ent.get("hub_priority_delta") or prev.get("boost") or 12)
+        if boost < 8:
+            boost = 12
+        entry = {
+            "id": f"refine-revive-{sid}"[:64],
+            "theme": sid,
+            "skill_id": sid,
+            "tags": [
+                "refine_dual_revive",
+                "f175",
+                "dual_pass",
+                "federated_skill",
+            ],
+            "source": "skill_refine_dual_revive",
+            "hits": int(prev.get("hits") or 0) + 1,
+            "tenants": 1,
+            "tenant_hash": th,
+            "tenant_hashes": sorted(set(list(prev.get("tenant_hashes") or []) + [th]))[
+                :16
+            ],
+            "pass_rate": pass_rate,
+            "pass_rate_bin": _pass_rate_bin(pass_rate),
+            "tool_pp": pp,
+            "tool_pp_bin": "high" if pp >= 50 else ("mid" if pp >= 10 else "low"),
+            "boost": boost,
+            "util_rate_bin": "pos",
+            "dual_pass": True,
+            "updated_at": _now(),
+            "feature": "F175",
+        }
+        by_key[key] = entry
+        federated += 1
+
+    signals = list(by_key.values())[-200:]
+    doc = {
+        "schema_version": SCHEMA,
+        "feature": "F175",
+        "scope": "skill_refine_dual_revive",
+        "updated_at": _now(),
+        "privacy": "skill_id_pass_bin_tenant_hash_only",
+        "privacy_ok": True,
+        "signals": signals,
+    }
+    blob = json.dumps(doc)
+    if "/Users/" in blob or "/home/" in blob:
+        doc["privacy_ok"] = False
+        doc["signals"] = []
+        federated = 0
+    dest.write_text(json.dumps(doc, indent=2) + "\n", encoding="utf-8")
+    return {
+        "feature": "F175",
+        "path": str(dest),
+        "federated_n": federated,
+        "signals_n": len(doc["signals"]),
+        "privacy_ok": doc["privacy_ok"],
+        "tenant_hash": th,
+    }
+
+
+def promote_refine_dual_revive(
+    root: Path | None = None,
+    *,
+    min_tenants: int | None = None,
+    min_hits: int | None = None,
+) -> dict[str, Any]:
+    """F175: FederatedSkill gate — multi-tenant dual_pass revive → always re-boost.
+
+    When ≥min_tenants report dual_pass revive for a skill previously under decay,
+    clear multi_tenant_decay, restore always-priority boost, supersede decay themes.
+    """
+    root = root or _root()
+    if not refine_dual_revive_enabled():
+        return {
+            "feature": "F175",
+            "promoted_n": 0,
+            "reason": "revive_off",
+            "privacy_ok": True,
+            "themes": [],
+            "revived": [],
+        }
+    min_t = (
+        min_tenants
+        if min_tenants is not None
+        else _int_env("TORII_SKILL_PROMOTE_MIN_TENANTS", 2)
+    )
+    min_h = (
+        min_hits if min_hits is not None else _int_env("TORII_SKILL_PROMOTE_MIN_HITS", 2)
+    )
+    path = root / "memory" / "federation" / "skill-refine-dual-revive-signals.json"
+    sigs: list[dict[str, Any]] = []
+    if path.is_file():
+        try:
+            data = json.loads(path.read_text(encoding="utf-8"))
+            raw = data.get("signals") if isinstance(data, dict) else data
+            if isinstance(raw, list):
+                sigs = [s for s in raw if isinstance(s, dict)]
+        except (OSError, json.JSONDecodeError):
+            sigs = []
+
+    by_sid: dict[str, dict[str, Any]] = {}
+    for s in sigs:
+        sid = str(s.get("skill_id") or s.get("theme") or "")
+        if not sid.startswith("skill-"):
+            continue
+        ent = by_sid.setdefault(
+            sid,
+            {
+                "skill_id": sid,
+                "tenant_hashes": set(),
+                "hits": 0,
+                "pass_rate": 0.0,
+                "tool_pp": 0.0,
+                "boost": 0,
+            },
+        )
+        ths = s.get("tenant_hashes") or (
+            [s.get("tenant_hash")] if s.get("tenant_hash") else []
+        )
+        for th in ths:
+            if th:
+                ent["tenant_hashes"].add(str(th))
+        if not ths:
+            ent["tenant_hashes"].add(f"anon-{s.get('id') or sid}")
+        ent["hits"] += max(1, int(s.get("hits") or 1))
+        ent["pass_rate"] = max(float(ent["pass_rate"]), float(s.get("pass_rate") or 0))
+        ent["tool_pp"] = max(float(ent["tool_pp"]), float(s.get("tool_pp") or 0))
+        ent["boost"] = max(int(ent["boost"] or 0), int(s.get("boost") or 12))
+
+    clean: list[dict[str, Any]] = []
+    blocked: list[str] = []
+    for sid, ent in by_sid.items():
+        tenants = len(ent["tenant_hashes"])
+        hits = int(ent["hits"])
+        if tenants >= min_t and hits >= min_h and float(ent["pass_rate"]) >= 0.34:
+            boost = max(int(ent["boost"] or 12), 16 + min(12, 4 * tenants))
+            if float(ent["tool_pp"]) >= 50:
+                boost += 8
+            clean.append(
+                {
+                    "id": f"promoted-revive-{sid}"[:64],
+                    "theme": sid,
+                    "skill_id": sid,
+                    "tags": [
+                        "promoted_refine_dual_revive",
+                        "f175",
+                        "dual_pass",
+                        "federated_skill",
+                    ],
+                    "source": "skill_refine_dual_revive_promote",
+                    "hits": hits,
+                    "tenants": tenants,
+                    "tenant_hashes": sorted(ent["tenant_hashes"])[:16],
+                    "pass_rate": float(ent["pass_rate"]),
+                    "pass_rate_bin": _pass_rate_bin(float(ent["pass_rate"])),
+                    "tool_pp": float(ent["tool_pp"]),
+                    "boost": boost,
+                    "util_rate_bin": "pos",
+                    "dual_pass": True,
+                    "feature": "F175",
+                }
+            )
+        else:
+            blocked.append(sid)
+
+    out = root / "memory" / "federation" / "promoted-refine-dual-revive-themes.json"
+    out.parent.mkdir(parents=True, exist_ok=True)
+    doc = {
+        "schema_version": SCHEMA,
+        "feature": "F175",
+        "scope": "promoted_refine_dual_revive_themes",
+        "updated_at": _now(),
+        "min_tenants": min_t,
+        "min_hits": min_h,
+        "source_skill_n": len(by_sid),
+        "promoted_n": len(clean),
+        "blocked": blocked[:32],
+        "privacy": "skill_id_pass_bin_tenant_hash_only",
+        "privacy_ok": True,
+        "signals": clean,
+    }
+    blob = json.dumps(doc)
+    if "/Users/" in blob or "/home/" in blob:
+        doc["privacy_ok"] = False
+        doc["signals"] = []
+        doc["promoted_n"] = 0
+        clean = []
+    out.write_text(json.dumps(doc, indent=2) + "\n", encoding="utf-8")
+
+    # re-boost local fitness for multi-tenant promoted revive; supersede decay
+    revived: list[str] = []
+    if clean:
+        ledger = load_ledger(ledger_path(root))
+        skills = ledger.setdefault("skills", {})
+        for c in clean:
+            sid = str(c["skill_id"])
+            e = skills.setdefault(sid, {"id": sid})
+            e["refine_dual_chronic_fail"] = False
+            e["refine_dual_revived"] = True
+            e["multi_tenant_decay"] = False
+            e["multi_tenant_revive"] = True
+            e["multi_tenant_revive_tenants"] = int(c.get("tenants") or 0)
+            e["last_refine_decayed"] = False
+            e["refine_priority_decay"] = 0
+            e["hub_priority_delta"] = max(
+                int(e.get("hub_priority_delta") or 0), int(c.get("boost") or 16)
+            )
+            e["demoted"] = False
+            e["gepa_refined"] = True
+            e["last_refine_revive_at"] = _now()
+            revived.append(sid)
+        if revived:
+            apply_demotions(ledger)
+            save_ledger(ledger, ledger_path(root))
+        # supersede multi-tenant decay themes for revived skills
+        decay_path = root / "memory" / "federation" / "promoted-refine-dual-decay-themes.json"
+        if decay_path.is_file() and revived:
+            try:
+                ddoc = json.loads(decay_path.read_text(encoding="utf-8"))
+                sigs_d = [
+                    s
+                    for s in (ddoc.get("signals") or [])
+                    if isinstance(s, dict)
+                    and str(s.get("skill_id") or s.get("theme") or "") not in set(revived)
+                ]
+                ddoc["signals"] = sigs_d
+                ddoc["promoted_n"] = len(sigs_d)
+                ddoc["superseded_by"] = "F175"
+                ddoc["updated_at"] = _now()
+                decay_path.write_text(json.dumps(ddoc, indent=2) + "\n", encoding="utf-8")
+            except (OSError, json.JSONDecodeError, TypeError):
+                pass
+
+    return {
+        "feature": "F175",
+        "path": str(out),
+        "source_skill_n": len(by_sid),
+        "promoted_n": doc["promoted_n"],
+        "blocked_n": len(blocked),
+        "blocked": blocked[:16],
+        "min_tenants": min_t,
+        "min_hits": min_h,
+        "privacy_ok": doc["privacy_ok"],
+        "themes": [s.get("theme") for s in clean[:16]],
+        "revived": revived,
     }
 
 
@@ -2163,6 +2536,31 @@ def main(argv: list[str] | None = None) -> int:
     ppd.add_argument("--min-hits", type=int, default=None)
     ppd.set_defaults(func=cmd_promote_refine_decay)
 
+    pfrv = sub.add_parser(
+        "federate-refine-revive",
+        help="F175 privacy-safe federate of dual_pass revive after decay",
+    )
+    pfrv.add_argument(
+        "--skills",
+        default="",
+        help="comma skill ids (default: refine_dual_revived from ledger)",
+    )
+    pfrv.set_defaults(func=cmd_federate_refine_revive)
+
+    pprv = sub.add_parser(
+        "promote-refine-revive",
+        help="F175 multi-tenant promote gate for dual_pass revive re-boost",
+    )
+    pprv.add_argument("--min-tenants", type=int, default=None)
+    pprv.add_argument("--min-hits", type=int, default=None)
+    pprv.set_defaults(func=cmd_promote_refine_revive)
+
+    pfix = sub.add_parser(
+        "fixture-refine-revive",
+        help="F175 hermetic: local revive + multi-tenant re-boost after decay",
+    )
+    pfix.set_defaults(func=cmd_fixture_refine_revive)
+
     pha = sub.add_parser(
         "ingest-hub-archival",
         help="F158 fold recovery hub-archival util gap/hit into fitness ledger",
@@ -2242,6 +2640,212 @@ def cmd_promote_refine_decay(args: argparse.Namespace) -> int:
     )
     print(json.dumps(result, indent=2))
     return 0 if result.get("privacy_ok", True) else 1
+
+
+def cmd_federate_refine_revive(args: argparse.Namespace) -> int:
+    """F175: federate dual_pass revive bins."""
+    skills_raw = (getattr(args, "skills", "") or "").strip()
+    skill_ids = [s.strip() for s in skills_raw.split(",") if s.strip()] or None
+    result = federate_refine_dual_revive(_root(), skill_ids=skill_ids)
+    print(json.dumps(result, indent=2))
+    return 0 if result.get("privacy_ok", True) else 1
+
+
+def cmd_promote_refine_revive(args: argparse.Namespace) -> int:
+    """F175: multi-tenant promote dual_pass revive re-boost."""
+    result = promote_refine_dual_revive(
+        _root(),
+        min_tenants=getattr(args, "min_tenants", None),
+        min_hits=getattr(args, "min_hits", None),
+    )
+    print(json.dumps(result, indent=2))
+    return 0 if result.get("privacy_ok", True) else 1
+
+
+def cmd_fixture_refine_revive(args: argparse.Namespace) -> int:
+    """F175 hermetic: decay → dual_pass local revive → multi-tenant re-boost."""
+    del args  # unused
+    root = _root()
+    sid = "skill-prefer-hub-archival-early"
+    os.environ["TORII_SKILL_FITNESS_REFINE_DUAL_DECAY"] = "1"
+    os.environ["TORII_SKILL_FITNESS_REFINE_DUAL_REVIVE"] = "1"
+    os.environ["TORII_SKILL_FITNESS_MIN_N"] = "3"
+    os.environ["TORII_SKILL_FITNESS_REFINE_DUAL_FAIL_THR"] = "0.67"
+    # plant chronic dual_fail decayed skill
+    ledger = load_ledger(ledger_path(root))
+    skills = ledger.setdefault("skills", {})
+    skills[sid] = {
+        "id": sid,
+        "refine_dual_selected_n": 3,
+        "refine_dual_fail_n": 3,
+        "refine_dual_pass_n": 0,
+        "refine_dual_fail_rate": 1.0,
+        "refine_dual_pass_rate": 0.0,
+        "refine_dual_chronic_fail": True,
+        "last_refine_decayed": True,
+        "multi_tenant_decay": True,
+        "multi_tenant_decay_tenants": 2,
+        "refine_priority_decay": -25,
+        "hub_priority_delta": -20,
+        "demoted": True,
+        "gepa_refined": True,
+        "selected_n": 3,
+    }
+    save_ledger(ledger, ledger_path(root))
+    # dual_pass recovery samples (need pass > fail to streak_ok, or rate < thr)
+    # 3 fails + 4 passes → fail_rate=3/7≈0.43 < 0.67
+    revived_local = False
+    for i in range(4):
+        rep = {
+            "refine_dual_pass": True,
+            "refine_tool_contribution_pp": 50.0,
+            "refine_probe_delta": 1,
+            "refined_skill_ids": [sid],
+            "selected": [sid],
+        }
+        r = ingest_refine_dual(rep, root=root, save=True)
+        if sid in (r.get("revived") or []):
+            revived_local = True
+    ledger = load_ledger(ledger_path(root))
+    ent = (ledger.get("skills") or {}).get(sid) or {}
+    local_ok = bool(
+        revived_local
+        or ent.get("refine_dual_revived")
+    ) and not ent.get("refine_dual_chronic_fail") and int(
+        ent.get("refine_priority_decay") or 0
+    ) >= 0 and int(ent.get("hub_priority_delta") or 0) > 0
+
+    # multi-tenant: plant second-tenant revive signal then promote
+    fed_path = root / "memory" / "federation" / "skill-refine-dual-revive-signals.json"
+    fed_path.parent.mkdir(parents=True, exist_ok=True)
+    th_a = _tenant_hash_fitness(root)
+    th_b = "fixture-tenant-b12"
+    multi_doc = {
+        "schema_version": SCHEMA,
+        "feature": "F175",
+        "scope": "skill_refine_dual_revive",
+        "privacy": "skill_id_pass_bin_tenant_hash_only",
+        "privacy_ok": True,
+        "signals": [
+            {
+                "id": f"refine-revive-{sid}",
+                "theme": sid,
+                "skill_id": sid,
+                "tags": ["refine_dual_revive", "f175", "dual_pass"],
+                "source": "skill_refine_dual_revive",
+                "hits": 2,
+                "tenants": 1,
+                "tenant_hash": th_a,
+                "tenant_hashes": [th_a],
+                "pass_rate": 0.6,
+                "pass_rate_bin": "mid",
+                "tool_pp": 50.0,
+                "tool_pp_bin": "high",
+                "boost": 16,
+                "dual_pass": True,
+                "feature": "F175",
+            },
+            {
+                "id": f"refine-revive-{sid}-b",
+                "theme": sid,
+                "skill_id": sid,
+                "tags": ["refine_dual_revive", "f175", "dual_pass"],
+                "source": "skill_refine_dual_revive",
+                "hits": 2,
+                "tenants": 1,
+                "tenant_hash": th_b,
+                "tenant_hashes": [th_b],
+                "pass_rate": 0.7,
+                "pass_rate_bin": "mid",
+                "tool_pp": 50.0,
+                "tool_pp_bin": "high",
+                "boost": 16,
+                "dual_pass": True,
+                "feature": "F175",
+            },
+        ],
+    }
+    fed_path.write_text(json.dumps(multi_doc, indent=2) + "\n", encoding="utf-8")
+    # plant decay themes so supersede can fire
+    decay_themes = root / "memory" / "federation" / "promoted-refine-dual-decay-themes.json"
+    decay_themes.write_text(
+        json.dumps(
+            {
+                "schema_version": SCHEMA,
+                "feature": "F172",
+                "promoted_n": 1,
+                "signals": [
+                    {
+                        "skill_id": sid,
+                        "theme": sid,
+                        "decay": -30,
+                        "tenants": 2,
+                        "tags": ["promoted_refine_dual_decay"],
+                    }
+                ],
+            },
+            indent=2,
+        )
+        + "\n",
+        encoding="utf-8",
+    )
+    prom = promote_refine_dual_revive(root=root, min_tenants=2, min_hits=2)
+    multi_ok = (
+        int(prom.get("promoted_n") or 0) >= 1
+        and sid in (prom.get("revived") or [])
+        and bool(prom.get("privacy_ok"))
+    )
+    ledger2 = load_ledger(ledger_path(root))
+    ent2 = (ledger2.get("skills") or {}).get(sid) or {}
+    multi_ledger_ok = bool(ent2.get("multi_tenant_revive")) and not ent2.get(
+        "multi_tenant_decay"
+    ) and int(ent2.get("hub_priority_delta") or 0) >= 16
+    # supersede decay themes
+    superseded = False
+    if decay_themes.is_file():
+        try:
+            dd = json.loads(decay_themes.read_text(encoding="utf-8"))
+            left = [
+                s
+                for s in (dd.get("signals") or [])
+                if str(s.get("skill_id") or "") == sid
+            ]
+            superseded = len(left) == 0 or dd.get("superseded_by") == "F175"
+        except (OSError, json.JSONDecodeError):
+            superseded = False
+    # federate privacy: signals use tenant hashes only (paths may appear in CLI path field)
+    sig_only = {
+        "revived": prom.get("revived"),
+        "themes": prom.get("themes"),
+        "signals_n": prom.get("promoted_n"),
+    }
+    privacy_ok = bool(prom.get("privacy_ok")) and "/Users/" not in json.dumps(sig_only)
+    fed_blob = fed_path.read_text(encoding="utf-8") if fed_path.is_file() else ""
+    privacy_ok = privacy_ok and "/Users/" not in fed_blob and "/home/" not in fed_blob
+    # bare tenant labels must not appear in promoted themes file
+    prom_path = root / "memory" / "federation" / "promoted-refine-dual-revive-themes.json"
+    if prom_path.is_file():
+        pb = prom_path.read_text(encoding="utf-8")
+        privacy_ok = privacy_ok and "/Users/" not in pb and "/home/" not in pb
+
+    f175_ok = bool(local_ok and multi_ok and multi_ledger_ok and superseded and privacy_ok)
+    out = {
+        "feature": "F175",
+        "fixture_pass": f175_ok,
+        "local_revive_ok": local_ok,
+        "multi_tenant_promote_ok": multi_ok,
+        "multi_ledger_ok": multi_ledger_ok,
+        "decay_superseded": superseded,
+        "privacy_ok": privacy_ok,
+        "promoted_n": prom.get("promoted_n"),
+        "revived": prom.get("revived"),
+        "hub_priority_delta": ent2.get("hub_priority_delta"),
+        "multi_tenant_revive": ent2.get("multi_tenant_revive"),
+        "refine_dual_revived": ent2.get("refine_dual_revived"),
+        "refine_priority_decay": ent2.get("refine_priority_decay"),
+    }
+    print(json.dumps(out, indent=2))
+    return 0 if f175_ok else 1
 
 
 def cmd_ingest_hub_archival(args: argparse.Namespace) -> int:

@@ -1,0 +1,14 @@
+{
+  "feature": "F152",
+  "enabled": true,
+  "reprompt": 0,
+  "reason": "no_tool_turns_use_f49",
+  "high": true,
+  "local_idle": true,
+  "heat": 1.0,
+  "hub_boost_n": 0,
+  "theme_n": 4,
+  "tool_call_turns": 0,
+  "already_reprompted": false,
+  "max_tenants": 1
+}

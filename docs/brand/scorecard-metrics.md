@@ -1,6 +1,6 @@
 # Torii Gate — measured scorecard (F129/F130/F164/F170)
 
-_Generated: `2026-08-01T12:35:22Z` · level **L3** · brand_ready=True_
+_Generated: `2026-08-01T12:45:24Z` · level **L3** · brand_ready=True_
 
 Measured gate readiness: dual compound (skill+memory) + workflow graph + demote_rate=1.0 + memory_util_delta=0.85 + hub-archival loop (util→reprompt→fitness→hub inject).
 

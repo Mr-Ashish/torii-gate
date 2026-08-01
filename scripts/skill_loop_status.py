@@ -758,8 +758,27 @@ def assess(root: Path | None = None, *, deep: bool = True) -> dict[str, Any]:
                 if (root / "scripts" / "second_agent_critic.py").is_file()
                 else ""
             )
+            # F175 dual_pass revive after multi-tenant decay
+            and "federate_refine_dual_revive"
+            in (
+                (root / "scripts" / "skill_fitness.py").read_text(
+                    encoding="utf-8", errors="replace"
+                )
+                if (root / "scripts" / "skill_fitness.py").is_file()
+                else ""
+            )
+            and "promote_refine_dual_revive"
+            in (
+                (root / "scripts" / "skill_fitness.py").read_text(
+                    encoding="utf-8", errors="replace"
+                )
+                if (root / "scripts" / "skill_fitness.py").is_file()
+                else ""
+            )
+            and "promote-refine-revive" in hermes_sh
+            and "F175" in hermes_sh
         ),
-        "feature_refine_loop": "F170/F173",
+        "feature_refine_loop": "F170/F175",
         # F171: chronic refine dual_fail always-priority decay
         "refine_dual_decay_ok": "ingest_refine_dual" in (
             (root / "scripts" / "skill_fitness.py").read_text(
@@ -803,6 +822,31 @@ def assess(root: Path | None = None, *, deep: bool = True) -> dict[str, Any]:
         and "federate-refine-decay" in hermes_sh
         and "F172" in hermes_sh,
         "feature_refine_decay_fed": "F172",
+        # F175: dual_pass revive after decay + multi-tenant re-boost
+        "refine_dual_revive_ok": "federate_refine_dual_revive" in (
+            (root / "scripts" / "skill_fitness.py").read_text(
+                encoding="utf-8", errors="replace"
+            )
+            if (root / "scripts" / "skill_fitness.py").is_file()
+            else ""
+        )
+        and "promote_refine_dual_revive" in (
+            (root / "scripts" / "skill_fitness.py").read_text(
+                encoding="utf-8", errors="replace"
+            )
+            if (root / "scripts" / "skill_fitness.py").is_file()
+            else ""
+        )
+        and "promote-refine-revive" in hermes_sh
+        and "F175" in hermes_sh
+        and "multi_tenant_revive" in (
+            (root / "scripts" / "skill_router.py").read_text(
+                encoding="utf-8", errors="replace"
+            )
+            if (root / "scripts" / "skill_router.py").is_file()
+            else ""
+        ),
+        "feature_refine_dual_revive": "F175",
         # F158: fitness ledger ingest/demote for hub-archival util
         "hub_archival_fitness_ok": "ingest_hub_archival_util" in (
             (root / "scripts" / "skill_fitness.py").read_text(
@@ -932,6 +976,7 @@ def to_markdown(report: dict[str, Any]) -> str:
             f"(F165–F169 one readiness bit)",
             f"- Chronic refine dual_fail always-priority decay (F171): **{'ok' if report.get('refine_dual_decay_ok') else 'gap'}**",
             f"- Multi-tenant refine dual_fail decay federate (F172): **{'ok' if report.get('refine_decay_fed_ok') else 'gap'}**",
+            f"- Dual_pass revive + multi-tenant re-boost (F175): **{'ok' if report.get('refine_dual_revive_ok') else 'gap'}**",
             f"- Recovery hub gap critic/demote-eval (F128): **{'ok' if report.get('recovery_hub_gap_ok') else 'gap'}**",
             f"- Recon-warm hub critic/demote-eval (F151): **{'ok' if report.get('recon_warm_hub_ok') else 'gap'}**",
             f"- Wiring (assemble/run/hermes/save-trace): **{'ok' if report.get('wiring_ok') else 'gap'}**",
@@ -1017,7 +1062,9 @@ def cmd_scorecard(args: argparse.Namespace) -> int:
                 "feature_refine_dual_decay": report.get("feature_refine_dual_decay")
                 or "F171",
                 "refine_decay_fed_ok": report.get("refine_decay_fed_ok"),
-                "feature_refine_decay_fed": report.get("feature_refine_decay_fed")
+                "feature_refine_decay_fed": report.get("feature_refine_decay_fed"),
+                "refine_dual_revive_ok": report.get("refine_dual_revive_ok"),
+                "feature_refine_dual_revive": report.get("feature_refine_dual_revive")
                 or "F172",
                 "feature_scorecard_ops": report.get("feature_scorecard_ops"),
                 "scorecard_ops_ok": report.get("scorecard_ops_ok"),
@@ -1111,6 +1158,8 @@ def cmd_fixture(args: argparse.Namespace) -> int:
                 "feature_refine_dual_decay": "F171",
                 "refine_decay_fed_ok": report.get("refine_decay_fed_ok"),
                 "feature_refine_decay_fed": "F172",
+                "refine_dual_revive_ok": report.get("refine_dual_revive_ok"),
+                "feature_refine_dual_revive": "F175",
                 "wiring_ok": report["wiring_ok"],
                 "deep_ok": report["deep_ok"],
                 "ready": report["ready"],

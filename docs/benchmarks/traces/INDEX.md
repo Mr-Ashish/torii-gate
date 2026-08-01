@@ -108,3 +108,5 @@ Paper/eval-safe slim traces (redacted). Large raw logs may be gitignored; always
 | f167-gepa-refine-dual-rollout | F167 | GEPA refine dual contribution_pp | local + Modal pytorch#191832 BIT3_OK |
 | f166-gepa-refine-dual-gate-attr | F166 | GEPA refine dual-gate LOO floor + fitness | local recall=1.0 + Modal pytorch#191829 BIT3_OK |
 | f165-gepa-lite-skill-refine | F165 | GEPA-lite skill refine-from-util | local recall=1.0 + Modal pytorch#191831 BIT3_OK |
+
+| F175 | dual_pass revive after multi-tenant decay | f175-refine-dual-pass-revive | refine_loop_ok + multi-tenant re-boost |

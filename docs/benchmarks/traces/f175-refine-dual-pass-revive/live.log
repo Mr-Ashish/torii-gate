@@ -1,0 +1,42 @@
+f160_skill_router_inject=1 always_n=3
+live_start model=deepseek/deepseek-v4-pro out_dir=docs/benchmarks/traces/f175-refine-dual-pass-revive/live
+::notice::F43 preflight cost · decision=allow reason=no_budget est=$0.2652 model=deepseek/deepseek-v4-pro
+F43 preflight cost · decision=allow reason=no_budget est=$0.2652 model=deepseek/deepseek-v4-pro
+::notice::hermes version matches pin 53559aaf: /Users/ashishmishra/.local/bin/hermes
+hermes version matches pin 53559aaf: /Users/ashishmishra/.local/bin/hermes
+::notice::F46 SOUL context scan clean (Hermes will load reviewer contract)
+F46 SOUL context scan clean (Hermes will load reviewer contract)
+::notice::Hermes review · model=deepseek/deepseek-v4-pro tier=explicit toolsets=terminal workspace=/Users/ashishmishra/Documents/experiments/torii hermes_home=/Users/ashishmishra/Documents/experiments/torii/.torii-hermes-home timeout=180s max_turns=12
+Hermes review · model=deepseek/deepseek-v4-pro tier=explicit toolsets=terminal workspace=/Users/ashishmishra/Documents/experiments/torii hermes_home=/Users/ashishmishra/Documents/experiments/torii/.torii-hermes-home timeout=180s max_turns=12
+hermes-run.log bytes=2401
+docs/benchmarks/traces/f175-refine-dual-pass-revive/live/agent-loop
+captured steps=8 messages=8 tool_turns=2 session=20260801_181550_7e7f2b
+::notice::F165 GEPA-lite refine-from-util (soft) · skill-refine.json
+F165 GEPA-lite refine-from-util (soft) · skill-refine.json
+::notice::F166 refine fitness shield (soft) · ingest-refine
+F166 refine fitness shield (soft) · ingest-refine
+::notice::F166 refine LOO floor hint · skill-refine-attr.json
+F166 refine LOO floor hint · skill-refine-attr.json
+::notice::F167 refine dual-rollout contribution_pp · refine-dual.json
+F167 refine dual-rollout contribution_pp · refine-dual.json
+::notice::F171 refine dual chronic-fail decay (soft) · ingest-refine-dual
+F171 refine dual chronic-fail decay (soft) · ingest-refine-dual
+::notice::F172 refine dual decay federate+promote (soft)
+F172 refine dual decay federate+promote (soft)
+::notice::F175 refine dual_pass revive federate+promote (soft)
+F175 refine dual_pass revive federate+promote (soft)
+::notice::F168 refine dual federate+promote · promoted-refine-dual-themes.json
+F168 refine dual federate+promote · promoted-refine-dual-themes.json
+docs/benchmarks/traces/f175-refine-dual-pass-revive/live/review-bench-f70.md
+usage-summary: updated docs/benchmarks/traces/f175-refine-dual-pass-revive/live/review-bench-f70.md
+REVIEW_FILE=docs/benchmarks/traces/f175-refine-dual-pass-revive/live/review-bench-f70.md
+AGENT_LOOP_DIR=docs/benchmarks/traces/f175-refine-dual-pass-revive/live/agent-loop
+::notice::Review written: docs/benchmarks/traces/f175-refine-dual-pass-revive/live/review-bench-f70.md (5180 bytes)
+Review written: docs/benchmarks/traces/f175-refine-dual-pass-revive/live/review-bench-f70.md (5180 bytes)
+::notice::Agent loop captured: docs/benchmarks/traces/f175-refine-dual-pass-revive/live/agent-loop
+Agent loop captured: docs/benchmarks/traces/f175-refine-dual-pass-revive/live/agent-loop
+live_rc=0
+review=docs/benchmarks/traces/f175-refine-dual-pass-revive/live/review-bench-f70.md
+recall=1.0 tp=4 fn=0 passed=1
+verdict=REQUEST_CHANGES
+metrics=docs/benchmarks/traces/f175-refine-dual-pass-revive/live/bench-live-metrics.json

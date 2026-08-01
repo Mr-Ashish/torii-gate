@@ -1,3 +1,33 @@
+## 2026-08-01 — F175 dual_pass revive after multi-tenant decay
+
+### Papers / posts
+- GEPA (arXiv 2507.19457): reflective evolution needs recoverability — failed variants re-enter via dual_pass evidence, not permanent blacklist.
+- FederatedSkill: multi-tenant gates for promote *and* demote; recovery must multi-tenant gate free-rider re-boost.
+- Hermes self-evolution / SkillOpt: validation-gated skill best recovers after reject when metrics improve.
+- Torii F171–F173: chronic dual_fail decay left multi_tenant_decay sticky with no re-boost path.
+
+### Insight
+Decay without revive is a one-way trap. Highest ROI after F173 brand pack: dual_pass after prior decay → clear multi_tenant_decay, federate privacy-safe revive bins, multi-tenant re-boost always priority, supersede decay themes.
+
+### Feature shipped (F175)
+- ingest_refine_dual local revive (streak/rate recovery) + hub_priority re-boost
+- federate_refine_dual_revive / promote_refine_dual_revive (FederatedSkill min_tenants)
+- router always Δprio from revive themes; supersede promoted decay themes
+- hermes soft federate-refine-revive + promote-refine-revive
+- refine_dual_revive_ok; refine_loop_ok ANDs F175
+- fixture-refine-revive; PRODUCT/brand surfaces
+
+### Loop-engineering
+Close the compound loop: promote → decay → **revive** so measured recovery re-enters always budget.
+
+### Metric
+- Offline fixture_pass local+multi_tenant+supersede+privacy
+- Live local: recall=1.0 passed=1 REQUEST_CHANGES; F171–F175 hermes soft chain
+- Modal pytorch#191836 BIT3_OK ~77.9s POST_COMMENT=0 log_streaming=true F175 soft wire
+
+### SHA
+`PENDING`
+
 # Torii research → product log
 
 ## 2026-08-01 — F174 GEPA refine full brand+EVAL pack (F165–F173)

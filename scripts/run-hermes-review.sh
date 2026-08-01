@@ -1076,6 +1076,15 @@ if [[ -f "$SKILL_ROUTER_HELPER" && $TIMED_OUT -eq 0 && "${HERMES_CLI_ARGV_BROKEN
                         python3 "$TORII_ROOT/scripts/skill_fitness.py" federate-refine-decay >/dev/null 2>&1 || true
                         python3 "$TORII_ROOT/scripts/skill_fitness.py" promote-refine-decay >/dev/null 2>&1 || true
                         notice "F172 refine dual decay federate+promote (soft)"
+                        # F175: dual_pass revive after decay → multi-tenant re-boost always budget
+                        case "${TORII_SKILL_FITNESS_REFINE_DUAL_REVIVE:-1}" in
+                          0|false|no|off) ;;
+                          *)
+                            python3 "$TORII_ROOT/scripts/skill_fitness.py" federate-refine-revive >/dev/null 2>&1 || true
+                            python3 "$TORII_ROOT/scripts/skill_fitness.py" promote-refine-revive >/dev/null 2>&1 || true
+                            notice "F175 refine dual_pass revive federate+promote (soft)"
+                            ;;
+                        esac
                         ;;
                     esac
                   fi

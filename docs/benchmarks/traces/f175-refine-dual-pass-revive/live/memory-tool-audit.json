@@ -1,0 +1,64 @@
+{
+  "feature": "F105",
+  "schema": 1,
+  "score": 1.0,
+  "level": "L3",
+  "hit_count": 8,
+  "tools_used": [
+    "archival_search",
+    "torii_memory",
+    "torii_product_memory"
+  ],
+  "by_tool": {
+    "torii_memory": 2,
+    "archival_search": 4,
+    "torii_product_memory": 2
+  },
+  "cli_subcmds": {
+    "search": 3
+  },
+  "inject_offered": true,
+  "utilization_gap": false,
+  "tool_call_turns": 2,
+  "feedback": [
+    "memory_tools_used=3 hits=8 tools=['archival_search', 'torii_memory', 'torii_product_memory']"
+  ],
+  "scored_at": "2026-08-01T12:46:19Z",
+  "hits_detail": [
+    {
+      "tool": "torii_memory",
+      "snip": "\"command\": \"ls scripts/torii.py scripts/torii_memory.py scripts/archival_memory_search.py 2>&1; python3 --version 2>&1\"}"
+    },
+    {
+      "tool": "archival_search",
+      "snip": "orii.py scripts/torii_memory.py scripts/archival_memory_search.py 2>&1; python3 --version 2>&1\"}"
+    },
+    {
+      "tool": "torii_memory",
+      "snip": "ry_search.py\\nscripts/torii.py\\nscripts/torii_memory.py\\nPython 3.13.7\", \"exit_code\": 0, \"error\": null}"
+    },
+    {
+      "tool": "archival_search",
+      "snip": "{\"output\": \"scripts/archival_memory_search.py\\nscripts/torii.py\\nscripts/torii_memory.py\\nPython 3.13.7\", \"exit_code\": 0, \"er"
+    },
+    {
+      "tool": "torii_product_memory",
+      "snip": "{\"command\": \"python3 scripts/torii.py memory -- search -- -q \\\"auth OR sql OR pickle OR secret\\\" 2>&1\", \"timeout\": 30}"
+    },
+    {
+      "tool": "archival_search",
+      "snip": "{\"command\": \"python3 scripts/archival_memory_search.py auto --files demo/insecure/app.py 2>&1\", \"timeout\": 30}"
+    },
+    {
+      "tool": "torii_product_memory",
+      "snip": "--files changed.py` `python3 scripts/torii.py memory -- search -- -q \"hub warm t"
+    },
+    {
+      "tool": "archival_search",
+      "snip": "re archival paging: `python3 scripts/archival_memory_search.py auto --files changed.py` `python3 scripts/torii.py memory -- search -- -q \"h"
+    }
+  ],
+  "out_dir": "docs/benchmarks/traces/f175-refine-dual-pass-revive/live",
+  "loop_path": "docs/benchmarks/traces/f175-refine-dual-pass-revive/live/agent-loop/agent-loop.json",
+  "enabled": true
+}

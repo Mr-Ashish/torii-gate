@@ -283,6 +283,7 @@ Torii does not leave recovery skill bodies static after util gaps. Skills **evol
 ```text
 util gap → GEPA refine → dual-gate LOO → dual_pp → federate promote
        → always Δprio + dual_fail critic → chronic decay → multi-tenant demote
+       → dual_pass revive → multi-tenant re-boost (F175)
 ```
 
 | Stage | Feature | Customer-facing meaning |
@@ -296,12 +297,13 @@ util gap → GEPA refine → dual-gate LOO → dual_pp → federate promote
 | **Chronic decay** | F171 | dual_fail_rate ≥ thr → always Δprio decay + lift shield |
 | **Decay federate** | F172 | Multi-tenant gate amplifies local always demote |
 | **Decay critic** | F173 | Multi-tenant decay elevated → demote weak APPROVE (+ LLM soft hint) |
+| **Dual_pass revive** | F175 | After decay, dual_pass clears blacklist + multi-tenant re-boosts always |
 
-**One-liner (eng):** *Skills that fail tool util get refined, measured, and multi-tenant promoted — or they stay out of always budget.*
+**One-liner (eng):** *Skills that fail tool util get refined, measured, and multi-tenant promoted — or they stay out of always budget; recovery is measured too.*
 
 **One-liner (AppSec):** *Idle recovery skills cannot silently APPROVE after GEPA refine inject.*
 
-**Brand pack (F170/F174):** PRODUCT + landing + scorecard-metrics surface `refine_loop_ok` (F165–F173); paper EVAL pack rolls F165–F173 live Modal proofs (`f170` + `f174` refresh with decay rows).
+**Brand pack (F170/F174):** PRODUCT + landing + scorecard-metrics surface `refine_loop_ok` (F165–F173+F175 revive); paper EVAL pack rolls F165–F173 live Modal proofs (`f170` + `f174` refresh with decay rows). F175 closes decay→revive.
 
 **Ops:** `python3 scripts/torii.py doctor` / `scorecard` → `refine_loop_ok` next to `hub_archival_loop_ok`.
 
@@ -309,7 +311,9 @@ util gap → GEPA refine → dual-gate LOO → dual_pp → federate promote
 
 **Multi-tenant decay federate (F172):** FederatedSkill gate for F171 — privacy-safe `skill-refine-dual-decay-signals.json` (skill id + fail_rate bin + decay + tenant hash); `promote-refine-decay` requires ≥2 tenants before amplifying local decay and always demotion. Single-tenant chronic fails stay local-only.
 
-**Multi-tenant decay critic (F173):** second-agent `f173_refine_decay_hub` demotes APPROVE when multi-tenant chronic dual_fail decay is elevated; soft `endorse_demote_hint` for optional LLM critic (`TORII_LLM_CRITIC=1`). Paper demote-eval: `refine_decay_hub_idle_demoted`. `refine_loop_ok` now ANDs F165–F173.
+**Multi-tenant decay critic (F173):** second-agent `f173_refine_decay_hub` demotes APPROVE when multi-tenant chronic dual_fail decay is elevated; soft `endorse_demote_hint` for optional LLM critic (`TORII_LLM_CRITIC=1`). Paper demote-eval: `refine_decay_hub_idle_demoted`.
+
+**Dual_pass revive (F175):** when dual_pass recovers contribution_pp after prior decay, clear local multi_tenant_decay + restore always-priority; privacy-safe federate revive bins; multi-tenant promote re-boosts and supersedes decay themes. `refine_loop_ok` ANDs F165–F175.
 
 ---
 
