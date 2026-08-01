@@ -28,7 +28,7 @@ Hub warm query without critic demote can be soft-disabled. Highest ROI: F150 dem
 **Maker/checker demote on multi-tenant recon-warm ignore** — closed-loop federation.
 
 ### SHA
-`PENDING`
+`41a34cc3dbf69ba142a94e12bfe74801108097f9`
 
 
 ## 2026-08-01 — F149 hub recon-warm → archival auto-query
