@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""F108/F159: Shared soft-re-prompt budget + adaptive complementary slot.
+"""F108/F159/F183: Shared soft-re-prompt budget + adaptive + compound slot.
 
 Research drivers:
   - Agent cost guides (2026): multi-turn re-prompts double LLM spend; need kill
@@ -28,6 +28,7 @@ Env:
   TORII_REPROMPT_BUDGET        1 (default) | 0  — master toggle
   TORII_REPROMPT_ADAPTIVE      1 (default) | 0  — F159 complementary bonus slot
   TORII_REPROMPT_ADAPTIVE_BONUS default 1 — max adaptive extra (capped once)
+  TORII_REPROMPT_COMPOUND       1 (default) | 0  — F183 hub×GEPA compound bonus slot
 """
 
 from __future__ import annotations
@@ -43,6 +44,7 @@ from typing import Any
 
 FEATURE = "F108"
 FEATURE_ADAPTIVE = "F159"
+FEATURE_COMPOUND = "F183"
 SCHEMA = 1
 STATE_NAME = "reprompt-budget.json"
 # f122 = recovery skill util; f137 = scorecard util; f152 = recon-warm hub idle
@@ -88,6 +90,93 @@ def adaptive_bonus() -> int:
         return max(0, min(2, int(raw)))
     except ValueError:
         return 1
+
+
+def compound_enabled() -> bool:
+    """F183: grant hub×GEPA compound dual-loop re-prompt bonus (default on)."""
+    raw = (os.environ.get("TORII_REPROMPT_COMPOUND") or "1").strip().lower()
+    return raw not in _FALSEY
+
+
+def compound_kinds() -> frozenset[str]:
+    """F183: recovery kinds that may unlock under hub×GEPA compound heat."""
+    return frozenset({"f157", "f122"})
+
+
+def ensure_compound_slot(
+    state: dict[str, Any],
+    *,
+    kind: str,
+    root: Path | None = None,
+) -> dict[str, Any]:
+    """F183: if hub×GEPA compound high, expand max_extra once for f157/f122.
+
+    Independent of F159 complementary kinds — dual-loop free-rider heat is itself
+    evidence that hub-archival recovery re-prompt is still needed after budget use.
+    Never expands for f49. Soft-fails assess import (no expand).
+    """
+    kind = (kind or "other").lower()
+    if kind not in KINDS:
+        kind = "other"
+    if not compound_enabled() or not enabled():
+        return state
+    if state.get("compound_expanded"):
+        return state
+    if kind == "f49" or kind not in compound_kinds():
+        return state
+    max_n = int(
+        state.get("max_extra") if state.get("max_extra") is not None else max_extra()
+    )
+    used = int(state.get("used") or 0)
+    if used < max_n:
+        return state  # base remaining — no expand needed
+    attempts = state.get("attempts") or []
+    attempted = {
+        str(a.get("kind") or "").lower()
+        for a in attempts
+        if isinstance(a, dict) and a.get("kind")
+    }
+    if kind in attempted:
+        return state
+    # assess dual-loop pressure
+    high = False
+    reason = "hub_gepa_compound_high"
+    try:
+        import importlib.util
+        import sys as _sys
+
+        sr = Path(__file__).resolve().parent / "skill_router.py"
+        if sr.is_file():
+            if "skill_router" in _sys.modules:
+                mod = _sys.modules["skill_router"]
+            else:
+                spec = importlib.util.spec_from_file_location("skill_router", sr)
+                if spec is not None and spec.loader is not None:
+                    mod = importlib.util.module_from_spec(spec)
+                    _sys.modules["skill_router"] = mod
+                    spec.loader.exec_module(mod)
+                else:
+                    mod = None
+            if mod is not None and hasattr(mod, "assess_hub_gepa_compound"):
+                # root from TORII_ROOT or parent of out_dir state path if available
+                r = root
+                if r is None:
+                    envr = (os.environ.get("TORII_ROOT") or "").strip()
+                    r = Path(envr) if envr else None
+                rep = mod.assess_hub_gepa_compound(root=r)
+                high = bool(rep.get("high"))
+                if high:
+                    reason = str(rep.get("reason") or reason)
+    except Exception:
+        high = False
+    if not high:
+        return state
+    state["max_extra"] = max_n + 1
+    state["compound_expanded"] = True
+    state["compound_feature"] = FEATURE_COMPOUND
+    state["compound_reason"] = reason
+    state["remaining"] = max(0, int(state["max_extra"]) - used)
+    return state
 
 
 def complementary_kinds(kind: str) -> frozenset[str]:
@@ -179,6 +268,8 @@ def new_state(*, max_n: int | None = None) -> dict[str, Any]:
         "attempts": [],
         "blocked": [],
         "adaptive_expanded": False,
+        "compound_expanded": False,
+        "feature_compound": FEATURE_COMPOUND if compound_enabled() else None,
         "updated_at": _now(),
     }
 
@@ -205,6 +296,8 @@ def decide_allow(
     # F159: maybe expand max_extra before measuring remaining
     if apply_adaptive:
         ensure_adaptive_slot(state, kind=kind)
+        # F183: hub×GEPA compound heat may unlock one recovery re-prompt slot
+        ensure_compound_slot(state, kind=kind)
     on = bool(state.get("enabled", True)) and enabled()
     max_n = int(state.get("max_extra") if state.get("max_extra") is not None else max_extra())
     used = int(state.get("used") or 0)
@@ -222,6 +315,9 @@ def decide_allow(
         "remaining": remaining,
         "adaptive_expanded": int(adaptive),
         "adaptive_reason": state.get("adaptive_reason") or "",
+        "compound_expanded": int(bool(state.get("compound_expanded"))),
+        "compound_reason": state.get("compound_reason") or "",
+        "feature_compound": FEATURE_COMPOUND if compound_enabled() else None,
         "reason": "ok",
     }
     if not on:
@@ -239,11 +335,13 @@ def decide_allow(
         out["reason"] = "kind_already_attempted"
         return out
     out["allow"] = 1
-    out["reason"] = (
-        "adaptive_within_budget"
-        if adaptive and used >= int(state.get("base_max_extra") or max_extra())
-        else "within_budget"
-    )
+    compound = bool(state.get("compound_expanded"))
+    if compound and used >= int(state.get("base_max_extra") or max_extra()):
+        out["reason"] = "compound_within_budget"
+    elif adaptive and used >= int(state.get("base_max_extra") or max_extra()):
+        out["reason"] = "adaptive_within_budget"
+    else:
+        out["reason"] = "within_budget"
     return out
 
 
@@ -255,8 +353,9 @@ def consume(
     note: str = "",
 ) -> dict[str, Any]:
     kind = (kind or "other").lower()
-    # F159: expand before decide so dual complementary recovery can consume
+    # F159/F183: expand before decide so dual complementary / compound can consume
     ensure_adaptive_slot(state, kind=kind)
+    ensure_compound_slot(state, kind=kind)
     dec = decide_allow(state, kind=kind, apply_adaptive=False)
     # always record attempt if not already, even if over budget (telemetry)
     attempts = list(state.get("attempts") or [])
@@ -498,6 +597,106 @@ def cmd_fixture(args: argparse.Namespace) -> int:
             and int(d_f106_rev.get("allow") or 0) == 1
         )
 
+        # F183: f49 exhausts base; without complementary f106, f157 blocked unless compound high
+        os.environ["TORII_REPROMPT_MAX_EXTRA"] = "1"
+        os.environ["TORII_REPROMPT_ADAPTIVE"] = "1"
+        os.environ["TORII_REPROMPT_COMPOUND"] = "1"
+        path_c = td_path / "compound.json"
+        # plant dual-loop compound high under TORII_ROOT
+        croot = td_path / "torii-root"
+        (croot / ".torii").mkdir(parents=True)
+        (croot / "memory" / "federation").mkdir(parents=True)
+        sid = "skill-prefer-hub-archival-early"
+        (croot / ".torii" / "skill-fitness.json").write_text(
+            json.dumps(
+                {
+                    "skills": {
+                        sid: {
+                            "id": sid,
+                            "multi_tenant_decay": True,
+                            "refine_dual_chronic_fail": True,
+                            "gap_n": 4,
+                            "chronic_gap": True,
+                            "util_rate": 0.1,
+                            "demoted": True,
+                        }
+                    }
+                }
+            )
+            + "\n",
+            encoding="utf-8",
+        )
+        (
+            croot / "memory" / "federation" / "hub-archival-util-signals.json"
+        ).write_text(
+            json.dumps(
+                {
+                    "signals": [
+                        {
+                            "hub_archival_idle": True,
+                            "util_rate_bin": "gap",
+                            "tenants": 3,
+                            "hits": 5,
+                            "tags": ["utilization_gap"],
+                        }
+                    ]
+                }
+            )
+            + "\n",
+            encoding="utf-8",
+        )
+        (
+            croot
+            / "memory"
+            / "federation"
+            / "promoted-refine-dual-decay-themes.json"
+        ).write_text(
+            json.dumps(
+                {
+                    "promoted_n": 1,
+                    "signals": [{"skill_id": sid, "tenants": 3}],
+                }
+            )
+            + "\n",
+            encoding="utf-8",
+        )
+        prev_root = os.environ.get("TORII_ROOT")
+        os.environ["TORII_ROOT"] = str(croot)
+        st_c = new_state(max_n=1)
+        save_state(path_c, st_c)
+        st_c = consume(load_state(path_c), kind="f49", recovered=True)
+        save_state(path_c, st_c)
+        # f157 without complementary f106 — F159 would not expand; F183 should
+        d_comp = decide_allow(load_state(path_c), kind="f157")
+        st_c2 = load_state(path_c)
+        ensure_compound_slot(st_c2, kind="f157", root=croot)
+        save_state(path_c, st_c2)
+        d_comp_b = decide_allow(load_state(path_c), kind="f157")
+        # compound off blocks
+        os.environ["TORII_REPROMPT_COMPOUND"] = "0"
+        path_coff = td_path / "compound-off.json"
+        st_coff = new_state(max_n=1)
+        save_state(path_coff, st_coff)
+        st_coff = consume(load_state(path_coff), kind="f49")
+        save_state(path_coff, st_coff)
+        d_comp_off = decide_allow(load_state(path_coff), kind="f157")
+        os.environ["TORII_REPROMPT_COMPOUND"] = "1"
+        if prev_root is None:
+            os.environ.pop("TORII_ROOT", None)
+        else:
+            os.environ["TORII_ROOT"] = prev_root
+
+        f183_ok = (
+            int(d_comp_b.get("allow") or 0) == 1
+            and (
+                int(d_comp_b.get("compound_expanded") or 0) == 1
+                or "compound" in str(d_comp_b.get("reason") or "")
+                or int(d_comp.get("allow") or 0) == 1
+            )
+            and int(d_comp_off.get("allow") or 0) == 0
+            and d_comp_off.get("reason") == "budget_exhausted"
+        )
+
         ok = all(
             [
                 d1.get("allow") == 1,
@@ -511,11 +710,13 @@ def cmd_fixture(args: argparse.Namespace) -> int:
                 z.get("allow") == 0,
                 off.get("allow") == 0 and off.get("reason") == "budget_off",
                 f159_ok,
+                f183_ok,
             ]
         )
         out = {
             "feature": FEATURE,
             "feature_adaptive": FEATURE_ADAPTIVE,
+            "feature_compound": FEATURE_COMPOUND,
             "fixture_pass": ok,
             "max1_first_allow": d1.get("allow"),
             "max1_second_block_reason": d2.get("reason"),
@@ -529,6 +730,11 @@ def cmd_fixture(args: argparse.Namespace) -> int:
             "f159_third_blocked": d_f152.get("reason"),
             "f159_off_blocks": d_f157_off.get("reason"),
             "f159_reverse_f106_allow": d_f106_rev.get("allow"),
+            "f183_ok": f183_ok,
+            "f183_f49_then_f157_allow": d_comp_b.get("allow"),
+            "f183_compound_expanded": d_comp_b.get("compound_expanded"),
+            "f183_reason": d_comp_b.get("reason"),
+            "f183_off_blocks": d_comp_off.get("reason"),
             "scored_at": _now(),
         }
         print(json.dumps(out, indent=2))

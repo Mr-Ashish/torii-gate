@@ -1,3 +1,33 @@
+## 2026-08-01 — F183 hub×GEPA compound re-prompt budget
+
+### Papers / posts
+- F108/F159 shared re-prompt budget + complementary adaptive slot.
+- F180–F182 dual-loop compound heat without recovery re-prompt fuel after f49 burn.
+- Agent cost guides: selective dual-recovery, not unbounded multi-reprompt.
+
+### OSS design patterns stolen
+1. `ensure_compound_slot` expands once when assess_hub_gepa_compound high.
+2. decide_allow reason `compound_within_budget` for f157/f122.
+3. Independent of F159 complementary kinds (f49 alone can still unlock f157 under heat).
+4. fixture f183_ok; refine_loop_ok AND F183.
+
+### Insight
+Base max_extra=1 + f49 can exhaust before hub-archival util recovery. Highest ROI: compound high → one f157/f122 re-prompt slot.
+
+### Feature shipped (F183)
+- ensure_compound_slot + TORII_REPROMPT_COMPOUND
+- hermes F183 notice; scorecard reprompt_compound_ok; PRODUCT F183 line
+
+### Loop-engineering
+Budgeted dual-recovery under measured dual-loop heat — not free re-prompt.
+
+### Metric
+- Offline: fixture f183_ok; refine_loop_ok L3
+- Live Modal: pytorch#191836 BIT3_OK ~143.7s POST_COMMENT=0 log_streaming=true F183 soft wire
+
+### SHA
+`003eebaa10ad91b98e7035792bc6c5f40e43577e`
+
 ## 2026-08-01 — F182 hub×GEPA compound always priority
 
 ### Papers / posts

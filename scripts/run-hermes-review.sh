@@ -1091,6 +1091,7 @@ if [[ -f "$SKILL_ROUTER_HELPER" && $TIMED_OUT -eq 0 && "${HERMES_CLI_ARGV_BROKEN
                             notice "F180 hub-archival×GEPA compound demote (soft · dual-loop free-rider)"
                             notice "F181 hub×GEPA compound prompt inject (soft · maker sees dual-loop heat)"
                             notice "F182 hub×GEPA compound always priority (soft · dual-loop heat → always budget)"
+                            notice "F183 hub×GEPA compound re-prompt budget (soft · dual-loop heat → f157/f122 slot)"
                             ;;
                         esac
                         ;;

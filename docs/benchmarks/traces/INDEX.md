@@ -124,3 +124,5 @@ Paper/eval-safe slim traces (redacted). Large raw logs may be gitignored; always
 | F181 | hub×GEPA compound prompt inject | `f181-hub-gepa-compound-inject/` | Modal pytorch#191836 BIT3_OK ~48s |
 
 | F182 | hub×GEPA compound always priority | `f182-hub-gepa-compound-always/` | Modal pytorch#191836 BIT3_OK ~40s |
+
+| F183 | hub×GEPA compound re-prompt budget | `f183-hub-gepa-compound-reprompt/` | Modal pytorch#191836 BIT3_OK ~144s |

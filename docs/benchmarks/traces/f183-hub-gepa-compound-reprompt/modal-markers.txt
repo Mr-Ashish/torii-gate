@@ -1,0 +1,30 @@
+190:[orch:err] ## Federated recovery util (F125 hub compound)
+197:[orch:err] ## Federated scorecard util (F138 hub compound)
+206:[orch:err] ## Federated memory util (F142 hub compound)
+478:[hermes:err-live] ## Federated recovery util (F125 hub compound)
+487:[hermes:err-live] ## Federated scorecard util (F138 hub compound)
+499:[hermes:err-live] ## Federated memory util (F142 hub compound)
+779:[orch:err] python3 scripts/torii_memory.py compound -- status
+785:[orch:err] Prefer **search / graph** before re-raising themes that may be FP-resolved. Still require path:line evidence to block. Post-run **compound** (F104) only persists path-evidenced TPs.
+958:[hermes:err-live] python3 scripts/torii_memory.py compound -- status
+962:[hermes:err-live] Prefer **search / graph** before re-raising themes that may be FP-resolved. Still require path:line evidence to block. Post-run **compound** (F104) only persists path-evidenced TPs.
+1244:[orch:err] ## Federated recovery util (F125 hub compound)
+1251:[orch:err] ## Federated scorecard util (F138 hub compound)
+1260:[orch:err] ## Federated memory util (F142 hub compound)
+1591:[orch:err] python3 scripts/torii_memory.py compound -- status
+1594:[orch:err] Prefer **search / graph** before re-raising themes that may be FP-resolved. Still require path:line evidence to block. Post-run **compound** (F104) only persists path-evidenced TPs.
+1840:[hermes:err-live] ## Federated recovery util (F125 hub compound)
+1845:[hermes:err-live] ## Federated scorecard util (F138 hub compound)
+1850:[hermes:err-live] ## Federated memory util (F142 hub compound)
+2090:[hermes:err-live] python3 scripts/torii_memory.py compound -- status
+2092:[hermes:err-live] Prefer **search / graph** before re-raising themes that may be FP-resolved. Still require path:line evidence to block. Post-run **compound** (F104) only persists path-evidenced TPs.
+2217:[orch:err] ::notice::F180 hub-archival×GEPA compound demote (soft · dual-loop free-rider)
+2218:[orch:err] F180 hub-archival×GEPA compound demote (soft · dual-loop free-rider)
+2219:[orch:err] ::notice::F181 hub×GEPA compound prompt inject (soft · maker sees dual-loop heat)
+2220:[orch:err] F181 hub×GEPA compound prompt inject (soft · maker sees dual-loop heat)
+2221:[orch:err] ::notice::F182 hub×GEPA compound always priority (soft · dual-loop heat → always budget)
+2222:[orch:err] F182 hub×GEPA compound always priority (soft · dual-loop heat → always budget)
+2223:[orch:err] ::notice::F183 hub×GEPA compound re-prompt budget (soft · dual-loop heat → f157/f122 slot)
+2224:[orch:err] F183 hub×GEPA compound re-prompt budget (soft · dual-loop heat → f157/f122 slot)
+2805:[orch:out]       "id": "f180_hub_gepa_compound",
+2806:[orch:out]       "name": "Hub-archival \u00d7 GEPA compound (F180)",
