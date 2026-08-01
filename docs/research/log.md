@@ -30,7 +30,7 @@ Intelligence without brand packaging is script archaeology. Highest ROI after F1
 **Package measured readiness into surfaces operators and papers read.**
 
 ### SHA
-`(pending)`
+`402eb719cc2747e87b15576a1f2682330cc04e68`
 
 
 ## 2026-08-01 — F169 refine dual hub always-priority + dual_fail critic
