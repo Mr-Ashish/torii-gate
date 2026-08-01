@@ -28,7 +28,7 @@ Federated warm themes that never enter archival search leave cross-tenant heat i
 **Closed-loop federation** — multi-tenant export must bias next retrieval.
 
 ### SHA
-`PENDING`
+`1ed3d373a5d8170413a14b92d435b61a3c52a75b`
 
 
 ## 2026-08-01 — F148 recon-warm theme federate + hub post-score
