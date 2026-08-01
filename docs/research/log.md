@@ -28,7 +28,7 @@ Hub post-score + critic without attribution floor still LOO-kills multi-tenant o
 **Measure → federate → attribute floor** — scorecard ops mirror recovery F127 attr shield.
 
 ### SHA
-`PENDING`
+`3ac766bafbfad426ab13a36db6c8c0afdc60eb9d`
 
 
 ## 2026-08-01 — F139 scorecard hub gap critic
