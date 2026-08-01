@@ -30,7 +30,7 @@ Validation gates on recovery — dual_pass without contribution is not re-entry.
 - Live Modal: pytorch#191836 BIT3_OK ~50.4s POST_COMMENT=0 log_streaming=true F177 soft wire
 
 ### SHA
-`51c4bdc8520812347255d9ab46a382b249662650`
+`8e03ce7aeece53b5278cddc362de80c8b29a830c`
 
 ## 2026-08-01 — F176 free-rider multi-tenant dual_pass revive gate
 
