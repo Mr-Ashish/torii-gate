@@ -159,6 +159,7 @@ RUNTIME_SCRIPTS=(
   self_evolve.py
   bench_corpus.py
   workflow_as_code.py
+  modal_secrets_bootstrap.py
 )
 
 copy_file() {

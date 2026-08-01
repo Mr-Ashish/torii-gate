@@ -168,6 +168,14 @@ case "$MODE" in
       echo "modal CLI not found — pip install modal && modal token new" >&2
       exit 1
     fi
+    # F80: bootstrap torii-* Modal secrets from .env / gh auth (idempotent)
+    if [[ -f "$ROOT/scripts/modal_secrets_bootstrap.py" ]]; then
+      if ! python3 "$ROOT/scripts/modal_secrets_bootstrap.py" status >/dev/null 2>&1; then
+        echo "F80: creating Modal secrets torii-openrouter / torii-github …" >&2
+        python3 "$ROOT/scripts/modal_secrets_bootstrap.py" apply || \
+          echo "WARN: secret bootstrap failed — see: python3 scripts/modal_secrets_bootstrap.py plan" >&2
+      fi
+    fi
     args=( run modal_app/app.py --bit 3 --repo "$REPO" --pr "$PR" )
     if [[ -n "$MODEL" ]]; then
       args+=( --model "$MODEL" )

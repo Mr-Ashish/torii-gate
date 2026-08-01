@@ -35,3 +35,11 @@
 - Because the helper is imported by file path from the `scripts/` directory inside the packaged app, the F10 pack must ship both `scripts/modal_parity.py` and `scripts/path-skip-check.py`; shipping only one silently disables the gate.
 
 - **F41:** Modal `review_pr` forwards `TORII_MAX_TURNS` (default 40) into the pipeline env so bit-3 matches GHA iteration budget.
+
+## F80 secrets
+
+```bash
+python3 scripts/modal_secrets_bootstrap.py apply
+modal run modal_app/app.py --bit 3 --repo pytorch/pytorch --pr 191813 --no-post-comment
+```
+

@@ -26,20 +26,21 @@
 | F77 | Cross-tenant hub federated signal ingest | memory, product, tools | **shipping** |
 | F78 | Multi-checker second-agent critic panel | agent_quality, product, tools | **shipping** |
 | F79 | Workflows-as-code + install capability guide | product, ops, tools | **shipping** |
+| F80 | Modal secrets bootstrap for live e2e | ops, product | **shipping** |
 
 ## IN_PROGRESS
 
 | ID | Feature | Notes |
 |----|---------|-------|
-| — | — | open: optional LLM critic atop F78; real Juice Shop pin; Modal secrets for live logs |
+| — | — | open: optional LLM critic atop F78; real Juice Shop pin |
 
 ## LEFT
 
-— Optional real Juice Shop pin; optional LLM critic atop F78; Modal secrets for streaming
+— Optional real Juice Shop pin; optional LLM critic atop F78
 
 ## Counts
 
-- **features_built_count:** 36 (F44–F79)
+- **features_built_count:** 37 (F44–F80)
 - **types_built:** agent_quality, product, memory, ops, bench, tools
 - **left_count:** open research
 - **progress_pct:** n/a (open research loop)
@@ -52,4 +53,4 @@
 
 ## Status line
 
-`features_built_count=36 types_built=agent_quality,product,memory,ops,bench,tools f79=workflow_as_code`
+`features_built_count=37 types_built=agent_quality,product,memory,ops,bench,tools f80=modal_secrets_bootstrap`

@@ -1,8 +1,8 @@
 {
   "schema_version": 1,
-  "feature": "F79",
+  "feature": "F80",
   "description": "Torii agent tool catalog \u2014 research \u2192 eval \u2192 adopt pipeline",
-  "updated_at": "2026-08-01T00:59:20Z",
+  "updated_at": "2026-08-01T01:05:17Z",
   "tools": [
     {
       "id": "terminal",
@@ -208,6 +208,18 @@
       "rationale": "Declarative torii-gate.workflow.yaml + validate/plan/status/install-guide; pack ships F70\u2013F78 scripts",
       "feature": "F79",
       "adopted_at": "2026-08-01T00:58:00Z"
+    },
+    {
+      "id": "modal-secrets-bootstrap",
+      "name": "Modal secrets bootstrap (F80)",
+      "status": "adopted",
+      "source": "ops",
+      "kind": "workflow_tool",
+      "toolset": "terminal",
+      "script": "scripts/modal_secrets_bootstrap.py",
+      "rationale": "Create torii-openrouter/torii-github Modal secrets from .env+gh without printing values; unblock live Modal e2e",
+      "feature": "F80",
+      "adopted_at": "2026-08-01T01:05:00Z"
     }
   ],
   "candidates": [

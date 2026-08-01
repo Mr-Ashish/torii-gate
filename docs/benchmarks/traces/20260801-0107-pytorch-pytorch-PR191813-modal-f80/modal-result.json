@@ -1,0 +1,9 @@
+{
+  "ok": true,
+  "elapsed_s": 87.4,
+  "log_streaming": true,
+  "tool_call_turns": 10,
+  "orch_rc": 0,
+  "trace_volume_path": "/traces/pytorch--pytorch-pr191813-1785546371",
+  "app_url": "https://modal.com/apps/mr-ashish/main/ap-vPAXy9476NRPhJGY6xk7LM"
+}

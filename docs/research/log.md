@@ -1,5 +1,38 @@
 # Torii research → product log
 
+## 2026-08-01 — F80 Modal secrets bootstrap (live e2e unblock)
+
+### Papers / posts / OSS
+- Modal secrets model: named secrets injected into functions; missing names fail at run.
+- Ops pattern: filtered dotenv → `modal secret create --from-dotenv` (never log values).
+- Prior Torii: F67 Modal log streaming unusable without secrets.
+
+### OSS / eng patterns
+1. Bootstrap from local `.env` + `gh auth token`.
+2. Configurable secret names for multi-brand workspaces (torii vs luffy).
+3. Soft preflight in `trigger-review.sh modal`.
+
+### Insight
+Intelligence loops that never reach Modal waste F67 streaming. Highest ROI: **make secrets a one-command deterministic tool**.
+
+### Feature shipped (F80)
+- `scripts/modal_secrets_bootstrap.py` — status / plan / apply / fixture
+- Creates `torii-openrouter` + `torii-github` from OPENROUTER_API_KEY + gh token
+- `modal_app/app.py` honors TORII_MODAL_*_SECRET; entrypoint prints expected names
+- `trigger-review.sh` modal path soft-applies secrets
+- Pack + workflow capability entry
+
+### Loop-engineering practice used
+**Deterministic ops pipeline** — secrets as code path with dry-run plan + no value leakage.
+
+### Metric
+- Offline fixture_pass; apply creates both secrets; status ready=true
+- Live: **Modal** pytorch/pytorch#191813 deepseek/deepseek-v4-pro BIT3_OK elapsed≈87s log_streaming=true tool_call_turns=10 POST_COMMENT=0; secrets torii-* bootstrapped
+- pytest: 490 passed
+
+### SHA
+`(pending push)`
+
 ## 2026-08-01 — F79 workflows-as-code + install capability guide
 
 ### Papers / posts / OSS

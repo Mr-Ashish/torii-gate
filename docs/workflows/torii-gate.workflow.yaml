@@ -154,6 +154,10 @@ capabilities:
     feature: F79
     script: scripts/workflow_as_code.py
     one_liner: Declarative gate workflow validate/plan/install-guide
+  - id: modal_secrets
+    feature: F80
+    script: scripts/modal_secrets_bootstrap.py
+    one_liner: Bootstrap Modal secrets torii-* from .env for live e2e
 
 # Scripts that pack install must ship for intelligence path (F79)
 pack_scripts:
@@ -172,4 +176,5 @@ pack_scripts:
   - self_evolve.py
   - bench_corpus.py
   - workflow_as_code.py
+  - modal_secrets_bootstrap.py
   - smoke-torii-gate.sh

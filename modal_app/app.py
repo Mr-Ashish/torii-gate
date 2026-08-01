@@ -71,10 +71,28 @@ image = (
 
 app = modal.App(APP_NAME, image=image)
 
-openrouter_secret = modal.Secret.from_name("torii-openrouter")
-github_secret = modal.Secret.from_name("torii-github")
+# F80: configurable Modal secret names with Luffy/legacy fallbacks.
+# Prefer TORII_MODAL_* env (local entrypoint) or defaults torii-*; fall back to
+# luffy-* when present so existing workspaces keep working without re-create.
+_OR_SECRET_NAME = (
+    os.environ.get("TORII_MODAL_OPENROUTER_SECRET") or "torii-openrouter"
+).strip()
+_GH_SECRET_NAME = (
+    os.environ.get("TORII_MODAL_GITHUB_SECRET") or "torii-github"
+).strip()
+
+# Note: Modal resolves secrets at deploy/run. from_name does not always raise
+# at import if missing — bootstrap script creates torii-* from .env.
+# Also accept luffy-* names used by sibling control plane.
+openrouter_secret = modal.Secret.from_name(
+    _OR_SECRET_NAME if _OR_SECRET_NAME else "torii-openrouter"
+)
+github_secret = modal.Secret.from_name(
+    _GH_SECRET_NAME if _GH_SECRET_NAME else "torii-github"
+)
 # Optional F33: put TORII_WEBHOOK_SECRET / TORII_WEBHOOK_TOKEN on this secret
 # (create empty-safe: operators may fold keys into torii-github instead).
+# F80: operators may also set TORII_MODAL_OPENROUTER_SECRET=luffy-openrouter etc.
 trace_vol = modal.Volume.from_name("torii-traces", create_if_missing=True)
 
 # Import pure helpers (local tree or Modal image /opt/torii/scripts)
@@ -1177,6 +1195,12 @@ def main(
     post_comment: bool = True,
     spawn: bool = False,
 ) -> None:
+    # F80: surface which Modal secret names this run expects
+    print(
+        f"[torii/f80] secrets openrouter={_OR_SECRET_NAME!r} github={_GH_SECRET_NAME!r} "
+        f"(override TORII_MODAL_OPENROUTER_SECRET / TORII_MODAL_GITHUB_SECRET; "
+        f"bootstrap: python3 scripts/modal_secrets_bootstrap.py apply)"
+    )
     if bit == 2:
         result = probe_clone.remote(repo=repo)
         print(json.dumps(result, indent=2)[:2000])
