@@ -29,9 +29,10 @@ Torii Gate is a PR/CI **security merge authority**: agent review with tools, pat
 - Auto-merge patches without human
 
 ## Success metrics
-- Time-to-first-signal on PR
+- Time-to-first-signal on PR (live dogfood **p50 ~90s**)
+- Cost / PR (live dogfood **p50 ~$0.01** when hermes-usage present)
 - Measured FP rate (memory growth of suppressions)
-- PRs blocked with path-evidenced findings
+- PRs blocked with path-evidenced findings + gate certificates
 - Skill contribution before auto-adopt (must beat baseline)
 
 ---
@@ -61,7 +62,9 @@ One diagram (full write-up: [`docs/brand/BUYER-DIAGRAM.md`](docs/brand/BUYER-DIA
 
 Install path: [`docs/GOLDEN-PATH.md`](docs/GOLDEN-PATH.md) · metrics: [`docs/benchmarks/golden-path-metrics.md`](docs/benchmarks/golden-path-metrics.md).
 
-**Quieter over time (own repo):** require **`torii/gate`** → measure path evidence + tool use + weak APPROVE trajectory → [`docs/QUIETER.md`](docs/QUIETER.md) · `python3 scripts/torii.py quieter -- status`.
+**Measured dogfood (honesty):** Modal + Hermes on open-source PRs (`POST_COMMENT=0`) — **~90s** time-to-signal p50 · **~$0.01** cost/PR p50 · gate certificates with reason codes. Audit tables: [`docs/ops/cost-pr-dashboard.md`](docs/ops/cost-pr-dashboard.md) · [`docs/brand/landing.html`](docs/brand/landing.html) · `python3 scripts/torii.py ops -- status` · `python3 scripts/torii.py golden-path -- status`.
+
+**Quieter over time (own repo):** require **`torii/gate`** → measure path evidence + tool use + certificates + weak APPROVE trajectory → [`docs/QUIETER.md`](docs/QUIETER.md) · `python3 scripts/torii.py quieter -- status` · chart [`docs/benchmarks/quieter-over-time.md`](docs/benchmarks/quieter-over-time.md).
 
 **Agent tool-use quality:** vault chart + fail-closed tool turns (tools-as-code) → [`docs/TOOL-USE.md`](docs/TOOL-USE.md) · `python3 scripts/torii.py tool-use -- status`.
 
@@ -75,7 +78,7 @@ Install path: [`docs/GOLDEN-PATH.md`](docs/GOLDEN-PATH.md) · metrics: [`docs/be
 
 **Compound memory:** FP die twice · TP stay sharp (path-evidenced write, tiers, scoped recall) → [`docs/MEMORY.md`](docs/MEMORY.md) · `python3 scripts/torii.py memory -- doctor`.
 
-**CLI:** `python3 scripts/torii.py help` · `doctor` · `golden-path -- status` · `certificate -- fixture` · `quieter -- status` · `tool-use -- status` · `commercial -- status` · `enterprise -- status`
+**CLI:** `python3 scripts/torii.py help` · `doctor` · `golden-path -- status` · `certificate -- fixture` · `quieter -- status` · `tool-use -- status` · `ops -- status` · `commercial -- status` · `enterprise -- status`
 
 **Commercial rollup (queue 1–6 + post-queue + workflow):** `python3 scripts/torii.py commercial -- fixture` → [`docs/benchmarks/commercial-scorecard.md`](docs/benchmarks/commercial-scorecard.md).
 

@@ -1,4 +1,38 @@
 
+## 2026-08-01 — PRODUCT_COST: buyer brief measured dogfood + quieter chart refresh
+
+### Papers / posts
+- Loop Engineering: product brief is the sales surface — slogans without p50 cost/TTS undercut landing honesty.
+- LANDING_COST shipped landing/install; PRODUCT.md success metrics still listed only qualitative goals.
+- Quieter-over-time chart was stale (pre gate-cert wire) — cert rate early=0, late rising.
+
+### Decide / copy / skip
+- **Copy:** PRODUCT success metrics + Measured dogfood buyer paragraph (p50 ~90s / ~$0.01).
+- **Copy:** buyer_narrative `product_measured_cost`; QUIETER.md cost/cert note.
+- **Copy:** refresh quieter-over-time + public-eval + ops cost tables from vault.
+- **Skip:** F185+; no new loops.
+
+### Feature shipped (PRODUCT_COST)
+- PRODUCT.md buyer measured dogfood + success metrics
+- quieter/public-eval/ops report refresh; buyer fixture check
+
+### Metric
+- Offline: buyer 21/21 · quieter_ok · public_eval_ok · commercial 10/10 · overall_est 8.5
+- Live Modal: pytorch#191840 BIT3_OK ~155.2s tools=5 POST_COMMENT=0 cert in vault
+- Traces: docs/benchmarks/traces/20260801-1630-pytorch-pytorch-PR191840-modal-product-cost/
+- Modal: https://modal.com/apps/mr-ashish/main/ap-0RjmRGYdOgfAAOVemRU0Hn
+- Quieter refresh: getting_quieter=True · delta quiet_score ~0.09 · cost_n≥21
+
+### scorecard_target
+JTBD (#3) · simplicity (#12)
+
+### dim_lift
+product brief + quieter chart match landing cost honesty
+
+### SHA
+`(pending push)`
+
+
 ## 2026-08-01 — LANDING_COST: measured dogfood p50 on landing + install day-2
 
 ### Papers / posts

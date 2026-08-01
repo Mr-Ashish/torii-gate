@@ -118,6 +118,17 @@ def check_surfaces(root: Path) -> dict[str, Any]:
     results["checks"]["product_advanced_section"] = bool(
         re.search(r"## Advanced", prod)
     )
+    # PRODUCT_COST: measured dogfood cost/TTS on buyer front (before Advanced)
+    prod_buyer = prod.split("## Advanced", 1)[0] if "## Advanced" in prod else prod
+    results["checks"]["product_measured_cost"] = bool(
+        re.search(r"Measured dogfood|cost/PR|cost\s*/\s*PR", prod_buyer, re.I)
+        and re.search(r"time-to-signal|p50\s*~?90|~90s|~\$0\.0", prod_buyer, re.I)
+        and (
+            "cost-pr-dashboard" in prod_buyer
+            or "golden-path-metrics" in prod_buyer
+            or "ops -- status" in prod_buyer
+        )
+    )
 
     # README points at buyer diagram
     results["checks"]["readme_links_buyer"] = bool(

@@ -1,7 +1,7 @@
 {
   "feature": "COMMERCIAL",
   "schema": 2,
-  "scored_at": "2026-08-01T16:24:44Z",
+  "scored_at": "2026-08-01T16:30:40Z",
   "scorecard_target": "7.5+",
   "dim_lift": "commercial rollup: priority 1\u20136 + post-queue cert/quieter/tools + workflows-as-code",
   "one_liner": "Single commercial scorecard: golden path \u00b7 buyer \u00b7 public eval \u00b7 install \u00b7 ops \u00b7 enterprise \u00b7 gate cert \u00b7 quieter \u00b7 tool-use \u00b7 workflow",

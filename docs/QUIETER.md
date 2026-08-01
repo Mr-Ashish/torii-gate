@@ -58,11 +58,12 @@ python3 scripts/torii.py quieter -- status
 |--------|----------------|
 | **path evidence** | blocks/opens cite files, not vibes |
 | **tool use** | agent used workspace/diff tools (not pure prose) |
-| **certificates** | every run has merge-authority evidence |
+| **certificates** | every run has merge-authority evidence (rate should rise after gate-cert wire) |
 | **weak APPROVE** | empty/no-tool approvals go down |
 | **quiet_score** | composite early → late (late should hold or rise) |
+| **cost / time** | optional honesty: mean cost/PR + time-to-signal on the same chart |
 
-Hub dogfood also runs Modal on public PRs (`POST_COMMENT=0`) — traces under `docs/benchmarks/traces/`.
+Hub dogfood also runs Modal on public PRs (`POST_COMMENT=0`) — traces under `docs/benchmarks/traces/`. Cost/cert tables: [`ops/cost-pr-dashboard.md`](ops/cost-pr-dashboard.md) · product brief: [`PRODUCT.md`](../PRODUCT.md) measured dogfood.
 
 ## 5. What “stricter and quieter” is *not*
 

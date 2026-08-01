@@ -2,7 +2,7 @@
 
 # Public labeled eval scorecard
 
-_Generated: `2026-08-01T14:25:56Z` · seed **42** · model **`deepseek/deepseek-chat-v4-pro`** · target **8.5/10**_
+_Generated: `2026-08-01T16:30:38Z` · seed **42** · model **`deepseek/deepseek-chat-v4-pro`** · target **8.5/10**_
 
 **public_eval_ok:** `True`
 
@@ -45,13 +45,13 @@ Live OSS dogfood unlabelled; cost when hermes-usage present.
 
 | Stat | time-to-signal (s) | cost USD |
 |------|-------------------:|---------:|
-| n | 41 | 7 |
-| mean | 97.268 | 0.011 |
-| p50 | 86.2 | 0.012 |
-| min | 40.7 | 0.008 |
-| max | 208.6 | 0.016 |
+| n | 59 | 21 |
+| mean | 98.936 | 0.018 |
+| p50 | 91.7 | 0.013 |
+| min | 39.2 | 0.008 |
+| max | 262.0 | 0.058 |
 
-Dogfood runs: **46** · source: `docs/benchmarks/traces vault dogfood`
+Dogfood runs: **64** · source: `docs/benchmarks/traces vault dogfood`
 
 ## Requirements checklist
 

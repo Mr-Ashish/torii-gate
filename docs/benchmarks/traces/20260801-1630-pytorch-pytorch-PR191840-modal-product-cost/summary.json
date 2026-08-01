@@ -1,0 +1,20 @@
+{
+  "feature": "PRODUCT_COST",
+  "schema_version": 1,
+  "repo": "pytorch/pytorch",
+  "pr": "191840",
+  "model": "deepseek/deepseek-v4-pro",
+  "host": "modal",
+  "bit3": true,
+  "elapsed_s": 155.2,
+  "log_streaming": true,
+  "tool_call_turns": 5,
+  "post_comment": 0,
+  "verdict": "APPROVE",
+  "block": false,
+  "certificate_id": "gc-c1d8088ce9649d7a",
+  "notes": "PRODUCT_COST buyer brief measured dogfood + quieter chart refresh",
+  "scored_at": "2026-08-01T16:33:54Z",
+  "modal_run": "https://modal.com/apps/mr-ashish/main/ap-0RjmRGYdOgfAAOVemRU0Hn",
+  "cost_usd": 0.019598519000000002
+}

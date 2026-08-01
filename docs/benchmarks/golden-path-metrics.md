@@ -2,7 +2,7 @@
 
 # Golden path metrics
 
-_Generated: `2026-08-01T16:27:49Z` · feature **GOLDEN** · target **7.5/10 commercial**_
+_Generated: `2026-08-01T16:30:38Z` · feature **GOLDEN** · target **7.5/10 commercial**_
 
 **One-liner:** install → required check torii/gate → real PR dogfood → FP/TP chart
 
