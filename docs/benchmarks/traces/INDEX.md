@@ -4,6 +4,7 @@ Paper/eval-safe slim traces (redacted). Large raw logs may be gitignored; always
 
 | Date (UTC) | Repo | PR | Model | Fitness | Level | Path |
 |------------|------|----|-------|---------|-------|------|
+| 2026-08-01T09:55:50Z | pytorch/pytorch | 191831 | deepseek/deepseek-v4-pro | hub-archival-util | — | `f155-hub-archival-recovery-util` |
 | 2026-08-01T07:35:30Z | local | — | deepseek/deepseek-v4-pro | scorecard-fed | — | `f134-scorecard-federate-fitness` |
 | 2026-08-01T07:29:14Z | local | — | deepseek/deepseek-v4-pro | dual-adopt | — | `f133-scorecard-dual-adopt` |
 | 2026-08-01T07:22:52Z | local | — | deepseek/deepseek-v4-pro | scorecard-evolve | — | `f132-scorecard-self-evolve` |

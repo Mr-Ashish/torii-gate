@@ -800,6 +800,99 @@ class SkillRouterTests(unittest.TestCase):
             self.assertIn("Hub gap pressure", text)
             self.assertNotIn("/Users/", text)
 
+    def test_f155_hub_archival_recovery_util(self):
+        """F155: hub-archival in RECOVERY_SKILL_IDS; util gap vs hub_boost tool_hit."""
+        import importlib.util
+        from pathlib import Path as P
+
+        root = P(__file__).resolve().parents[1]
+        mod_path = root / "scripts" / "skill_router.py"
+        name = "skill_router_f155"
+        spec = importlib.util.spec_from_file_location(name, mod_path)
+        assert spec and spec.loader
+        mod = importlib.util.module_from_spec(spec)
+        sys.modules[name] = mod  # required before dataclass processing
+        spec.loader.exec_module(mod)
+
+        ha = mod.HUB_ARCHIVAL_SKILL_ID
+        self.assertIn(ha, mod.RECOVERY_SKILL_IDS)
+        # hub-boost-strict probes
+        self.assertGreaterEqual(
+            len(mod.match_tool_outcome(ha, "hub_boost=1 archival_memory_search.py auto")),
+            1,
+        )
+        self.assertEqual(
+            len(mod.match_tool_outcome(ha, "python3 archival_memory_search.py auto")),
+            0,
+        )
+        with tempfile.TemporaryDirectory() as td:
+            od = Path(td)
+            (od / "skill-router.json").write_text(
+                json.dumps(
+                    {
+                        "selected": [ha],
+                        "always_selected": [ha],
+                        "inject_chars": 500,
+                    }
+                ),
+                encoding="utf-8",
+            )
+            (od / "skill-hits.json").write_text(
+                json.dumps(
+                    {
+                        "hits": [
+                            {
+                                "id": ha,
+                                "tool_hit": False,
+                                "hit": True,
+                                "prose_hit": True,
+                            }
+                        ],
+                        "tool_hit_n": 0,
+                    }
+                ),
+                encoding="utf-8",
+            )
+            gap = mod.score_recovery_util(od, root=root)
+            self.assertTrue(gap.get("hub_archival_injected"))
+            self.assertTrue(gap.get("hub_archival_util_gap"))
+            self.assertFalse(gap.get("hub_archival_ok"))
+            self.assertTrue(gap.get("utilization_gap"))
+            self.assertEqual(gap.get("feature_hub_archival_util"), "F155")
+
+            (od / "skill-hits.json").write_text(
+                json.dumps(
+                    {
+                        "hits": [
+                            {
+                                "id": ha,
+                                "tool_hit": True,
+                                "hit": True,
+                                "tool_matched": ["hub_boost"],
+                            }
+                        ],
+                        "tool_hit_n": 1,
+                    }
+                ),
+                encoding="utf-8",
+            )
+            ok = mod.score_recovery_util(od, root=root)
+            self.assertTrue(ok.get("hub_archival_tool_hit"))
+            self.assertFalse(ok.get("hub_archival_util_gap"))
+            self.assertTrue(ok.get("hub_archival_ok"))
+            fed = mod.federate_recovery_util(ok, root=root, tenant="t-f155")
+            self.assertTrue(fed.get("privacy_ok"))
+            tags = []
+            for s in fed.get("signals") or []:
+                tags.extend(s.get("tags") or [])
+            self.assertTrue(
+                "hub_archival" in tags or "f155" in tags,
+                f"expected hub_archival tags, got {tags}",
+            )
+            blob = json.dumps(fed.get("signals") or [])
+            self.assertNotIn("/Users/", blob)
+            self.assertNotIn("t-f155", blob)
+
 
 if __name__ == "__main__":
     unittest.main()

@@ -1,0 +1,11 @@
+{
+  "selected": [
+    "skill-prefer-hub-archival-early",
+    "skill-prefer-memory-cli-early"
+  ],
+  "always_selected": [
+    "skill-prefer-hub-archival-early",
+    "skill-prefer-memory-cli-early"
+  ],
+  "inject_chars": 800
+}

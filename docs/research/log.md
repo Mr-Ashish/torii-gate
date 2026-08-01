@@ -2617,3 +2617,39 @@ Torii already had FP self-learn (F62/F64) and skill evolution (F69). Missing was
 
 ### SHA
 `7f054909726157148d6c877de10d3b9c8ca1a644`
+
+## 2026-08-01 — F155 hub-archival recovery util (inject ≠ hub_boost)
+
+### Papers / posts
+- **Assay** (arXiv 2606.15390): attribution-based skill selection — idle/negative skills must be measured, not only adopted.
+- **Agent Skills survey** (arXiv 2605.07358): cost- and utility-aware skill selection under budget.
+- Mem2Act / SkillsBench: always-injected recovery skills must fire tool CLIs or they are idle prompt cost.
+- Hermes batch durability (upstream): fsync trajectory before checkpoint — durability pattern for util artifacts (noted, not ported).
+
+### OSS / memory patterns
+- Recovery stack membership is the compound lever: F121 util → F122 re-prompt → F124 federate → F125 hub priority only apply to RECOVERY_SKILL_IDS.
+- Hub-boost-strict tool probes: generic archival is not evidence for a hub-archival skill (Assay: not all skills help).
+
+### Insight
+F154 cycle-adopted hub-archival with always_priority 95, but it sat **outside** recovery util. Without F155, inject≠use was invisible and F122 never nudged hub_boost.
+
+### Feature shipped (F155)
+- `skill-prefer-hub-archival-early` ∈ `RECOVERY_SKILL_IDS`
+- hub-boost-strict `TOOL_OUTCOME_PROBES` (generic archival alone insufficient)
+- `score_recovery_util` hub_archival_* fields + federate f155/hub_archival tags
+- re-prompt suffix F155 nudge + archival_memory_search line
+- skill_loop + doctor soft surface `hub_archival_util_ok`
+- fixture f155_ok + unit test
+
+### Loop-engineering practice
+Maker/Checker: adopt (F154) is maker; recovery util (F155) is checker that always-inject actually fired hub_boost tools. Scorecard surfaces readiness.
+
+### Metric
+- Offline: skill_router fixture f155_ok; pytest skill_router 18 passed
+- Live insecure-demo Hermes: recall=1.0 tp=4 fn=0 verdict=REQUEST_CHANGES
+- Live util demo: hub_archival_injected + hub_archival_util_gap when no hub_boost tools
+- Modal pytorch/pytorch#191831 BIT3_OK ~55.6s log_streaming=true
+
+### SHA
+`pending`
+

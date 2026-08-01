@@ -49,3 +49,4 @@ Also mirrored from LOOP.md budget/observability: each fire records metrics (reca
 - F152: recon-warm hub soft re-prompt under F108 (budgeted recovery before demote-only)
 - F153: F152 signals propose hub-archival skill + dual-gate tool blob (compound next PR)
 - F154: cycle-hub-archival adopt + always_priority 95 under F119 budget
+- F155: hub-archival joins recovery util stack (Assay inject≠use + F121) — always skill measured for hub_boost tool outcomes; federate multi-tenant util themes

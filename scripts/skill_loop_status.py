@@ -211,17 +211,31 @@ def assess(root: Path | None = None, *, deep: bool = True) -> dict[str, Any]:
 
     skills = active_skills(root)
     skills_ok = len(skills) >= 1
-    # F123: dual-gate recovery skills that teach tool CLIs
+    # F123/F155: dual-gate recovery skills that teach tool CLIs
+    # F155: hub-archival joins recovery stack after F154 always adopt
     recovery_active = [
         s
         for s in (
             "skill-prefer-memory-cli-early",
             "skill-prefer-product-cli",
             "skill-prefer-critic-early",
+            "skill-prefer-hub-archival-early",  # F155
         )
         if s in skills
     ]
-    recovery_ok = len(recovery_active) >= 3
+    # L3 still requires classic 3; hub-archival is additive surface
+    recovery_classic_n = sum(
+        1
+        for s in recovery_active
+        if s
+        in (
+            "skill-prefer-memory-cli-early",
+            "skill-prefer-product-cli",
+            "skill-prefer-critic-early",
+        )
+    )
+    recovery_ok = recovery_classic_n >= 3
+    hub_archival_util_ok = "skill-prefer-hub-archival-early" in recovery_active
     # F135: scorecard-gap ops skills (soft; not required for L3)
     scorecard_active = [
         s
@@ -398,6 +412,9 @@ def assess(root: Path | None = None, *, deep: bool = True) -> dict[str, Any]:
         "recon_warm_hub_ok": bool(wire.get("critic_recon_warm_hub"))
         and bool(wire.get("demote_eval_recon_warm")),
         "feature_recon_warm_hub": "F151",
+        # F155: hub-archival recovery util membership (inject ≠ hub_boost tools)
+        "hub_archival_util_ok": hub_archival_util_ok,
+        "feature_hub_archival_util": "F155",
         "feature_scorecard_ops": "F135",
         "scorecard_active": scorecard_active,
         "scorecard_ops_ok": scorecard_ops_ok,
@@ -442,8 +459,9 @@ def to_markdown(report: dict[str, Any]) -> str:
             "",
             f"- Active skills: **{report.get('active_skills_n')}** "
             f"({', '.join((report.get('active_skills') or [])[:6]) or 'none'})",
-            f"- Recovery skills (memory/product/critic): **{'ok' if report.get('recovery_ok') else 'gap'}** "
+            f"- Recovery skills (memory/product/critic[+hub-archival]): **{'ok' if report.get('recovery_ok') else 'gap'}** "
             f"({', '.join(report.get('recovery_active') or []) or 'none'})",
+            f"- Hub-archival recovery util (F155): **{'ok' if report.get('hub_archival_util_ok') else 'gap'}**",
             f"- Recovery hub gap critic/demote-eval (F128): **{'ok' if report.get('recovery_hub_gap_ok') else 'gap'}**",
             f"- Recon-warm hub critic/demote-eval (F151): **{'ok' if report.get('recon_warm_hub_ok') else 'gap'}**",
             f"- Wiring (assemble/run/hermes/save-trace): **{'ok' if report.get('wiring_ok') else 'gap'}**",
@@ -480,6 +498,8 @@ def cmd_scorecard(args: argparse.Namespace) -> int:
                 "recovery_hub_gap_ok": report.get("recovery_hub_gap_ok"),
                 "recon_warm_hub_ok": report.get("recon_warm_hub_ok"),
                 "feature_recon_warm_hub": report.get("feature_recon_warm_hub"),
+                "hub_archival_util_ok": report.get("hub_archival_util_ok"),
+                "feature_hub_archival_util": report.get("feature_hub_archival_util"),
                 "feature_scorecard_ops": report.get("feature_scorecard_ops"),
                 "scorecard_ops_ok": report.get("scorecard_ops_ok"),
                 "scorecard_active": report.get("scorecard_active"),
@@ -534,6 +554,8 @@ def cmd_fixture(args: argparse.Namespace) -> int:
                 "recovery_hub_gap_ok": report.get("recovery_hub_gap_ok"),
                 "recon_warm_hub_ok": report.get("recon_warm_hub_ok"),
                 "feature_recon_warm_hub": report.get("feature_recon_warm_hub"),
+                "hub_archival_util_ok": report.get("hub_archival_util_ok"),
+                "feature_hub_archival_util": "F155",
                 "wiring_ok": report["wiring_ok"],
                 "deep_ok": report["deep_ok"],
                 "ready": report["ready"],

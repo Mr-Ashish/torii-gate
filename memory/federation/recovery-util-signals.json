@@ -2,7 +2,7 @@
   "schema_version": 1,
   "feature": "F124",
   "scope": "recovery_skill_util",
-  "updated_at": "2026-08-01T06:37:40Z",
+  "updated_at": "2026-08-01T09:53:59Z",
   "count": 2,
   "privacy": "skill_id_util_bins_tenant_hash_only",
   "privacy_ok": true,
@@ -29,34 +29,36 @@
       "tenants": 1,
       "util_rate_bin": "hit",
       "tenant_hashes": [
-        "e28384f7c5c5"
+        "1eb79b0e3dcc"
       ],
-      "tenant_hash": "e28384f7c5c5"
+      "tenant_hash": "1eb79b0e3dcc"
     },
     {
-      "id": "recovery-util-ok",
-      "theme": "recovery-util-ok",
+      "id": "hub-archival-util-gap",
+      "theme": "hub-archival-util-gap",
       "cwe": [],
       "tags": [
         "recovery_util",
-        "util_ok",
-        "f124",
+        "hub_archival",
+        "utilization_gap",
+        "f155",
         "federated_skill"
       ],
       "keywords": [
-        "recovery-util-ok"
+        "hub-archival-gap",
+        "hub-boost-idle",
+        "recon-warm"
       ],
       "path_basenames": [],
       "hits": 1,
       "source": "recovery_skill_util",
       "tenants": 1,
-      "tool_hit_n": 1,
-      "util_rate_bin": "full",
-      "f120_saved_bucket": "lt500",
+      "util_rate_bin": "gap",
+      "hub_archival_idle": true,
       "tenant_hashes": [
-        "e28384f7c5c5"
+        "1eb79b0e3dcc"
       ],
-      "tenant_hash": "e28384f7c5c5"
+      "tenant_hash": "1eb79b0e3dcc"
     }
   ]
 }

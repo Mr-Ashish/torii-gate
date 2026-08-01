@@ -42,6 +42,7 @@ Env:
   TORII_RECOVERY_HUB_COMPOUND 1 (default) | 0 — F125 hub recovery-util post-score → always prio
   TORII_HUB_GAP_REPROMPT      1 (default) | 0 — F126 hub gap_pressure biases F122 re-prompt
   TORII_HUB_GAP_PRESSURE_THR  default 0.34 — re-prompt idle recovery when hub gap ≥ thr
+  TORII_HUB_ARCHIVAL_UTIL     1 (default) | 0 — F155 hub-archival in recovery util stack
 """
 
 from __future__ import annotations
@@ -60,6 +61,7 @@ from typing import Any
 FEATURE = "F84"
 FEATURE_HUB = "F125"
 FEATURE_SCORECARD_HUB = "F138"
+FEATURE_HUB_ARCHIVAL_UTIL = "F155"
 SCHEMA = 1
 MARKER_OPEN = "<!-- torii-f84-skill-router -->"
 MARKER_CLOSE = "<!-- /torii-f84-skill-router -->"
@@ -223,12 +225,15 @@ TOOL_OUTCOME_PROBES: dict[str, list[re.Pattern[str]]] = {
         re.compile(r"archival_memory_search\.py\b", re.I),
         re.compile(r"memory_temporal_graph\.py\b", re.I),
     ],
-    # F154: hub-aware archival recovery skill tool outcomes
+    # F154/F155: hub-aware archival recovery — tool_hit requires hub-boost evidence
+    # (generic memory CLI alone does not satisfy this skill's purpose)
     "skill-prefer-hub-archival-early": [
-        re.compile(r"archival_memory_search\.py\b", re.I),
-        re.compile(r"torii\.py\s+memory\b", re.I),
-        re.compile(r"torii_memory\.py\b", re.I),
-        re.compile(r"reprompt-decide|RECON_WARM_HUB", re.I),
+        re.compile(r"hub_boost", re.I),
+        re.compile(r"TORII_RECON_WARM_HUB(?:_QUERY)?\b", re.I),
+        re.compile(r"recon[-_]?warm[-_]?hub", re.I),
+        re.compile(r"hub[-_]?warm[-_]?(?:theme|query|boost)", re.I),
+        re.compile(r"archival_memory_search\.py[^\n]{0,80}hub|hub[^\n]{0,80}archival_memory_search", re.I),
+        re.compile(r"reprompt-decide[^\n]{0,40}RECON_WARM|RECON_WARM_HUB", re.I),
     ],
     # F118: F117 product/critic skills — baseline probes (also mined into durable ledger)
     "skill-prefer-product-cli": [
@@ -1530,11 +1535,15 @@ def select_skills(
 
 
 # F121: recovery skills that teach tool CLIs (must fire tools when always-injected)
+# F155: hub-archival joins recovery util stack (F121–F128) after F154 always adopt
+HUB_ARCHIVAL_SKILL_ID = "skill-prefer-hub-archival-early"
+
 RECOVERY_SKILL_IDS: frozenset[str] = frozenset(
     {
         "skill-prefer-memory-cli-early",
         "skill-prefer-product-cli",
         "skill-prefer-critic-early",
+        HUB_ARCHIVAL_SKILL_ID,  # F155
     }
 )
 
@@ -2191,6 +2200,12 @@ def cmd_status(args: argparse.Namespace) -> int:
     return 0
 
 
+def hub_archival_util_enabled() -> bool:
+    """F155: include hub-archival skill in recovery util scoring (default on)."""
+    raw = (os.environ.get("TORII_HUB_ARCHIVAL_UTIL") or "1").strip().lower()
+    return raw not in _FALSEY
+
+
 def score_recovery_util(
     out_dir: Path | None = None,
     *,
@@ -2198,10 +2213,13 @@ def score_recovery_util(
     hits_doc: dict[str, Any] | None = None,
     router_doc: dict[str, Any] | None = None,
 ) -> dict[str, Any]:
-    """F121: recovery skills injected vs tool_hit — inject presence ≠ utilization.
+    """F121/F155: recovery skills injected vs tool_hit — inject presence ≠ utilization.
 
     SkillsBench / Mem2Act: always-injected recovery skills must fire tool CLIs
     or they are idle prompt cost. Gap when recovery selected and tool_hit_n=0.
+
+    F155: skill-prefer-hub-archival-early joins RECOVERY_SKILL_IDS so always
+    inject under F119/F154 is measured for hub-boost tool outcomes (not prose).
     """
     root = root or _root()
     od = Path(out_dir) if out_dir else None
@@ -2223,9 +2241,12 @@ def score_recovery_util(
 
     selected = list(router.get("selected") or [])
     always_sel = list(router.get("always_selected") or [])
+    recovery_ids = set(RECOVERY_SKILL_IDS)
+    if not hub_archival_util_enabled():
+        recovery_ids = recovery_ids - {HUB_ARCHIVAL_SKILL_ID}
     recovery_injected = [
-        s for s in selected if s in RECOVERY_SKILL_IDS
-    ] or [s for s in always_sel if s in RECOVERY_SKILL_IDS]
+        s for s in selected if s in recovery_ids
+    ] or [s for s in always_sel if s in recovery_ids]
 
     by_id: dict[str, dict[str, Any]] = {}
     for h in hits.get("hits") or []:
@@ -2254,11 +2275,19 @@ def score_recovery_util(
     inject_chars = int(router.get("inject_chars") or router.get("chars") or 0)
     f120_saved = int(router.get("f120_chars_saved") or 0)
 
+    # F155: hub-archival slice (always_priority 95 skill must use hub-boost tools)
+    hub_sid = HUB_ARCHIVAL_SKILL_ID
+    hub_injected = hub_sid in recovery_injected
+    hub_tool_hit = hub_sid in tool_hit_ids
+    hub_idle = hub_sid in idle
+    hub_gap = bool(hub_injected and not hub_tool_hit)
+
     report = {
         "feature": "F121",
+        "feature_hub_archival_util": FEATURE_HUB_ARCHIVAL_UTIL,
         "schema": SCHEMA,
         "scored_at": _now(),
-        "recovery_ids": sorted(RECOVERY_SKILL_IDS),
+        "recovery_ids": sorted(recovery_ids),
         "recovery_injected": recovery_injected,
         "recovery_injected_n": n,
         "tool_hit_ids": tool_hit_ids,
@@ -2271,6 +2300,13 @@ def score_recovery_util(
         "f120_chars_saved": f120_saved,
         "ok": not gap,
         "score": round(util_rate, 4),
+        # F155 hub-archival util surface
+        "hub_archival_id": hub_sid,
+        "hub_archival_injected": hub_injected,
+        "hub_archival_tool_hit": hub_tool_hit,
+        "hub_archival_idle": hub_idle,
+        "hub_archival_util_gap": hub_gap,
+        "hub_archival_ok": (not hub_gap) if hub_injected else True,
     }
     if od:
         try:
@@ -2316,12 +2352,18 @@ def federate_recovery_util(
     for sid in tool_ids:
         if "/" in sid or ".." in sid:
             continue
+        tags = ["recovery_util", "tool_outcome", "f124", "federated_skill"]
+        kws = [sid.replace("skill-", "")[:48], "recovery-util", "tool-hit"]
+        # F155: hub-archival hit theme for multi-tenant recovery warm paging
+        if sid == HUB_ARCHIVAL_SKILL_ID:
+            tags.extend(["hub_archival", "f155", "hub_boost"])
+            kws.extend(["hub-archival", "hub-boost", "recon-warm"])
         sig: dict[str, Any] = {
             "id": _slug(f"recovery-util-hit-{sid}"),
             "theme": _slug(sid),
             "cwe": [],
-            "tags": ["recovery_util", "tool_outcome", "f124", "federated_skill"],
-            "keywords": [sid.replace("skill-", "")[:48], "recovery-util", "tool-hit"],
+            "tags": tags,
+            "keywords": kws,
             "path_basenames": [],
             "hits": 1,
             "tool_hits": 1,
@@ -2336,12 +2378,18 @@ def federate_recovery_util(
 
     # Aggregate gap signal (no skill list leakage beyond counts if idle empty)
     if util.get("utilization_gap"):
+        gap_tags = ["recovery_util", "utilization_gap", "f124", "federated_skill"]
+        gap_kws = ["recovery-util-gap", "idle-recovery"]
+        # F155: tag when hub-archival specifically idle under inject
+        if util.get("hub_archival_util_gap"):
+            gap_tags.extend(["hub_archival", "f155", "hub_archival_idle"])
+            gap_kws.extend(["hub-archival-gap", "hub-boost-idle"])
         gap_sig: dict[str, Any] = {
             "id": "recovery-util-gap",
             "theme": "recovery-util-gap",
             "cwe": [],
-            "tags": ["recovery_util", "utilization_gap", "f124", "federated_skill"],
-            "keywords": ["recovery-util-gap", "idle-recovery"],
+            "tags": gap_tags,
+            "keywords": gap_kws,
             "path_basenames": [],
             "hits": 1,
             "source": "recovery_skill_util",
@@ -2359,11 +2407,37 @@ def federate_recovery_util(
                 else "gte4k"
             ),
             "util_rate_bin": "gap",
+            "hub_archival_idle": bool(util.get("hub_archival_util_gap")),
         }
         if th:
             gap_sig["tenant_hashes"] = [th]
             gap_sig["tenant_hash"] = th
         signals.append(gap_sig)
+    elif util.get("hub_archival_util_gap"):
+        # F155: partial recovery ok but hub-archival specifically idle → soft signal
+        ha_gap: dict[str, Any] = {
+            "id": "hub-archival-util-gap",
+            "theme": "hub-archival-util-gap",
+            "cwe": [],
+            "tags": [
+                "recovery_util",
+                "hub_archival",
+                "utilization_gap",
+                "f155",
+                "federated_skill",
+            ],
+            "keywords": ["hub-archival-gap", "hub-boost-idle", "recon-warm"],
+            "path_basenames": [],
+            "hits": 1,
+            "source": "recovery_skill_util",
+            "tenants": 1,
+            "util_rate_bin": "gap",
+            "hub_archival_idle": True,
+        }
+        if th:
+            ha_gap["tenant_hashes"] = [th]
+            ha_gap["tenant_hash"] = th
+        signals.append(ha_gap)
     elif tool_ids:
         # healthy util summary (no paths)
         ok_sig: dict[str, Any] = {
@@ -3033,6 +3107,13 @@ def build_recovery_reprompt_suffix(
             "other tenants also under-use recovery CLIs; treat this as a hard "
             "tool call before finalizing.\n"
         )
+    # F155: when hub-archival idle, nudge hub_boost archival specifically
+    ha_line = ""
+    if HUB_ARCHIVAL_SKILL_ID in (idle_ids or []) or HUB_ARCHIVAL_SKILL_ID in idle:
+        ha_line = (
+            "\n**F155 hub-archival:** call `archival_memory_search` with hub warm "
+            "themes so `hub_boost` evidence appears (generic memory CLI is not enough).\n"
+        )
     title = (
         "## Recovery skill soft re-prompt (F122/F126)\n\n"
         if hub_gap_bias
@@ -3045,10 +3126,12 @@ def build_recovery_reprompt_suffix(
         f"Your previous reply used **{tool_call_turns} tool turns** but recovery "
         f"skill CLIs remain idle for: {idle_s} "
         f"(inject_chars≈{inject_chars}).\n"
-        f"{hub_line}\n"
+        f"{hub_line}"
+        f"{ha_line}\n"
         "Before finalizing, call **at least one** of these once via terminal:\n\n"
         "```bash\n"
         "python3 scripts/torii.py memory -- search -- -q \"auth OR sql OR pickle OR secret\"\n"
+        "python3 scripts/archival_memory_search.py auto  # hub warm / hub_boost (F155)\n"
         "python3 scripts/torii.py doctor\n"
         "python3 scripts/second_agent_critic.py score --review REVIEW.md\n"
         "```\n\n"
@@ -3751,6 +3834,111 @@ Verdict: REQUEST_CHANGES
             and util_gap.get("ok") is False
             and int(util_good.get("inject_chars") or 0) >= 1
         )
+        # F155: hub-archival in recovery util — inject + hub_boost tool_hit vs idle gap
+        ha_sid = HUB_ARCHIVAL_SKILL_ID
+        ha_util_out = root / "util-hub-archival"
+        ha_util_out.mkdir(exist_ok=True)
+        (ha_util_out / "skill-router.json").write_text(
+            json.dumps(
+                {
+                    "selected": [ha_sid, "skill-prefer-memory-cli-early"],
+                    "always_selected": [ha_sid, "skill-prefer-memory-cli-early"],
+                    "inject_chars": 720,
+                }
+            ),
+            encoding="utf-8",
+        )
+        (ha_util_out / "skill-hits.json").write_text(
+            json.dumps(
+                {
+                    "hits": [
+                        {
+                            "id": ha_sid,
+                            "hit": True,
+                            "tool_hit": True,
+                            "prose_hit": False,
+                            "tool_matched": ["hub_boost"],
+                        },
+                        {
+                            "id": "skill-prefer-memory-cli-early",
+                            "hit": True,
+                            "tool_hit": True,
+                            "prose_hit": False,
+                        },
+                    ],
+                    "tool_hit_n": 2,
+                }
+            ),
+            encoding="utf-8",
+        )
+        ha_util_good = score_recovery_util(ha_util_out, root=root)
+        ha_gap_out = root / "util-hub-archival-gap"
+        ha_gap_out.mkdir(exist_ok=True)
+        (ha_gap_out / "skill-router.json").write_text(
+            json.dumps(
+                {
+                    "selected": [ha_sid],
+                    "always_selected": [ha_sid],
+                    "inject_chars": 400,
+                }
+            ),
+            encoding="utf-8",
+        )
+        (ha_gap_out / "skill-hits.json").write_text(
+            json.dumps(
+                {
+                    "hits": [
+                        {
+                            "id": ha_sid,
+                            "hit": True,
+                            "tool_hit": False,
+                            "prose_hit": True,
+                        }
+                    ],
+                    "tool_hit_n": 0,
+                }
+            ),
+            encoding="utf-8",
+        )
+        ha_util_gap = score_recovery_util(ha_gap_out, root=root)
+        # hub-boost-strict tool probes: generic archival alone is not enough
+        ha_probe_blob_ok = "hub_boost=1 archival_memory_search.py auto"
+        ha_probe_blob_weak = "python3 scripts/archival_memory_search.py auto"
+        ha_match_ok = match_tool_outcome(ha_sid, ha_probe_blob_ok, root=root)
+        ha_match_weak = match_tool_outcome(ha_sid, ha_probe_blob_weak, root=root)
+        ha_fed = federate_recovery_util(
+            ha_util_good, root=root, tenant="fixture-tenant-ha"
+        )
+        ha_fed_gap = federate_recovery_util(
+            ha_util_gap, root=root, tenant="fixture-tenant-ha"
+        )
+        ha_fed_blob = json.dumps(ha_fed.get("signals") or []) + json.dumps(
+            ha_fed_gap.get("signals") or []
+        )
+        f155_ok = (
+            ha_sid in RECOVERY_SKILL_IDS
+            and ha_util_good.get("hub_archival_injected") is True
+            and ha_util_good.get("hub_archival_tool_hit") is True
+            and ha_util_good.get("hub_archival_util_gap") is False
+            and ha_util_good.get("hub_archival_ok") is True
+            and float(ha_util_good.get("util_rate") or 0) >= 1.0
+            and ha_util_gap.get("hub_archival_util_gap") is True
+            and ha_util_gap.get("utilization_gap") is True
+            and ha_util_gap.get("hub_archival_ok") is False
+            and len(ha_match_ok) >= 1
+            and len(ha_match_weak) == 0
+            and bool(ha_fed.get("privacy_ok"))
+            and int(ha_fed.get("fed_n") or 0) >= 1
+            and any(
+                "hub_archival" in (s.get("tags") or [])
+                or "f155" in (s.get("tags") or [])
+                for s in (ha_fed.get("signals") or [])
+                if isinstance(s, dict)
+            )
+            and bool(ha_fed_gap.get("privacy_ok"))
+            and "/Users/" not in ha_fed_blob
+            and "fixture-tenant-ha" not in ha_fed_blob
+        )
         # F124: privacy-safe federate recovery util themes
         fed_ok_doc = federate_recovery_util(util_good, root=root, tenant="fixture-tenant-a")
         fed_gap_doc = federate_recovery_util(util_gap, root=root, tenant="fixture-tenant-a")
@@ -4125,6 +4313,7 @@ Call `python3 scripts/torii.py doctor` and scorecard early.
                 sc_util_ok,
                 f137_ok,
                 f138_ok,
+                f155_ok,
             ]
         )
         payload = {
@@ -4136,6 +4325,8 @@ Call `python3 scripts/torii.py doctor` and scorecard early.
             "f136": True,
             "f137": True,
             "f138": True,
+            "f155": True,
+            "feature_hub_archival_util": FEATURE_HUB_ARCHIVAL_UTIL,
             "feature_always_budget": "F119",
             "feature_compact": "F120",
             "feature_util": "F121",
@@ -4212,6 +4403,14 @@ Call `python3 scripts/torii.py doctor` and scorecard early.
             "f138_sc_hub_inject": sc_inj.get("injected"),
             "f138_sc_hub_privacy": sc_hub.get("privacy_ok"),
             "f138_sc_hub_gap_pressure": sc_hub.get("gap_pressure"),
+            "f155_ok": f155_ok,
+            "f155_hub_archival_util_rate": ha_util_good.get("util_rate"),
+            "f155_hub_archival_gap": ha_util_gap.get("hub_archival_util_gap"),
+            "f155_hub_archival_in_recovery": ha_sid in RECOVERY_SKILL_IDS,
+            "f155_hub_boost_probe_ok": len(ha_match_ok) >= 1,
+            "f155_generic_archival_not_enough": len(ha_match_weak) == 0,
+            "f155_fed_n": ha_fed.get("fed_n"),
+            "f155_fed_privacy": ha_fed.get("privacy_ok"),
         }
         print(json.dumps(payload, indent=2))
         return 0 if fixture_pass else 1

@@ -1,0 +1,71 @@
+{
+  "schema_version": 1,
+  "captured_at": "2026-08-01T09:53:45Z",
+  "model": "deepseek/deepseek-v4-pro",
+  "provider": "openrouter",
+  "session_id": "20260801_152330_f1510a",
+  "hermes_home": "/Users/ashishmishra/Documents/experiments/torii/.torii-hermes-home",
+  "usage": {
+    "estimated_cost_usd": 0.00314244,
+    "cost_status": "estimated",
+    "cost_source": "provider_models_api",
+    "input_tokens": 5370,
+    "output_tokens": 927,
+    "cache_read_tokens": 0,
+    "cache_write_tokens": 0,
+    "reasoning_tokens": 182,
+    "total_tokens": 6297,
+    "api_calls": 1,
+    "model": "deepseek/deepseek-v4-pro",
+    "provider": "openrouter",
+    "session_id": "20260801_152330_f1510a",
+    "completed": true,
+    "failed": false,
+    "service_tier": null
+  },
+  "tool_call_turns": 0,
+  "message_count": 2,
+  "steps": [
+    {
+      "step": 0,
+      "kind": "user",
+      "role": "user",
+      "timestamp": 1785578010.934154,
+      "content_preview": "# Task\nYou are Torii Gate security reviewer. Review the following file for vulnerabilities.\nProduce Markdown with **Verdict:**, **Score:**, ### Summary, ### Blocking,\n### Security audit, ### Key findings, ### Tests & risk, ### What I checked.\nEvery finding MUST cite a path (use `demo/insecure/app.py`). Prefer high-severity issues.\n\n**Repo:** local-bench\n**File under review:** `demo/insecure/app.py`\n\n<!-- torii-f70-tp-signatures -->\n## Known true-positive signatures (F70 compound memory)\n\nThese patterns were confirmed on labeled benches or prior TP promotions.\nPrefer raising path-evidenced findings that match; do not skip them as noise.\n\n- `sqli-search` theme=sql_injection cwe=CWE-89 hits=3 keywords=[sql injection, sqli, f-string, f\"select, string-formatted, execute(f, cur.execute(f, cwe-89]\n- `pickle-load` theme=insecure_deserialization cwe=CWE-502 hits=3 keywords=[pickle, deserialize, deserialization, unsafe load, cwe-502, pickle.loads]\n- `cmdi-run` theme=command_injection cwe=CWE-78 hits=3 keywords=[command injection, shell=true, os command, rce, subprocess, cwe-78, shell injection]\n- `secret-exposure` theme=secrets_exposure cwe=CWE-200,CWE-798 hits=3 keywords=[secret, api key, api_key, openrouter, credential, exposes, exposure]\n\n\n```python\n\"\"\"Demo insecure snippet for Torii Gate dogfood \u2014 DO NOT deploy.\"\"\"\n\nfrom flask import Flask, request\nimport sqlite3\nimport os\nimport pickle\nimport subprocess\n\napp = Flask(__name__)\n\n\n@app.get(\"/search\")\ndef search():\n    # intentional SQL injection for gate demo\n    q = request.args.get(\"q\", \"\")\n    con = sqlite3.connect(\"app.db\")\n    cur = con.cursor()\n    cur.execute(f\"SELECT * FROM items WHERE name = '{q}'\")\n    return {\"rows\": cur.fetchall()}\n\n\n@app.post(\"/load\")\ndef load():\n    # intentional unsafe deserialize\n    data = request.data\n    return {\"obj\": str(pickle.loads(data))}\n\n\n@app.get(\"/run\")\ndef run_cmd():\n    # intentional command injection\n    cmd = request.args.get(\"cmd\", \"echo hi\")\n    return {\"out\": subprocess.ch",
+      "content_bytes": 2002
+    },
+    {
+      "step": 1,
+      "kind": "assistant",
+      "role": "assistant",
+      "timestamp": 1785578025.380278,
+      "content_preview": "# Torii Gate Security Review \u2014 `demo/insecure/app.py`\n\n**Verdict:** REQUEST CHANGES  \n**Score:** 5 / 100 (critical \u2014 do not merge without remediation)\n\n---\n\n### Summary\n\nFour independently blocking, high-severity vulnerabilities exist in a single 30-line file. Every endpoint exposes a distinct class of remote exploitation: SQL injection, unsafe deserialization leading to RCE, shell command injection, and secrets disclosure via unauthenticated endpoint. This is a deliberate demo file labeled \"DO NOT deploy,\" but if this file were proposed for merge, it would be immediately rejected.\n\n---\n\n### Blocking\n\nAll four findings below are individually blocking. Combined, they represent full remote code execution and credential theft surface.\n\n---\n\n### Security audit\n\n| Concern | Severity | CWE |\n|---|---|---|\n| SQL injection via f-string interpolation | Critical | CWE-89 |\n| Unsafe pickle deserialization on untrusted input | Critical | CWE-502 |\n| Shell command injection via `shell=True` | Critical | CWE-78 |\n| Secret exposure of `OPENROUTER_API_KEY` | High | CWE-200, CWE-798 |\n\n---\n\n### Key findings\n\n1. **`demo/insecure/app.py:16` \u2014 SQL injection (CWE-89)**\n   - Trigger: `GET /search?q=' OR 1=1 --`\n   - `cur.execute(f\"SELECT * FROM items WHERE name = '{q}'\")` interpolates attacker-controlled `q` directly into SQL. Full database compromise \u2014 data exfiltration, modification, or deletion.\n   - Matches known TP signature `sqli-search`.\n\n2. **`demo/insecure/app.py:22` \u2014 Unsafe deserialization (CWE-502)**\n   - Trigger: `POST /load` with pickled `__reduce__` payload\n   - `pickle.loads(data)` on raw request body. Arbitrary code execution on the server. No authentication or input validation.\n   - Matches known TP signature `pickle-load`.\n\n3. **`demo/insecure/app.py:28` \u2014 Command injection (CWE-78)**\n   - Trigger: `GET /run?cmd=; cat /etc/passwd`\n   - `subprocess.check_output(cmd, shell=True)` passes attacker-controlled string to a shell. Arbitrary command execution with the process's",
+      "content_bytes": 2012
+    }
+  ],
+  "messages": [
+    {
+      "id": 7,
+      "session_id": "20260801_152330_f1510a",
+      "role": "user",
+      "content": "# Task\nYou are Torii Gate security reviewer. Review the following file for vulnerabilities.\nProduce Markdown with **Verdict:**, **Score:**, ### Summary, ### Blocking,\n### Security audit, ### Key findings, ### Tests & risk, ### What I checked.\nEvery finding MUST cite a path (use `demo/insecure/app.py`). Prefer high-severity issues.\n\n**Repo:** local-bench\n**File under review:** `demo/insecure/app.py`\n\n<!-- torii-f70-tp-signatures -->\n## Known true-positive signatures (F70 compound memory)\n\nThese patterns were confirmed on labeled benches or prior TP promotions.\nPrefer raising path-evidenced findings that match; do not skip them as noise.\n\n- `sqli-search` theme=sql_injection cwe=CWE-89 hits=3 keywords=[sql injection, sqli, f-string, f\"select, string-formatted, execute(f, cur.execute(f, cwe-89]\n- `pickle-load` theme=insecure_deserialization cwe=CWE-502 hits=3 keywords=[pickle, deserialize, deserialization, unsafe load, cwe-502, pickle.loads]\n- `cmdi-run` theme=command_injection cwe=CWE-78 hits=3 keywords=[command injection, shell=true, os command, rce, subprocess, cwe-78, shell injection]\n- `secret-exposure` theme=secrets_exposure cwe=CWE-200,CWE-798 hits=3 keywords=[secret, api key, api_key, openrouter, credential, exposes, exposure]\n\n\n```python\n\"\"\"Demo insecure snippet for Torii Gate dogfood \u2014 DO NOT deploy.\"\"\"\n\nfrom flask import Flask, request\nimport sqlite3\nimport os\nimport pickle\nimport subprocess\n\napp = Flask(__name__)\n\n\n@app.get(\"/search\")\ndef search():\n    # intentional SQL injection for gate demo\n    q = request.args.get(\"q\", \"\")\n    con = sqlite3.connect(\"app.db\")\n    cur = con.cursor()\n    cur.execute(f\"SELECT * FROM items WHERE name = '{q}'\")\n    return {\"rows\": cur.fetchall()}\n\n\n@app.post(\"/load\")\ndef load():\n    # intentional unsafe deserialize\n    data = request.data\n    return {\"obj\": str(pickle.loads(data))}\n\n\n@app.get(\"/run\")\ndef run_cmd():\n    # intentional command injection\n    cmd = request.args.get(\"cmd\", \"echo hi\")\n    return {\"out\": subprocess.check_output(cmd, shell=True).decode()}\n\n\n@app.get(\"/secret\")\ndef secret():\n    return {\"key\": os.environ.get(\"OPENROUTER_API_KEY\", \"missing\")}\n\n```",
+      "timestamp": 1785578010.934154,
+      "tool_name": null,
+      "tool_calls": null,
+      "tool_call_id": null
+    },
+    {
+      "id": 8,
+      "session_id": "20260801_152330_f1510a",
+      "role": "assistant",
+      "content": "# Torii Gate Security Review \u2014 `demo/insecure/app.py`\n\n**Verdict:** REQUEST CHANGES  \n**Score:** 5 / 100 (critical \u2014 do not merge without remediation)\n\n---\n\n### Summary\n\nFour independently blocking, high-severity vulnerabilities exist in a single 30-line file. Every endpoint exposes a distinct class of remote exploitation: SQL injection, unsafe deserialization leading to RCE, shell command injection, and secrets disclosure via unauthenticated endpoint. This is a deliberate demo file labeled \"DO NOT deploy,\" but if this file were proposed for merge, it would be immediately rejected.\n\n---\n\n### Blocking\n\nAll four findings below are individually blocking. Combined, they represent full remote code execution and credential theft surface.\n\n---\n\n### Security audit\n\n| Concern | Severity | CWE |\n|---|---|---|\n| SQL injection via f-string interpolation | Critical | CWE-89 |\n| Unsafe pickle deserialization on untrusted input | Critical | CWE-502 |\n| Shell command injection via `shell=True` | Critical | CWE-78 |\n| Secret exposure of `OPENROUTER_API_KEY` | High | CWE-200, CWE-798 |\n\n---\n\n### Key findings\n\n1. **`demo/insecure/app.py:16` \u2014 SQL injection (CWE-89)**\n   - Trigger: `GET /search?q=' OR 1=1 --`\n   - `cur.execute(f\"SELECT * FROM items WHERE name = '{q}'\")` interpolates attacker-controlled `q` directly into SQL. Full database compromise \u2014 data exfiltration, modification, or deletion.\n   - Matches known TP signature `sqli-search`.\n\n2. **`demo/insecure/app.py:22` \u2014 Unsafe deserialization (CWE-502)**\n   - Trigger: `POST /load` with pickled `__reduce__` payload\n   - `pickle.loads(data)` on raw request body. Arbitrary code execution on the server. No authentication or input validation.\n   - Matches known TP signature `pickle-load`.\n\n3. **`demo/insecure/app.py:28` \u2014 Command injection (CWE-78)**\n   - Trigger: `GET /run?cmd=; cat /etc/passwd`\n   - `subprocess.check_output(cmd, shell=True)` passes attacker-controlled string to a shell. Arbitrary command execution with the process's privileges.\n   - Matches known TP signature `cmdi-run`.\n\n4. **`demo/insecure/app.py:33` \u2014 Secret exposure (CWE-200, CWE-798)**\n   - Trigger: `GET /secret` (unauthenticated)\n   - Exposes `OPENROUTER_API_KEY` environment variable. If this key has billing or API access, an attacker can consume resources or exfiltrate data.\n   - Matches known TP signature `secret-exposure`.\n\n---\n\n### Tests & risk\n\n- **No tests present.** This file has zero coverage. All four endpoints lack any input validation, auth checks, or safe API usage.\n- Risk: **critical** \u2014 remote unauthenticated exploitation on all four vectors.\n- No negative tests for dangerous input patterns.\n\n---\n\n### What I checked\n\n- Full file contents (`demo/insecure/app.py`, 35 lines)\n- All four endpoints (`/search`, `/load`, `/run`, `/secret`) for injection, deserialization, and disclosure patterns\n- Environment variable exposure surface\n- Confirmed all four findings match the known true-positive signatures in the F70 compound memory\n\n**\u2014 Torii Gate**",
+      "timestamp": 1785578025.380278,
+      "tool_name": null,
+      "tool_calls": null,
+      "tool_call_id": null
+    }
+  ],
+  "agent_log_bytes": 2401,
+  "agent_log_sha256": "1bc58a26ca6f4e854490aafd4ca0b5f20d56d9638bba05dc3479175d5ed351c6",
+  "sessions_files": []
+}

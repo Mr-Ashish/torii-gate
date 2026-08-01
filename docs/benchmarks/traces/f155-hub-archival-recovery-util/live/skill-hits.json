@@ -1,0 +1,49 @@
+{
+  "feature": "F84",
+  "schema": 1,
+  "f114": true,
+  "tool_outcome": true,
+  "scored_at": "2026-08-01T09:53:59Z",
+  "selected_n": 2,
+  "hit_n": 2,
+  "hit_rate": 1.0,
+  "prose_hit_n": 2,
+  "tool_hit_n": 1,
+  "tool_hit_rate": 0.5,
+  "hits": [
+    {
+      "id": "skill-prefer-hub-archival-early",
+      "hit": true,
+      "matched": [
+        "not"
+      ],
+      "n_matched": 1,
+      "prose_hit": true,
+      "tool_hit": false,
+      "tool_matched": []
+    },
+    {
+      "id": "skill-prefer-memory-cli-early",
+      "hit": true,
+      "matched": [
+        "pickle",
+        "memory"
+      ],
+      "n_matched": 2,
+      "prose_hit": true,
+      "tool_hit": true,
+      "tool_matched": [
+        "torii.py memory",
+        "torii_memory.py"
+      ]
+    }
+  ],
+  "review": "docs/benchmarks/traces/f155-hub-archival-recovery-util/live/review-bench-f70.md",
+  "federated_skill_themes": [
+    "skill-prefer-hub-archival-early",
+    "skill-prefer-memory-cli-early"
+  ],
+  "tool_outcome_skills": [
+    "skill-prefer-memory-cli-early"
+  ]
+}

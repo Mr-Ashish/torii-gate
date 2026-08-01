@@ -358,6 +358,7 @@ def cmd_doctor(args: argparse.Namespace) -> int:
     recovery_active: list[str] = []
     recovery_hub_gap_ok: bool | None = None
     recon_warm_hub_ok: bool | None = None
+    hub_archival_util_ok: bool | None = None
 
     checks: list[tuple[str, list[str]]] = [
         ("memory", [sys.executable, str(_scripts_dir(root) / "torii_memory.py"), "status"]),
@@ -428,15 +429,19 @@ def cmd_doctor(args: argparse.Namespace) -> int:
                         ok = False
                     # F151: recon_warm_hub_ok soft on doctor (surfaces; demote-eval is hard gate)
                     recon_warm_hub_ok = data.get("recon_warm_hub_ok")
+                    # F155: hub-archival recovery util soft surface (inject ≠ hub_boost tools)
+                    hub_archival_util_ok = data.get("hub_archival_util_ok")
             except (json.JSONDecodeError, TypeError):
                 recovery_hub_gap_ok = None
                 recon_warm_hub_ok = None
+                hub_archival_util_ok = None
             entry: dict[str, Any] = {"check": name, "ok": ok, "rc": r.returncode}
             if name == "skill_loop":
                 entry["recovery_ok"] = recovery_ok
                 entry["recovery_active"] = recovery_active
                 entry["recovery_hub_gap_ok"] = recovery_hub_gap_ok
                 entry["recon_warm_hub_ok"] = recon_warm_hub_ok
+                entry["hub_archival_util_ok"] = hub_archival_util_ok
             results.append(entry)
             if not ok:
                 all_ok = False
@@ -444,14 +449,17 @@ def cmd_doctor(args: argparse.Namespace) -> int:
             results.append({"check": name, "ok": False, "error": str(exc)[:120]})
             all_ok = False
 
-    # surface last recovery_hub_gap_ok / recon_warm_hub_ok if set on skill_loop entry
+    # surface last recovery_hub_gap_ok / recon_warm_hub_ok / hub_archival_util_ok
     hub_gap = None
     recon_warm = None
+    hub_arch = None
     for e in results:
         if e.get("check") == "skill_loop" and "recovery_hub_gap_ok" in e:
             hub_gap = e.get("recovery_hub_gap_ok")
         if e.get("check") == "skill_loop" and "recon_warm_hub_ok" in e:
             recon_warm = e.get("recon_warm_hub_ok")
+        if e.get("check") == "skill_loop" and "hub_archival_util_ok" in e:
+            hub_arch = e.get("hub_archival_util_ok")
     # F135: scorecard ops fitness panel (informational — does not fail doctor)
     sc_panel = _scorecard_ops_panel(root)
     print(
@@ -460,12 +468,14 @@ def cmd_doctor(args: argparse.Namespace) -> int:
                 "feature": FEATURE,
                 "feature_recovery": "F128",
                 "feature_recon_warm_hub": "F151",
+                "feature_hub_archival_util": "F155",
                 "feature_scorecard_ops": "F135",
                 "doctor_pass": all_ok,
                 "recovery_ok": recovery_ok,
                 "recovery_active": recovery_active,
                 "recovery_hub_gap_ok": hub_gap,
                 "recon_warm_hub_ok": recon_warm,
+                "hub_archival_util_ok": hub_arch,
                 "scorecard_ops": sc_panel,
                 "scorecard_ops_ok": sc_panel.get("scorecard_ops_ok"),
                 "results": results,
@@ -614,6 +624,12 @@ def product_scorecard(
             doctor.get("recon_warm_hub_ok")
             if doctor.get("recon_warm_hub_ok") is not None
             else skill.get("recon_warm_hub_ok")
+        ),
+        # F155: hub-archival recovery util (always inject → hub_boost tools)
+        "hub_archival_util_ok": bool(
+            doctor.get("hub_archival_util_ok")
+            if doctor.get("hub_archival_util_ok") is not None
+            else skill.get("hub_archival_util_ok")
         ),
         "demote_eval_pass": demote_pass,
         "memory_tool_util_delta": mem_util_delta,

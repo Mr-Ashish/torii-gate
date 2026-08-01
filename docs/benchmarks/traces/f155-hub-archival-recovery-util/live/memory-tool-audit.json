@@ -1,0 +1,21 @@
+{
+  "feature": "F105",
+  "schema": 1,
+  "score": 0.1,
+  "level": "L0",
+  "hit_count": 0,
+  "tools_used": [],
+  "by_tool": {},
+  "cli_subcmds": {},
+  "inject_offered": true,
+  "utilization_gap": false,
+  "tool_call_turns": 0,
+  "feedback": [
+    "memory_inject_offered_but_unused \u2014 prefer `python3 scripts/torii.py memory -- search` or `python3 scripts/torii_memory.py search|graph` before re-raising themes"
+  ],
+  "scored_at": "2026-08-01T09:53:45Z",
+  "hits_detail": [],
+  "out_dir": "docs/benchmarks/traces/f155-hub-archival-recovery-util/live",
+  "loop_path": "docs/benchmarks/traces/f155-hub-archival-recovery-util/live/agent-loop/agent-loop.json",
+  "enabled": true
+}
