@@ -28,7 +28,7 @@ Memory inject without tool calls is theater. Highest ROI: F121-style federate + 
 **Measure utilization → federate → critic demote** — memory mirrors skill util F121/F136.
 
 ### SHA
-`PENDING`
+`eee5338d2661e9aeb6f5df830165fd01deffc9df`
 
 
 ## 2026-08-01 — F140 scorecard hub attribution LOO floor
