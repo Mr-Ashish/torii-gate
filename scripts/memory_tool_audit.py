@@ -54,6 +54,8 @@ _FALSEY = frozenset({"0", "false", "no", "off", "disabled", "n", "none", ""})
 # Patterns that prove memory-tool utilization (terminal / args / log)
 _MEMORY_CMD_PATTERNS: list[tuple[str, re.Pattern[str]]] = [
     ("torii_memory", re.compile(r"torii_memory\.py\b", re.I)),
+    # F114: product umbrella CLI (F110) — skill-prefer-memory-cli-early teaches this
+    ("torii_product_memory", re.compile(r"torii\.py\s+memory\b", re.I)),
     ("archival_search", re.compile(r"archival_memory_search\.py\b", re.I)),
     ("memory_graph", re.compile(r"memory_temporal_graph\.py\b", re.I)),
     ("memory_tiers", re.compile(r"memory_tiers\.py\b", re.I)),
@@ -64,9 +66,10 @@ _MEMORY_CMD_PATTERNS: list[tuple[str, re.Pattern[str]]] = [
     ("memory_loop", re.compile(r"memory_loop_status\.py\b", re.I)),
 ]
 
-# Subcommand hints when using unified CLI
+# Subcommand hints when using unified CLI (F103) or product front door (F110/F114)
 _CLI_SUBCMDS = re.compile(
-    r"torii_memory\.py\s+(?:help|status|doctor|search|search-auto|promote|"
+    r"(?:torii_memory\.py|torii\.py\s+memory(?:\s+--)?)\s+"
+    r"(?:help|status|doctor|search|search-auto|promote|"
     r"graph|tiers|consolidate|events|recall|loop|federate|compound|inject-hint)\b",
     re.I,
 )
@@ -79,6 +82,7 @@ _INJECT_MARKERS = (
     "<!-- torii-f70-tp-signatures -->",
     "Memory tools (F103",
     "torii_memory.py help",
+    "torii.py memory",
 )
 
 
@@ -209,8 +213,9 @@ def score_utilization(
         # no inject offered — memory tools optional; neutral-low
         base = 0.45 if tool_call_turns >= 1 else 0.35
 
-    # Bonus for unified CLI front door
-    if "torii_memory" in (scan.get("tools_used") or []):
+    # Bonus for unified CLI front door (F103) or product umbrella (F110/F114)
+    used = set(scan.get("tools_used") or [])
+    if "torii_memory" in used or "torii_product_memory" in used:
         base = min(1.0, base + 0.1)
     if scan.get("cli_subcmds"):
         base = min(1.0, base + 0.05)
@@ -224,6 +229,7 @@ def score_utilization(
     elif inject_offered:
         feedback.append(
             "memory_inject_offered_but_unused — prefer "
+            "`python3 scripts/torii.py memory -- search` or "
             "`python3 scripts/torii_memory.py search|graph` before re-raising themes"
         )
     else:
@@ -336,7 +342,8 @@ def render_inject_section() -> str:
         "When memory sections are injected (F103 CLI / F98 archival / F100 graph / F70 TP),\n"
         "prefer **calling** them mid-review via terminal before re-raising old themes:\n\n"
         "```bash\n"
-        "python3 scripts/torii_memory.py help\n"
+        "python3 scripts/torii.py memory -- help\n"
+        "python3 scripts/torii.py memory -- search -- -q \"theme keywords\"\n"
         "python3 scripts/torii_memory.py search -- -q \"theme keywords\"\n"
         "python3 scripts/torii_memory.py graph -- query --path <file> --hops 2\n"
         "```\n\n"
@@ -734,7 +741,8 @@ def cmd_fixture(args: argparse.Namespace) -> int:
         good_loop = _synthetic_loop(
             [
                 "cat pr.diff",
-                'python3 scripts/torii_memory.py search -- -q "sql injection"',
+                # F114: product CLI + legacy memory CLI both count as utilization
+                'python3 scripts/torii.py memory -- search -- -q "sql injection"',
                 "python3 scripts/torii_memory.py graph -- query --path app.py --hops 2",
                 "rg -n execute app.py",
             ]

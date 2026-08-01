@@ -174,6 +174,9 @@ def ingest_hits(
             ent["hit_n"] = int(ent.get("hit_n") or 0) + 1
         else:
             ent["miss_n"] = int(ent.get("miss_n") or 0) + 1
+        # F114: track tool-invocation outcomes separately (prose-only skills leave 0)
+        if h.get("tool_hit"):
+            ent["tool_hit_n"] = int(ent.get("tool_hit_n") or 0) + 1
         sel = int(ent["selected_n"])
         ent["hit_rate"] = round(int(ent["hit_n"]) / sel, 4) if sel else 0.0
         ent["last_seen"] = _now()

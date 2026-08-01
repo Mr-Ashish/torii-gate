@@ -124,6 +124,8 @@ compound → write → consolidate → effective_critic → federate → scoped_
 
 **Self-evolve adopt (F112/F113):** F106 recovery signals propose `skill-prefer-memory-cli-early`; dual-gate (F86 contribution + F88 attribution + regression) adopts into `active/` so the next PR calls memory tools **before** burning the re-prompt budget.
 
+**Skill tool outcomes (F114):** adopted skills that teach CLI calls are scored on **agent-loop invocations** (e.g. `torii.py memory`, `torii_memory.py`), not review prose alone — F105 also counts the F110 product CLI as memory utilization.
+
 **Ops:** `python3 scripts/memory_loop_status.py scorecard` → L0–L3. Smoke requires L3 on the hub tree. CI job summary annotates readiness; optional advisory `torii/memory-loop` via `TORII_MEMORY_LOOP_STATUS_COMMIT=1`.
 
 ---

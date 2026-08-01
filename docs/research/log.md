@@ -1,6 +1,36 @@
 # Torii research → product log
 
 
+## 2026-08-01 — F114 tool-invocation skill outcome + product CLI memory detect
+
+### Papers / posts
+- Mem2Act / proactive memory: inject ≠ utilization — score tool calls.
+- Vercel agent evals: skills often never invoked when dumped wholesale.
+- F113 adopted skill-prefer-memory-cli-early teaching `torii.py memory`; F84 hit score was prose-only; F105 missed F110 product CLI.
+
+### OSS design patterns stolen
+1. TOOL_OUTCOME_PROBES map skill_id → agent-loop regexes (torii.py memory, rg -n, …).
+2. Combined hit = prose_hit OR tool_hit; fitness tracks tool_hit_n.
+3. F105 audit pattern for `torii.py memory` (torii_product_memory).
+4. Always-on full body for recovery skill; free-rider accounting survives always budget fill.
+
+### Insight
+Self-evolved recovery skills succeed via **terminal**, not review prose. Without tool-outcome scoring, fitness zombie-demotes the skill that F113 just dual-gate adopted. Highest ROI close: measure invocations + count product CLI.
+
+### Feature shipped (F114)
+- `skill_router.score_hits` F114 tool_outcome fields; DEFAULT_TRIGGERS always for prefer-memory
+- `memory_tool_audit` detects product CLI; fixture uses torii.py memory
+- skill-prefer-memory-cli-early always:true; skill_fitness tool_hit_n
+- free-rider residual skip when always skills fill max_full
+- tests + research note skill-tool-outcome-pattern
+
+### Metric
+- Offline: skill_router fixture_pass; memory audit good_tools includes torii_product_memory
+- pytest 592; Modal pytorch#191813 BIT3_OK ~83s skill always in prompt log_streaming=true
+
+### SHA
+(pending push)
+
 ## 2026-08-01 — F113 dual-gate adopt of skill-prefer-memory-cli-early
 
 ### Papers / posts

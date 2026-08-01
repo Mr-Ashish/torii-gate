@@ -1,8 +1,10 @@
 <!-- F113 dual-gate adopted 2026-08-01T04:53:53Z -->
+<!-- F114 always-on + tool-outcome scored -->
 ---
 id: skill-prefer-memory-cli-early
-feature: F112/F113
+feature: F112/F113/F114
 status: adopted
+always: true
 signal: f106_recovered|memory_utilization_gap
 created_at: 2026-08-01T04:47:50Z
 title: Call torii product/memory CLI early mid-review

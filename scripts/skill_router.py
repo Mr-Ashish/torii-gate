@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""F84: Progressive skill router + post-run skill hit scoring.
+"""F84/F114: Progressive skill router + post-run skill hit + tool-outcome scoring.
 
 Research drivers (2026):
   - Progressive disclosure (Claude Skills / Simon Willison / HN): inject a compact
@@ -9,20 +9,22 @@ Research drivers (2026):
   - FederatedSkill (arXiv 2606.03143): share skill *usage themes*, not full
     trajectory text, for privacy-safe collaborative evolution signals.
   - Loop Engineering: measure what you ship (skill hit rate → evolve/drop).
+  - F114: Mem2Act / tool-use outcome — skills that teach CLI calls must be
+    scored on agent-loop invocations, not review prose alone (F113 memory skill).
 
 Product thesis:
   F69/F82 dump up to 8 full active skills into every prompt. As the skill vault
   grows, context bloats and relevance drops. Highest ROI: **route skills by
   changed-path extensions + theme keywords**, inject index + selected bodies,
-  then **score keyword hits in the review** so self-evolution knows which
-  skills actually fire.
+  then **score keyword hits in the review + tool invocations in the loop** so
+  self-evolution knows which skills actually fire.
 
 Commands:
   index   — catalog active skills (id, title, triggers, always)
   select  — rank/select top-K for given paths
   inject  — progressive inject into prompt.md (replaces F69 bulk when on)
-  score   — post-run skill hit rate vs review body
-  fixture — hermetic offline good/weak path routing + hit score
+  score   — post-run skill hit rate vs review body + optional tool outcomes
+  fixture — hermetic offline good/weak path routing + hit score + tool outcome
   status  — active catalog summary
 
 Env:
@@ -31,6 +33,7 @@ Env:
   TORII_SKILL_ROUTER_MAX      default 4 full skills (plus always-on core)
   TORII_SKILL_ROUTER_ALWAYS   comma ids always included (optional)
   TORII_SKILL_ROUTER_REPLACE  1 (default) | 0 — replace F69 skills block
+  TORII_SKILL_TOOL_OUTCOME    1 (default) | 0 — F114 tool-invocation hit scoring
 """
 
 from __future__ import annotations
@@ -118,6 +121,38 @@ DEFAULT_TRIGGERS: dict[str, dict[str, Any]] = {
         "exts": [],
         "always": True,
     },
+    # F114: adopted F112/F113 recovery skill — always full body; score via tools
+    "skill-prefer-memory-cli-early": {
+        "themes": ["memory", "cli", "search", "graph", "utilization", "recovery"],
+        "keywords": [
+            "torii.py memory",
+            "torii_memory",
+            "memory search",
+            "memory graph",
+            "utilization",
+            "f106",
+        ],
+        "exts": [],
+        "always": True,
+    },
+}
+
+# F114: skill success measured by tool invocations (agent-loop / logs), not prose
+TOOL_OUTCOME_PROBES: dict[str, list[re.Pattern[str]]] = {
+    "skill-prefer-memory-cli-early": [
+        re.compile(r"torii\.py\s+memory\b", re.I),
+        re.compile(r"torii_memory\.py\b", re.I),
+        re.compile(r"archival_memory_search\.py\b", re.I),
+        re.compile(r"memory_temporal_graph\.py\b", re.I),
+    ],
+    "skill-tool-depth-hunks": [
+        re.compile(r"\brg\s+-n\b", re.I),
+        re.compile(r"\bsed\s+-n\b", re.I),
+        re.compile(r"\bdiff\b", re.I),
+    ],
+    "skill-f74-prefer-chain-json": [
+        re.compile(r"taint_prefilter|chain_revalidate|chain\.json|source.?sink", re.I),
+    ],
 }
 
 
@@ -149,6 +184,12 @@ def _int_env(name: str, default: int) -> int:
 
 def replace_f69() -> bool:
     raw = (os.environ.get("TORII_SKILL_ROUTER_REPLACE") or "1").strip().lower()
+    return raw not in _FALSEY
+
+
+def tool_outcome_enabled() -> bool:
+    """F114: score skills by agent-loop tool invocations (default on)."""
+    raw = (os.environ.get("TORII_SKILL_TOOL_OUTCOME") or "1").strip().lower()
     return raw not in _FALSEY
 
 
@@ -520,20 +561,40 @@ def select_skills(
         if c.always and c not in selected:
             selected.append(c)
     # then top by score until max_full; demoted/free-rider → index-only
+    # F114: do not break early on max_full — continue so free-rider/demote
+    # accounting still records skills that never enter the full-body budget.
     for s, c in ranked:
         if c in selected:
             continue
         if c.id in skip_full and not c.always:
-            if c.id in free_riders:
+            if c.id in free_riders and c.id not in skipped_free_riders:
                 skipped_free_riders.append(c.id)
-            if c.id in demoted:
+            if c.id in demoted and c.id not in skipped_demoted:
                 skipped_demoted.append(c.id)
             continue
         if s <= 0 and len(selected) >= 1:
             continue
         if len(selected) >= max_full:
-            break
+            # Budget full: still record remaining free-riders/demoted as skipped
+            if c.id in free_riders and c.id not in skipped_free_riders:
+                skipped_free_riders.append(c.id)
+            if c.id in demoted and c.id not in skipped_demoted:
+                skipped_demoted.append(c.id)
+            continue
         selected.append(c)
+
+    # Explicit residual free-riders/demoted not selected (always never skipped)
+    selected_ids = {c.id for c in selected}
+    for sid in free_riders:
+        if sid not in selected_ids and sid not in skipped_free_riders:
+            skipped_free_riders.append(sid)
+    for sid in demoted:
+        if sid not in selected_ids and sid not in skipped_demoted:
+            # always skills may be in demoted ledger for info only
+            card = next((c for c in cards if c.id == sid), None)
+            if card and card.always:
+                continue
+            skipped_demoted.append(sid)
 
     # if nothing selected, take top 2 non-skipped by score or first always
     if not selected and ranked:
@@ -682,11 +743,70 @@ def inject_into_prompt(
     return result
 
 
+def _collect_tool_blob(
+    out_dir: Path | None = None,
+    agent_loop: Path | None = None,
+    log_path: Path | None = None,
+) -> str:
+    """Gather agent-loop / log / memory-audit text for F114 tool-outcome probes."""
+    chunks: list[str] = []
+    candidates: list[Path] = []
+    if agent_loop is not None:
+        candidates.append(Path(agent_loop))
+    if log_path is not None:
+        candidates.append(Path(log_path))
+    if out_dir is not None:
+        od = Path(out_dir)
+        candidates.extend(
+            [
+                od / "agent-loop" / "agent-loop.json",
+                od / "agent-loop.json",
+                od / "hermes.log",
+                od / "run.log",
+                od / "memory-tool-audit.json",
+            ]
+        )
+    seen: set[str] = set()
+    for p in candidates:
+        try:
+            key = str(p.resolve())
+        except OSError:
+            key = str(p)
+        if key in seen or not p.is_file():
+            continue
+        seen.add(key)
+        try:
+            chunks.append(p.read_text(encoding="utf-8", errors="replace")[:120_000])
+        except OSError:
+            continue
+    return "\n".join(chunks)
+
+
+def tool_probes_for(sid: str) -> list[re.Pattern[str]]:
+    return list(TOOL_OUTCOME_PROBES.get(sid) or [])
+
+
+def match_tool_outcome(sid: str, tool_blob: str) -> list[str]:
+    """Return matched probe labels for a skill against tool/log blob."""
+    if not tool_blob:
+        return []
+    matched: list[str] = []
+    for rx in tool_probes_for(sid):
+        m = rx.search(tool_blob)
+        if m:
+            matched.append(m.group(0)[:80])
+    return matched
+
+
 def score_hits(
     review: Path,
     root: Path | None = None,
     selected: list[str] | None = None,
     out_dir: Path | None = None,
+    *,
+    agent_loop: Path | None = None,
+    log_path: Path | None = None,
+    tool_blob: str | None = None,
 ) -> dict[str, Any]:
     root = root or _root()
     cards = catalog(root)
@@ -704,54 +824,127 @@ def score_hits(
         else:
             selected = [c.id for c in cards]
 
+    # F114: tool-invocation blob (agent-loop / logs / audit)
+    use_tools = tool_outcome_enabled()
+    if tool_blob is None and use_tools:
+        tool_blob = _collect_tool_blob(out_dir, agent_loop=agent_loop, log_path=log_path)
+    elif tool_blob is None:
+        tool_blob = ""
+
     hits: list[dict[str, Any]] = []
     hit_n = 0
+    tool_hit_n = 0
+    prose_hit_n = 0
     for sid in selected:
         c = by_id.get(sid)
         if not c:
-            hits.append({"id": sid, "hit": False, "matched": [], "missing": True})
+            hits.append(
+                {
+                    "id": sid,
+                    "hit": False,
+                    "matched": [],
+                    "missing": True,
+                    "prose_hit": False,
+                    "tool_hit": False,
+                }
+            )
             continue
         matched: list[str] = []
-        # title tokens + keywords
+        # Generic tokens that appear in almost every review (noise for hit scoring)
+        _PROSE_STOP = frozenset(
+            {
+                "review",
+                "skill",
+                "prefer",
+                "early",
+                "call",
+                "with",
+                "from",
+                "this",
+                "that",
+                "when",
+                "into",
+                "over",
+                "only",
+                "path",
+                "file",
+                "line",
+                "true",
+                "false",
+                "title",
+                "tools",
+                "depth",
+                "hunks",
+            }
+        )
+        # title tokens + keywords (skip ultra-generic words)
         probes = list(c.keywords[:10])
         for part in re.split(r"[\s\-_/]+", c.title.lower()):
-            if len(part) >= 4 and part not in probes:
+            if len(part) >= 4 and part not in probes and part not in _PROSE_STOP:
                 probes.append(part)
         # id tail
-        tail = sid.replace("skill-", "").replace("f74-", "").replace("-", " ")
+        tail = (
+            sid.replace("skill-", "")
+            .replace("f74-", "")
+            .replace("prefer-", "")
+            .replace("-", " ")
+        )
         for part in tail.split():
-            if len(part) >= 4 and part not in probes:
+            if len(part) >= 4 and part not in probes and part not in _PROSE_STOP:
                 probes.append(part)
         for kw in probes:
             if len(kw) < 3:
                 continue
-            if kw.lower() in text:
-                matched.append(kw.lower())
-        is_hit = len(matched) >= 1
+            kl = kw.lower()
+            if kl in _PROSE_STOP:
+                continue
+            if kl in text:
+                matched.append(kl)
+        prose_hit = len(matched) >= 1
+        tool_matched = match_tool_outcome(sid, tool_blob) if use_tools else []
+        tool_hit = len(tool_matched) >= 1
+        # Combined: prose OR tool invocation proves skill fired
+        is_hit = prose_hit or tool_hit
         if is_hit:
             hit_n += 1
+        if prose_hit:
+            prose_hit_n += 1
+        if tool_hit:
+            tool_hit_n += 1
         hits.append(
             {
                 "id": sid,
                 "hit": is_hit,
                 "matched": matched[:8],
                 "n_matched": len(matched),
+                "prose_hit": prose_hit,
+                "tool_hit": tool_hit,
+                "tool_matched": tool_matched[:6],
             }
         )
 
     rate = (hit_n / len(selected)) if selected else 0.0
+    tool_rate = (tool_hit_n / len(selected)) if selected else 0.0
     result = {
         "feature": FEATURE,
         "schema": SCHEMA,
+        "f114": True,
+        "tool_outcome": use_tools,
         "scored_at": _now(),
         "selected_n": len(selected),
         "hit_n": hit_n,
         "hit_rate": round(rate, 4),
+        "prose_hit_n": prose_hit_n,
+        "tool_hit_n": tool_hit_n,
+        "tool_hit_rate": round(tool_rate, 4),
         "hits": hits,
         "review": str(review),
         # privacy-safe federated theme: skill ids only
         "federated_skill_themes": [
             h["id"] for h in hits if h.get("hit") and not str(h["id"]).startswith("/")
+        ],
+        "tool_outcome_skills": [
+            h["id"] for h in hits if h.get("tool_hit") and not str(h["id"]).startswith("/")
         ],
     }
     if out_dir:
@@ -832,7 +1025,15 @@ def cmd_score(args: argparse.Namespace) -> int:
     selected = None
     if args.selected:
         selected = [x.strip() for x in args.selected.split(",") if x.strip()]
-    result = score_hits(review, selected=selected, out_dir=out_dir)
+    al = (getattr(args, "agent_loop", None) or "").strip()
+    lg = (getattr(args, "log", None) or "").strip()
+    result = score_hits(
+        review,
+        selected=selected,
+        out_dir=out_dir,
+        agent_loop=Path(al) if al else None,
+        log_path=Path(lg) if lg else None,
+    )
     print(json.dumps(result, indent=2))
     return 0
 
@@ -845,9 +1046,12 @@ def cmd_status(args: argparse.Namespace) -> int:
             {
                 "feature": FEATURE,
                 "schema": SCHEMA,
+                "f114": True,
                 "enabled": enabled(),
+                "tool_outcome": tool_outcome_enabled(),
                 "active_n": len(cards),
                 "always": always,
+                "tool_probe_skills": sorted(TOOL_OUTCOME_PROBES.keys()),
                 "max_full": _int_env("TORII_SKILL_ROUTER_MAX", 4),
                 "replace_f69": replace_f69(),
                 "ids": [c.id for c in cards],
@@ -918,14 +1122,33 @@ Only relevant for markdown documentation tone.
 """,
             encoding="utf-8",
         )
+        # F114: memory-CLI recovery skill (always-on + tool outcome)
+        (active / "skill-prefer-memory-cli-early.md").write_text(
+            """---
+id: skill-prefer-memory-cli-early
+title: Call torii product/memory CLI early mid-review
+always: true
+themes: memory,cli,search
+---
+
+## Skill: prefer-memory-cli-early (F112/F113)
+
+Call `python3 scripts/torii.py memory -- search` before finishing findings.
+Also `python3 scripts/torii_memory.py search` is valid.
+""",
+            encoding="utf-8",
+        )
 
         os.environ["TORII_ROOT"] = str(root)
         os.environ["TORII_SKILL_ROUTER"] = "1"
         os.environ["TORII_SKILL_ROUTER_MAX"] = "3"
         os.environ["TORII_SKILL_ROUTER_REPLACE"] = "1"
+        os.environ["TORII_SKILL_TOOL_OUTCOME"] = "1"
 
         cards = catalog(root)
-        assert len(cards) == 4
+        assert len(cards) == 5
+        mem_card = next(c for c in cards if c.id == "skill-prefer-memory-cli-early")
+        memory_always_ok = mem_card.always is True
 
         py_paths = ["src/app/auth.py", "lib/db.py", "tests/test_auth.py"]
         sel_py = select_skills(cards, py_paths, max_full=3)
@@ -979,12 +1202,70 @@ Verdict: REQUEST_CHANGES
             weak_review, root=root, selected=inj["selected"], out_dir=None
         )
 
+        # F114: tool-outcome — memory skill hits via agent-loop even if prose silent
+        tool_loop = {
+            "schema_version": 1,
+            "tool_call_turns": 2,
+            "steps": [
+                {
+                    "step": 0,
+                    "kind": "assistant_tool_calls",
+                    "tool_calls": [
+                        {
+                            "name": "terminal",
+                            "arguments_preview": json.dumps(
+                                {
+                                    "command": (
+                                        "python3 scripts/torii.py memory -- "
+                                        'search -- -q "auth sql"'
+                                    )
+                                }
+                            ),
+                        }
+                    ],
+                }
+            ],
+            "messages": [],
+        }
+        (out_dir / "agent-loop").mkdir(exist_ok=True)
+        (out_dir / "agent-loop" / "agent-loop.json").write_text(
+            json.dumps(tool_loop) + "\n", encoding="utf-8"
+        )
+        silent_review = root / "silent.md"
+        # Avoid prose stop-words and skill keywords (memory/search/torii)
+        silent_review.write_text("# Verdict\nLGTM no findings.\nAPPROVE\n", encoding="utf-8")
+        tool_sel = [
+            "skill-prefer-memory-cli-early",
+            "skill-tool-depth-hunks",
+        ]
+        tool_hits = score_hits(
+            silent_review,
+            root=root,
+            selected=tool_sel,
+            out_dir=out_dir,
+        )
+        mem_hit = next(
+            (h for h in tool_hits.get("hits") or [] if h["id"] == "skill-prefer-memory-cli-early"),
+            {},
+        )
+        tool_outcome_ok = bool(mem_hit.get("tool_hit")) and bool(mem_hit.get("hit"))
+        tool_rate_ok = float(tool_hits.get("tool_hit_n") or 0) >= 1
+        # weak: no tools, no prose → no hit for memory skill
+        weak_tool = score_hits(
+            silent_review,
+            root=root,
+            selected=["skill-prefer-memory-cli-early"],
+            tool_blob="",  # force empty
+        )
+        weak_tool_ok = not any(h.get("hit") for h in weak_tool.get("hits") or [])
+
         good_rate = float(good_hits["hit_rate"])
         weak_rate = float(weak_hits["hit_rate"])
         rate_ok = good_rate > weak_rate and good_rate >= 0.3
         privacy_ok = not any(
             "/Users/" in str(x) for x in good_hits.get("federated_skill_themes") or []
         )
+        memory_in_py = "skill-prefer-memory-cli-early" in set(inj["selected"])
 
         fixture_pass = all(
             [
@@ -998,10 +1279,16 @@ Verdict: REQUEST_CHANGES
                 rate_ok,
                 privacy_ok,
                 good_hits.get("hit_n", 0) >= 1,
+                memory_always_ok,
+                memory_in_py,
+                tool_outcome_ok,
+                tool_rate_ok,
+                weak_tool_ok,
             ]
         )
         payload = {
             "feature": FEATURE,
+            "f114": True,
             "fixture_pass": fixture_pass,
             "always_ok": always_ok,
             "sec_ok": sec_ok,
@@ -1016,6 +1303,12 @@ Verdict: REQUEST_CHANGES
             "rate_ok": rate_ok,
             "privacy_ok": privacy_ok,
             "good_hit_n": good_hits.get("hit_n"),
+            "memory_always_ok": memory_always_ok,
+            "memory_in_py": memory_in_py,
+            "tool_outcome_ok": tool_outcome_ok,
+            "tool_hit_n": tool_hits.get("tool_hit_n"),
+            "tool_hit_rate": tool_hits.get("tool_hit_rate"),
+            "weak_tool_ok": weak_tool_ok,
         }
         print(json.dumps(payload, indent=2))
         return 0 if fixture_pass else 1
@@ -1049,10 +1342,22 @@ def main(argv: list[str] | None = None) -> int:
     pi.add_argument("--force", action="store_true")
     pi.set_defaults(func=cmd_inject)
 
-    pc = sub.add_parser("score", help="Score skill hits in review")
+    pc = sub.add_parser(
+        "score", help="Score skill hits in review + F114 tool outcomes"
+    )
     pc.add_argument("--review", required=True)
     pc.add_argument("--out-dir", default="")
     pc.add_argument("--selected", default="")
+    pc.add_argument(
+        "--agent-loop",
+        default="",
+        help="F114: path to agent-loop.json for tool-outcome scoring",
+    )
+    pc.add_argument(
+        "--log",
+        default="",
+        help="F114: hermes/run log path for tool-outcome probes",
+    )
     pc.set_defaults(func=cmd_score)
 
     args = p.parse_args(argv)

@@ -1,0 +1,14 @@
+{
+  "feature": "F114",
+  "verdict": "REQUEST CHANGES",
+  "bit3": "OK",
+  "elapsed_s": 82.9,
+  "log_streaming": true,
+  "skill_prefer_memory_cli_early": {
+    "in_prompt": true,
+    "always": true,
+    "tool_outcome_scoring": true
+  },
+  "id": "skill-prefer-memory-cli-early",
+  "notes": "F114 tool-outcome score + F105 product CLI memory detect; Modal BIT3_OK"
+}

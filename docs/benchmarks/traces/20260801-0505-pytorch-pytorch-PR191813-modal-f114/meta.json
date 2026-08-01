@@ -1,0 +1,19 @@
+{
+  "feature": "F114",
+  "repo": "pytorch/pytorch",
+  "pr": 191813,
+  "model": "deepseek/deepseek-v4-pro",
+  "host": "modal",
+  "bit3": "OK",
+  "elapsed_s": 82.9,
+  "log_streaming": true,
+  "tool_call_turns": 3,
+  "post_comment": 0,
+  "skill_tool_outcome": {
+    "prefer_memory_always": true,
+    "f114_probes": true,
+    "product_cli_audit": true
+  },
+  "scored_at": "2026-08-01T05:06:00Z",
+  "modal_app": "https://modal.com/apps/mr-ashish/main/ap-JoLXn6Gt97HrB1N198wXOe"
+}

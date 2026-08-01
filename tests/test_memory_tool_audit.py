@@ -67,6 +67,39 @@ class MemoryToolAuditTests(unittest.TestCase):
             self.assertGreaterEqual(data["hit_count"], 1)
             self.assertIn("torii_memory", data["tools_used"])
 
+    def test_f114_scan_detects_product_cli_memory(self):
+        """F114: torii.py memory (product umbrella) counts as utilization."""
+        with tempfile.TemporaryDirectory() as td:
+            loop = {
+                "tool_call_turns": 1,
+                "steps": [
+                    {
+                        "kind": "assistant_tool_calls",
+                        "tool_calls": [
+                            {
+                                "name": "terminal",
+                                "arguments_preview": json.dumps(
+                                    {
+                                        "command": (
+                                            "python3 scripts/torii.py memory -- "
+                                            'search -- -q "auth OR sql"'
+                                        )
+                                    }
+                                ),
+                            }
+                        ],
+                    }
+                ],
+                "messages": [],
+            }
+            lp = Path(td) / "loop.json"
+            lp.write_text(json.dumps(loop))
+            r = _run(["scan", "--loop", str(lp)])
+            self.assertEqual(r.returncode, 0, r.stderr + r.stdout)
+            data = json.loads(r.stdout)
+            self.assertGreaterEqual(data["hit_count"], 1)
+            self.assertIn("torii_product_memory", data["tools_used"])
+
     def test_status(self):
         r = _run(["status"])
         self.assertEqual(r.returncode, 0)

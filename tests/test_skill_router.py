@@ -116,6 +116,75 @@ class SkillRouterTests(unittest.TestCase):
             self.assertEqual(r.returncode, 0, r.stderr + r.stdout)
             self.assertTrue((dest / "scripts" / "skill_router.py").is_file())
 
+    def test_f114_memory_skill_always_on(self):
+        """F114: skill-prefer-memory-cli-early is always routed when active."""
+        r = _run(["status"])
+        self.assertEqual(r.returncode, 0, r.stderr + r.stdout)
+        data = json.loads(r.stdout)
+        self.assertTrue(data.get("f114") or data.get("tool_outcome"))
+        active = ROOT / "agent" / "skills" / "active" / "skill-prefer-memory-cli-early.md"
+        if active.is_file():
+            self.assertIn("skill-prefer-memory-cli-early", data.get("always") or [])
+            self.assertIn(
+                "skill-prefer-memory-cli-early",
+                data.get("tool_probe_skills") or [],
+            )
+
+    def test_f114_tool_outcome_score(self):
+        """F114: memory skill hits via agent-loop torii.py memory, not prose."""
+        with tempfile.TemporaryDirectory() as td:
+            td_path = Path(td)
+            review = td_path / "review.md"
+            review.write_text("# Verdict\nLGTM no findings.\nAPPROVE\n", encoding="utf-8")
+            loop = {
+                "schema_version": 1,
+                "tool_call_turns": 1,
+                "steps": [
+                    {
+                        "step": 0,
+                        "kind": "assistant_tool_calls",
+                        "tool_calls": [
+                            {
+                                "name": "terminal",
+                                "arguments_preview": json.dumps(
+                                    {
+                                        "command": (
+                                            "python3 scripts/torii.py memory -- "
+                                            'search -- -q "auth"'
+                                        )
+                                    }
+                                ),
+                            }
+                        ],
+                    }
+                ],
+                "messages": [],
+            }
+            loop_path = td_path / "agent-loop.json"
+            loop_path.write_text(json.dumps(loop) + "\n", encoding="utf-8")
+            r = _run(
+                [
+                    "score",
+                    "--review",
+                    str(review),
+                    "--out-dir",
+                    str(td_path),
+                    "--selected",
+                    "skill-prefer-memory-cli-early",
+                    "--agent-loop",
+                    str(loop_path),
+                ]
+            )
+            self.assertEqual(r.returncode, 0, r.stderr + r.stdout)
+            data = json.loads(r.stdout)
+            self.assertTrue(data.get("f114"))
+            hits = {h["id"]: h for h in data.get("hits") or []}
+            if "skill-prefer-memory-cli-early" in hits:
+                h = hits["skill-prefer-memory-cli-early"]
+                self.assertTrue(h.get("tool_hit"), h)
+                self.assertTrue(h.get("hit"), h)
+                self.assertFalse(h.get("prose_hit"), h)
+
 
 if __name__ == "__main__":
     unittest.main()
