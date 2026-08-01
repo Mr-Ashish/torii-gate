@@ -28,7 +28,7 @@ ops (#8) · simplicity (#12)
 ops dashboard inventorizes buyer product surfaces + live cost/PR
 
 ### SHA
-_pending_
+`0701a280dd639464ddad535561ec466d9ef0535a`
 
 
 ## 2026-08-01 — GTM_README: product surfaces map on GitHub front door
