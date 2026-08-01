@@ -427,6 +427,15 @@ REGISTRY: list[ToggleSpec] = [
         "F73",
     ),
     ToggleSpec(
+        "scoped_memory",
+        "TORII_SCOPED_MEMORY",
+        "bool",
+        True,
+        "product",
+        "F75 Mem0-style scoped TP/FP recall with conflict + budget",
+        "F75",
+    ),
+    ToggleSpec(
         "trace_vault",
         "TORII_TRACE_VAULT",
         "bool",

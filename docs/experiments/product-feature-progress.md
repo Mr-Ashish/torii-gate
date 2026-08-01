@@ -21,30 +21,31 @@
 | F72 | Full-chain revalidation maker/checker | agent_quality, tools, bench | **shipping** |
 | F73 | Trajectory fitness + paper-safe trace vault | agent_quality, memory, bench, tools | **shipping** |
 | F74 | Fitness-gated skill evolution (SkillOpt/GEPA-lite) | agent_quality, memory, tools | **shipping** |
+| F75 | Scoped memory recall (Mem0 multi-scope TP/FP) | memory, agent_quality, tools | **shipping** |
 
 ## IN_PROGRESS
 
 | ID | Feature | Notes |
 |----|---------|-------|
-| — | — | open: Juice Shop vendor corpus; LLM second-agent critic; Mem0-style scoped recall over TP/FP |
+| — | — | open: Juice Shop vendor corpus; LLM second-agent critic; cross-tenant hub federated ingest |
 
 ## LEFT
 
-— Juice Shop full cases; cross-tenant hub ingest of federated-signals; optional LLM checker atop F72; scoped memory recall over TP/FP
+— Juice Shop full cases; cross-tenant hub ingest of federated-signals; optional LLM checker atop F72
 
 ## Counts
 
-- **features_built_count:** 31 (F44–F74)
+- **features_built_count:** 32 (F44–F75)
 - **types_built:** agent_quality, product, memory, ops, bench, tools
 - **left_count:** open research
 - **progress_pct:** n/a (open research loop)
 - **eta:** open research only
 - **active_worktrees:** none
-- **federated_memory_note:** F65 tenant path; F70 TP local; F71 sanitized aggregate (theme/CWE/keywords)
-- **agent_design_note:** F70 dual-pass offline critic; F71 static-led prefilter; F72 maker/checker; F73 procedure fitness vault; F74 fitness-gated skill evolve
+- **federated_memory_note:** F65 tenant; F70 TP; F71 federated; F75 multi-scope recall (run>repo>tenant>agent>global)
+- **agent_design_note:** F70–F74 gates; F75 Mem0-style scoped TP/FP recall + conflict
 - **meta_loop_note:** measure findings → chain gate → trajectory fitness → paper vault
 - **milvus_corpus:** 3 + complex #6 F67 e2e
 
 ## Status line
 
-`features_built_count=31 types_built=agent_quality,product,memory,ops,bench,tools f74=fitness_gate_evolve`
+`features_built_count=32 types_built=agent_quality,product,memory,ops,bench,tools f75=scoped_memory_recall`

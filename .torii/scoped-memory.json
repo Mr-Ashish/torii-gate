@@ -1,0 +1,256 @@
+{
+  "schema_version": 1,
+  "feature": "F75",
+  "updated_at": "2026-08-01T00:30:53Z",
+  "repo": "pytorch/pytorch",
+  "tenant": "",
+  "count": 8,
+  "items": [
+    {
+      "id": "tp-repo-sqli-search-b48b786d7f",
+      "kind": "tp",
+      "scope": "repo",
+      "theme": "sql_injection",
+      "cwe": [
+        "CWE-89"
+      ],
+      "keywords": [
+        "sql injection",
+        "sqli",
+        "f-string",
+        "f\"select",
+        "string-formatted",
+        "execute(f",
+        "cur.execute(f",
+        "cwe-89"
+      ],
+      "path_globs": [
+        "demo/insecure/app.py",
+        "insecure/app.py",
+        "app.py"
+      ],
+      "path": "",
+      "reason": "",
+      "hits": 3,
+      "source": "bench_promote",
+      "repo": "pytorch/pytorch",
+      "tenant": "",
+      "provenance": "/Users/ashishmishra/Documents/experiments/torii/.torii/tp-signatures.json",
+      "raw_id": "sqli-search"
+    },
+    {
+      "id": "tp-repo-pickle-load-195963b23a",
+      "kind": "tp",
+      "scope": "repo",
+      "theme": "insecure_deserialization",
+      "cwe": [
+        "CWE-502"
+      ],
+      "keywords": [
+        "pickle",
+        "deserialize",
+        "deserialization",
+        "unsafe load",
+        "cwe-502",
+        "pickle.loads"
+      ],
+      "path_globs": [
+        "demo/insecure/app.py",
+        "insecure/app.py",
+        "app.py"
+      ],
+      "path": "",
+      "reason": "",
+      "hits": 3,
+      "source": "bench_promote",
+      "repo": "pytorch/pytorch",
+      "tenant": "",
+      "provenance": "/Users/ashishmishra/Documents/experiments/torii/.torii/tp-signatures.json",
+      "raw_id": "pickle-load"
+    },
+    {
+      "id": "tp-repo-cmdi-run-c2744b0b70",
+      "kind": "tp",
+      "scope": "repo",
+      "theme": "command_injection",
+      "cwe": [
+        "CWE-78"
+      ],
+      "keywords": [
+        "command injection",
+        "shell=true",
+        "os command",
+        "rce",
+        "subprocess",
+        "cwe-78",
+        "shell injection"
+      ],
+      "path_globs": [
+        "demo/insecure/app.py",
+        "insecure/app.py",
+        "app.py"
+      ],
+      "path": "",
+      "reason": "",
+      "hits": 3,
+      "source": "bench_promote",
+      "repo": "pytorch/pytorch",
+      "tenant": "",
+      "provenance": "/Users/ashishmishra/Documents/experiments/torii/.torii/tp-signatures.json",
+      "raw_id": "cmdi-run"
+    },
+    {
+      "id": "tp-repo-secret-exposure-8bb54c8bd0",
+      "kind": "tp",
+      "scope": "repo",
+      "theme": "secrets_exposure",
+      "cwe": [
+        "CWE-200",
+        "CWE-798"
+      ],
+      "keywords": [
+        "secret",
+        "api key",
+        "api_key",
+        "openrouter",
+        "credential",
+        "exposes",
+        "exposure"
+      ],
+      "path_globs": [
+        "demo/insecure/app.py",
+        "insecure/app.py",
+        "app.py"
+      ],
+      "path": "",
+      "reason": "",
+      "hits": 3,
+      "source": "bench_promote",
+      "repo": "pytorch/pytorch",
+      "tenant": "",
+      "provenance": "/Users/ashishmishra/Documents/experiments/torii/.torii/tp-signatures.json",
+      "raw_id": "secret-exposure"
+    },
+    {
+      "id": "federated-global-command-injection-f71763fb01",
+      "kind": "federated",
+      "scope": "global",
+      "theme": "command_injection",
+      "cwe": [
+        "CWE-78"
+      ],
+      "keywords": [
+        "command injection",
+        "shell=true",
+        "os command",
+        "rce",
+        "subprocess",
+        "cwe-78",
+        "shell injection"
+      ],
+      "path_globs": [],
+      "path": "",
+      "reason": "",
+      "hits": 10,
+      "source": "federated-signals",
+      "repo": "",
+      "tenant": "",
+      "provenance": "/Users/ashishmishra/Documents/experiments/torii/.torii/federated-signals.json",
+      "raw_id": "command_injection"
+    },
+    {
+      "id": "federated-global-insecure-deserialization-531159e6be",
+      "kind": "federated",
+      "scope": "global",
+      "theme": "insecure_deserialization",
+      "cwe": [
+        "CWE-502"
+      ],
+      "keywords": [
+        "pickle",
+        "deserialize",
+        "deserialization",
+        "unsafe load",
+        "cwe-502",
+        "pickle.loads"
+      ],
+      "path_globs": [],
+      "path": "",
+      "reason": "",
+      "hits": 10,
+      "source": "federated-signals",
+      "repo": "",
+      "tenant": "",
+      "provenance": "/Users/ashishmishra/Documents/experiments/torii/.torii/federated-signals.json",
+      "raw_id": "insecure_deserialization"
+    },
+    {
+      "id": "federated-global-secrets-exposure-f4ba79e114",
+      "kind": "federated",
+      "scope": "global",
+      "theme": "secrets_exposure",
+      "cwe": [
+        "CWE-200",
+        "CWE-798"
+      ],
+      "keywords": [
+        "secret",
+        "api key",
+        "api_key",
+        "openrouter",
+        "credential",
+        "exposes",
+        "exposure"
+      ],
+      "path_globs": [],
+      "path": "",
+      "reason": "",
+      "hits": 10,
+      "source": "federated-signals",
+      "repo": "",
+      "tenant": "",
+      "provenance": "/Users/ashishmishra/Documents/experiments/torii/.torii/federated-signals.json",
+      "raw_id": "secrets_exposure"
+    },
+    {
+      "id": "federated-global-sql-injection-dbd7f73082",
+      "kind": "federated",
+      "scope": "global",
+      "theme": "sql_injection",
+      "cwe": [
+        "CWE-89"
+      ],
+      "keywords": [
+        "sql injection",
+        "sqli",
+        "f-string",
+        "f\"select",
+        "string-formatted",
+        "execute(f",
+        "cur.execute(f",
+        "cwe-89"
+      ],
+      "path_globs": [],
+      "path": "",
+      "reason": "",
+      "hits": 10,
+      "source": "federated-signals",
+      "repo": "",
+      "tenant": "",
+      "provenance": "/Users/ashishmishra/Documents/experiments/torii/.torii/federated-signals.json",
+      "raw_id": "sql_injection"
+    }
+  ],
+  "by_kind": {
+    "tp": 4,
+    "fp": 0,
+    "federated": 4
+  },
+  "by_scope": {
+    "run": 0,
+    "repo": 4,
+    "tenant": 0,
+    "agent": 0,
+    "global": 4
+  }
+}

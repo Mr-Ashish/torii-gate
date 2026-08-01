@@ -1,0 +1,26 @@
+{
+  "id": "scoped-memory-recall",
+  "name": "Scoped memory recall over TP/FP (F75)",
+  "status": "adopted",
+  "source": "research_oss",
+  "kind": "workflow_tool",
+  "toolset": "terminal",
+  "script": "scripts/scoped_memory_recall.py",
+  "rationale": "Mem0 multi-scope (run/repo/tenant/agent/global) + conflict detection: path/scope/hits ranked TP/FP recall with budgeted inject; prevents bulk memory dump and cross-scope noise",
+  "eval": {
+    "scored_at": "2026-08-01T00:30:00Z",
+    "dims": {
+      "signal": 5,
+      "safety": 5,
+      "effort": 4,
+      "torii_fit": 5,
+      "cost": 5
+    },
+    "total": 24,
+    "max": 25,
+    "recommend": "adopt",
+    "notes": "fixture path rank + FP suppress + privacy strip + F70 replace"
+  },
+  "adopted_at": "2026-08-01T00:30:00Z",
+  "feature": "F75"
+}

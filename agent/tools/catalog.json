@@ -1,8 +1,8 @@
 {
   "schema_version": 1,
-  "feature": "F74",
+  "feature": "F75",
   "description": "Torii agent tool catalog \u2014 research \u2192 eval \u2192 adopt pipeline",
-  "updated_at": "2026-08-01T00:21:25Z",
+  "updated_at": "2026-08-01T00:29:20Z",
   "tools": [
     {
       "id": "terminal",
@@ -148,6 +148,18 @@
       "rationale": "F74: weak fitness dims \u2192 bounded skill patches; constraint + held-out gate default REJECT",
       "feature": "F74",
       "adopted_at": "2026-08-01T00:20:00Z"
+    },
+    {
+      "id": "scoped-memory-recall",
+      "name": "Scoped memory recall (Mem0 multi-scope TP/FP)",
+      "status": "adopted",
+      "source": "research_oss",
+      "kind": "workflow_tool",
+      "toolset": "terminal",
+      "script": "scripts/scoped_memory_recall.py",
+      "rationale": "F75: path+scope ranked TP/FP recall with conflict resolution and budget",
+      "feature": "F75",
+      "adopted_at": "2026-08-01T00:30:00Z"
     }
   ],
   "candidates": [

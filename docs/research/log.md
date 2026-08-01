@@ -1,5 +1,37 @@
 # Torii research → product log
 
+## 2026-08-01 — F75 scoped memory recall (Mem0 multi-scope TP/FP)
+
+### Papers / posts / OSS
+- **Mem0** (arXiv 2504.19413, Apache-2.0 clone `oss-memory-mem0`): multi-scope user/agent/run/app; selective retrieval; conflict detection.
+- **Memory security** (arXiv 2604.16548; longitudinal safety 2026): segment memory, provenance, resist poisoning.
+- Prior Torii: F64 FP, F70 TP, F71 federated, F65 tenant — inject was unscoped dump.
+
+### OSS / eng patterns
+1. Mem0 scope filters → run > repo > tenant > agent > global rank.
+2. Selective retrieval → path_match + hits budget (`TORII_SCOPED_TP_MAX`).
+3. Conflict policy → path-anchored FP suppresses theme-only TP; path TP beats unanchored FP.
+
+### Insight
+Compound TP/FP memory without scope ranking wastes tokens and can re-raise dismissed paths. Highest ROI: **budgeted, path-aware recall with explicit conflict resolution**.
+
+### Feature shipped (F75)
+- `scripts/scoped_memory_recall.py` — `ingest` / `recall` / `conflict` / `inject` / `fixture` / `score` / `status`
+- Unified `.torii/scoped-memory.json`; prompt `<!-- torii-f75-scoped-memory -->`
+- Optional supersede bulk F70 TP section; assemble-context wire; toggle `TORII_SCOPED_MEMORY`
+- Adopted tool `scoped-memory-recall`
+
+### Loop-engineering practice used
+**Selective context + provenance** — only path-relevant memory enters the maker prompt; checker conflict list is explicit.
+
+### Metric
+- Offline fixture: path rank sqli>xss; conflict; privacy strip `/Users/`; inject+replace F70; pytest F75 5/5
+- Live: pytorch/pytorch#191813 deepseek/deepseek-v4-pro fitness 0.8694 L3; SCOPED_MEMORY=1 TP=4 FP=0; POST_COMMENT=0; Modal blocked (torii-openrouter secret) → local Hermes
+- pytest: 467 passed
+
+### SHA
+`(pending push)`
+
 ## 2026-08-01 — F74 fitness-gated skill evolution (SkillOpt / GEPA-lite)
 
 ### Papers / posts / OSS

@@ -304,6 +304,51 @@ try:
 except Exception:
     tp_sigs_injected = "0"
 
+# F75: scoped memory recall (Mem0 multi-scope over TP/FP; budgeted + conflict)
+scoped_memory_on = "0"
+scoped_memory_tp = "0"
+scoped_memory_fp = "0"
+try:
+    import sys as _sys_f75
+    _sys_f75.path.insert(0, str(torii_root / "scripts"))
+    from scoped_memory_recall import (  # type: ignore
+        enabled as scoped_enabled,
+        ingest as scoped_ingest,
+        load_store as scoped_load,
+        recall as scoped_recall,
+        inject_into_prompt as inject_scoped,
+        default_store_path as scoped_store_path,
+    )
+
+    if scoped_enabled():
+        _repo_f75 = os.environ.get("REPO") or os.environ.get("GITHUB_REPOSITORY") or ""
+        scoped_ingest(torii_root, repo=_repo_f75, out_dir=out_dir)
+        _items = scoped_load(scoped_store_path(torii_root), torii_root)
+        _paths_f75 = []
+        for f in files:
+            pth = f.get("path") or f.get("filename") or ""
+            if pth:
+                _paths_f75.append(pth)
+        if not _paths_f75:
+            _ft = out_dir / "files.txt"
+            if _ft.is_file():
+                import re as _re_f75
+                for _ln in _ft.read_text(encoding="utf-8", errors="replace").splitlines():
+                    _m = _re_f75.search(r"`([^`]+)`", _ln)
+                    if _m:
+                        _paths_f75.append(_m.group(1))
+        _rec = scoped_recall(_items, _paths_f75)
+        (out_dir / "scoped-memory-recall.json").write_text(
+            __import__("json").dumps(_rec, indent=2) + "\n", encoding="utf-8"
+        )
+        if inject_scoped(Path(os.environ["PROMPT_PATH"]), _rec):
+            scoped_memory_on = "1"
+            scoped_memory_tp = str((_rec.get("metrics") or {}).get("tp_returned") or 0)
+            scoped_memory_fp = str((_rec.get("metrics") or {}).get("fp_returned") or 0)
+            prompt = Path(os.environ["PROMPT_PATH"]).read_text(encoding="utf-8")
+except Exception:
+    scoped_memory_on = "0"
+
 # F71: deterministic source→sink prefilter + federated sanitized signals
 taint_prefilter_on = "0"
 taint_candidates = "0"
@@ -588,6 +633,9 @@ meta = {
     "FP_RESOLVE_COUNT": fp_resolve_count,
     "SELF_EVOLVE_SKILLS": skills_injected,
     "TP_SIGNATURES": tp_sigs_injected,
+    "SCOPED_MEMORY": scoped_memory_on,
+    "SCOPED_MEMORY_TP": scoped_memory_tp,
+    "SCOPED_MEMORY_FP": scoped_memory_fp,
     "TAINT_PREFILTER": taint_prefilter_on,
     "TAINT_CANDIDATES": taint_candidates,
     "FEDERATED_SIGNALS": federated_signals_on,
