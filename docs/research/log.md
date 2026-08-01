@@ -32,7 +32,7 @@ Proposals without tool-aware adopt gates never leave `proposals/`. Highest ROI: 
 **Verifier dual-gate before active skill merge** — tool evidence required.
 
 ### SHA
-`d0522ca14d5d91b1bd26fb7325cb3c3ce0ee0273`
+`e82b784ce0feda1f0ae553fad11f3402cd950079`
 ## 2026-08-01 — F117 tool-probe self-evolve (allowlisted mine + propose)
 
 ### Papers / posts
