@@ -8,6 +8,19 @@ This is the post-install habit for a **real repo** (yours), not a research harne
 install pack → require status check torii/gate → review PRs → quieter chart
 ```
 
+## 0. Customer vault bootstrap
+
+Install stamps **`.torii/runs/README.md`**. After the first reviews, slim packs land under `.torii/runs/{trace_id}/` on **your** repo (Actions workspace write + optional commit). Hub dogfood is optional.
+
+| Empty vault | Ready vault |
+|-------------|-------------|
+| `local_runs_n=0` · follow install + require `torii/gate` | `local_runs_n≥1` · quieter chart from your PRs |
+
+```bash
+python3 scripts/torii.py quieter -- bootstrap   # ensure .torii/runs README exists
+python3 scripts/torii.py quieter -- status      # local_runs_n + getting_quieter
+```
+
 ## 1. Install on your repo
 
 ```bash

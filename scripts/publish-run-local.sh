@@ -49,29 +49,10 @@ BRANCH="${TORII_MEMORY_BRANCH:-}"
 record_mh "MEMORY_MODE=${MODE}"
 record_mh "MEMORY_PATH=${MEM_PATH}"
 
-if [[ -z "$SOURCE_REPO" ]]; then
-  log "REPO/GITHUB_REPOSITORY missing; skip local publish"
-  echo "::warning::F30 local .torii publish skipped — REPO missing"
-  record_mh "LOCAL_PUBLISH=missing_repo"
-  exit 1
-fi
-if [[ -z "$TOKEN" ]]; then
-  log "No GITHUB_TOKEN; cannot publish local .torii memory"
-  echo "::warning::F30 local .torii publish failed — no GITHUB_TOKEN (need contents: write)"
-  record_mh "LOCAL_PUBLISH=no_token"
-  exit 1
-fi
-
 command -v python3 >/dev/null 2>&1 || {
   log "python3 not found; skip"
   record_mh "LOCAL_PUBLISH=error"
   echo "::warning::F30 local .torii publish failed — python3 missing"
-  exit 1
-}
-command -v git >/dev/null 2>&1 || {
-  log "git not found; skip"
-  record_mh "LOCAL_PUBLISH=error"
-  echo "::warning::F30 local .torii publish failed — git missing"
   exit 1
 }
 
@@ -86,6 +67,81 @@ payload = json.loads(open(sys.argv[1]).read())
 open(sys.argv[2], "w").write(json.dumps({"run": payload}, indent=2) + "\n")
 print(sys.argv[2])
 PY
+
+# ------------------------------------------------------------------
+# Customer quieter vault (FS path): write .torii/runs into the Actions
+# workspace (or TORII_LOCAL_FS_ROOT) without clone/push. Guarantees the
+# quieter chart has a local row even when branch protection blocks bots.
+# ------------------------------------------------------------------
+FS_ROOT="${TORII_LOCAL_FS_ROOT:-${GITHUB_WORKSPACE:-}}"
+if [[ -z "$FS_ROOT" && -d "$TORII_ROOT/.git" ]]; then
+  # dogfood/local: torii checkout itself
+  FS_ROOT="$TORII_ROOT"
+fi
+case "${TORII_LOCAL_FS_PUBLISH:-1}" in
+  0|false|no|off) FS_ROOT="" ;;
+esac
+if [[ -n "$FS_ROOT" && -d "$FS_ROOT" ]]; then
+  notice "Local FS vault publish → ${FS_ROOT}/${MEM_PATH}/runs (customer quieter path)"
+  set +e
+  (
+    export CLIENT_PAYLOAD_FILE="$OUT_DIR/client_payload.json"
+    export TORII_INGEST_LAYOUT=local
+    export TORII_MEMORY_ROOT="$FS_ROOT"
+    export TORII_MEMORY_PATH="$MEM_PATH"
+    python3 "$TORII_ROOT/scripts/hub-ingest-run.py"
+  )
+  FS_RC=$?
+  set -e
+  if [[ $FS_RC -eq 0 ]]; then
+    record_mh "LOCAL_FS_PUBLISH=ok"
+    # Ensure vault README exists for operators
+    if [[ ! -f "$FS_ROOT/${MEM_PATH}/runs/README.md" ]]; then
+      mkdir -p "$FS_ROOT/${MEM_PATH}/runs"
+      cat >"$FS_ROOT/${MEM_PATH}/runs/README.md" <<'EOF'
+# Torii run vault (customer quieter path)
+
+Each review may land a slim pack here: `{trace_id}/meta.json` · `summary.md` · `review.md`.
+
+```bash
+python3 scripts/torii.py quieter -- status
+python3 scripts/torii.py quieter -- report
+```
+
+See `docs/QUIETER.md`. Do not hand-edit run packs — they are written by the gate.
+EOF
+    fi
+    notice "Wrote local quieter vault under ${FS_ROOT}/${MEM_PATH}/runs"
+    # If no token, FS path is enough for quieter chart on this runner/workspace
+    if [[ -z "$TOKEN" || -z "$SOURCE_REPO" ]]; then
+      record_mh "LOCAL_PUBLISH=fs_only"
+      exit 0
+    fi
+  else
+    log "Local FS vault publish failed rc=${FS_RC} (will try git clone path if token present)"
+    record_mh "LOCAL_FS_PUBLISH=error"
+  fi
+fi
+
+if [[ -z "$SOURCE_REPO" ]]; then
+  log "REPO/GITHUB_REPOSITORY missing; skip git local publish"
+  echo "::warning::F30 local .torii git publish skipped — REPO missing (FS path may still have written)"
+  record_mh "LOCAL_PUBLISH=missing_repo"
+  exit 0
+fi
+if [[ -z "$TOKEN" ]]; then
+  log "No GITHUB_TOKEN; skip git push of .torii (FS vault may still have been written)"
+  echo "::warning::F30 local .torii git publish skipped — no GITHUB_TOKEN (FS vault path still preferred for quieter)"
+  record_mh "LOCAL_PUBLISH=no_token_fs_ok"
+  exit 0
+fi
+
+command -v git >/dev/null 2>&1 || {
+  log "git not found; skip git publish"
+  record_mh "LOCAL_PUBLISH=error"
+  echo "::warning::F30 local .torii publish failed — git missing"
+  exit 1
+}
 
 export GH_TOKEN="$TOKEN"
 

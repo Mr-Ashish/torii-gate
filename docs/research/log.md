@@ -5252,3 +5252,26 @@ Remaining scorecard gap #1 is human design-partner close. Highest ROI without in
 
 ### SHA
 `aecb76a475896a2214f037ea6794b247e8fc8bca`
+
+## 2026-08-01 — CUSTOMER_QUIETER_VAULT bootstrap + FS publish
+
+### Papers / posts
+- Partner path: quieter chart must work without hub dogfood traces.
+- Branch protection often blocks bot pushes of .torii — need FS write on runner.
+- Loop Engineering: measure customer vault rows (local_runs_n), not only hub vault.
+
+### Insight
+Gap #2 (customer quieter vault) was docs-only; local_runs_n stayed 0. Highest ROI: install seeds .torii/runs README, quieter -- bootstrap, publish-run-local FS path to GITHUB_WORKSPACE before git push.
+
+### Feature shipped (CUSTOMER_QUIETER_VAULT)
+- install-torii.sh seed_runs_vault
+- quieter bootstrap + status bootstrap_needed/hint
+- publish-run-local TORII_LOCAL_FS_PUBLISH → .torii/runs without token
+- QUIETER.md §0 · status merge beat local_runs
+
+### Metric
+- quieter fixture pass · install seeds README
+- Live Modal e2e this fire
+
+### SHA
+`PENDING_PUSH`

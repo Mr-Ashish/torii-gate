@@ -10,7 +10,7 @@ Tools-as-code (no new F-compound loop):
   - chart: docs/benchmarks/quieter-over-time.md (hub) and/or .torii/quieter-over-time.md
 
 Commands:
-  report | fixture | status
+  report | fixture | status | bootstrap
 """
 
 from __future__ import annotations
@@ -812,6 +812,9 @@ def cmd_status(args: argparse.Namespace) -> int:
     report = build_report(root)
     win = report.get("windows") or {}
     own = report.get("own_repo") or {}
+    local_n = int(report.get("local_runs_n") or 0)
+    runs_readme = (root / LOCAL_RUNS / "README.md").is_file()
+    bootstrap_needed = local_n < 1
     slim = {
         "feature": FEATURE,
         "quieter_ok": report.get("quieter_ok"),
@@ -819,16 +822,66 @@ def cmd_status(args: argparse.Namespace) -> int:
         "own_repo_ok": own.get("ok"),
         "pack_surface_ok": own.get("pack_surface_ok"),
         "dogfood_n": report.get("dogfood_n"),
-        "local_runs_n": report.get("local_runs_n"),
+        "local_runs_n": local_n,
         "hub_traces_n": report.get("hub_traces_n"),
         "quiet_score_all": (win.get("all") or {}).get("quiet_score"),
         "delta_quiet_score": win.get("delta_quiet_score"),
         "getting_quieter": win.get("getting_quieter"),
         "tool_use_quality_ok": (report.get("tool_use_quality") or {}).get("quality_ok"),
+        "customer_vault_readme": runs_readme,
+        "bootstrap_needed": bootstrap_needed,
+        "bootstrap_hint": (
+            "require torii/gate → @torii review → .torii/runs fills → quieter -- report"
+            if bootstrap_needed
+            else "local vault has runs · quieter chart ready"
+        ),
         "at": report.get("at"),
     }
     print(json.dumps(slim, indent=2))
     return 0 if report.get("quieter_ok") else 1
+
+
+def cmd_bootstrap(args: argparse.Namespace) -> int:
+    """Ensure customer .torii/runs vault + README exist (install-equivalent)."""
+    root = _root()
+    runs = root / LOCAL_RUNS
+    runs.mkdir(parents=True, exist_ok=True)
+    gitkeep = runs / ".gitkeep"
+    if not gitkeep.is_file():
+        gitkeep.write_text("", encoding="utf-8")
+    readme = runs / "README.md"
+    wrote = False
+    if not readme.is_file() or getattr(args, "force", False):
+        readme.write_text(
+            "# Torii run vault (customer quieter path)\n\n"
+            "Slim packs land here after each gate review: "
+            "`{trace_id}/meta.json` · `summary.md` · `review.md`.\n\n"
+            "```bash\n"
+            "python3 scripts/torii.py quieter -- status\n"
+            "python3 scripts/torii.py quieter -- report\n"
+            "```\n\n"
+            "First fill: require **torii/gate** · `@torii review this pr` · re-check status.\n"
+            "Docs: docs/QUIETER.md\n",
+            encoding="utf-8",
+        )
+        wrote = True
+    try:
+        runs_rel = str(runs.relative_to(root))
+        readme_rel = str(readme.relative_to(root))
+    except ValueError:
+        runs_rel = str(runs)
+        readme_rel = str(readme)
+    out = {
+        "feature": FEATURE,
+        "bootstrap_ok": True,
+        "runs_dir": runs_rel,
+        "readme": readme_rel,
+        "wrote_readme": wrote,
+        "one_liner": "Customer quieter vault ready — require torii/gate and run a review",
+        "at": _now(),
+    }
+    print(json.dumps(out, indent=2))
+    return 0
 
 
 def main(argv: list[str] | None = None) -> int:
@@ -845,6 +898,10 @@ def main(argv: list[str] | None = None) -> int:
 
     s = sub.add_parser("status", help="Short JSON status")
     s.set_defaults(func=cmd_status)
+
+    b = sub.add_parser("bootstrap", help="Seed .torii/runs README (customer vault)")
+    b.add_argument("--force", action="store_true", help="Overwrite README")
+    b.set_defaults(func=cmd_bootstrap)
 
     args = p.parse_args(argv)
     return int(args.func(args))

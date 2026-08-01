@@ -209,12 +209,13 @@ GROUPS: dict[str, dict[str, Any]] = {
     },
     "quieter": {
         "script": "quieter_over_time.py",
-        "help": "Quieter-over-time chart (required check habit)",
+        "help": "Quieter-over-time chart (customer .torii/runs vault)",
         "tier": "day2",
         "examples": [
-            "quieter -- fixture",
+            "quieter -- bootstrap",
             "quieter -- status",
             "quieter -- report",
+            "quieter -- fixture",
         ],
     },
     "tool-use": {
@@ -513,6 +514,8 @@ def build_status_payload(root: Path | None = None) -> dict[str, Any]:
         day2["quieter_ok"] = quieter.get("quieter_ok")
         day2["getting_quieter"] = quieter.get("getting_quieter")
         day2["quiet_score_all"] = quieter.get("quiet_score_all")
+        day2["quieter_local_runs_n"] = quieter.get("local_runs_n")
+        day2["quieter_bootstrap_needed"] = quieter.get("bootstrap_needed")
     ops = _soft_script_json(root, "ops_dashboard.py", ["status"], timeout=45)
     if ops:
         day2["ops_ok"] = ops.get("ops_ok")
@@ -713,9 +716,17 @@ def render_status_text(payload: dict[str, Any], *, verbose: bool = False) -> str
         if ml:
             mem_s = f" · memory={ml.get('level')}"
 
+        qloc = day2.get("quieter_local_runs_n")
+        qboot = day2.get("quieter_bootstrap_needed")
+        qboot_s = (
+            f" · local_runs={qloc} bootstrap={qboot}"
+            if qloc is not None
+            else ""
+        )
         lines.append(
             f"- **Merge authority:** quieter={day2.get('quieter_ok')} "
-            f"(getting_quieter={day2.get('getting_quieter')} score={day2.get('quiet_score_all')}) · "
+            f"(getting_quieter={day2.get('getting_quieter')} score={day2.get('quiet_score_all')}"
+            f"{qboot_s}) · "
             f"certs n={day2.get('cert_vault_n')} ({cp_s}/PR) · "
             f"require **torii/gate**"
         )

@@ -507,14 +507,60 @@ EOF
   log "OK   $mem_file"
 }
 
+# Customer quieter vault bootstrap: .torii/runs/ README (fills after first reviews)
+seed_runs_vault() {
+  local runs_dir="$DEST/.torii/runs"
+  local readme="$runs_dir/README.md"
+  if [[ "$DRY_RUN" == "1" ]]; then
+    log "DRY  seed $readme"
+    return 0
+  fi
+  mkdir -p "$runs_dir"
+  touch "$runs_dir/.gitkeep"
+  if [[ -e "$readme" && "$FORCE" != "1" ]]; then
+    log "exists (skip, use --force): $readme"
+    return 0
+  fi
+  cat >"$readme" <<'EOF'
+# Torii run vault (customer quieter path)
+
+Each review lands a slim pack here after the gate runs:
+
+```text
+.torii/runs/{trace_id}/meta.json
+.torii/runs/{trace_id}/summary.md
+.torii/runs/{trace_id}/review.md
+```
+
+## Measure quieter over time (no hub clone)
+
+```bash
+python3 scripts/torii.py quieter -- status
+python3 scripts/torii.py quieter -- report
+# → .torii/quieter-over-time.md
+```
+
+## First fill
+
+1. Require status check **`torii/gate`** on the default branch  
+2. `@torii review this pr` on a real PR  
+3. Re-run `quieter -- status` — `local_runs_n` should rise  
+
+Docs: `docs/QUIETER.md` · install path: `docs/INSTALL.md`.  
+Do not hand-edit run packs — the gate writes them.
+EOF
+  log "OK   $readme (customer quieter vault)"
+}
+
 seed_local_memory
+seed_runs_vault
 
 write_stamp "pack"
 write_tenant_env
 
 log ""
 log "Next steps (5-minute path — see docs/INSTALL.md):"
-log "  1. Commit installed pack + .torii/MEMORY.md; push default branch."
+log "  1. Commit installed pack + .torii/MEMORY.md + .torii/runs/; push default branch."
 log "  2. Secret: OPENROUTER_API_KEY."
 log "  3. Branch protection: require status check **torii/gate**."
 log "  4. On a PR: @torii review this pr"
