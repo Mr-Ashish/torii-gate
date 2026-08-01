@@ -31,7 +31,7 @@ install
 install UX (dim 7)
 
 ### SHA
-`(fill after push)`
+`f340da623377c9f19d91ede584dc6016d09bb323`
 
 ## 2026-08-01 — PUBLIC_EVAL: Juice Shop + 2 OSS-theme packs (seed 42)
 
