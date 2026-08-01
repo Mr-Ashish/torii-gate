@@ -1,0 +1,6 @@
+{
+  "id": "torii-product-cli",
+  "feature": "F110",
+  "status": "adopted",
+  "one_liner": "Unified scripts/torii.py product front door (memory/gate/budget/loops)"
+}

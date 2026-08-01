@@ -535,6 +535,41 @@ try:
 except Exception:
     memory_tool_audit_on = "0"
 
+# F110: product CLI umbrella inject-hint (soft)
+product_cli_on = "0"
+try:
+    import sys as _sys_f110
+    _sys_f110.path.insert(0, str(torii_root / "scripts"))
+    from torii import (  # type: ignore
+        enabled as pcli_enabled,
+        render_inject_hint as pcli_hint,
+        MARKER as pcli_marker,
+    )
+
+    if pcli_enabled() and os.environ.get("PROMPT_PATH"):
+        _sec = pcli_hint()
+        _pp = Path(os.environ["PROMPT_PATH"])
+        _txt = _pp.read_text(encoding="utf-8") if _pp.is_file() else ""
+        if pcli_marker in _txt:
+            import re as _re_f110
+            _txt = _re_f110.sub(
+                r"<!-- torii-f110-product-cli -->.*?<!-- /torii-f110-product-cli -->\n?",
+                _sec,
+                _txt,
+                count=1,
+                flags=_re_f110.S,
+            )
+        else:
+            _txt = _txt.rstrip() + "\n\n" + _sec
+        _pp.write_text(_txt, encoding="utf-8")
+        product_cli_on = "1"
+        try:
+            prompt = _txt
+        except Exception:
+            pass
+except Exception:
+    product_cli_on = "0"
+
 # F71: deterministic source→sink prefilter + federated sanitized signals
 taint_prefilter_on = "0"
 taint_candidates = "0"
@@ -847,6 +882,7 @@ meta = {
     "MEMORY_GRAPH_EDGES": memory_graph_edges,
     "MEMORY_CLI": memory_cli_on,
     "MEMORY_TOOL_AUDIT": memory_tool_audit_on,
+    "PRODUCT_CLI": product_cli_on,
     "TAINT_PREFILTER": taint_prefilter_on,
     "TAINT_CANDIDATES": taint_candidates,
     "FEDERATED_SIGNALS": federated_signals_on,

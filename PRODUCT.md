@@ -108,7 +108,9 @@ compound → write → consolidate → effective_critic → federate → scoped_
 
 **Temporal graph (F100–F102).** Zep-style edges (`supersedes`, `same_theme`, `co_path`) with `valid_from` / `valid_until`. Dual-pass critic **demotes findings that match actively superseded TPs**, with **multi-hop** path kinship (co_path/same_theme) so sibling files inherit resolve caution.
 
-**Agent front door (F103):** `python3 scripts/torii_memory.py help|search|graph|loop|compound|audit|doctor` — one CLI for Hermes/terminal over the whole memory stack.
+**Product front door (F110):** `python3 scripts/torii.py help|status|doctor|memory|gate|budget` — loop-eng-style umbrella; memory still available as `torii_memory.py` (F103).
+
+**Agent memory front door (F103):** `python3 scripts/torii_memory.py help|search|graph|loop|compound|audit|doctor` — memory stack for Hermes/terminal.
 
 **Integrity compound (F104):** after each review, only path-evidenced findings become durable TP signatures (provenance + no absolute-home/secret blobs); weak narrative never poisons the store.
 

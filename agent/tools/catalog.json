@@ -1,9 +1,21 @@
 {
   "schema_version": 1,
-  "feature": "F108",
+  "feature": "F110",
   "description": "Torii agent tool catalog \u2014 research \u2192 eval \u2192 adopt pipeline",
-  "updated_at": "2026-08-01T04:21:17Z",
+  "updated_at": "2026-08-01T04:34:19Z",
   "tools": [
+    {
+      "id": "torii-product-cli",
+      "name": "Torii product CLI umbrella",
+      "status": "adopted",
+      "source": "shipped",
+      "kind": "workflow_tool",
+      "toolset": "terminal",
+      "rationale": "F110: one discoverable entrypoint over memory/gate/budget/loops",
+      "safety": "thin dispatch; no secrets",
+      "adopted_at": "2026-08-01T04:34:19Z",
+      "feature": "F110"
+    },
     {
       "id": "reprompt-budget",
       "name": "Shared re-prompt budget",

@@ -1,6 +1,33 @@
 # Torii research → product log
 
 
+## 2026-08-01 — F110 unified product CLI front door (loop-eng style)
+
+### Papers / posts
+- Loop Engineering CLI front door: one binary, pass-through, doctor/status.
+- Torii F103 memory CLI; peer tools still tribal for agents.
+- Prefer discoverable tools-as-code entrypoints over SOUL prose.
+
+### OSS design patterns stolen
+1. **Umbrella CLI** `scripts/torii.py` → memory/gate/budget/skill-loop/memory-loop/smoke.
+2. **doctor** aggregates memory status + loops + re-prompt budget fixture.
+3. Soft assemble inject-hint; F103 `torii_memory.py` remains supported.
+
+### Insight
+Memory front door alone is not enough for product UX — Hermes and operators need one product-level command surface. Highest ROI: thin dispatch + doctor.
+
+### Feature shipped (F110)
+- `scripts/torii.py` help/status/doctor/fixture + group dispatch
+- assemble-context soft inject; install + README + PRODUCT
+- Toggle `TORII_CLI`; adopted tool torii-product-cli
+
+### Metric
+- Offline fixture_pass=1; pytest 587 passed
+- Live Modal pytorch#191813: BIT3_OK ~151s log_streaming=true POST_COMMENT=0; F110 inject in prompt
+
+### SHA
+_pending_
+
 ## 2026-08-01 — F109 brand packaging: integrity + budgeted memory story
 
 ### Papers / posts

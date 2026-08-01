@@ -688,6 +688,15 @@ REGISTRY: list[ToggleSpec] = [
         "F108",
     ),
     ToggleSpec(
+        "product_cli",
+        "TORII_CLI",
+        "bool",
+        True,
+        "product",
+        "F110 unified scripts/torii.py product front door",
+        "F110",
+    ),
+    ToggleSpec(
         "trace_vault",
         "TORII_TRACE_VAULT",
         "bool",
