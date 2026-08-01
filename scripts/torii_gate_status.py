@@ -13,6 +13,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import os
 import re
 import sys
 from pathlib import Path
@@ -207,6 +208,23 @@ def main(argv: list[str] | None = None) -> int:
         action="store_true",
         help="F96: print memory loop readiness only (no review required)",
     )
+    ap.add_argument(
+        "--certificate",
+        action="store_true",
+        help="Attach deterministic gate certificate (reason codes + path evidence)",
+    )
+    ap.add_argument(
+        "--certificate-write",
+        type=Path,
+        default=None,
+        help="Directory to write gate-certificate.{json,md} when --certificate",
+    )
+    ap.add_argument(
+        "--critic-json",
+        type=Path,
+        default=None,
+        help="Optional second-agent critic JSON for certificate demote codes",
+    )
     args = ap.parse_args(argv)
 
     if args.skill_loop_only:
@@ -232,6 +250,42 @@ def main(argv: list[str] | None = None) -> int:
         decision["skill_loop"] = skill_loop_snapshot()
     if args.memory_loop:
         decision["memory_loop"] = memory_loop_snapshot()
+    if args.certificate:
+        try:
+            import importlib.util as _ilu
+
+            root = Path(__file__).resolve().parents[1]
+            env = (os.environ.get("TORII_ROOT") or "").strip()
+            if env:
+                root = Path(env).resolve()
+            gcp = root / "scripts" / "gate_certificate.py"
+            if gcp.is_file():
+                spec = _ilu.spec_from_file_location("gate_certificate", gcp)
+                gmod = _ilu.module_from_spec(spec)  # type: ignore[arg-type]
+                assert spec and spec.loader
+                spec.loader.exec_module(gmod)
+                cert = gmod.build_certificate(
+                    root,
+                    args.review,
+                    critic_path=args.critic_json,
+                )
+                decision["certificate"] = {
+                    "certificate_id": cert.get("certificate_id"),
+                    "reason_codes": cert.get("reason_codes"),
+                    "path_evidence": cert.get("path_evidence"),
+                    "merge_authority": cert.get("merge_authority"),
+                    "content_sha256_16": cert.get("content_sha256_16"),
+                }
+                if args.certificate_write is not None:
+                    out = args.certificate_write
+                    if not out.is_absolute():
+                        out = root / out
+                    paths = gmod.write_certificate(cert, out)
+                    decision["certificate"]["written"] = {
+                        k: str(v) for k, v in paths.items()
+                    }
+        except Exception as exc:
+            decision["certificate"] = {"error": str(exc)[:160]}
 
     if args.json:
         print(json.dumps(decision, indent=2))
@@ -248,6 +302,12 @@ def main(argv: list[str] | None = None) -> int:
             print(
                 f"memory_loop\t{ml.get('level')}\t"
                 f"stages={ml.get('stages_ok')} wiring={ml.get('wiring_ok')} ready={ml.get('ready')}"
+            )
+        if args.certificate and isinstance(decision.get("certificate"), dict):
+            c = decision["certificate"]
+            print(
+                f"certificate\t{c.get('certificate_id')}\t"
+                f"codes={','.join(c.get('reason_codes') or [])}"
             )
 
     if args.strict and decision.get("block"):

@@ -1,3 +1,39 @@
+
+## 2026-08-01 — GATE_CERT: deterministic merge-authority certificate
+
+### Papers / posts
+- Loop Engineering loop-verifier: checklists / reason codes, not prose.
+- SLSA-style attestations: machine-readable pass/fail evidence next to the gate.
+- Scorecard dim simplicity (#12) + evidence: queue 1–6 at 8.5 cap — avoid F-stack; ship tools-as-code.
+
+### OSS design patterns stolen
+1. `gate_certificate.py` emit/fixture/status/report from review markdown.
+2. Reason codes + path evidence (reuse trajectory_fitness) + optional critic demote codes.
+3. `torii_gate_status --certificate` attach; `torii.py certificate` CLI; GATE.md buyer section.
+4. Hermetic samples under docs/benchmarks/fixtures/gate-certificate-{good,weak}/.
+
+### Insight
+Buyers need *why the gate closed* without reading Hermes. Highest ROI post-commercial: one certificate artifact, not another compound loop.
+
+### Feature shipped (GATE_CERT)
+- scripts/gate_certificate.py · tests · smoke-offline fixture · PRODUCT/GATE links
+
+### Loop-engineering
+Merge authority is measured evidence, not chat.
+
+### Metric
+- Offline: fixture 11/11 · pytest gate_certificate+gate_status green
+- Live Modal: (see fire result below)
+
+### scorecard_target
+evidence / simplicity (dim 12)
+
+### dim_lift
+merge-authority evidence + tools-as-code vs LLM prose
+
+### SHA
+TBD
+
 ## 2026-08-01 — COMMERCIAL: priority-queue rollup scorecard (→7.5+)
 
 ### Papers / posts

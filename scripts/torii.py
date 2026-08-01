@@ -159,6 +159,15 @@ GROUPS: dict[str, dict[str, Any]] = {
             "commercial -- status",
         ],
     },
+    "certificate": {
+        "script": "gate_certificate.py",
+        "help": "Deterministic merge-authority certificate: reason codes + path evidence",
+        "examples": [
+            "certificate -- fixture",
+            "certificate -- emit -- --review docs/benchmarks/fixtures/insecure-demo-good-review.md",
+            "certificate -- report",
+        ],
+    },
 }
 
 

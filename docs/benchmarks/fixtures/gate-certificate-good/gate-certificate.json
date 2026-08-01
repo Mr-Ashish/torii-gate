@@ -1,0 +1,47 @@
+{
+  "feature": "GATE_CERT",
+  "schema": 1,
+  "one_liner": "Deterministic merge-authority certificate: reason codes + path evidence, not chat.",
+  "scorecard_target": "evidence / simplicity (dim 12)",
+  "dim_lift": "merge-authority evidence + tools-as-code vs LLM prose",
+  "at": "2026-08-01T14:51:21Z",
+  "review": "/Users/ashishmishra/Documents/experiments/torii/docs/benchmarks/fixtures/insecure-demo-good-review.md",
+  "review_name": "insecure-demo-good-review.md",
+  "certificate_id": "gc-bbbbbb72db7f8678",
+  "content_sha256_16": "bbbbbb72db7f8678",
+  "verdict": "REQUEST_CHANGES",
+  "block": true,
+  "state": "failure",
+  "context": "torii/gate",
+  "description": "Torii Gate closed \u2014 REQUEST CHANGES",
+  "reason_codes": [
+    "verdict_request_changes",
+    "strong_path_evidence",
+    "blocking_with_paths"
+  ],
+  "path_evidence": {
+    "score": 0.75,
+    "hits": [
+      "demo/insecure/app.py"
+    ],
+    "hit_n": 1,
+    "cites": [
+      {
+        "path": "demo/insecure/app.py",
+        "line": null
+      }
+    ],
+    "feedback": []
+  },
+  "structure": {
+    "has_blocking_section": true,
+    "security_audit": "",
+    "raw_len": 1162
+  },
+  "merge_authority": {
+    "context": "torii/gate",
+    "open": false,
+    "closed": true,
+    "human_summary": "CLOSED \u2014 REQUEST_CHANGES (verdict_request_changes, strong_path_evidence, blocking_with_paths); path_evidence=0.75"
+  }
+}

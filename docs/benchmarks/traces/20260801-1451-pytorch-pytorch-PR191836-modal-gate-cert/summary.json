@@ -1,0 +1,28 @@
+{
+  "feature": "GATE_CERT",
+  "schema_version": 1,
+  "repo": "pytorch/pytorch",
+  "pr": "191836",
+  "model": "deepseek/deepseek-v4-pro",
+  "host": "modal",
+  "bit3": true,
+  "elapsed_s": 284.9,
+  "log_streaming": true,
+  "tool_call_turns": 12,
+  "post_comment": 0,
+  "verdict": "REQUEST_CHANGES",
+  "notes": "Gate certificate fire; deterministic merge-authority reason codes + path evidence",
+  "scored_at": "2026-08-01T14:57:04Z",
+  "modal_run": "https://modal.com/apps/mr-ashish/main/ap-goKcWtsmfYJChMBg4T2a1i",
+  "hermes_in_logs": true,
+  "BIT3_OK": true,
+  "trace_volume_path": "/traces/pytorch--pytorch-pr191836-1785595904",
+  "certificate_id": "gc-3f3b2e2951a12451",
+  "reason_codes": [
+    "verdict_request_changes",
+    "strong_path_evidence",
+    "blocking_with_paths"
+  ],
+  "path_evidence_score": 1.0,
+  "block": true
+}

@@ -61,9 +61,11 @@ One diagram (full write-up: [`docs/brand/BUYER-DIAGRAM.md`](docs/brand/BUYER-DIA
 
 Install path: [`docs/GOLDEN-PATH.md`](docs/GOLDEN-PATH.md) · metrics: [`docs/benchmarks/golden-path-metrics.md`](docs/benchmarks/golden-path-metrics.md).
 
+**Gate certificate:** every open/close of **`torii/gate`** ships reason codes + path evidence (tools-as-code, not chat) → [`docs/GATE.md`](docs/GATE.md) · `python3 scripts/torii.py certificate -- fixture`.
+
 **Enterprise light:** multi-tenant org isolation + federation privacy (themes only — no paths/snippets) → [`docs/enterprise/`](docs/enterprise/).
 
-**CLI:** `python3 scripts/torii.py help` · `doctor` · `golden-path -- status` · `enterprise -- status`
+**CLI:** `python3 scripts/torii.py help` · `doctor` · `golden-path -- status` · `certificate -- fixture` · `enterprise -- status`
 
 > **Advanced** content below (mental models A–E, feature IDs, loop stage tables) is for engineers and research. Buyers can stop here.
 

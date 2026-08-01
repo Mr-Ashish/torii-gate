@@ -1,0 +1,86 @@
+{
+  "feature": "GATE_CERT",
+  "schema": 1,
+  "one_liner": "Deterministic merge-authority certificate: reason codes + path evidence, not chat.",
+  "scorecard_target": "evidence / simplicity (dim 12)",
+  "dim_lift": "merge-authority evidence + tools-as-code vs LLM prose",
+  "at": "2026-08-01T14:57:39Z",
+  "review": "docs/benchmarks/traces/20260801-1451-pytorch-pytorch-PR191836-modal-gate-cert/review.md",
+  "review_name": "review.md",
+  "certificate_id": "gc-3f3b2e2951a12451",
+  "content_sha256_16": "3f3b2e2951a12451",
+  "verdict": "REQUEST_CHANGES",
+  "block": true,
+  "state": "failure",
+  "context": "torii/gate",
+  "description": "Torii Gate closed \u2014 REQUEST CHANGES",
+  "reason_codes": [
+    "verdict_request_changes",
+    "strong_path_evidence",
+    "blocking_with_paths"
+  ],
+  "path_evidence": {
+    "score": 1.0,
+    "hits": [
+      "c10/metal/utils.h",
+      "test_mps.py",
+      "common_mps.py",
+      "linalg.py",
+      "torch/testing/_internal/common_mps.py",
+      "torch/testing/_internal/opinfo/definitions/linalg.py",
+      "utils.h",
+      "test/test_mps.py"
+    ],
+    "hit_n": 8,
+    "cites": [
+      {
+        "path": "c10/metal/utils.h",
+        "line": null
+      },
+      {
+        "path": "aten/src/ATen/native/mps/kernels/LinearAlgebra.metal",
+        "line": null
+      },
+      {
+        "path": "aten/src/ATen/native/mps/operations/LinearAlgebra.mm",
+        "line": null
+      },
+      {
+        "path": "torch/testing/_internal/common_mps.py",
+        "line": null
+      },
+      {
+        "path": "torch/testing/_internal/opinfo/definitions/linalg.py",
+        "line": null
+      },
+      {
+        "path": "test/test_mps.py",
+        "line": null
+      }
+    ],
+    "feedback": []
+  },
+  "structure": {
+    "has_blocking_section": true,
+    "security_audit": "",
+    "raw_len": 8873
+  },
+  "critic": {
+    "maker_verdict": "REQUEST_CHANGES",
+    "recommended_verdict": "REQUEST_CHANGES",
+    "demoted": false,
+    "reasons": [],
+    "path_evidence": 1.0,
+    "composite": 0.7835
+  },
+  "merge_authority": {
+    "context": "torii/gate",
+    "open": false,
+    "closed": true,
+    "human_summary": "CLOSED \u2014 REQUEST_CHANGES (verdict_request_changes, strong_path_evidence, blocking_with_paths); path_evidence=1.00"
+  },
+  "meta": {
+    "repo": "pytorch/pytorch",
+    "pr": "191836"
+  }
+}

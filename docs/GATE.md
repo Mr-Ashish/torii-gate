@@ -20,11 +20,24 @@
 | Security audit non-empty concern | **Closed** |
 | COMMENT / advisory | Open (non-blocking) unless `--strict` security |
 
+## Gate certificate (merge-authority evidence)
+
+Every open/close is a **deterministic certificate** — reason codes + path evidence + optional critic demote — not a chat transcript. Buyers answer *"why did the gate close?"* without reading the agent loop.
+
+```bash
+python3 scripts/gate_certificate.py emit --review .torii-out/review-1.md --write .torii-out
+python3 scripts/torii.py certificate -- fixture
+python3 scripts/torii.py certificate -- report
+```
+
+Artifacts: `gate-certificate.json` / `.md` · scorecard: [`benchmarks/gate-certificate.md`](benchmarks/gate-certificate.md).
+
 ## Entry points
 ```bash
 ./scripts/run-torii-gate.sh          # product entry (security forced)
 ./scripts/run-torii-review.sh        # full orchestrator
 python3 scripts/torii_gate_status.py .torii-out/review-1.md --json --strict
+python3 scripts/gate_certificate.py emit --review .torii-out/review-1.md --write .torii-out
 ```
 
 ## CI wiring

@@ -1,0 +1,51 @@
+{
+  "feature": "GATE_CERT",
+  "schema": 1,
+  "scored_at": "2026-08-01T14:50:55Z",
+  "fixture_pass": true,
+  "ok_n": 11,
+  "total": 11,
+  "checks": {
+    "good_blocks": true,
+    "good_request_changes": true,
+    "good_strong_or_partial_path": true,
+    "good_has_reason_codes": true,
+    "good_has_cert_id": true,
+    "weak_opens": true,
+    "weak_low_path": true,
+    "weak_critic_attached": true,
+    "weak_critic_demoted_code": true,
+    "wrote_sample_certs": true,
+    "gate_md_mentions_certificate": true
+  },
+  "detail": {
+    "good": {
+      "block": true,
+      "verdict": "REQUEST_CHANGES",
+      "path_score": 0.75,
+      "reason_codes": [
+        "verdict_request_changes",
+        "strong_path_evidence",
+        "blocking_with_paths"
+      ],
+      "certificate_id": "gc-bbbbbb72db7f8678"
+    },
+    "weak": {
+      "block": false,
+      "verdict": "APPROVE",
+      "path_score": 0.3,
+      "reason_codes": [
+        "verdict_approve_open",
+        "low_path_evidence",
+        "blocking_with_paths",
+        "critic_demoted_maker",
+        "critic:path_evidence_below_0_4_0_3",
+        "critic:recon_warm_hub_heat_idle_1_0_0_34_recon_warm_hub"
+      ],
+      "certificate_id": "gc-620fd969d4470e58"
+    }
+  },
+  "scorecard_target": "evidence / simplicity (dim 12)",
+  "dim_lift": "merge-authority evidence + tools-as-code vs LLM prose",
+  "one_liner": "Deterministic merge-authority certificate: reason codes + path evidence, not chat."
+}

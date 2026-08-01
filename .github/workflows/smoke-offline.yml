@@ -36,11 +36,12 @@ jobs:
           TORII_SMOKE_TOOL_EVOLVE: "0"
         run: bash scripts/smoke-torii-gate.sh
 
-      - name: Ops + enterprise + commercial fixtures
+      - name: Ops + enterprise + commercial + gate-certificate fixtures
         run: |
           python3 scripts/ops_dashboard.py fixture
           python3 scripts/enterprise_surface.py fixture
           python3 scripts/commercial_scorecard.py fixture
+          python3 scripts/gate_certificate.py fixture
 
       - name: Focused pytest (gate + commercial surfaces)
         run: |
@@ -48,6 +49,7 @@ jobs:
           python3 -m pytest -q \
             tests/test_smoke_torii_gate.py \
             tests/test_torii_gate_status.py \
+            tests/test_gate_certificate.py \
             tests/test_tool_turns_gate.py \
             tests/test_ops_dashboard.py \
             tests/test_install_ux.py \
