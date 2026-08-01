@@ -30,7 +30,7 @@ simplicity (#12) · enterprise (#9) · commercial trust
 brand + federation surfaces close the cost-honesty loop
 
 ### SHA
-`(pending push)`
+`5ad9f611256ad274271525cf1b3245be5943e63c`
 
 
 ## 2026-08-01 — COMMERCIAL_COST: cost honesty panel on commercial rollup + doctor
