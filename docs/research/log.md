@@ -18,8 +18,9 @@
 
 ### Metric
 - Offline: torii fixture help_collapse_ok · install_ux 30/30 · commercial 8.5 · buyer 28/28
-- Live Modal: (fill)
-- Traces: (fill)
+- Live Modal: pytorch#191842 BIT3_OK ~186s · fail-closed 0-tool COMMENT · POST_COMMENT=0
+- Traces: docs/benchmarks/traces/20260801-1814-pytorch-pytorch-PR191842-modal-help-cli-collapse/
+- Modal: https://modal.com/apps/mr-ashish/main/ap-JNpaM8d3K9X1zOmVYkqzCB
 
 ### scorecard_target
 simplicity (#12) · install (#7) · JTBD (#3)
@@ -28,7 +29,7 @@ simplicity (#12) · install (#7) · JTBD (#3)
 Day-1 help is 3 groups + builtins — not a research catalog
 
 ### SHA
-(pending)
+
 
 
 ## 2026-08-01 — GOLDEN_PATH_ENT_EVAL: golden --tenant + public-eval cost vault
