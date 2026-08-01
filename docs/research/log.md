@@ -1,4 +1,36 @@
 
+## 2026-08-01 — SELF_EVOLVE: day-2 buyer surface (dual-gated skills)
+
+### Papers / posts
+- Hermes self-evolution / dual-gate adopt: package as day-2 product, not F-stack tourism.
+- Core product list: self-evolution next to memory/federation/workflows.
+- Install UX: day-one gate; day-two doctor + quieter + self-evolve status.
+
+### Decide / copy / skip
+- **Copy:** docs/SELF-EVOLVE.md (dual-gate, allowlisted tools, measure util).
+- **Copy:** torii.py self-evolve · INSTALL deeper docs + day-2 block.
+- **Copy:** landing card; install_ux checks SELF-EVOLVE/FEDERATION links.
+- **Skip:** F185+ GEPA compound loops; no auto-adopt default change.
+
+### Feature shipped (SELF_EVOLVE)
+- SELF-EVOLVE.md · torii self-evolve · INSTALL · landing · PRODUCT
+- tests: buyer doc + CLI fixture
+
+### Metric
+- Offline: install_ux 16/16 · self-evolve fixture_pass · buyer test green
+- Live Modal: pytorch#191840 BIT3_OK ~113.3s tools=6 POST_COMMENT=0
+- Traces: docs/benchmarks/traces/20260801-1546-pytorch-pytorch-PR191840-modal-self-evolve/
+
+### scorecard_target
+install (#7) · JTBD (#3) · simplicity (#12)
+
+### dim_lift
+self-evolution discoverable as day-2 product habit
+
+### SHA
+_pending_
+
+
 ## 2026-08-01 — FEDERATION: buyer JTBD surface (privacy-safe multi-tenant)
 
 ### Papers / posts

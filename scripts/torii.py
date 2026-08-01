@@ -159,6 +159,15 @@ GROUPS: dict[str, dict[str, Any]] = {
             "federation -- promote",
         ],
     },
+    "self-evolve": {
+        "script": "self_evolve.py",
+        "help": "Self-evolution: propose/adopt skills from run evidence (day-2)",
+        "examples": [
+            "self-evolve -- status",
+            "self-evolve -- fixture",
+            "self-evolve -- propose-scorecard",
+        ],
+    },
     "commercial": {
         "script": "commercial_scorecard.py",
         "help": "Commercial rollup: queue 1–6 + cert/quieter/tools + workflow (→7.5+)",

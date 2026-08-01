@@ -1,0 +1,20 @@
+{
+  "feature": "SELF_EVOLVE",
+  "schema_version": 1,
+  "repo": "pytorch/pytorch",
+  "pr": "191840",
+  "model": "deepseek/deepseek-v4-pro",
+  "host": "modal",
+  "bit3": true,
+  "elapsed_s": 113.3,
+  "log_streaming": true,
+  "tool_call_turns": 6,
+  "post_comment": 0,
+  "verdict": "REQUEST_CHANGES",
+  "block": true,
+  "certificate_id": "gc-82065e74ed27795d",
+  "notes": "SELF_EVOLVE buyer day-2 surface + torii self-evolve CLI + install deeper docs",
+  "scored_at": "2026-08-01T15:49:51Z",
+  "modal_run": "https://modal.com/apps/mr-ashish/main/ap-3HpGKFr159XWSmP8sFYpTN",
+  "cost_usd": 0.026977046999999997
+}

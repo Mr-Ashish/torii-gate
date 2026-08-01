@@ -60,6 +60,8 @@ def check(root: Path) -> dict[str, Any]:
         "install_md_one_cli": ("torii.py" in im)
         and (("One CLI" in im) or ("one front door" in im.lower())),
         "install_md_doctor": "doctor" in im,
+        "install_md_deeper_self_evolve": "SELF-EVOLVE" in im,
+        "install_md_deeper_federation": "FEDERATION" in im,
         "install_sh_minimal": "--minimal" in sh and "MINIMAL_EXCLUDE" in sh,
         "install_sh_next_steps_one_cli": "One CLI" in sh or "torii.py help|doctor" in sh,
         "install_sh_no_dual_tip": "torii_memory.py help &&" not in sh,

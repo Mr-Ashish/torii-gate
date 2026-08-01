@@ -91,6 +91,22 @@ python3 scripts/torii.py doctor
 | [`GOLDEN-PATH.md`](GOLDEN-PATH.md) | commercial loop + metrics |
 | [`GATE.md`](GATE.md) | gate policy contract |
 | [`ops/RELIABILITY.md`](ops/RELIABILITY.md) | fail-closed defaults · smoke CI · cost/PR |
+| [`WORKFLOWS.md`](WORKFLOWS.md) | pipelines-as-code (validate offline) |
+| [`QUIETER.md`](QUIETER.md) · [`TOOL-USE.md`](TOOL-USE.md) | quieter + tool-use charts |
+| [`FEDERATION.md`](FEDERATION.md) | privacy-safe multi-tenant heat |
+| [`SELF-EVOLVE.md`](SELF-EVOLVE.md) | day-2 skill self-evolution (dual-gated) |
 | [`workflows/INSTALL-GUIDE.md`](workflows/INSTALL-GUIDE.md) | full capability matrix |
 | [`brand/BUYER-DIAGRAM.md`](brand/BUYER-DIAGRAM.md) | buyer story |
 | `docs/research/` | Advanced / F-IDs |
+
+## Day-2 (optional)
+
+After the first green `torii/gate` runs:
+
+```bash
+python3 scripts/torii.py doctor
+python3 scripts/torii.py quieter -- status
+python3 scripts/torii.py self-evolve -- status
+```
+
+Self-evolution proposes skills from measured gaps; adopt stays dual-gated. Details: [`SELF-EVOLVE.md`](SELF-EVOLVE.md).

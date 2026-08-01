@@ -16,6 +16,27 @@ SCRIPT = ROOT / "scripts" / "self_evolve.py"
 
 
 class SelfEvolveTests(unittest.TestCase):
+    def test_buyer_doc_and_cli(self):
+        buyer = ROOT / "docs" / "SELF-EVOLVE.md"
+        self.assertTrue(buyer.is_file())
+        text = buyer.read_text(encoding="utf-8")
+        self.assertIn("dual-gate", text.lower())
+        self.assertIn("torii/gate", text)
+        self.assertIn("self-evolve", text)
+        install = (ROOT / "docs" / "INSTALL.md").read_text(encoding="utf-8")
+        self.assertIn("SELF-EVOLVE.md", install)
+        r = subprocess.run(
+            [sys.executable, str(ROOT / "scripts" / "torii.py"), "self-evolve", "--", "fixture"],
+            cwd=str(ROOT),
+            capture_output=True,
+            text=True,
+            env={**os.environ, "TORII_ROOT": str(ROOT), "TORII_TOOL_PROBE_MINE": "1"},
+            timeout=120,
+        )
+        self.assertEqual(r.returncode, 0, r.stderr + r.stdout)
+        data = json.loads(r.stdout)
+        self.assertTrue(data.get("fixture_pass"), data)
+
     def test_f117_fixture(self):
         r = subprocess.run(
             [sys.executable, str(SCRIPT), "fixture"],
