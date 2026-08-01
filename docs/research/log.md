@@ -1,5 +1,36 @@
 # Torii research → product log
 
+## 2026-08-01 — F141 memory util federate + critic demote
+
+### Papers / posts
+- Mem0/Letta: memory only helps if tools are called mid-run.
+- IFCMemoryBench: utilization is a first-class memory quality axis.
+- F105/F106 audit+re-prompt without federate/panel demote left gap local-only.
+
+### OSS design patterns stolen
+1. federate_memory_util → memory-util-signals.json (bins + tool ids).
+2. second_agent f141_memory_util weight 0.07 demote inject_unused.
+3. audit soft federate; fixture f141_*; save-trace; PRODUCT.
+4. TORII_MEMORY_UTIL_FEDERATE / TORII_MEMORY_UTIL_CRITIC defaults on.
+
+### Insight
+Memory inject without tool calls is theater. Highest ROI: F121-style federate + critic demote for Mem0/Letta tool discipline.
+
+### Feature shipped (F141)
+- memory_tool_audit federate + critic checker
+- PRODUCT/research/brand; traces f141-memory-util-federate-critic/
+
+### Metric
+- Offline: fixtures f141_ok privacy; pytest memory_tool_audit + critic
+- Live: Modal pytorch e2e POST_COMMENT=0
+
+### Loop-engineering / Hermes practice used
+**Measure utilization → federate → critic demote** — memory mirrors skill util F121/F136.
+
+### SHA
+`PENDING`
+
+
 ## 2026-08-01 — F140 scorecard hub attribution LOO floor
 
 ### Papers / posts

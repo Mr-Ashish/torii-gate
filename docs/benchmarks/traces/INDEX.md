@@ -74,3 +74,4 @@ Paper/eval-safe slim traces (redacted). Large raw logs may be gitignored; always
 - `f138-scorecard-hub-compound/` — F138 scorecard hub post-score priority; Modal pytorch#191813 BIT3_OK POST_COMMENT=0
 - `f139-scorecard-hub-gap-critic/` — F139 scorecard hub gap critic demote; Modal pytorch#191813 BIT3_OK POST_COMMENT=0
 - `f140-scorecard-hub-attr/` — F140 scorecard hub LOO attribution floor; Modal pytorch#191813 BIT3_OK POST_COMMENT=0
+- `f141-memory-util-federate-critic/` — F141 memory util federate + critic; Modal pytorch#191813 BIT3_OK POST_COMMENT=0

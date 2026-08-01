@@ -30,6 +30,7 @@ Env:
   TORII_HUB_GAP_PRESSURE_THR    default 0.34 — same thr as F126 re-prompt bias
   TORII_SCORECARD_HUB_GAP_CRITIC 1 (default) | 0 — F139 scorecard hub gap checker
   TORII_SCORECARD_HUB_GAP_THR   default 0.34 — scorecard util gap_pressure thr
+  TORII_MEMORY_UTIL_CRITIC      1 (default) | 0 — F141 memory util gap checker
 """
 
 from __future__ import annotations
@@ -47,6 +48,7 @@ from typing import Any
 FEATURE = "F78"
 FEATURE_HUB_GAP = "F127"
 FEATURE_SCORECARD_HUB_GAP = "F139"
+FEATURE_MEMORY_UTIL = "F141"
 SCHEMA = 1
 MARKER = "<!-- torii-f78-second-agent-critic -->"
 
@@ -571,6 +573,104 @@ def scorecard_hub_gap_pressure_thr() -> float:
         return 0.34
 
 
+def run_f141_memory_util(
+    out_dir: Path | None,
+    root: Path | None = None,
+) -> CheckerResult:
+    """F141: memory inject offered but unused tools → demote signal.
+
+    Mem0/Letta: memory only helps if tools are called. Soft-skip when no
+    out_dir or audit unavailable (score 0.5). Gap when inject_offered and
+    hit_count=0 and tool turns ≥ 1.
+    """
+    raw = (os.environ.get("TORII_MEMORY_UTIL_CRITIC") or "1").strip().lower()
+    if raw in _FALSEY:
+        return CheckerResult(
+            id="f141_memory_util",
+            name="Memory tool utilization (F141)",
+            ok=True,
+            score=0.5,
+            detail={"soft_skip": True, "reason": "memory_util_critic_off"},
+        )
+    if out_dir is None:
+        return CheckerResult(
+            id="f141_memory_util",
+            name="Memory tool utilization (F141)",
+            ok=True,
+            score=0.5,
+            detail={"soft_skip": True, "reason": "no_out_dir"},
+        )
+    _ensure_path()
+    root = root or _root()
+    try:
+        from memory_tool_audit import (  # type: ignore
+            audit_run,
+            REPORT_NAME,
+        )
+
+        od = Path(out_dir)
+        report: dict[str, Any] = {}
+        if (od / REPORT_NAME).is_file():
+            try:
+                report = json.loads((od / REPORT_NAME).read_text(encoding="utf-8"))
+            except (OSError, json.JSONDecodeError):
+                report = {}
+        if not report:
+            report = audit_run(od)
+        gap = bool(report.get("utilization_gap"))
+        score = float(report.get("score") or 0.5)
+        hits = int(report.get("hit_count") or 0)
+        inject = bool(report.get("inject_offered"))
+        turns = int(report.get("tool_call_turns") or 0)
+        # no inject offered → neutral pass (memory optional this run)
+        if not inject:
+            return CheckerResult(
+                id="f141_memory_util",
+                name="Memory tool utilization (F141)",
+                ok=True,
+                score=1.0 if hits >= 1 else 0.85,
+                detail={
+                    "feature": FEATURE_MEMORY_UTIL,
+                    "utilization_gap": False,
+                    "inject_offered": False,
+                    "hit_count": hits,
+                    "score": score,
+                    "reason": "no_memory_inject",
+                },
+            )
+        ok = not gap
+        # score from audit; on gap keep low
+        if gap:
+            panel_score = min(0.2, max(0.05, score))
+        else:
+            panel_score = max(0.55, score)
+        return CheckerResult(
+            id="f141_memory_util",
+            name="Memory tool utilization (F141)",
+            ok=ok,
+            score=round(panel_score, 4),
+            detail={
+                "feature": FEATURE_MEMORY_UTIL,
+                "utilization_gap": gap,
+                "util_score": score,
+                "hit_count": hits,
+                "inject_offered": inject,
+                "tool_call_turns": turns,
+                "tools_used": list(report.get("tools_used") or [])[:8],
+                "reason": "memory_utilization_gap" if gap else "memory_tools_used",
+            },
+        )
+    except Exception as e:
+        return CheckerResult(
+            id="f141_memory_util",
+            name="Memory tool utilization (F141)",
+            ok=True,
+            score=0.5,
+            error=str(e)[:200],
+            detail={"soft_fail": True},
+        )
+
+
 def run_f139_scorecard_hub_gap(
     out_dir: Path | None,
     root: Path | None = None,
@@ -743,6 +843,7 @@ def composite_panel(checkers: list[CheckerResult]) -> dict[str, Any]:
         "f136_scorecard_util": 0.06,  # F136 scorecard-gap ops util
         "f127_hub_gap": 0.08,  # F127 multi-tenant recovery gap pressure
         "f139_scorecard_hub_gap": 0.07,  # F139 multi-tenant scorecard util gap
+        "f141_memory_util": 0.07,  # F141 Mem0/Letta tools-must-be-called
         "structure": 0.12,
         "f70_dual_critic": 0.20,
         "f72_chain": 0.16,
@@ -853,6 +954,14 @@ def decide_verdict(
                     "scorecard_hub_gap_pressure_idle "
                     f"({detail.get('gap_pressure')}>={detail.get('thr')})"
                 )
+        # F141: memory inject offered but tools unused → demote APPROVE
+        memu = next((c for c in checkers if c.id == "f141_memory_util"), None)
+        if memu and not memu.ok:
+            detail = memu.detail or {}
+            if detail.get("utilization_gap"):
+                recommended = "COMMENT"
+                demoted = True
+                reasons.append("memory_tool_idle_inject_unused")
     elif maker == "UNKNOWN":
         recommended = "COMMENT"
         demoted = True
@@ -888,6 +997,7 @@ def run_panel(
         run_f136_scorecard_util(out_dir),
         run_f127_hub_gap_recovery(out_dir, root),
         run_f139_scorecard_hub_gap(out_dir, root),
+        run_f141_memory_util(out_dir, root),
     ]
     # F81: optional LLM checker after deterministic panel draft
     panel_draft = {
@@ -987,11 +1097,13 @@ def render_inject() -> str:
             "7. **F127 hub gap** — multi-tenant recovery gap_pressure + local idle → demote APPROVE",
             "8. **F136 scorecard util** — scorecard-gap ops skills must fire doctor/scorecard CLIs",
             "9. **F139 scorecard hub gap** — multi-tenant scorecard util gap + local idle → demote APPROVE",
+            "10. **F141 memory util** — memory inject offered but unused tools → demote APPROVE",
             "",
             "**Default stance:** weak APPROVE without path evidence will be **demoted**.",
             "Prefer REQUEST CHANGES with path:line over narrative-only APPROVE.",
             "Call recovery CLIs (memory/doctor/critic) when hub gap pressure is elevated.",
             "Call scorecard ops CLIs (doctor/scorecard/demote-eval) when scorecard hub gap is elevated.",
+            "Call memory CLIs (`torii.py memory -- search`) when memory inject was offered.",
             "",
             "<!-- /torii-f78-second-agent-critic -->",
             "",
@@ -1109,7 +1221,13 @@ def cmd_fixture(args: argparse.Namespace) -> int:
         prompt.write_text("# p\n", encoding="utf-8")
         inj = inject_into_prompt(prompt)
         body = prompt.read_text(encoding="utf-8")
-        inject_ok = inj and MARKER in body and "F127" in body and "F139" in body
+        inject_ok = (
+            inj
+            and MARKER in body
+            and "F127" in body
+            and "F139" in body
+            and "F141" in body
+        )
 
     # F127: hub gap high + local idle + APPROVE → demote
     f127_ok = False
@@ -1321,6 +1439,60 @@ def cmd_fixture(args: argparse.Namespace) -> int:
     has_f139 = any(
         c.get("id") == "f139_scorecard_hub_gap" for c in (g.get("checkers") or [])
     )
+    has_f141 = any(
+        c.get("id") == "f141_memory_util" for c in (g.get("checkers") or [])
+    )
+    # F141: memory inject unused + APPROVE demote
+    f141_ok = False
+    try:
+        with tempfile.TemporaryDirectory() as td4:
+            od = Path(td4)
+            (od / "memory-tool-audit.json").write_text(
+                json.dumps(
+                    {
+                        "score": 0.15,
+                        "hit_count": 0,
+                        "inject_offered": True,
+                        "utilization_gap": True,
+                        "tool_call_turns": 3,
+                        "tools_used": [],
+                    }
+                ),
+                encoding="utf-8",
+            )
+            chk_m = run_f141_memory_util(od, root=root)
+            fake_panel = {"composite": 0.8, "level": "L2"}
+            dec_m = decide_verdict(
+                "APPROVE",
+                fake_panel,
+                [
+                    CheckerResult(
+                        id="structure",
+                        name="s",
+                        ok=True,
+                        score=1.0,
+                        detail={"path_mentions": 5},
+                    ),
+                    CheckerResult(
+                        id="f73_fitness",
+                        name="f",
+                        ok=True,
+                        score=1.0,
+                        detail={"path_evidence": 0.9},
+                    ),
+                    chk_m,
+                ],
+            )
+            f141_ok = (
+                not chk_m.ok and bool((chk_m.detail or {}).get("utilization_gap"))
+            ) or (
+                dec_m.get("demoted")
+                and any(
+                    "memory_tool" in str(r) for r in (dec_m.get("reasons") or [])
+                )
+            )
+    except Exception:
+        f141_ok = False
 
     fixture_pass = (
         good_ok
@@ -1331,6 +1503,8 @@ def cmd_fixture(args: argparse.Namespace) -> int:
         and has_f127
         and f139_ok
         and has_f139
+        and f141_ok
+        and has_f141
     )
     print(
         json.dumps(
@@ -1338,10 +1512,12 @@ def cmd_fixture(args: argparse.Namespace) -> int:
                 "feature": FEATURE,
                 "feature_hub_gap": FEATURE_HUB_GAP,
                 "feature_scorecard_hub_gap": FEATURE_SCORECARD_HUB_GAP,
-                "feature_scorecard_hub_gap": FEATURE_SCORECARD_HUB_GAP,
+                "feature_memory_util": FEATURE_MEMORY_UTIL,
                 "fixture_pass": fixture_pass,
                 "f139_ok": f139_ok,
                 "has_f139": has_f139,
+                "f141_ok": f141_ok,
+                "has_f141": has_f141,
                 "good_composite": g_comp,
                 "weak_composite": w_comp,
                 "delta": round(delta, 4),
@@ -1675,6 +1851,7 @@ def cmd_status(args: argparse.Namespace) -> int:
                 "feature": FEATURE,
                 "feature_hub_gap": FEATURE_HUB_GAP,
                 "feature_scorecard_hub_gap": FEATURE_SCORECARD_HUB_GAP,
+                "feature_memory_util": FEATURE_MEMORY_UTIL,
                 "enabled": enabled(),
                 "demote": demote_enabled(),
                 "hub_gap_critic": hub_gap_critic_enabled(),

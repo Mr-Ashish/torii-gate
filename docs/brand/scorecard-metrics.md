@@ -72,3 +72,13 @@ Source: `second_agent_critic.py` panel / `demote-eval`.
 | scorecard_contributors | Non free-rider scorecard hub skills |
 
 Source: `skill_attribution.py attribute` / fixture.
+
+## F141 memory util federate + critic
+
+| Metric | Meaning |
+|--------|---------|
+| utilization_gap | inject offered + tools unused mid-run |
+| memory-util-signals | privacy-safe federated util themes |
+| f141 demote | APPROVE → COMMENT on inject_unused |
+
+Source: `memory_tool_audit.py` / second-agent critic.

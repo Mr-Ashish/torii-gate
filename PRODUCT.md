@@ -198,6 +198,8 @@ budget always → compact body → score tool_hit → util gap? → budgeted re-
 
 **Scorecard hub attribution floor (F140):** LOO attribution floors scorecard hub / `scorecard_ops` fitness skills (F135/F138) so multi-tenant tool-effective ops skills are not free-rider demoted — same F127 hub_ingested floor for recovery, now for scorecard ops (`TORII_SKILL_ATTR_SCORECARD=1`).
 
+**Memory util federate + critic (F141):** Mem0/Letta discipline — memory inject without tool calls is a measured gap. Federate privacy-safe util themes (`memory-util-signals.json`); second-agent checker `f141_memory_util` demotes APPROVE when inject was offered but unused.
+
 **Ops:** `python3 scripts/memory_loop_status.py scorecard` → L0–L3. Smoke requires L3 on the hub tree. CI job summary annotates readiness; optional advisory `torii/memory-loop` via `TORII_MEMORY_LOOP_STATUS_COMMIT=1`.
 
 ---

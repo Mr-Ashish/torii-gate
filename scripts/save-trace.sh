@@ -124,6 +124,12 @@ fi
 copy_if "$OUT_DIR/scorecard-skill-signals.json" "$TRACE_DIR/scorecard-skill-signals.out.json"
 copy_if "$OUT_DIR/memory-tool-reprompt.env" "$TRACE_DIR/memory-tool-reprompt.env"
 copy_if "$OUT_DIR/memory-tool-audit.json" "$TRACE_DIR/memory-tool-audit.json"
+# F141: privacy-safe federated memory util themes
+if [[ -f "$TORII_ROOT/memory/federation/memory-util-signals.json" ]]; then
+  copy_if "$TORII_ROOT/memory/federation/memory-util-signals.json" "$TRACE_DIR/memory-util-signals.fed.json"
+fi
+copy_if "$OUT_DIR/memory-util-signals.json" "$TRACE_DIR/memory-util-signals.json"
+
 copy_if "$OUT_DIR/reprompt-budget.json" "$TRACE_DIR/reprompt-budget.json"
 # second-agent critic panel (includes F121 recovery util checker)
 copy_if "$OUT_DIR/second-agent-critic.json" "$TRACE_DIR/second-agent-critic.json"

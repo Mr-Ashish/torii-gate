@@ -94,6 +94,9 @@ class SecondAgentCriticTests(unittest.TestCase):
         self.assertTrue(data["enabled"])
         self.assertEqual(data.get("feature_hub_gap"), "F127")
         self.assertEqual(data.get("feature_scorecard_hub_gap"), "F139")
+        # F141 may be present when status updated
+        if data.get("feature_memory_util"):
+            self.assertEqual(data.get("feature_memory_util"), "F141")
 
     def test_f128_demote_eval(self):
         """F128: paper demote-rate pack demotes weak + hub-gap APPROVE."""
@@ -302,6 +305,54 @@ class SecondAgentCriticTests(unittest.TestCase):
             )
             reasons = " ".join(data["decision"].get("reasons") or [])
             self.assertIn("scorecard_hub_gap", reasons)
+
+    def test_f141_memory_util_demotes_approve(self):
+        """F141: memory inject unused demotes maker APPROVE."""
+        with tempfile.TemporaryDirectory() as td:
+            root = Path(td)
+            od = root / "out"
+            od.mkdir()
+            (od / "memory-tool-audit.json").write_text(
+                json.dumps(
+                    {
+                        "score": 0.15,
+                        "hit_count": 0,
+                        "inject_offered": True,
+                        "utilization_gap": True,
+                        "tool_call_turns": 4,
+                        "tools_used": [],
+                    }
+                ),
+                encoding="utf-8",
+            )
+            review = root / "approve.md"
+            review.write_text(
+                "## Review\n**Verdict:** APPROVE\n\n### Summary\nok\n\n"
+                "### Blocking\nnone\n\n### What I checked\n`app.py:1` ok\n",
+                encoding="utf-8",
+            )
+            env = {
+                "TORII_ROOT": str(root),
+                "TORII_MEMORY_UTIL_CRITIC": "1",
+                "TORII_SECOND_CRITIC_MIN_PATH": "0.1",
+            }
+            r = _run(
+                ["run", "--review", str(review), "--out-dir", str(od), "--force"],
+                env=env,
+            )
+            self.assertEqual(r.returncode, 0, r.stderr + r.stdout)
+            data = json.loads(r.stdout)
+            ids = [c["id"] for c in data.get("checkers") or []]
+            self.assertIn("f141_memory_util", ids)
+            memc = next(c for c in data["checkers"] if c["id"] == "f141_memory_util")
+            self.assertFalse(memc["ok"], memc)
+            self.assertTrue(
+                data["decision"]["demoted"]
+                or data["decision"]["recommended_verdict"] != "APPROVE",
+                data["decision"],
+            )
+            reasons = " ".join(data["decision"].get("reasons") or [])
+            self.assertIn("memory_tool", reasons)
 
 
 if __name__ == "__main__":

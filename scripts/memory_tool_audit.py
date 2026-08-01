@@ -1,26 +1,29 @@
 #!/usr/bin/env python3
-"""F105: Audit mid-review memory tool use (measure the F103/F104 front door).
+"""F105/F106/F130/F141: Audit mid-review memory tool use + federate util themes.
 
 Research drivers:
   - IFCMemoryBench / WorldMemArena: decompose memory into ingestion · retrieval ·
     utilization — Torii had write+inject but not measured retrieval utilization.
   - Loop-eng: score the loop, do not assume SOUL prose was followed.
   - MemGPT/Letta: memory tools only help if the agent actually calls them.
+  - F121/F136 skill util federate + critic: inject ≠ use must demote APPROVE;
+    memory had audit+re-prompt but not multi-tenant federate or panel demote.
 
 Product thesis:
   F103 shipped a discoverable CLI; F104 compounds post-review writes. Highest ROI
-  now is a **deterministic auditor** on agent-loop/tool args that scores whether
-  Hermes invoked memory tools (search/graph/tiers/compound/…) mid-review, so
-  fitness + traces can prove utilization — not just inject presence.
+  is a **deterministic auditor** on agent-loop/tool args that scores whether
+  Hermes invoked memory tools mid-review, federates privacy-safe util themes,
+  and feeds the second-agent critic so APPROVE without memory tools demotes.
 
 Commands:
   scan            — extract memory tool invocations from agent-loop / log
   score           — scan + 0–1 utilization score + readiness flags
   inject          — write memory-tool-audit section into a prompt (soft rubric)
-  audit           — score a run dir (agent-loop under out_dir)
+  audit           — score a run dir (agent-loop under out_dir) + F141 federate
+  federate        — F141 privacy-safe memory util signals for hub
   reprompt-decide — F106: whether to soft re-prompt on utilization gap
   reprompt-write  — F106: append memory-tool nudge to prompt
-  fixture         — hermetic good (memory cmds) vs weak (no memory cmds) + re-prompt
+  fixture         — hermetic good vs weak + re-prompt + F141 federate privacy
   util-eval       — F130 paper pack: memory util good/weak scores for product scorecard
   status          — feature + toggle
 
@@ -29,6 +32,7 @@ Env:
   TORII_MEMORY_TOOL_AUDIT     1 (default) | 0
   TORII_MEMORY_TOOL_FITNESS   1 (default) | 0  — soft blend into trajectory fitness
   TORII_MEMORY_TOOL_REPROMPT  1 (default) | 0  — F106 soft re-prompt once on gap
+  TORII_MEMORY_UTIL_FEDERATE  1 (default) | 0  — F141 federate util themes
 """
 
 from __future__ import annotations
@@ -46,10 +50,12 @@ from typing import Any
 FEATURE = "F105"
 FEATURE_REPROMPT = "F106"
 FEATURE_UTIL_EVAL = "F130"
+FEATURE_FEDERATE = "F141"
 SCHEMA = 1
 MARKER = "<!-- torii-f105-memory-tool-audit -->"
 REPROMPT_MARKER = "## Soft re-prompt (Torii F106 / memory tools)"
 REPORT_NAME = "memory-tool-audit.json"
+FED_NAME = "memory-util-signals.json"
 
 _FALSEY = frozenset({"0", "false", "no", "off", "disabled", "n", "none", ""})
 
@@ -334,7 +340,211 @@ def audit_run(
         report["report_path"] = str(dest)
     except OSError:
         report["report_path"] = None
+    # F141: soft federate privacy-safe util themes after audit
+    if memory_util_federate_enabled():
+        try:
+            fed = federate_memory_util(report, root=_root())
+            report["federate"] = {
+                "fed_n": fed.get("fed_n"),
+                "privacy_ok": fed.get("privacy_ok"),
+                "feature": fed.get("feature"),
+            }
+        except Exception as exc:
+            report["federate"] = {"soft_error": str(exc)[:120]}
     return report
+
+
+def memory_util_federate_enabled() -> bool:
+    """F141: emit privacy-safe memory util themes for multi-tenant hub."""
+    raw = (os.environ.get("TORII_MEMORY_UTIL_FEDERATE") or "1").strip().lower()
+    return raw not in _FALSEY
+
+
+def federate_memory_util(
+    util: dict[str, Any],
+    *,
+    root: Path | None = None,
+    tenant: str = "",
+    dest: Path | None = None,
+) -> dict[str, Any]:
+    """F141: privacy-safe federate of memory util themes (bins + tool names only).
+
+    Never includes paths, prompts, tenant strings, or commands — only tool ids,
+    util_rate_bin, inject_offered flag, hit buckets.
+    """
+    import hashlib
+
+    root = root or _root()
+    tenant = tenant or (os.environ.get("TORII_MEMORY_TENANT") or "").strip()
+    th = ""
+    if tenant:
+        th = hashlib.sha256(tenant.encode("utf-8")).hexdigest()[:12]
+
+    hits = int(util.get("hit_count") or 0)
+    score = float(util.get("score") or 0)
+    gap = bool(util.get("utilization_gap"))
+    inject = bool(util.get("inject_offered"))
+    tools = [str(t)[:48] for t in (util.get("tools_used") or []) if t][:8]
+    # sanitize tool names — no paths
+    tools = [re.sub(r"[^A-Za-z0-9._-]+", "-", t)[:48] for t in tools if "/" not in str(t)]
+
+    signals: list[dict[str, Any]] = []
+
+    def _attach(sig: dict[str, Any]) -> None:
+        if th:
+            sig["tenant_hashes"] = [th]
+            sig["tenant_hash"] = th
+        signals.append(sig)
+
+    if gap:
+        _attach(
+            {
+                "id": "memory-util-gap",
+                "theme": "memory-util-gap",
+                "cwe": [],
+                "tags": [
+                    "memory_util",
+                    "utilization_gap",
+                    "f141",
+                    "federated_memory",
+                ],
+                "keywords": ["memory-util-gap", "inject-unused"],
+                "path_basenames": [],
+                "hits": 1,
+                "source": "memory_tool_util",
+                "tenants": 1,
+                "util_rate_bin": "gap",
+                "inject_offered": True,
+                "hit_bucket": "0",
+            }
+        )
+    elif hits >= 1:
+        hit_bucket = (
+            "1"
+            if hits == 1
+            else "2-3"
+            if hits <= 3
+            else "gte4"
+        )
+        rate_bin = (
+            "full" if score >= 0.85 else "partial" if score >= 0.55 else "low"
+        )
+        _attach(
+            {
+                "id": "memory-util-ok",
+                "theme": "memory-util-ok",
+                "cwe": [],
+                "tags": ["memory_util", "util_ok", "f141", "federated_memory"],
+                "keywords": ["memory-util-ok", rate_bin],
+                "path_basenames": [],
+                "hits": max(1, hits),
+                "source": "memory_tool_util",
+                "tenants": 1,
+                "util_rate_bin": rate_bin,
+                "hit_bucket": hit_bucket,
+                "tool_n": len(tools),
+            }
+        )
+        for tname in tools[:4]:
+            _attach(
+                {
+                    "id": f"memory-util-tool-{tname}"[:64],
+                    "theme": f"memory-tool-{tname}"[:64],
+                    "cwe": [],
+                    "tags": [
+                        "memory_util",
+                        "tool_outcome",
+                        "f141",
+                        "federated_memory",
+                    ],
+                    "keywords": [tname, "memory-tool"],
+                    "path_basenames": [],
+                    "hits": 1,
+                    "tool_hits": 1,
+                    "source": "memory_tool_util",
+                    "tenants": 1,
+                    "util_rate_bin": "hit",
+                }
+            )
+    elif inject:
+        _attach(
+            {
+                "id": "memory-util-inject-idle",
+                "theme": "memory-util-inject-idle",
+                "cwe": [],
+                "tags": ["memory_util", "inject_idle", "f141", "federated_memory"],
+                "keywords": ["memory-inject-idle"],
+                "path_basenames": [],
+                "hits": 1,
+                "source": "memory_tool_util",
+                "tenants": 1,
+                "util_rate_bin": "idle",
+                "inject_offered": True,
+            }
+        )
+
+    dest = dest or (root / "memory" / "federation" / FED_NAME)
+    dest.parent.mkdir(parents=True, exist_ok=True)
+    blob = json.dumps(signals)
+    privacy_ok = (
+        "/Users/" not in blob
+        and "/home/" not in blob
+        and "C:\\\\Users" not in blob
+        and (not tenant or tenant not in blob)
+    )
+    clean = []
+    for s in signals:
+        sb = json.dumps(s)
+        if "/Users/" in sb or "/home/" in sb:
+            continue
+        if tenant and tenant in sb:
+            continue
+        clean.append(s)
+    doc = {
+        "schema_version": SCHEMA,
+        "feature": FEATURE_FEDERATE,
+        "scope": "memory_tool_util",
+        "updated_at": _now(),
+        "count": len(clean),
+        "privacy": "tool_ids_util_bins_tenant_hash_only",
+        "privacy_ok": privacy_ok and len(clean) == len(signals),
+        "signals": clean,
+    }
+    dest.write_text(json.dumps(doc, indent=2) + "\n", encoding="utf-8")
+
+    hub = None
+    try:
+        sys.path.insert(0, str(Path(__file__).resolve().parent))
+        from federated_hub_ingest import ingest as hub_ingest  # type: ignore
+
+        hub_raw = hub_ingest(
+            root,
+            clean,
+            tenant=tenant,
+            source_repo="memory_tool_util",
+            write_tenant=bool(tenant),
+        )
+        if isinstance(hub_raw, dict):
+            hub = {
+                "feature": hub_raw.get("feature"),
+                "global_count": hub_raw.get("global_count"),
+                "privacy_ok": hub_raw.get("privacy_ok"),
+            }
+        else:
+            hub = {"ok": True}
+    except Exception as exc:
+        hub = {"soft_error": str(exc)[:120]}
+
+    return {
+        "feature": FEATURE_FEDERATE,
+        "fed_path": "memory/federation/" + FED_NAME,
+        "fed_n": len(clean),
+        "privacy_ok": doc["privacy_ok"],
+        "hub": hub,
+        "signals": clean,
+        "utilization_gap": gap,
+        "score": score,
+    }
 
 
 def render_inject_section() -> str:
@@ -642,9 +852,11 @@ def cmd_status(args: argparse.Namespace) -> int:
             {
                 "feature": FEATURE,
                 "reprompt_feature": FEATURE_REPROMPT,
+                "feature_federate": FEATURE_FEDERATE,
                 "enabled": enabled(),
                 "fitness_blend": fitness_blend_enabled(),
                 "reprompt_enabled": reprompt_enabled(),
+                "federate_enabled": memory_util_federate_enabled(),
                 "patterns": [t for t, _ in _MEMORY_CMD_PATTERNS],
             },
             indent=2,
@@ -839,12 +1051,51 @@ def cmd_fixture(args: argparse.Namespace) -> int:
         )
         write_ok = REPROMPT_MARKER in pout.read_text() and "torii_memory.py search" in pout.read_text()
 
+        # F141: privacy-safe federate util themes
+        os.environ["TORII_MEMORY_UTIL_FEDERATE"] = "1"
+        os.environ["TORII_ROOT"] = str(td_path)
+        os.environ["TORII_MEMORY_TENANT"] = "fixture-tenant-mem"
+        fed_good = federate_memory_util(good, root=td_path, tenant="fixture-tenant-mem")
+        fed_weak = federate_memory_util(weak, root=td_path, tenant="fixture-tenant-mem")
+        fed_blob = json.dumps(fed_good.get("signals") or []) + json.dumps(
+            fed_weak.get("signals") or []
+        )
+        f141_ok = (
+            bool(fed_good.get("privacy_ok"))
+            and bool(fed_weak.get("privacy_ok"))
+            and int(fed_good.get("fed_n") or 0) >= 1
+            and int(fed_weak.get("fed_n") or 0) >= 1
+            and bool(fed_weak.get("utilization_gap"))
+            and any(
+                (s.get("id") == "memory-util-ok" or "util_ok" in (s.get("tags") or []))
+                for s in (fed_good.get("signals") or [])
+            )
+            and any(
+                s.get("id") == "memory-util-gap"
+                for s in (fed_weak.get("signals") or [])
+            )
+            and "/Users/" not in fed_blob
+            and "fixture-tenant-mem" not in fed_blob
+            and (td_path / "memory" / "federation" / FED_NAME).is_file()
+        )
+
         fixture_pass = all(
-            [good_ok, weak_ok, delta_ok, blend_ok, inject_ok, reprompt_ok, write_ok]
+            [
+                good_ok,
+                weak_ok,
+                delta_ok,
+                blend_ok,
+                inject_ok,
+                reprompt_ok,
+                write_ok,
+                f141_ok,
+            ]
         )
         out = {
             "feature": FEATURE,
             "reprompt_feature": FEATURE_REPROMPT,
+            "feature_federate": FEATURE_FEDERATE,
+            "f141": True,
             "fixture_pass": fixture_pass,
             "good_score": good["score"],
             "weak_score": weak["score"],
@@ -856,6 +1107,10 @@ def cmd_fixture(args: argparse.Namespace) -> int:
             "inject_ok": inject_ok,
             "reprompt_ok": reprompt_ok,
             "write_ok": write_ok,
+            "f141_ok": f141_ok,
+            "f141_fed_good_n": fed_good.get("fed_n"),
+            "f141_fed_weak_n": fed_weak.get("fed_n"),
+            "f141_privacy_ok": fed_good.get("privacy_ok") and fed_weak.get("privacy_ok"),
             "dec_weak": dec_weak,
             "dec_good_reason": dec_good.get("reason"),
             "dec_zero_reason": dec_zero.get("reason"),
@@ -1016,14 +1271,60 @@ def main(argv: list[str] | None = None) -> int:
     pue.add_argument("--out-dir", default="")
     pue.set_defaults(func=cmd_util_eval)
 
+    pfed = sub.add_parser(
+        "federate",
+        help="F141 privacy-safe federate of memory util themes",
+    )
+    pfed.add_argument("--out-dir", default="", help="load memory-tool-audit.json from here")
+    pfed.add_argument("--audit-json", default="", help="path to memory-tool-audit.json")
+    pfed.add_argument("--tenant", default="")
+    pfed.set_defaults(func=cmd_federate)
+
     pst = sub.add_parser("status")
     pst.set_defaults(func=cmd_status)
 
-    pf = sub.add_parser("fixture", help="hermetic good vs weak utilization + re-prompt")
+    pf = sub.add_parser(
+        "fixture", help="hermetic good vs weak utilization + re-prompt + F141 federate"
+    )
     pf.set_defaults(func=cmd_fixture)
 
     args = p.parse_args(argv)
     return int(args.func(args))
+
+
+def cmd_federate(args: argparse.Namespace) -> int:
+    """F141: federate from out_dir audit or --audit-json."""
+    root = _root()
+    util: dict[str, Any] = {}
+    if args.audit_json and Path(args.audit_json).is_file():
+        try:
+            util = json.loads(Path(args.audit_json).read_text(encoding="utf-8"))
+        except (OSError, json.JSONDecodeError) as exc:
+            print(json.dumps({"feature": FEATURE_FEDERATE, "error": str(exc)[:120]}))
+            return 1
+    elif args.out_dir:
+        od = Path(args.out_dir)
+        if (od / REPORT_NAME).is_file():
+            try:
+                util = json.loads((od / REPORT_NAME).read_text(encoding="utf-8"))
+            except (OSError, json.JSONDecodeError):
+                util = {}
+        if not util:
+            util = audit_run(od)
+    else:
+        print(
+            json.dumps(
+                {
+                    "feature": FEATURE_FEDERATE,
+                    "error": "need --out-dir or --audit-json",
+                }
+            )
+        )
+        return 2
+    tenant = (args.tenant or os.environ.get("TORII_MEMORY_TENANT") or "").strip()
+    report = federate_memory_util(util, root=root, tenant=tenant)
+    print(json.dumps(report, indent=2))
+    return 0 if report.get("privacy_ok") else 1
 
 
 if __name__ == "__main__":
