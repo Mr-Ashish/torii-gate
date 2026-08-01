@@ -1,3 +1,33 @@
+## 2026-08-01 — DEPLOYED_LANDING: GitHub Pages site from landing.html (Phase B #7)
+
+### Papers / posts
+- GTM dim 11: repo-only HTML is not a buyer URL.
+- Static site + Pages is the capital-light deploy for open-core AppSec.
+
+### Decide / copy / skip
+- **Copy:** build_landing_site.py rewrites docs links to github blob; docs/brand/site/index.html.
+- **Copy:** pages-landing.yml Actions deploy; README/PRODUCT public URL.
+- **Skip:** custom domain / Stripe; F185+.
+
+### Feature shipped (DEPLOYED_LANDING)
+- https://mr-ashish.github.io/torii-gate/ (Pages after first workflow enable)
+- fixture_pass · buyer 34/34
+
+### Metric
+- Offline: build ok · fixture_pass · commercial 8.5
+- Live Modal: pytorch#191842 BIT3_OK ~190s · fail-closed 0-tool COMMENT · POST_COMMENT=0
+- Traces: docs/benchmarks/traces/20260801-1857-pytorch-pytorch-PR191842-modal-deployed-landing/
+- Modal: https://modal.com/apps/mr-ashish/main/ap-0aJjmUTLjnLdo7SbooEqeB
+
+### scorecard_target
+GTM (#11)
+
+### dim_lift
+Buyer landing is a public URL, not monorepo archaeology
+
+### SHA
+(pending)
+
 ## 2026-08-01 — GATE_ONBOARDING: Actions job summary require torii/gate (Phase B #6)
 
 ### Papers / posts

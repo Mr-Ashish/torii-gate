@@ -88,6 +88,8 @@ Install path: [`docs/GOLDEN-PATH.md`](docs/GOLDEN-PATH.md) · metrics: [`docs/be
 
 **Public labeled eval freshness:** seed **42** · model pin · scored_at age (max 72h) — [`docs/benchmarks/public-eval/SCORECARD.md`](docs/benchmarks/public-eval/SCORECARD.md) · badge [`BADGE.md`](docs/benchmarks/public-eval/BADGE.md) · `python3 scripts/torii.py public-eval -- status`.
 
+**Deployed landing (GitHub Pages):** https://mr-ashish.github.io/torii-gate/ — built from [`docs/brand/landing.html`](docs/brand/landing.html) via `python3 scripts/build_landing_site.py build` · workflow `.github/workflows/pages-landing.yml`.
+
 **Workflows-as-code:** declarative pipeline graph (not LLM prose) → [`docs/WORKFLOWS.md`](docs/WORKFLOWS.md) · `python3 scripts/torii.py workflow -- scorecard`.
 
 > **Advanced** content below (mental models A–E, feature IDs, loop stage tables) is for engineers and research. Buyers can stop here.

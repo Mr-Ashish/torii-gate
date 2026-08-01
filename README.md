@@ -36,7 +36,7 @@ Most AI PR bots optimize for *code quality comments*. Torii optimizes for **secu
 
 **CLI front door:** `python3 scripts/torii.py help` · `status --text` · `doctor` · `ops -- status` · `enterprise -- status` · `memory -- search`
 
-**Measured dogfood (honesty):** live Modal + Hermes on open-source PRs (`POST_COMMENT=0`) — **~90s** time-to-signal p50 · **~$0.01** cost/PR p50 · gate certificates with reason codes. Not slogans: [`docs/ops/cost-pr-dashboard.md`](docs/ops/cost-pr-dashboard.md) · [`docs/benchmarks/golden-path-metrics.md`](docs/benchmarks/golden-path-metrics.md) · landing: [`docs/brand/landing.html`](docs/brand/landing.html).
+**Measured dogfood (honesty):** live Modal + Hermes on open-source PRs (`POST_COMMENT=0`) — **~90s** time-to-signal p50 · **~$0.01** cost/PR p50 · gate certificates with reason codes. Not slogans: [`docs/ops/cost-pr-dashboard.md`](docs/ops/cost-pr-dashboard.md) · [`docs/benchmarks/golden-path-metrics.md`](docs/benchmarks/golden-path-metrics.md) · landing source: [`docs/brand/landing.html`](docs/brand/landing.html) · **deployed landing (GitHub Pages):** [mr-ashish.github.io/torii-gate](https://mr-ashish.github.io/torii-gate/) (`python3 scripts/build_landing_site.py build`).
 
 Buyer brief: [`PRODUCT.md`](PRODUCT.md) · brand: [`docs/brand/`](docs/brand/) · Advanced loop detail (engineers): PRODUCT → **Advanced**.
 
