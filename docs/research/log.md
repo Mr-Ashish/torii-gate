@@ -32,7 +32,7 @@ evidence / simplicity (dim 12)
 merge-authority evidence + tools-as-code vs LLM prose
 
 ### SHA
-TBD
+ffbb32f5b8a3a74286b73b748f0a16a4f3174d48
 
 ## 2026-08-01 — COMMERCIAL: priority-queue rollup scorecard (→7.5+)
 
