@@ -289,6 +289,7 @@ util gap → GEPA refine → dual-gate LOO → dual_pp → federate promote
        → LOO attribution revive floor (F179)
        → hub-archival × GEPA compound demote (F180)
        → hub×GEPA compound prompt inject (F181)
+       → hub×GEPA compound always priority (F182)
 ```
 
 | Stage | Feature | Customer-facing meaning |
@@ -308,6 +309,7 @@ util gap → GEPA refine → dual-gate LOO → dual_pp → federate promote
 | **Revive LOO floor** | F179 | free-rider / low avg_contribution LOO blocks dual_pass revive |
 | **Hub×GEPA compound** | F180 | hub-archival util gap + GEPA pressure → harder APPROVE demote |
 | **Hub×GEPA inject** | F181 | Maker sees dual-loop compound heat in prompt before demote |
+| **Hub×GEPA always** | F182 | Compound heat boosts hub-archival into always budget |
 
 **One-liner (eng):** *Skills that fail tool util get refined, measured, and multi-tenant promoted — or they stay out of always budget; recovery is measured too.*
 
@@ -336,6 +338,8 @@ util gap → GEPA refine → dual-gate LOO → dual_pp → federate promote
 **Hub-archival × GEPA compound (F180):** when hub-archival util gap **and** GEPA decay/free-rider/pp/LOO pressure co-occur, second-agent `f180_hub_gepa_compound` demotes APPROVE harder (score 0.15, escalate to REQUEST_CHANGES). Paper: `hub_gepa_compound_idle_demoted`. `refine_loop_ok` ANDs F165–F180.
 
 **Hub×GEPA compound prompt inject (F181):** `assess_hub_gepa_compound` + prompt section (`<!-- torii-f181-hub-gepa-compound -->`) so the maker sees dual-loop pressure before F180 demote. `refine_loop_ok` ANDs F165–F181.
+
+**Hub×GEPA compound always priority (F182):** `select_skills` folds `assess_hub_gepa_compound` priority_deltas into always budget + residual score so dual-loop heat keeps hub-archival recovery skills selected. `refine_loop_ok` ANDs F165–F182.
 
 ---
 

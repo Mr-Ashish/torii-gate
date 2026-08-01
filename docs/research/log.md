@@ -1,3 +1,33 @@
+## 2026-08-01 — F182 hub×GEPA compound always priority
+
+### Papers / posts
+- F119 always budget + F125/F161/F169 hub priority_deltas compound.
+- F181 assess computes priority_deltas but inject alone does not select skills.
+- Loop Engineering: measure → inject → budget — close the loop into always slots.
+
+### OSS design patterns stolen
+1. hgc_report from assess_hub_gepa_compound in select_skills.
+2. _effective_always_prio + residual score bumps when compound high.
+3. Default hub-archival Δprio=24 when high without themes.
+4. skill_loop hub_gepa_compound_always_ok; refine_loop_ok AND F182.
+
+### Insight
+Compound free-rider heat without always-budget fuel leaves recovery skills deferred. Highest ROI: fold assess deltas into always ranking.
+
+### Feature shipped (F182)
+- hub_gepa_compound_always_enabled + select_skills wire
+- hermes F182 notice; scorecard always_ok; PRODUCT F182 line
+
+### Loop-engineering
+Close dual-loop heat into always budget — not inject-only theater.
+
+### Metric
+- Offline: high→deltas≥24 + hub-archival always_selected
+- Live Modal: pytorch#191836 BIT3_OK ~40.1s POST_COMMENT=0 log_streaming=true F182 soft wire
+
+### SHA
+`3290c3b1611f9a4069f4a0a0ee0fd785cdaf8ca4`
+
 ## 2026-08-01 — F181 hub×GEPA compound prompt inject
 
 ### Papers / posts

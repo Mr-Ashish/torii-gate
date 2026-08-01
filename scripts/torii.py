@@ -575,7 +575,7 @@ def cmd_doctor(args: argparse.Namespace) -> int:
                 "feature_hub_archival_util": "F155",
                 "feature_hub_archival_util_critic": "F156",
                 "feature_hub_archival_loop": "F163",
-                "feature_refine_loop": "F170/F181",
+                "feature_refine_loop": "F170/F182",
                 "feature_scorecard_ops": "F135",
                 "doctor_pass": all_ok,
                 "recovery_ok": recovery_ok,
@@ -896,6 +896,11 @@ def product_scorecard(
             if skill.get("hub_gepa_compound_inject_ok") is not None
             else doctor.get("hub_gepa_compound_inject_ok")
         ),
+        "hub_gepa_compound_always_ok": bool(
+            skill.get("hub_gepa_compound_always_ok")
+            if skill.get("hub_gepa_compound_always_ok") is not None
+            else doctor.get("hub_gepa_compound_always_ok")
+        ),
         "hub_archival_hub_pressure_idle_demoted": demote.get(
             "hub_archival_hub_pressure_demote_ok"
         )
@@ -988,7 +993,8 @@ def product_scorecard(
                 f"pp-floor **{'ok' if metrics.get('revive_pp_gate_ok') else 'gap'}** · "
                 f"LOO **{'ok' if metrics.get('revive_loo_gate_ok') else 'gap'}** · "
                 f"hub×GEPA **{'ok' if metrics.get('hub_gepa_compound_ok') else 'gap'}** · "
-                f"inject **{'ok' if metrics.get('hub_gepa_compound_inject_ok') else 'gap'}** (F175–F181)"
+                f"inject **{'ok' if metrics.get('hub_gepa_compound_inject_ok') else 'gap'}** · "
+                f"always **{'ok' if metrics.get('hub_gepa_compound_always_ok') else 'gap'}** (F175–F182)"
             ),
         ],
         "doctor": {
@@ -1126,6 +1132,7 @@ def product_scorecard(
             f"| hub_gepa_compound_ok | {metrics.get('hub_gepa_compound_ok')} |",
             f"| hub_gepa_compound_idle_demoted | {metrics.get('hub_gepa_compound_idle_demoted')} |",
             f"| hub_gepa_compound_inject_ok | {metrics.get('hub_gepa_compound_inject_ok')} |",
+            f"| hub_gepa_compound_always_ok | {metrics.get('hub_gepa_compound_always_ok')} |",
             "",
             "Source: `python3 scripts/torii.py scorecard` · workflow F131 · demote F128/F151 · util F130 · hub-archival F155–F163 (F164) · GEPA refine F165–F180 (F170/F180).",
             "",

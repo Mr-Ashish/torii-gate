@@ -914,8 +914,25 @@ def assess(root: Path | None = None, *, deep: bool = True) -> dict[str, Any]:
                 else ""
             )
             and "F181" in hermes_sh
+            # F182 hub×GEPA compound always priority
+            and "hub_gepa_compound_always_enabled"
+            in (
+                (root / "scripts" / "skill_router.py").read_text(
+                    encoding="utf-8", errors="replace"
+                )
+                if (root / "scripts" / "skill_router.py").is_file()
+                else ""
+            )
+            and "hub_gepa_compound_priority_deltas" in (
+                (root / "scripts" / "skill_router.py").read_text(
+                    encoding="utf-8", errors="replace"
+                )
+                if (root / "scripts" / "skill_router.py").is_file()
+                else ""
+            )
+            and "F182" in hermes_sh
         ),
-        "feature_refine_loop": "F170/F181",
+        "feature_refine_loop": "F170/F182",
         # F171: chronic refine dual_fail always-priority decay
         "refine_dual_decay_ok": "ingest_refine_dual" in (
             (root / "scripts" / "skill_fitness.py").read_text(
@@ -1165,6 +1182,38 @@ def assess(root: Path | None = None, *, deep: bool = True) -> dict[str, Any]:
             else ""
         ),
         "feature_hub_gepa_compound_inject": "F181",
+        # F182: hub×GEPA compound always-priority budget
+        "hub_gepa_compound_always_ok": "hub_gepa_compound_always_enabled"
+        in (
+            (root / "scripts" / "skill_router.py").read_text(
+                encoding="utf-8", errors="replace"
+            )
+            if (root / "scripts" / "skill_router.py").is_file()
+            else ""
+        )
+        and "hub_gepa_compound_priority_deltas" in (
+            (root / "scripts" / "skill_router.py").read_text(
+                encoding="utf-8", errors="replace"
+            )
+            if (root / "scripts" / "skill_router.py").is_file()
+            else ""
+        )
+        and "F182: hub×GEPA compound" in (
+            (root / "scripts" / "skill_router.py").read_text(
+                encoding="utf-8", errors="replace"
+            )
+            if (root / "scripts" / "skill_router.py").is_file()
+            else ""
+        )
+        and "F182" in hermes_sh
+        and "feature_hub_gepa_compound_always" in (
+            (root / "scripts" / "skill_router.py").read_text(
+                encoding="utf-8", errors="replace"
+            )
+            if (root / "scripts" / "skill_router.py").is_file()
+            else ""
+        ),
+        "feature_hub_gepa_compound_always": "F182",
         # F158: fitness ledger ingest/demote for hub-archival util
         "hub_archival_fitness_ok": "ingest_hub_archival_util" in (
             (root / "scripts" / "skill_fitness.py").read_text(
@@ -1300,6 +1349,7 @@ def to_markdown(report: dict[str, Any]) -> str:
             f"- Revive LOO attribution floor (F179): **{'ok' if report.get('revive_loo_gate_ok') else 'gap'}**",
             f"- Hub-archival × GEPA compound demote (F180): **{'ok' if report.get('hub_gepa_compound_ok') else 'gap'}**",
             f"- Hub×GEPA compound prompt inject (F181): **{'ok' if report.get('hub_gepa_compound_inject_ok') else 'gap'}**",
+            f"- Hub×GEPA compound always priority (F182): **{'ok' if report.get('hub_gepa_compound_always_ok') else 'gap'}**",
             f"- Recovery hub gap critic/demote-eval (F128): **{'ok' if report.get('recovery_hub_gap_ok') else 'gap'}**",
             f"- Recon-warm hub critic/demote-eval (F151): **{'ok' if report.get('recon_warm_hub_ok') else 'gap'}**",
             f"- Wiring (assemble/run/hermes/save-trace): **{'ok' if report.get('wiring_ok') else 'gap'}**",
@@ -1406,6 +1456,11 @@ def cmd_scorecard(args: argparse.Namespace) -> int:
                     "feature_hub_gepa_compound_inject"
                 )
                 or "F181",
+                "hub_gepa_compound_always_ok": report.get("hub_gepa_compound_always_ok"),
+                "feature_hub_gepa_compound_always": report.get(
+                    "feature_hub_gepa_compound_always"
+                )
+                or "F182",
                 "feature_scorecard_ops": report.get("feature_scorecard_ops"),
                 "scorecard_ops_ok": report.get("scorecard_ops_ok"),
                 "scorecard_active": report.get("scorecard_active"),
@@ -1510,6 +1565,8 @@ def cmd_fixture(args: argparse.Namespace) -> int:
                 "feature_hub_gepa_compound": "F180",
                 "hub_gepa_compound_inject_ok": report.get("hub_gepa_compound_inject_ok"),
                 "feature_hub_gepa_compound_inject": "F181",
+                "hub_gepa_compound_always_ok": report.get("hub_gepa_compound_always_ok"),
+                "feature_hub_gepa_compound_always": "F182",
                 "wiring_ok": report["wiring_ok"],
                 "deep_ok": report["deep_ok"],
                 "ready": report["ready"],

@@ -365,6 +365,12 @@ def hub_gepa_compound_inject_enabled() -> bool:
     return raw not in _FALSEY
 
 
+def hub_gepa_compound_always_enabled() -> bool:
+    """F182: hub×GEPA compound priority_deltas → always budget (default on)."""
+    raw = (os.environ.get("TORII_HUB_GEPA_COMPOUND_ALWAYS") or "1").strip().lower()
+    return raw not in _FALSEY
+
+
 REFINE_DUAL_HUB_MARKER_OPEN = "<!-- torii-f169-refine-dual-hub -->"
 REFINE_DUAL_HUB_MARKER_CLOSE = "<!-- /torii-f169-refine-dual-hub -->"
 FEATURE_REFINE_DUAL_HUB = "F169"
@@ -2626,6 +2632,35 @@ def select_skills(
         except Exception:
             rd_hub_report = {"enabled": False, "priority_deltas": {}, "skills": {}}
 
+    # F182: hub×GEPA compound → always priority for dual-loop heat skills
+    hgc_report: dict[str, Any] = {
+        "enabled": False,
+        "priority_deltas": {},
+        "high": False,
+    }
+    if hub_gepa_compound_always_enabled():
+        try:
+            hgc = assess_hub_gepa_compound(root=root or _root())
+            hgc_report = {
+                "enabled": True,
+                "priority_deltas": dict(hgc.get("priority_deltas") or {}),
+                "high": bool(hgc.get("high")),
+                "ha_gap": hgc.get("ha_gap"),
+                "gepa_pressure": hgc.get("gepa_pressure"),
+                "reason": hgc.get("reason"),
+                "feature": "F182",
+            }
+            if hgc_report["high"] and not hgc_report["priority_deltas"]:
+                hgc_report["priority_deltas"] = {
+                    "skill-prefer-hub-archival-early": 24
+                }
+        except Exception:
+            hgc_report = {
+                "enabled": False,
+                "priority_deltas": {},
+                "high": False,
+            }
+
     def _effective_always_prio(c: SkillCard) -> int:
         return (
             int(c.always_priority or 0)
@@ -2634,6 +2669,7 @@ def select_skills(
             + hub_priority_delta(c.id, mem_hub_report)
             + hub_priority_delta(c.id, ha_hub_report)
             + hub_priority_delta(c.id, rd_hub_report)
+            + hub_priority_delta(c.id, hgc_report)
         )
 
     # F119: always-on budget — rank always candidates by always_priority (+ F125 hub), take top N
@@ -2680,6 +2716,14 @@ def select_skills(
             s += min(12.0, float(hd_rd) / 4.0)
             if c.id in always_deferred_set:
                 s += min(8.0, float(hd_rd) / 5.0)
+        # F182: hub×GEPA compound keeps dual-loop recovery skills in always budget
+        hd_hgc = hub_priority_delta(c.id, hgc_report)
+        if hd_hgc:
+            s += min(14.0, float(hd_hgc) / 3.5)
+            if c.id in always_deferred_set:
+                s += min(10.0, float(hd_hgc) / 4.0)
+            if hgc_report.get("high"):
+                s += 4.0  # hard keep when dual compound free-rider risk
         ranked.append((s, c))
     ranked.sort(key=lambda x: (-x[0], x[1].id))
 
@@ -2777,6 +2821,15 @@ def select_skills(
         "memory_hub_skill_n": mem_hub_report.get("skill_n"),
         "feature_memory_hub": "F142"
         if (mem_hub_report.get("enabled") or mem_hub_report.get("skill_n"))
+        else None,
+        "hub_gepa_compound_priority_deltas": {
+            k: v
+            for k, v in (hgc_report.get("priority_deltas") or {}).items()
+        },
+        "hub_gepa_compound_high": bool(hgc_report.get("high")),
+        "hub_gepa_compound_reason": hgc_report.get("reason"),
+        "feature_hub_gepa_compound_always": "F182"
+        if hub_gepa_compound_always_enabled()
         else None,
         "hub_archival_hub_priority_deltas": {
             k: v
