@@ -94,7 +94,8 @@ python3 scripts/torii.py golden-path -- status
 
 Published table: [`docs/benchmarks/golden-path-metrics.md`](benchmarks/golden-path-metrics.md).
 
-Labeled packs today: `insecure-demo` (4) + `juice-shop-synthetic` (5). Public multi-repo eval expansion is queue item **#3**.
+Labeled packs: `insecure-demo` + `juice-shop-synthetic` + `nodegoat-synthetic` + `django-vuln-synthetic`.  
+Public scorecard (seed + model + cost/PR): [`docs/benchmarks/public-eval/SCORECARD.md`](benchmarks/public-eval/SCORECARD.md).
 
 ## CLI front door
 

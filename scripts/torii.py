@@ -115,6 +115,15 @@ GROUPS: dict[str, dict[str, Any]] = {
             "buyer -- report",
         ],
     },
+    "public-eval": {
+        "script": "public_eval.py",
+        "help": "Public labeled eval scorecard (→8.5 technical trust)",
+        "examples": [
+            "public-eval -- fixture",
+            "public-eval -- report",
+            "public-eval -- status",
+        ],
+    },
 }
 
 

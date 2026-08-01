@@ -1,0 +1,19 @@
+{
+  "feature": "PUBLIC_EVAL",
+  "schema_version": 1,
+  "repo": "pytorch/pytorch",
+  "pr": "191840",
+  "pr_number": "191840",
+  "model": "deepseek/deepseek-chat-v4-pro",
+  "host": "modal",
+  "bit3": true,
+  "elapsed_s": 52.8,
+  "log_streaming": true,
+  "tool_call_turns": 0,
+  "post_comment": 0,
+  "verdict": "COMMENT",
+  "notes": "Public-eval fire dogfood; seed=42 scorecard published",
+  "scored_at": "2026-08-01T14:25:55Z",
+  "seed": 42,
+  "modal_run": "https://modal.com/apps/mr-ashish/main/ap-pyERAX2JAZ2TVVIT32dWVI"
+}

@@ -1,3 +1,41 @@
+## 2026-08-01 — PUBLIC_EVAL: Juice Shop + 2 OSS-theme packs (seed 42)
+
+### Papers / posts
+- Eval hygiene: fixed seed + model id on published scorecards.
+- Priority queue #3 →8.5 technical trust; expand beyond single demo pack.
+- SkillsBench/Mem0: good vs weak harness; weak recall as FP proxy.
+
+### OSS design patterns stolen
+1. License-safe NodeGoat-theme + Django/Flask-theme synthetic demos (not forks).
+2. Register packs in bench_corpus; good/weak fixtures for offline recall.
+3. `public_eval.py` writes SCORECARD.md with seed, model_id, FP/TP, cost/PR.
+4. CLI `torii.py public-eval`; tests fixture 4 packs.
+
+### Insight
+Only 2 labeled packs existed. Highest ROI: two more OSS themes + public scorecard with seed.
+
+### Feature shipped (PUBLIC_EVAL / F189)
+- demo/nodegoat-synthetic · demo/django-vuln-synthetic
+- cases + fixtures · bench_corpus PACKS ×4
+- docs/benchmarks/public-eval/{README,SCORECARD,scorecard.json}
+- scripts/public_eval.py · tests
+
+### Loop-engineering
+Publish the eval loop customers can re-run — seed + model + chart.
+
+### Metric
+- Offline: all_pass 4/4; TP=18 good=1.0 weak=0.0; pytest 4 passed
+- Live Modal: pytorch#191840 BIT3_OK ~52.8s POST_COMMENT=0 log_streaming=true
+
+### scorecard_target
+8.5
+
+### dim_lift
+technical trust (public labeled eval)
+
+### SHA
+`(fill after push)`
+
 ## 2026-08-01 — BUYER narrative: one diagram, F-IDs under Advanced
 
 ### Papers / posts

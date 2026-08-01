@@ -1,0 +1,121 @@
+{
+  "schema_version": 1,
+  "feature": "PUBLIC_EVAL",
+  "id": "django-vuln-synthetic",
+  "description": "License-safe Django/Flask training-app theme ground truth for demo/django-vuln-synthetic (not a project fork).",
+  "source_paths": ["demo/django-vuln-synthetic/views.py"],
+  "expected_verdict": "REQUEST_CHANGES",
+  "license_note": "Original Torii demo; themes inspired by common Django/Flask OSS training-app vuln classes.",
+  "oss_theme": "Django/Flask training apps (generic)",
+  "cases": [
+    {
+      "id": "dj-ssrf",
+      "theme": "ssrf",
+      "cwe": ["CWE-918"],
+      "tags": ["ssrf", "py", "django-theme"],
+      "path_substrings": [
+        "demo/django-vuln-synthetic/views.py",
+        "django-vuln-synthetic/views.py",
+        "views.py"
+      ],
+      "must_match_any": [
+        "ssrf",
+        "server-side request",
+        "cwe-918",
+        "urlopen",
+        "fetch",
+        "request.args.get(\"url\"",
+        "arbitrary url"
+      ],
+      "severity_floor": "high",
+      "required": true
+    },
+    {
+      "id": "dj-path",
+      "theme": "path_traversal",
+      "cwe": ["CWE-22"],
+      "tags": ["path_traversal", "py", "django-theme"],
+      "path_substrings": [
+        "demo/django-vuln-synthetic/views.py",
+        "django-vuln-synthetic/views.py",
+        "views.py"
+      ],
+      "must_match_any": [
+        "path traversal",
+        "directory traversal",
+        "cwe-22",
+        "..",
+        "download",
+        "files/",
+        "read_text"
+      ],
+      "severity_floor": "high",
+      "required": true
+    },
+    {
+      "id": "dj-redirect",
+      "theme": "open_redirect",
+      "cwe": ["CWE-601"],
+      "tags": ["open_redirect", "py", "django-theme"],
+      "path_substrings": [
+        "demo/django-vuln-synthetic/views.py",
+        "django-vuln-synthetic/views.py",
+        "views.py"
+      ],
+      "must_match_any": [
+        "open redirect",
+        "unvalidated redirect",
+        "cwe-601",
+        "redirect(",
+        "next",
+        "allowlist"
+      ],
+      "severity_floor": "medium",
+      "required": true
+    },
+    {
+      "id": "dj-ssti",
+      "theme": "ssti",
+      "cwe": ["CWE-1336", "CWE-94"],
+      "tags": ["ssti", "template_injection", "py", "django-theme"],
+      "path_substrings": [
+        "demo/django-vuln-synthetic/views.py",
+        "django-vuln-synthetic/views.py",
+        "views.py"
+      ],
+      "must_match_any": [
+        "ssti",
+        "template injection",
+        "server-side template",
+        "render_template_string",
+        "cwe-1336",
+        "cwe-94",
+        "title"
+      ],
+      "severity_floor": "high",
+      "required": true
+    },
+    {
+      "id": "dj-secret",
+      "theme": "secrets_exposure",
+      "cwe": ["CWE-798", "CWE-200"],
+      "tags": ["secrets", "py", "django-theme"],
+      "path_substrings": [
+        "demo/django-vuln-synthetic/views.py",
+        "django-vuln-synthetic/views.py",
+        "views.py"
+      ],
+      "must_match_any": [
+        "secret",
+        "secret_key",
+        "hardcoded",
+        "django-insecure",
+        "cwe-798",
+        "debug",
+        "config"
+      ],
+      "severity_floor": "medium",
+      "required": true
+    }
+  ]
+}

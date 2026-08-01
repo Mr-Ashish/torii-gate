@@ -52,6 +52,22 @@ PACKS: list[dict[str, str]] = [
         "source_glob": "demo/juice-shop-synthetic",
         "lang": "js",
     },
+    {
+        "id": "nodegoat-synthetic",
+        "cases": "docs/benchmarks/cases/nodegoat-synthetic.json",
+        "good": "docs/benchmarks/fixtures/nodegoat-synthetic-good-review.md",
+        "weak": "docs/benchmarks/fixtures/nodegoat-synthetic-weak-review.md",
+        "source_glob": "demo/nodegoat-synthetic",
+        "lang": "js",
+    },
+    {
+        "id": "django-vuln-synthetic",
+        "cases": "docs/benchmarks/cases/django-vuln-synthetic.json",
+        "good": "docs/benchmarks/fixtures/django-vuln-synthetic-good-review.md",
+        "weak": "docs/benchmarks/fixtures/django-vuln-synthetic-weak-review.md",
+        "source_glob": "demo/django-vuln-synthetic",
+        "lang": "py",
+    },
 ]
 
 
@@ -217,7 +233,8 @@ def write_index(root: Path, results: list[dict[str, Any]] | None = None) -> Path
         f"Updated: `{_now()}`",
         "",
         "License-safe packs for offline recall/precision measurement.",
-        "Juice Shop pack is **synthetic original code** (themes only — not a fork).",
+        "OSS-theme packs are **synthetic original code** (themes only — not forks).",
+        "Public scorecard: [`docs/benchmarks/public-eval/`](../public-eval/).",
         "",
         "| Pack | Lang | Cases | Paths OK | Source |",
         "|------|------|------:|:--------:|--------|",

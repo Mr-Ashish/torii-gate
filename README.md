@@ -76,6 +76,9 @@ python3 scripts/golden_path_metrics.py report   # → docs/benchmarks/golden-pat
 
 Full one-pager: [`docs/GOLDEN-PATH.md`](docs/GOLDEN-PATH.md) · published chart: [`docs/benchmarks/golden-path-metrics.md`](docs/benchmarks/golden-path-metrics.md).
 
+**Public labeled eval** (Juice Shop + NodeGoat + Django/Flask themes, fixed seed):  
+[`docs/benchmarks/public-eval/SCORECARD.md`](docs/benchmarks/public-eval/SCORECARD.md) · `python3 scripts/public_eval.py report`
+
 Install on a **target** repo: copy workflow pack or point `torii_repository` at this hub (see `pack/`).
 
 ## Live e2e (Modal)

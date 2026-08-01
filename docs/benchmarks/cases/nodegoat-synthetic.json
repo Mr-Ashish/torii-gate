@@ -1,0 +1,103 @@
+{
+  "schema_version": 1,
+  "feature": "PUBLIC_EVAL",
+  "id": "nodegoat-synthetic",
+  "description": "License-safe NodeGoat-theme ground truth for demo/nodegoat-synthetic (not a NodeGoat fork).",
+  "source_paths": ["demo/nodegoat-synthetic/app.js"],
+  "expected_verdict": "REQUEST_CHANGES",
+  "license_note": "Original Torii demo; themes inspired by OWASP NodeGoat challenge classes.",
+  "oss_theme": "OWASP NodeGoat",
+  "cases": [
+    {
+      "id": "ng-nosql",
+      "theme": "nosql_injection",
+      "cwe": ["CWE-943", "CWE-89"],
+      "tags": ["nosql", "injection", "js", "nodegoat-theme"],
+      "path_substrings": [
+        "demo/nodegoat-synthetic/app.js",
+        "nodegoat-synthetic/app.js",
+        "app.js"
+      ],
+      "must_match_any": [
+        "nosql",
+        "no-sql",
+        "operator injection",
+        "$gt",
+        "mongodb",
+        "filter",
+        "injection",
+        "cwe-943"
+      ],
+      "severity_floor": "high",
+      "required": true
+    },
+    {
+      "id": "ng-path",
+      "theme": "path_traversal",
+      "cwe": ["CWE-22"],
+      "tags": ["path_traversal", "lfi", "js", "nodegoat-theme"],
+      "path_substrings": [
+        "demo/nodegoat-synthetic/app.js",
+        "nodegoat-synthetic/app.js",
+        "app.js"
+      ],
+      "must_match_any": [
+        "path traversal",
+        "directory traversal",
+        "cwe-22",
+        "..",
+        "readfilesync",
+        "avatar",
+        "uploads",
+        "lfi"
+      ],
+      "severity_floor": "high",
+      "required": true
+    },
+    {
+      "id": "ng-ssrf",
+      "theme": "ssrf",
+      "cwe": ["CWE-918"],
+      "tags": ["ssrf", "js", "nodegoat-theme"],
+      "path_substrings": [
+        "demo/nodegoat-synthetic/app.js",
+        "nodegoat-synthetic/app.js",
+        "app.js"
+      ],
+      "must_match_any": [
+        "ssrf",
+        "server-side request",
+        "cwe-918",
+        "http.get",
+        "req.query.url",
+        "arbitrary url",
+        "stock"
+      ],
+      "severity_floor": "high",
+      "required": true
+    },
+    {
+      "id": "ng-idor",
+      "theme": "broken_access_control",
+      "cwe": ["CWE-639", "CWE-284"],
+      "tags": ["idor", "authz", "js", "nodegoat-theme"],
+      "path_substrings": [
+        "demo/nodegoat-synthetic/app.js",
+        "nodegoat-synthetic/app.js",
+        "app.js"
+      ],
+      "must_match_any": [
+        "idor",
+        "access control",
+        "authorization",
+        "authz",
+        "ownership",
+        "cwe-639",
+        "allocations",
+        "broken access"
+      ],
+      "severity_floor": "high",
+      "required": true
+    }
+  ]
+}

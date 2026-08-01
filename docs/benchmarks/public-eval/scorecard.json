@@ -1,0 +1,148 @@
+{
+  "feature": "PUBLIC_EVAL",
+  "schema": 1,
+  "scorecard_target": "8.5",
+  "dim_lift": "technical trust / public labeled eval",
+  "scored_at": "2026-08-01T14:25:56Z",
+  "seed": 42,
+  "model_id": "deepseek/deepseek-chat-v4-pro",
+  "one_liner": "Public labeled eval: Juice Shop synthetic + NodeGoat-theme + Django/Flask-theme packs; fixed seed; cost/PR from dogfood vault.",
+  "packs": [
+    {
+      "id": "django-vuln-synthetic",
+      "n_cases": 5,
+      "oss_theme": "Django/Flask training apps (generic)",
+      "license_note": "Original Torii demo; themes inspired by common Django/Flask OSS training-app vuln classes.",
+      "lang_hint": "py",
+      "cases_path": "docs/benchmarks/cases/django-vuln-synthetic.json"
+    },
+    {
+      "id": "insecure-demo",
+      "n_cases": 4,
+      "oss_theme": "Ground truth for demo/insecure/app.py intentional vulns (Torii Gate dogfood).",
+      "license_note": null,
+      "lang_hint": "py",
+      "cases_path": "docs/benchmarks/cases/insecure-demo.json"
+    },
+    {
+      "id": "juice-shop-synthetic",
+      "n_cases": 5,
+      "oss_theme": "License-safe Juice Shop\u2013theme ground truth for demo/juice-shop-synthetic (not a Juice Shop fork).",
+      "license_note": "Original Torii demo; themes inspired by OWASP Juice Shop challenge classes.",
+      "lang_hint": "js",
+      "cases_path": "docs/benchmarks/cases/juice-shop-synthetic.json"
+    },
+    {
+      "id": "nodegoat-synthetic",
+      "n_cases": 4,
+      "oss_theme": "OWASP NodeGoat",
+      "license_note": "Original Torii demo; themes inspired by OWASP NodeGoat challenge classes.",
+      "lang_hint": "js",
+      "cases_path": "docs/benchmarks/cases/nodegoat-synthetic.json"
+    }
+  ],
+  "corpus": {
+    "all_pass": true,
+    "packs_total": 4,
+    "packs_passed": 4,
+    "avg_delta_recall": 1.0,
+    "results": [
+      {
+        "pack_id": "insecure-demo",
+        "exit_code": 0,
+        "fixture_pass": true,
+        "good_recall": 1.0,
+        "weak_recall": 0.0,
+        "delta_recall": 1.0,
+        "tp_promoted": 4,
+        "out_dir": "/Users/ashishmishra/Documents/experiments/torii/.torii-out/bench-f76/insecure-demo",
+        "stdout_tail": "out_dir=/Users/ashishmishra/Documents/experiments/torii/.torii-out/bench-f76/insecure-demo\ngood_recall=1.0 good_passed=1\nweak_recall=0.0 weak_passed=0\ndelta_recall=1.0\nfixture_pass=1\ntp_promoted=4\nmetrics=/Users/ashishmishra/Documents/experiments/torii/.torii-out/bench-f76/insecure-demo/bench-metrics.json",
+        "stderr_tail": ""
+      },
+      {
+        "pack_id": "juice-shop-synthetic",
+        "exit_code": 0,
+        "fixture_pass": true,
+        "good_recall": 1.0,
+        "weak_recall": 0.0,
+        "delta_recall": 1.0,
+        "tp_promoted": 5,
+        "out_dir": "/Users/ashishmishra/Documents/experiments/torii/.torii-out/bench-f76/juice-shop-synthetic",
+        "stdout_tail": "out_dir=/Users/ashishmishra/Documents/experiments/torii/.torii-out/bench-f76/juice-shop-synthetic\ngood_recall=1.0 good_passed=1\nweak_recall=0.0 weak_passed=0\ndelta_recall=1.0\nfixture_pass=1\ntp_promoted=5\nmetrics=/Users/ashishmishra/Documents/experiments/torii/.torii-out/bench-f76/juice-shop-synthetic/bench-metrics.json",
+        "stderr_tail": ""
+      },
+      {
+        "pack_id": "nodegoat-synthetic",
+        "exit_code": 0,
+        "fixture_pass": true,
+        "good_recall": 1.0,
+        "weak_recall": 0.0,
+        "delta_recall": 1.0,
+        "tp_promoted": 4,
+        "out_dir": "/Users/ashishmishra/Documents/experiments/torii/.torii-out/bench-f76/nodegoat-synthetic",
+        "stdout_tail": "out_dir=/Users/ashishmishra/Documents/experiments/torii/.torii-out/bench-f76/nodegoat-synthetic\ngood_recall=1.0 good_passed=1\nweak_recall=0.0 weak_passed=0\ndelta_recall=1.0\nfixture_pass=1\ntp_promoted=4\nmetrics=/Users/ashishmishra/Documents/experiments/torii/.torii-out/bench-f76/nodegoat-synthetic/bench-metrics.json",
+        "stderr_tail": ""
+      },
+      {
+        "pack_id": "django-vuln-synthetic",
+        "exit_code": 0,
+        "fixture_pass": true,
+        "good_recall": 1.0,
+        "weak_recall": 0.0,
+        "delta_recall": 1.0,
+        "tp_promoted": 5,
+        "out_dir": "/Users/ashishmishra/Documents/experiments/torii/.torii-out/bench-f76/django-vuln-synthetic",
+        "stdout_tail": "out_dir=/Users/ashishmishra/Documents/experiments/torii/.torii-out/bench-f76/django-vuln-synthetic\ngood_recall=1.0 good_passed=1\nweak_recall=0.0 weak_passed=0\ndelta_recall=1.0\nfixture_pass=1\ntp_promoted=5\nmetrics=/Users/ashishmishra/Documents/experiments/torii/.torii-out/bench-f76/django-vuln-synthetic/bench-metrics.json",
+        "stderr_tail": ""
+      }
+    ],
+    "bench_exit": 0
+  },
+  "fp_tp": {
+    "labeled_tp_cases": 18,
+    "good_recall_mean": 1.0,
+    "weak_recall_mean": 0.0,
+    "delta_recall_mean": 1.0,
+    "note": "TP = required cases matched on good harness. FP proxy = weak harness recall (should stay ~0)."
+  },
+  "cost_per_pr": {
+    "source": "docs/benchmarks/traces vault dogfood",
+    "runs": 46,
+    "time_to_signal_s": {
+      "n": 41,
+      "mean": 97.268,
+      "p50": 86.2,
+      "min": 40.7,
+      "max": 208.6
+    },
+    "cost_usd": {
+      "n": 7,
+      "mean": 0.011,
+      "p50": 0.012,
+      "min": 0.008,
+      "max": 0.016
+    },
+    "verdicts": {
+      "REQUEST_CHANGES": 17,
+      "UNKNOWN": 26,
+      "COMMENT": 3
+    },
+    "note": "Live OSS dogfood unlabelled; cost when hermes-usage present."
+  },
+  "requirements": {
+    "juice_shop_synthetic": true,
+    "additional_oss_packs": [
+      "django-vuln-synthetic",
+      "nodegoat-synthetic"
+    ],
+    "additional_oss_ok": true,
+    "fixed_seed": true,
+    "model_id_recorded": true
+  },
+  "paths": {
+    "out_dir": "docs/benchmarks/public-eval",
+    "scorecard_md": "docs/benchmarks/public-eval/SCORECARD.md",
+    "scorecard_json": "docs/benchmarks/public-eval/scorecard.json"
+  },
+  "public_eval_ok": true
+}
