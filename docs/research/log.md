@@ -29,7 +29,7 @@ F70 measured TP compound memory locally. Missing was (a) a **tools-as-code** sta
 - pytest: 444 passed
 
 ### SHA
-`5f20f676917475ef17c342386eeaa7d9f79207bf`
+`b9844d3764501316db976d8b9241b59346649d30`
 
 ## 2026-08-01 — F70 labeled vuln bench + dual-pass critic + TP compound memory
 
