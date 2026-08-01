@@ -31,7 +31,7 @@ Write-path events without maintenance still bloat recall. Highest ROI: **tools-a
 - Live: **Modal** pytorch#191813 deepseek/deepseek-v4-pro BIT3_OK ~79s; log_streaming=true; tool_call_turns=4; POST_COMMENT=0
 
 ### SHA
-PENDING
+9c3d896d8a987424568ca3ab856c1d466e397872
 
 ## 2026-08-01 — F93 Mem0-style ADD/UPDATE/DELETE/NONE memory write policy
 
