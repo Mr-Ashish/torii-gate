@@ -46,6 +46,8 @@ GitHub → **Settings → Secrets and variables → Actions**
 2. Required context: **`torii/gate`**  
 3. Trigger one review first if the check name is not yet listed  
 
+**First Actions run:** the job summary includes a **Required check — make the gate merge authority** checklist (same steps). You do not need to dig docs mid-install — open the workflow run → Summary.
+
 ## 4. First review (≈1–2 min)
 
 On any open PR comment:

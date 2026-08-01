@@ -730,6 +730,10 @@ jobs:
               fi
               echo
             } >> "$GITHUB_STEP_SUMMARY"
+            # GATE_ONBOARDING: teach branch protection require torii/gate on first run
+            if [[ -f "$TORII_ROOT/scripts/ops_footer.py" ]]; then
+              python3 "$TORII_ROOT/scripts/ops_footer.py" gate-onboarding >>"$GITHUB_STEP_SUMMARY" 2>/dev/null || true
+            fi
           fi
 
           if [[ "$STATUS_ON" == "1" && -n "$REPO" && -n "${PR_NUMBER:-}" ]]; then

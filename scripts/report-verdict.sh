@@ -110,6 +110,11 @@ fi
 
 # Job summary
 if [[ -n "${GITHUB_STEP_SUMMARY:-}" ]]; then
+  # GATE_ONBOARDING: first-run required-check checklist (torii/gate merge authority)
+  _OPS_FOOTER="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/ops_footer.py"
+  if [[ -f "$_OPS_FOOTER" ]]; then
+    python3 "$_OPS_FOOTER" gate-onboarding >>"$GITHUB_STEP_SUMMARY" 2>/dev/null || true
+  fi
   if [[ -f "${REVIEW_FILE:-}" ]]; then
     python3 "$PARSE" "$REVIEW_FILE" --pipeline-rc "$PIPELINE_RC" --format summary \
       >>"$GITHUB_STEP_SUMMARY" || true

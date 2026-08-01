@@ -132,6 +132,20 @@ def check(root: Path) -> dict[str, Any]:
             re.search(r"Day-1|day-1 path|help.*Day", im, re.I)
             and "torii.py help" in im
         ),
+        # GATE_ONBOARDING: Actions job summary teaches require torii/gate
+        "gate_onboarding_ops_footer": bool(
+            (root / "scripts" / "ops_footer.py").is_file()
+            and "format_gate_onboarding" in _read(root / "scripts" / "ops_footer.py")
+            and "gate-onboarding" in _read(root / "scripts" / "report-verdict.sh")
+        ),
+        "install_md_gate_onboarding": bool(
+            re.search(
+                r"job summary|Actions summary|Required check.*torii/gate|gate-onboarding",
+                im,
+                re.I,
+            )
+            and "torii/gate" in im
+        ),
         "golden_links_install": "INSTALL.md" in gd or "docs/INSTALL" in gd,
         "install_script_exists": install_sh.is_file(),
     }

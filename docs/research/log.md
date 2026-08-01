@@ -1,3 +1,33 @@
+## 2026-08-01 — GATE_ONBOARDING: Actions job summary require torii/gate (Phase B #6)
+
+### Papers / posts
+- Install UX: operators drop off between first green run and branch protection.
+- JTBD dim 3: required check is the product — must appear in job summary, not only INSTALL.md.
+
+### Decide / copy / skip
+- **Copy:** ops_footer.format_gate_onboarding + gate-onboarding CLI; wire report-verdict + reusable workflow summary.
+- **Copy:** install_ux gates; INSTALL first-run pointer to Summary tab.
+- **Skip:** F185+; auto-configuring branch protection via API (needs admin token).
+
+### Feature shipped (GATE_ONBOARDING)
+- Job summary checklist: Settings → require **torii/gate**
+- ops_footer fixture_pass · install_ux 32/32
+
+### Metric
+- Offline: gate onboarding fixture · install_ux 32/32 · commercial 8.5
+- Live Modal: pytorch#191842 BIT3_OK ~179s · fail-closed 0-tool COMMENT · POST_COMMENT=0
+- Traces: docs/benchmarks/traces/20260801-1851-pytorch-pytorch-PR191842-modal-gate-onboarding/
+- Modal: https://modal.com/apps/mr-ashish/main/ap-8eVpzaGOzoaEpR1kXB2G7b
+
+### scorecard_target
+JTBD (#3) · install (#7)
+
+### dim_lift
+First Actions run teaches merge authority without docs archaeology
+
+### SHA
+(pending)
+
 ## 2026-08-01 — PUBLIC_EVAL_FRESHNESS: seed/model/age badge (Phase B #5)
 
 ### Papers / posts
