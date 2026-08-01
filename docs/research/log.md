@@ -29,7 +29,7 @@ simplicity (#12) · ops (#8) · commercial trust
 one commercial rollup shows measured cost honesty next to queue surfaces
 
 ### SHA
-`(pending push)`
+`43b255f5083041e6d7c6db1c4bf521c698a583ec`
 
 
 ## 2026-08-01 — ENTERPRISE_COST_PRIVACY: cost/PR telemetry is local, not federated
