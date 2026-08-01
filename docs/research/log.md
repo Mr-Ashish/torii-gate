@@ -29,7 +29,7 @@ Federated memory util without hub post-score is inert. Highest ROI: F125-style p
 **Federate → post-score → prioritize next cycle** — memory mirrors recovery F125.
 
 ### SHA
-`PENDING`
+`61e5c3c5cb12b6257ec8505ad7a8a7e12a6fd780`
 
 
 ## 2026-08-01 — F141 memory util federate + critic demote
