@@ -30,7 +30,7 @@ Self-evolution that never ships in `install-torii.sh` does not compound for cust
 - pytest: 500 passed
 
 ### SHA
-`(pending push)`
+`4720d97ad07a3eb6416a1649f5a6298b8fde854f`
 
 ## 2026-08-01 — F82 safe skill auto-adopt (self-evolution close-loop)
 
