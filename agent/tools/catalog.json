@@ -1,8 +1,8 @@
 {
   "schema_version": 1,
-  "feature": "F101",
+  "feature": "F102",
   "description": "Torii agent tool catalog \u2014 research \u2192 eval \u2192 adopt pipeline",
-  "updated_at": "2026-08-01T03:27:59Z",
+  "updated_at": "2026-08-01T03:33:57Z",
   "tools": [
     {
       "id": "terminal",
@@ -394,6 +394,15 @@
       "status": "adopted",
       "script": "scripts/bench_security_gate.py",
       "feature": "F101",
+      "source": "memory_oss",
+      "adopted_at": "2026-08-01"
+    },
+    {
+      "id": "graph-multi-hop",
+      "name": "Multi-hop co_path supersede expand (F102)",
+      "status": "adopted",
+      "script": "scripts/memory_temporal_graph.py",
+      "feature": "F102",
       "source": "memory_oss",
       "adopted_at": "2026-08-01"
     }

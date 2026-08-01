@@ -262,9 +262,19 @@ def _load_supersede_index(
     memory_graph: dict[str, Any] | None = None,
     *,
     root: Path | None = None,
+    paths: list[str] | None = None,
 ) -> dict[str, Any]:
-    """F101: active supersedes targets from F100 graph (soft if missing)."""
-    empty: dict[str, Any] = {"ids": set(), "themes": set(), "edges": [], "count": 0}
+    """F101/F102: active supersedes targets from F100 graph (soft if missing).
+
+    When ``paths`` set, F102 multi-hop expands co_path/same_theme neighborhood.
+    """
+    empty: dict[str, Any] = {
+        "ids": set(),
+        "themes": set(),
+        "edges": [],
+        "count": 0,
+        "hop": {},
+    }
     try:
         import importlib.util
 
@@ -287,13 +297,13 @@ def _load_supersede_index(
         g = memory_graph
         if g is None:
             g = mod.load_or_build_graph(root or _root())
-        idx = mod.superseded_index(g)
-        # normalize sets
+        idx = mod.superseded_index(g, paths=paths or None)
         return {
             "ids": set(idx.get("ids") or set()),
             "themes": set(idx.get("themes") or set()),
             "edges": list(idx.get("edges") or []),
             "count": int(idx.get("count") or 0),
+            "hop": idx.get("hop") or {},
         }
     except Exception:
         return empty
@@ -318,6 +328,9 @@ def dual_pass_critic(
     F101: **graph supersede demote** — if chunk matches a TP id/theme that is the target
     of an active F100 ``supersedes`` edge, status becomes ``superseded_tp`` (counts as FP),
     so resolved noise cannot re-confirm.
+
+    F102: **multi-hop** — path seeds expand via co_path/same_theme so supersession on a
+    sibling path/theme in the neighborhood also demotes.
     """
     chunks = extract_finding_chunks(review_text)
     fp_rules = fp_rules or []
@@ -330,14 +343,29 @@ def dual_pass_critic(
     superseded_n = 0
     floor = _effective_confirm_floor()
     weighted_tp = 0.0
-    super_idx = _load_supersede_index(memory_graph, root=root)
-    super_ids = super_idx.get("ids") or set()
-    super_themes = super_idx.get("themes") or set()
+    # Preload graph once; re-index per chunk with path multi-hop
+    _g_cache = memory_graph
+    super_idx = _load_supersede_index(_g_cache, root=root, paths=None)
+    hop_global = super_idx.get("hop") or {}
 
     for i, ch in enumerate(chunks):
         low = _norm(ch)
         paths = extract_path_hits(ch)
         has_path = bool(paths)
+        # F102: path-scoped multi-hop supersede index for this finding
+        path_list = []
+        for ph in paths:
+            if isinstance(ph, dict):
+                path_list.append(str(ph.get("path") or ph.get("file") or ""))
+            else:
+                path_list.append(str(ph))
+        path_list = [p for p in path_list if p]
+        if path_list:
+            super_idx = _load_supersede_index(_g_cache, root=root, paths=path_list)
+        super_ids = super_idx.get("ids") or set()
+        super_themes = super_idx.get("themes") or set()
+        if super_idx.get("hop"):
+            hop_global = super_idx.get("hop") or hop_global
         # FP demote: path matches a known FP rule and body lacks "new evidence"
         demoted = False
         demote_reason = ""
@@ -457,7 +485,9 @@ def dual_pass_critic(
         "pass": "dual_offline",
         "effective_aware": True,
         "graph_supersede_aware": True,
+        "graph_multi_hop": bool((hop_global or {}).get("multi_hop")),
         "graph_supersede_edges": int(super_idx.get("count") or 0),
+        "graph_hop": hop_global or {},
         "effective_floor": floor,
         "chunk_count": len(chunks),
         "likely_fp": likely_fp,

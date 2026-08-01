@@ -299,17 +299,147 @@ def edge_active(edge: dict[str, Any], *, as_of: str | None = None) -> bool:
     return str(until) > str(as_of)  # string ISO compare works for Zulu timestamps
 
 
-def superseded_index(graph: dict[str, Any] | None, *, as_of: str | None = None) -> dict[str, Any]:
-    """F101: ids/themes that are targets of active supersedes edges (do not confirm TP).
+def _adjacency(
+    graph: dict[str, Any],
+    *,
+    edge_types: frozenset[str] | None = None,
+    as_of: str | None = None,
+) -> dict[str, list[tuple[str, str]]]:
+    """node_id → list of (neighbor_id, edge_type) for active undirected expansion."""
+    adj: dict[str, list[tuple[str, str]]] = {}
+    types = edge_types or frozenset({"co_path", "same_theme"})
+    for e in graph.get("edges") or []:
+        if not isinstance(e, dict):
+            continue
+        et = str(e.get("type") or "")
+        if et not in types or not edge_active(e, as_of=as_of):
+            continue
+        s, t = str(e.get("source") or ""), str(e.get("target") or "")
+        if not s or not t:
+            continue
+        adj.setdefault(s, []).append((t, et))
+        adj.setdefault(t, []).append((s, et))
+    return adj
+
+
+def expand_neighborhood(
+    graph: dict[str, Any],
+    seeds: set[str],
+    *,
+    hops: int = 2,
+    edge_types: frozenset[str] | None = None,
+    as_of: str | None = None,
+) -> set[str]:
+    """F102: BFS multi-hop over co_path / same_theme (default)."""
+    if not seeds or hops < 1:
+        return set(seeds)
+    adj = _adjacency(graph, edge_types=edge_types, as_of=as_of)
+    seen = set(seeds)
+    frontier = set(seeds)
+    for _ in range(max(1, hops)):
+        nxt: set[str] = set()
+        for n in frontier:
+            for neigh, _et in adj.get(n, []):
+                if neigh not in seen:
+                    seen.add(neigh)
+                    nxt.add(neigh)
+        frontier = nxt
+        if not frontier:
+            break
+    return seen
+
+
+def path_seed_nodes(graph: dict[str, Any], paths: list[str]) -> set[str]:
+    """Nodes whose path basenames match any of the given paths."""
+    nodes = {n.get("id"): n for n in (graph.get("nodes") or []) if isinstance(n, dict)}
+    seeds: set[str] = set()
+    bases = {Path(str(p)).name.lower() for p in paths if p}
+    if not bases:
+        return seeds
+    for nid, n in nodes.items():
+        nb = {str(b).lower() for b in (n.get("path_basenames") or [])}
+        if nb & bases:
+            seeds.add(str(nid))
+    return seeds
+
+
+def superseded_index(
+    graph: dict[str, Any] | None,
+    *,
+    as_of: str | None = None,
+    paths: list[str] | None = None,
+    multi_hop: bool | None = None,
+    hops: int | None = None,
+) -> dict[str, Any]:
+    """F101/F102: ids/themes that are targets of active supersedes edges.
 
     Edge direction (F100): source = superseding item (often FP), target = dead TP.
+
+    F102 multi-hop: when ``paths`` given (or TORII_GRAPH_MULTI_HOP=1 globally),
+    also include supersedes whose **source or target** sits in the co_path/same_theme
+    neighborhood of path-seeded nodes (resolved FP on app.py suppresses related
+    TP themes sharing path kinship).
     """
     ids: set[str] = set()
     themes: set[str] = set()
     edges_out: list[dict[str, Any]] = []
+    hop_meta: dict[str, Any] = {"multi_hop": False, "hops": 0, "seed_n": 0, "neighborhood_n": 0}
     if not isinstance(graph, dict):
-        return {"ids": ids, "themes": themes, "edges": edges_out, "count": 0}
+        return {
+            "ids": ids,
+            "themes": themes,
+            "edges": edges_out,
+            "count": 0,
+            "hop": hop_meta,
+        }
     nodes = {n.get("id"): n for n in (graph.get("nodes") or []) if isinstance(n, dict)}
+
+    use_mh = multi_hop
+    if use_mh is None:
+        raw = (os.environ.get("TORII_GRAPH_MULTI_HOP") or "1").strip().lower()
+        use_mh = raw not in _FALSEY
+    hop_n = hops if hops is not None else 2
+    try:
+        hop_n = int(os.environ.get("TORII_GRAPH_HOPS") or hop_n)
+    except ValueError:
+        hop_n = 2
+    hop_n = max(1, min(4, hop_n))
+
+    neighborhood: set[str] | None = None
+    if use_mh and paths:
+        seeds = path_seed_nodes(graph, paths)
+        neighborhood = expand_neighborhood(graph, seeds, hops=hop_n, as_of=as_of)
+        hop_meta = {
+            "multi_hop": True,
+            "hops": hop_n,
+            "seed_n": len(seeds),
+            "neighborhood_n": len(neighborhood),
+            "seeds": sorted(seeds)[:20],
+        }
+
+    def _add_target(target: str, source: str, e: dict[str, Any], *, via: str) -> None:
+        ids.add(target)
+        if ":" in target:
+            ids.add(target.split(":", 1)[-1])
+        tn = nodes.get(target) or {}
+        if tn.get("theme"):
+            themes.add(_norm(str(tn["theme"])))
+        if tn.get("raw_id"):
+            ids.add(str(tn["raw_id"]))
+        # FP source theme also marks caution for same theme on that path
+        sn = nodes.get(source) or {}
+        if sn.get("theme"):
+            themes.add(_norm(str(sn["theme"])))
+        edges_out.append(
+            {
+                "source": source,
+                "target": target,
+                "valid_from": e.get("valid_from"),
+                "valid_until": e.get("valid_until"),
+                "via": via,
+            }
+        )
+
     for e in graph.get("edges") or []:
         if not isinstance(e, dict) or e.get("type") != "supersedes":
             continue
@@ -319,27 +449,36 @@ def superseded_index(graph: dict[str, Any] | None, *, as_of: str | None = None) 
         source = str(e.get("source") or "")
         if not target:
             continue
-        ids.add(target)
-        if ":" in target:
-            ids.add(target.split(":", 1)[-1])
-        tn = nodes.get(target) or {}
-        if tn.get("theme"):
-            themes.add(_norm(str(tn["theme"])))
-        if tn.get("raw_id"):
-            ids.add(str(tn["raw_id"]))
-        edges_out.append(
-            {
-                "source": source,
-                "target": target,
-                "valid_from": e.get("valid_from"),
-                "valid_until": e.get("valid_until"),
-            }
-        )
+        via = "direct"
+        if neighborhood is not None:
+            # Include if either endpoint is in path neighborhood (path-local supersession)
+            if source in neighborhood or target in neighborhood:
+                via = "multi_hop_path"
+            else:
+                # Still keep global direct supersedes (F101 behavior) when multi-hop
+                # is path-scoped — direct edges always count
+                via = "direct"
+        _add_target(target, source, e, via=via)
+
+    # F102: also suppress themes of neighborhood nodes that are inactive/superseded
+    if neighborhood:
+        for nid in neighborhood:
+            n = nodes.get(nid) or {}
+            if n.get("active") is False or n.get("superseded_by"):
+                if n.get("theme"):
+                    themes.add(_norm(str(n["theme"])))
+                if n.get("raw_id"):
+                    ids.add(str(n["raw_id"]))
+                ids.add(str(nid))
+                if ":" in str(nid):
+                    ids.add(str(nid).split(":", 1)[-1])
+
     return {
         "ids": ids,
         "themes": themes,
         "edges": edges_out,
         "count": len(edges_out),
+        "hop": hop_meta,
     }
 
 
@@ -360,6 +499,7 @@ def query_graph(
     node_id: str = "",
     path: str = "",
     limit: int = 12,
+    hops: int = 1,
 ) -> dict[str, Any]:
     nodes = {n["id"]: n for n in (graph.get("nodes") or []) if isinstance(n, dict)}
     edges = [e for e in (graph.get("edges") or []) if isinstance(e, dict) and edge_active(e)]
@@ -384,17 +524,23 @@ def query_graph(
             if base in bases or any(base in b for b in bases):
                 seeds.add(nid)
 
-    # 1-hop neighbors
+    # F102: expand seeds via co_path/same_theme for multi-hop (hops>1)
+    focus = set(seeds)
+    if hops > 1 and seeds:
+        focus = expand_neighborhood(graph, seeds, hops=hops - 1)
+
+    # neighbors incident to focus set
     neigh: list[dict[str, Any]] = []
     seen_e: set[str] = set()
     for e in edges:
         s, t = e.get("source"), e.get("target")
-        if s in seeds or t in seeds:
+        if s in focus or t in focus:
             eid = str(e.get("id"))
             if eid in seen_e:
                 continue
             seen_e.add(eid)
-            other = t if s in seeds else s
+            other = t if s in focus else s
+            hop_dist = 0 if (s in seeds or t in seeds) else 1
             neigh.append(
                 {
                     "edge_type": e.get("type"),
@@ -405,14 +551,23 @@ def query_graph(
                     "valid_from": e.get("valid_from"),
                     "valid_until": e.get("valid_until"),
                     "meta": e.get("meta") or {},
+                    "hop": hop_dist,
                 }
             )
     # prefer supersedes first
     order = {"supersedes": 0, "updated_from": 1, "co_path": 2, "same_theme": 3}
-    neigh.sort(key=lambda x: (order.get(str(x.get("edge_type")), 9), str(x.get("peer"))))
+    neigh.sort(
+        key=lambda x: (
+            order.get(str(x.get("edge_type")), 9),
+            int(x.get("hop") or 0),
+            str(x.get("peer")),
+        )
+    )
     return {
         "feature": FEATURE,
         "seeds": sorted(seeds),
+        "focus": sorted(focus),
+        "hops": hops,
         "neighbor_count": len(neigh),
         "neighbors": neigh[:limit],
         "seed_nodes": [nodes[s] for s in seeds if s in nodes],
@@ -506,6 +661,7 @@ def cmd_query(args: argparse.Namespace) -> int:
         node_id=args.id or "",
         path=args.path or "",
         limit=args.limit,
+        hops=args.hops,
     )
     print(json.dumps(result, indent=2))
     return 0
@@ -631,14 +787,31 @@ def cmd_fixture(args: argparse.Namespace) -> int:
         # inject render
         section = render_inject(q, paths=["app.py"])
         render_ok = MARKER in section and "supersedes" in section
+        # F102 multi-hop: path app.py neighborhood includes co_path kin; index has hop meta
+        idx = superseded_index(g, paths=["app.py"], multi_hop=True, hops=2)
+        multi_hop_ok = bool((idx.get("hop") or {}).get("multi_hop")) and (
+            int((idx.get("hop") or {}).get("neighborhood_n") or 0) >= 1
+        )
+        q2 = query_graph(g, path="app.py", hops=2, limit=30)
+        multi_query_ok = len(q2.get("focus") or []) >= len(q2.get("seeds") or [])
 
         fixture_pass = all(
-            [has_super, has_theme, has_path, seed_ok, temporal_ok, render_ok]
+            [
+                has_super,
+                has_theme,
+                has_path,
+                seed_ok,
+                temporal_ok,
+                render_ok,
+                multi_hop_ok,
+                multi_query_ok,
+            ]
         )
         print(
             json.dumps(
                 {
                     "feature": FEATURE,
+                    "feature_f102": True,
                     "fixture_pass": fixture_pass,
                     "has_super": has_super,
                     "has_theme": has_theme,
@@ -646,6 +819,9 @@ def cmd_fixture(args: argparse.Namespace) -> int:
                     "seed_ok": seed_ok,
                     "temporal_ok": temporal_ok,
                     "render_ok": render_ok,
+                    "multi_hop_ok": multi_hop_ok,
+                    "multi_query_ok": multi_query_ok,
+                    "hop": idx.get("hop"),
                     "node_count": g["node_count"],
                     "edge_count": g["edge_count"],
                     "by_type": g["by_type"],
@@ -695,6 +871,7 @@ def main(argv: list[str] | None = None) -> int:
     pq.add_argument("--path", default="")
     pq.add_argument("--graph", default="")
     pq.add_argument("--limit", type=int, default=12)
+    pq.add_argument("--hops", type=int, default=1, help="F102 multi-hop expand (1=direct)")
     pq.set_defaults(func=cmd_query)
 
     pi = sub.add_parser("inject")

@@ -1,0 +1,6 @@
+{
+  "id": "graph-multi-hop",
+  "feature": "F102",
+  "status": "adopted",
+  "one_liner": "BFS co_path/same_theme expand for path-local supersede demote"
+}

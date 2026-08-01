@@ -607,6 +607,15 @@ REGISTRY: list[ToggleSpec] = [
         "F101",
     ),
     ToggleSpec(
+        "graph_multi_hop",
+        "TORII_GRAPH_MULTI_HOP",
+        "bool",
+        True,
+        "product",
+        "F102 multi-hop co_path/same_theme expand for path-local supersede demote",
+        "F102",
+    ),
+    ToggleSpec(
         "trace_vault",
         "TORII_TRACE_VAULT",
         "bool",

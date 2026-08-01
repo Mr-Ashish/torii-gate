@@ -1,6 +1,34 @@
 # Torii research → product log
 
 
+## 2026-08-01 — F102 multi-hop co_path → supersede demote
+
+### Papers / posts / OSS
+- Zep multi-hop temporal retrieval; F101 was 1-hop supersedes only.
+- Path kinship (co_path) unused by critic despite F100 edges.
+
+### OSS / eng patterns
+1. BFS expand co_path/same_theme from path seeds (hops default 2).
+2. superseded_index(paths=…) path-local neighborhood + dual_pass per-chunk.
+3. query --hops N for inject/debug.
+
+### Insight
+Supersession on a sibling file should caution the same theme on co-path. Highest ROI: **multi-hop path kinship into demote**.
+
+### Feature shipped (F102)
+- expand_neighborhood / path-scoped superseded_index
+- dual_pass multi-hop; toggle TORII_GRAPH_MULTI_HOP
+
+### Loop-engineering practice used
+**Structural multi-hop checker signal** — offline BFS, no embeddings.
+
+### Metric
+- Offline: fixture multi_hop_ok; 558 pytest; smoke PASS
+- Live: **Modal** pytorch#191813 deepseek/deepseek-v4-pro BIT3_OK ~83s; log_streaming=true; POST_COMMENT=0
+
+### SHA
+PENDING
+
 ## 2026-08-01 — F101 graph supersede demote in dual-pass critic
 
 ### Papers / posts / OSS
