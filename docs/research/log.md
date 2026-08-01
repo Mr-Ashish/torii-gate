@@ -30,7 +30,7 @@ simplicity (#12) + JTBD (#3)
 merge-authority agent tool discipline measured tools-as-code
 
 ### SHA
-_pending_
+`fd1d5775a35bd1f80ca897589cbe28ee1036c896`
 
 
 ## 2026-08-01 — QUIETER: own-repo required-check + quieter-over-time chart
