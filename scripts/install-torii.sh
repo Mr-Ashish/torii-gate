@@ -165,6 +165,7 @@ RUNTIME_SCRIPTS=(
   eval_trace_report.py
   skill_router.py
   skill_fitness.py
+  skill_dual_rollout.py
 )
 
 copy_file() {

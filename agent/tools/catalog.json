@@ -1,8 +1,8 @@
 {
   "schema_version": 1,
-  "feature": "F85",
+  "feature": "F86",
   "description": "Torii agent tool catalog \u2014 research \u2192 eval \u2192 adopt pipeline",
-  "updated_at": "2026-08-01T01:46:51Z",
+  "updated_at": "2026-08-01T01:52:42Z",
   "tools": [
     {
       "id": "terminal",
@@ -298,6 +298,17 @@
       },
       "script": "scripts/skill_fitness.py",
       "feature": "F85",
+      "adopted_at": "2026-08-01"
+    },
+    {
+      "id": "skill-dual-rollout",
+      "name": "Dual-rollout skill contribution (F86)",
+      "status": "adopted",
+      "source": "research",
+      "kind": "workflow_tool",
+      "script": "scripts/skill_dual_rollout.py",
+      "feature": "F86",
+      "rationale": "SkillsBench with/ablated contribution + multi-tenant skill promote",
       "adopted_at": "2026-08-01"
     }
   ],

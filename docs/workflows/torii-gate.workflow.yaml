@@ -101,6 +101,13 @@ stages:
     feature: F85
     command: cycle
     note: ledger hits → demote zombies → federate skill themes
+  - id: skill_theme_promote
+    script: scripts/skill_dual_rollout.py
+    soft: true
+    phase: memory
+    feature: F86
+    command: promote
+    note: multi-tenant promote of skill fitness themes
   - id: federated_hub
     script: scripts/federated_hub_ingest.py
     soft: true
@@ -199,6 +206,10 @@ capabilities:
     feature: F85
     script: scripts/skill_fitness.py
     one_liner: Skill hit-rate ledger demotes zombies and federates skill themes
+  - id: skill_dual_rollout
+    feature: F86
+    script: scripts/skill_dual_rollout.py
+    one_liner: Dual-rollout skill contribution delta + multi-tenant skill promote
 
 # Scripts that pack install must ship for intelligence path (F79)
 pack_scripts:
@@ -223,4 +234,5 @@ pack_scripts:
   - eval_trace_report.py
   - skill_router.py
   - skill_fitness.py
+  - skill_dual_rollout.py
   - smoke-torii-gate.sh

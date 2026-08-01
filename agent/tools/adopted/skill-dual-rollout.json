@@ -1,0 +1,7 @@
+{
+  "id": "skill-dual-rollout",
+  "feature": "F86",
+  "script": "scripts/skill_dual_rollout.py",
+  "status": "adopted",
+  "one_liner": "Dual-rollout skill contribution delta + multi-tenant skill promote"
+}

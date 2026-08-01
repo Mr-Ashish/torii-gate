@@ -1,5 +1,37 @@
 # Torii research → product log
 
+## 2026-08-01 — F86 dual-rollout skill contribution + multi-tenant skill promote
+
+### Papers / posts / OSS
+- **SkillsBench** (arXiv 2602.12670): paired no-Skills vs Skills; curated +16.2pp.
+- **Agent Skill Evaluation** (arXiv 2606.11435): dual-rollout gap = contribution signal.
+- **FederatedSkill**: multi-tenant skill theme promote (min_tenants≥2).
+- Prior F84/F85: hits + demote without with/without delta or skill promote gate.
+
+### OSS / eng patterns
+1. hit_rate(with skill language) − hit_rate(ablated) while F70 recall holds.
+2. Multi-tenant promote of skill-tagged signals only; block single-tenant noise.
+3. Non-skill security themes excluded from promoted-skill-themes.json.
+
+### Insight
+Skills without a measurable contribution delta are unvalidated library bulk. Highest ROI: **SkillsBench-style dual-rollout + tenant promote**.
+
+### Feature shipped (F86)
+- `scripts/skill_dual_rollout.py` — dual / all / promote / fixture / status
+- Soft promote stage after skill_fitness; pack + workflow + toggle
+- PRODUCT dual-rollout mental model
+
+### Loop-engineering practice used
+**Paired baseline** — every skill claim needs with vs without (ablated) evidence.
+
+### Metric
+- Offline: fixture_pass; contribution_pp=50; multi-tenant promote; single blocked
+- Live: **Modal** pytorch#191813 deepseek/deepseek-v4-pro BIT3_OK ~120s; log_streaming=true; POST_COMMENT=0
+- pytest: 514 passed
+
+### SHA
+_PENDING_
+
 ## 2026-08-01 — F85 skill fitness ledger + federated skill themes
 
 ### Papers / posts / OSS

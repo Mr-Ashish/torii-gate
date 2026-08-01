@@ -463,6 +463,15 @@ REGISTRY: list[ToggleSpec] = [
         "F85",
     ),
     ToggleSpec(
+        "skill_dual_rollout",
+        "TORII_SKILL_DUAL_ROLLOUT",
+        "bool",
+        True,
+        "product",
+        "F86 dual-rollout skill contribution bench + multi-tenant skill promote",
+        "F86",
+    ),
+    ToggleSpec(
         "chain_revalidate",
         "TORII_CHAIN_REVALIDATE",
         "bool",

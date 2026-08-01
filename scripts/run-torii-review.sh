@@ -270,6 +270,17 @@ if [[ -f "$SCRIPTS/skill_fitness.py" ]]; then
   esac
 fi
 
+# F86: multi-tenant promote of skill themes (soft)
+if [[ -f "$SCRIPTS/skill_dual_rollout.py" ]]; then
+  case "${TORII_SKILL_DUAL_ROLLOUT:-1}" in
+    0|false|no|off) ;;
+    *)
+      stage skill_theme_promote \
+        python3 "$SCRIPTS/skill_dual_rollout.py" promote || true
+      ;;
+  esac
+fi
+
 # F77/F83: promote multi-tenant federated signals (soft)
 if [[ -f "$SCRIPTS/federated_hub_ingest.py" ]]; then
   case "${TORII_FED_PROMOTE:-1}" in

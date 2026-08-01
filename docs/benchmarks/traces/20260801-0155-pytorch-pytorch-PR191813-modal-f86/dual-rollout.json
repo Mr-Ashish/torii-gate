@@ -1,0 +1,47 @@
+{
+  "feature": "F86",
+  "schema": 1,
+  "pack_id": "insecure-demo",
+  "paths": [
+    "demo/insecure/app.py",
+    "demo/insecure/db.py"
+  ],
+  "selected": [
+    "skill-preserve-deep-tools",
+    "skill-tool-depth-hunks",
+    "skill-f74-exploit-scenario",
+    "skill-f74-prefer-chain-json"
+  ],
+  "select_ok": true,
+  "with_skills": {
+    "hit_rate": 1.0,
+    "hit_n": 4,
+    "selected_n": 4,
+    "recall": 1.0,
+    "score_pct": 100.0,
+    "passed": true,
+    "verdict": "REQUEST_CHANGES"
+  },
+  "ablated": {
+    "hit_rate": 0.5,
+    "hit_n": 2,
+    "recall": 1.0,
+    "score_pct": 70.0,
+    "passed": false
+  },
+  "no_skills": {
+    "hit_rate": 0.0,
+    "hit_n": 0,
+    "selected_n": 0,
+    "hits": []
+  },
+  "weak": {
+    "recall": 0.0,
+    "passed": false
+  },
+  "skill_contribution": 0.5,
+  "skill_contribution_pp": 50.0,
+  "recall_hold": true,
+  "dual_pass": true,
+  "scored_at": "2026-08-01T01:55:18Z"
+}

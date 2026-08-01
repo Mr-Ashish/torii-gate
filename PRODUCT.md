@@ -31,6 +31,10 @@ Platform / AppSec engineer who needs every PR checked for security without drown
 
 **Measured gate.** Multi-corpus labeled benches (Python insecure-demo + Juice Shop synthetic) score recall before shipping harness changes.
 
+## Dual-rollout skills (F86)
+
+SkillsBench-style **with vs ablated** contribution: skill hit_rate delta must stay positive while F70 recall holds. Multi-tenant promote of skill themes requires ≥2 tenants before hub promotion.
+
 ## Skill fitness (F85)
 
 Post-run skill hit rates compound into `.torii/skill-fitness.json`. Chronically unused skills are **index-only** (not full-injected); high-hit skills get router boosts. Privacy-safe skill themes federate to the hub (ids + hits, no bodies/paths).
