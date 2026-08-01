@@ -30,7 +30,7 @@ Re-prompt spends budget; critic must still fail closed when hub says recovery is
 **Verifier panel weight** — hub multi-tenant signal is a first-class checker.
 
 ### SHA
-`PENDING`
+`3c1dfb58eb20ab1abb24dcf80eb049bfba2862e1`
 
 ## 2026-08-01 — F126 hub gap_pressure re-prompt + fitness ingest
 
