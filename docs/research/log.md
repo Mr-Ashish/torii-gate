@@ -5082,3 +5082,30 @@ Package measured readiness into the surfaces operators and papers actually read.
 
 ### SHA
 `079e5482fde0baf461645018282dd4ca113731d6`
+
+## 2026-08-01 — PILOT_READINESS measured Day-2 pilot surface
+
+### Papers / posts
+- Loop Engineering: measure what you ship (readiness from vault, not slogans).
+- Buyer packaging: free install → design partner → paid pilot needs **shared success criteria**.
+- Commercial honesty: never invent customers; readiness ≠ revenue.
+
+### Insight
+PILOT.md + issue template existed but operators could not `torii pilot -- status`. Highest ROI without F185+: wire Day-2 CLI + score measured criteria (cost/quieter/certs/public-eval/golden) so design-partner path is operational.
+
+### Feature shipped (PILOT_READINESS)
+- `scripts/pilot_surface.py` schema 2: readiness peeks vault surfaces
+- Day-2 CLI group `pilot` (status/readiness/fixture/report)
+- `status --text` shows pilot readiness n/total
+- PILOT.md success-criteria table mirrors CLI
+- SCORECARD-FIRST-PRINCIPLES full dims 1–12 re-score
+
+### Loop-engineering
+GTM path compounds measured dogfood into pilot readiness — not a fake logo wall.
+
+### Metric
+- fixture 16/16 · readiness 8/8 · CLI groups 20/20
+- Live Modal pytorch e2e (POST_COMMENT=0) this fire
+
+### SHA
+`PENDING_PUSH`

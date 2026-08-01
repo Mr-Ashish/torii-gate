@@ -227,12 +227,23 @@ GROUPS: dict[str, dict[str, Any]] = {
             "tool-use -- report",
         ],
     },
+    "pilot": {
+        "script": "pilot_surface.py",
+        "help": "Design partner / paid pilot path + measured readiness",
+        "tier": "day2",
+        "examples": [
+            "pilot -- status",
+            "pilot -- readiness",
+            "pilot -- fixture",
+            "pilot -- report",
+        ],
+    },
 }
 
 _TIER_ORDER = ("day1", "day2", "advanced")
 _TIER_LABELS = {
     "day1": "Day-1 — install → first signal",
-    "day2": "Day-2 — quieter · cost · enterprise",
+    "day2": "Day-2 — quieter · cost · enterprise · pilot",
     "advanced": "Advanced — engineers (still one CLI)",
 }
 
@@ -281,7 +292,7 @@ def help_payload() -> dict[str, Any]:
         "entrypoint": "python3 scripts/torii.py",
         "one_liner": (
             "One product front door for Torii Gate — Day-1 install path first; "
-            "Day-2 quieter/cost/enterprise; Advanced for engineers."
+            "Day-2 quieter/cost/enterprise/pilot; Advanced for engineers."
         ),
         "usage": "python3 scripts/torii.py <group|help|status|doctor> [-- <args>]",
         "groups": groups,
@@ -491,10 +502,13 @@ def build_status_payload(root: Path | None = None) -> dict[str, Any]:
         day2["tool_use_n"] = (
             tools.get("measured_n") or tools.get("n") or tools.get("dogfood_n")
         )
-    # Pilot path honesty (pre-revenue design partner)
-    pilot = _soft_script_json(root, "pilot_surface.py", ["status"], timeout=20)
+    # Pilot path honesty + measured readiness (pre-revenue design partner)
+    pilot = _soft_script_json(root, "pilot_surface.py", ["status"], timeout=120)
     if pilot:
         day2["pilot_ok"] = pilot.get("pilot_ok")
+        day2["pilot_readiness_ok"] = pilot.get("readiness_ok")
+        day2["pilot_ready_n"] = pilot.get("ready_n")
+        day2["pilot_ready_total"] = pilot.get("ready_total")
     # Model alias SoT present
     day2["model_alias_script"] = (_scripts_dir(root) / "model_alias.py").is_file()
     # Public eval freshness (soft) — normalize model id for display honesty
@@ -604,9 +618,13 @@ def render_status_text(payload: dict[str, Any]) -> str:
                 f"freshness={day2.get('public_eval_freshness_ok')} · "
                 f"model={day2.get('public_eval_model')}"
             )
-        if day2.get("pilot_ok") is not None:
+        if day2.get("pilot_ok") is not None or day2.get("pilot_readiness_ok") is not None:
+            rn = day2.get("pilot_ready_n")
+            rt = day2.get("pilot_ready_total")
+            ratio = f"{rn}/{rt}" if rn is not None and rt is not None else "—"
             lines.append(
                 f"- design partner / pilot: ok={day2.get('pilot_ok')} · "
+                f"readiness={day2.get('pilot_readiness_ok')} ({ratio}) · "
                 f"docs/PILOT.md · pre-revenue honest"
             )
     else:
@@ -625,7 +643,7 @@ def render_status_text(payload: dict[str, Any]) -> str:
         "- Prefer model `deepseek/deepseek-v4-pro` (chat-v4-pro aliases for tool-use)",
         "- `python3 scripts/torii.py doctor` · `ops -- status` · `tool-use -- status`",
         "- `python3 scripts/torii.py quieter -- status` · `enterprise -- status`",
-        "- Design partner: docs/PILOT.md · Pages: https://mr-ashish.github.io/torii-gate/",
+        "- Design partner: `pilot -- readiness` · docs/PILOT.md · Pages: https://mr-ashish.github.io/torii-gate/",
         "- JSON: `python3 scripts/torii.py status --json`",
         "",
         str(payload.get("one_liner") or ""),

@@ -48,8 +48,26 @@ Indicative only — **not live Stripe**. Pricing SoT: [`PRICING.md`](PRICING.md)
 | **Team pilot** | 30–60 days | Team list price × seats (or fixed small SOW) | Design-partner channel + install workshop + cost/PR review |
 | **Business pilot** | 60–90 days | Pro-rated Business ACV band | Multi-org `--tenant` · isolation review · hub-caller optional |
 
-**Exit:** you keep the open pack on your repos either way.  
-**Success criteria (shared):** time-to-signal, quieter trajectory, gate certificates on real PRs — not vanity comment volume.
+**Exit:** you keep the open pack on your repos either way.
+
+### Success criteria (shared · measured)
+
+Not vanity comment volume. Same criteria the Day-2 CLI scores:
+
+| Criterion | How you prove it |
+|-----------|------------------|
+| Install + require **`torii/gate`** | Branch protection on default branch |
+| Time-to-signal | `python3 scripts/torii.py golden-path -- status` (p50 on your vault) |
+| Cost honesty | `python3 scripts/torii.py ops -- status` · cost/PR p50 |
+| Gate certificates | `python3 scripts/torii.py certificate -- report` · path evidence |
+| Quieter trajectory | `python3 scripts/torii.py quieter -- status` after a few runs |
+| Public eval freshness (hub) | `python3 scripts/torii.py public-eval -- status` |
+
+```bash
+python3 scripts/torii.py pilot -- readiness   # measured checklist
+python3 scripts/torii.py pilot -- status
+python3 scripts/torii.py status --text        # day-2 one screen includes pilot
+```
 
 ## Path to value (before any money)
 
@@ -81,4 +99,4 @@ Landing: https://mr-ashish.github.io/torii-gate/ · Install: [`INSTALL.md`](INST
 - [ ] Do not list a logo without written opt-in  
 - [ ] When first paid pilot closes, update this table and commercial cap narrative  
 
-Refresh: `python3 scripts/pilot_surface.py fixture`
+Refresh: `python3 scripts/pilot_surface.py fixture` · `python3 scripts/torii.py pilot -- readiness`
