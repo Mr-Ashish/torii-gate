@@ -39,14 +39,38 @@ A **torii** is the gate at a threshold — ordinary ground on one side, what mat
 |---------|------|
 | **Elevator** | Torii is the security gate for every pull request. |
 | **Hub71** | Torii gates AI-written code in CI — evidence-backed findings, false-positive memory, merge authority. |
-| **Eng** | Agent control plane on PR/CI: tools → validate → verdict → memory. |
+| **AppSec fatigue** | The gate gets stricter and quieter over time — not noisier. |
+| **Eng** | Maker agent + checker panel + skill loop: route → hit → fitness → dual → attr → inject. |
+| **Skills** | Skills that do not contribute do not ship in the next prompt. |
 | **Tagline** | Nothing ships without crossing the gate. |
+
+---
+
+## ICP (lock)
+
+| Buy | Do not sell first |
+|-----|-------------------|
+| Platform / DevEx owning required checks | Teams that only want PR style nits |
+| AppSec drowning in SAST + AI PR volume | Full ASPM RFP day one |
+| Eng leads shipping AI code without a security owner | Offensive red-team retainers |
+
+**Job to be done:** *Give every PR a security merge authority that compounds (memory + skills), not another comment bot.*
+
+---
+
+## Skill compound loop (product story, F84–F89)
+
+Customer-facing diagram (same as PRODUCT mental model B):
+
+`route → hit → fitness → dual → attr → inject`
+
+This is the differentiator vs static “agent skills.md” dumps: Torii **measures contribution**, demotes free-riders, and only full-injects skills that fire.
 
 ---
 
 ## Differentiator (2026 market)
 
-Not another style/comment bot. Torii is a **security merge authority**: maker agent + deterministic checker panel + compound memory — runnable live on **Modal** with streamed Hermes logs. Competitors optimize for PR chatter; Torii optimizes for **path-evidenced block/approve**.
+Not another style/comment bot. Torii is a **security merge authority**: maker agent + deterministic checker panel + compound memory **and** a measured skill loop — runnable live on **Modal** with streamed Hermes logs. Competitors optimize for PR chatter; Torii optimizes for **path-evidenced block/approve** that gets quieter as memory and skills compound.
 
 ## What Torii Gate does (v1 scope)
 

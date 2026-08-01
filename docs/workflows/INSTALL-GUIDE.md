@@ -4,7 +4,7 @@ Generated: `2026-08-01T00:59:20Z` · readiness **L3** (100.0%)
 
 ## One-liner
 
-Torii is the **security merge authority** for every PR: maker agent + checker panel + compound memory.
+Torii is the **security merge authority** for every PR: maker agent + checker panel + compound memory — *the gate gets stricter and quieter over time, not noisier.*
 
 ## Install (target repo)
 
@@ -82,4 +82,14 @@ python3 scripts/workflow_as_code.py status
 python3 scripts/bench_corpus.py all
 python3 scripts/second_agent_critic.py fixture
 ```
+
+## Skill compound loop (F84–F89)
+
+After install, Torii ships progressive skills + measurement scripts:
+
+`route → hit → fitness → dual → attr → inject`
+
+- Customer meaning: the gate gets **stricter and quieter** — free-rider skills do not re-inflate prompts.
+- Toggles: `TORII_SKILL_ROUTER`, `TORII_SKILL_FITNESS`, `TORII_SKILL_DUAL_ROLLOUT`, `TORII_SKILL_ATTRIBUTION` (defaults on for measure; auto-adopt still off).
+- Product story: [`PRODUCT.md`](../../PRODUCT.md) · brand: [`docs/brand/TORII.md`](../brand/TORII.md)
 

@@ -1,5 +1,34 @@
 # Torii research → product log
 
+## 2026-08-01 — F90 brand skill loop + ICP packaging
+
+### Papers / posts / OSS
+- AppSec fatigue 2026: AI multiplies alerts — need quieter automation.
+- Market one-liners (Endor/OX): workflow-native AppSec, not annual theater.
+- Torii F78–F89 shipped intelligence; brand lagged the skill compound loop.
+
+### OSS / eng patterns
+1. PRODUCT consolidates maker/checker + skill loop mental models + ICP table.
+2. Landing: Compounds stat, ICP card, skill pipeline pipes, maker/checker/compound.
+3. One-liners lock: fatigue + skills + tagline.
+
+### Insight
+Intelligence without a customer-facing skill loop story under-sells the moat. Highest ROI: **package route→hit→fitness→dual→attr→inject**.
+
+### Feature shipped (F90)
+- PRODUCT.md rewrite; brand/TORII.md ICP + one-liners; landing.html; README; INSTALL-GUIDE
+- research note brand-skill-loop-icp-pattern.md
+
+### Loop-engineering practice used
+**Ship what you measure** — brand describes measured loops, not aspirational ASPM.
+
+### Metric
+- Offline: smoke PASS; 522 pytest
+- Live: **Modal** pytorch#191813 deepseek/deepseek-v4-pro BIT3_OK ~80s; log_streaming=true; POST_COMMENT=0
+
+### SHA
+_PENDING_
+
 ## 2026-08-01 — F89 attribution-ranked skill inject (router free-rider skip)
 
 ### Papers / posts / OSS

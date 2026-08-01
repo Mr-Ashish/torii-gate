@@ -1,8 +1,9 @@
 # Torii Gate
 
-**The security gate for every pull request.**
+**The security gate for every pull request.**  
+*Nothing ships without crossing the gate.*
 
-Agent-powered PR/CI security review: path-evidenced findings, false-positive memory, merge protection. Built for AI-written and human code.
+Agent-powered PR/CI **security merge authority**: path-evidenced findings, maker/checker critics, compound memory, measured skill loop. Built for AI-written and human code.
 
 [![Torii Gate](https://img.shields.io/static/v1?label=trigger&message=%40torii+review+this+pr&color=C9A227&style=for-the-badge)](#trigger)
 [![pack](https://img.shields.io/static/v1?label=default+pack&message=security&color=0B0F19&style=for-the-badge)](agent/packs/security.json)
@@ -15,7 +16,14 @@ Most AI PR bots optimize for *code quality comments*. Torii optimizes for **secu
 - Injection, authz, secrets, XSS/CSRF, SSRF, path traversal, unsafe deserialize, crypto misuse  
 - Evidence from workspace tools (not invented vulns)  
 - Durable `.torii/` memory so false positives die twice  
-- Labels + optional required checks as the **gate**
+- Labels + optional required checks as the **gate**  
+- **Skill compound loop** so the gate gets *stricter and quieter* over time — not noisier  
+
+```text
+route → hit → fitness → dual → attr → inject
+```
+
+Skills that do not contribute do not ship in the next prompt. See [`PRODUCT.md`](PRODUCT.md) (ICP + mental models) and [`docs/brand/`](docs/brand/).
 
 ## Trigger
 

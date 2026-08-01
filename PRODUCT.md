@@ -1,17 +1,27 @@
 # Torii Gate — product brief
 
 ## One sentence
-Torii Gate is a PR/CI security gate that reviews AI-written and human code with agent tools, evidence, and merge protection.
+Torii Gate is a PR/CI **security merge authority**: agent review with tools, path-evidenced findings, maker/checker critics, and compound skill+memory loops — so AI-written code does not merge unguarded.
 
-## User
-Platform / AppSec engineer who needs every PR checked for security without drowning in SAST noise.
+## Tagline
+**Nothing ships without crossing the gate.**
+
+## ICP (who buys)
+
+| Persona | Pain | Why Torii |
+|---------|------|-----------|
+| **Platform / DevEx eng** | Need a required check that is honest, not chatty | Install pack → `@torii review` → labels/block |
+| **AppSec eng** | SAST noise + AI PR volume | Maker agent + deterministic checker; FP/TP memory |
+| **Security-minded eng lead** | AI code without a security owner | Evidence-backed REQUEST_CHANGES, not nits |
+
+**Not ICP (v1):** full ASPM buyers, red-team agencies, teams that only want style comments.
 
 ## v1 scope
 - GitHub comment trigger `@torii review this pr`
-- Security pack default
+- Security pack default + progressive skills
 - Comment + labels (`torii/*`)
-- Local `.torii/` memory + FP patterns
-- Redacted traces as Actions artifacts
+- Local `.torii/` memory (FP, TP, fitness, skill attribution)
+- Redacted traces as paper/eval artifacts; Modal live with log streaming
 
 ## Non-goals (v1)
 - Full ASPM dashboard
@@ -22,39 +32,65 @@ Platform / AppSec engineer who needs every PR checked for security without drown
 - Time-to-first-signal on PR
 - Measured FP rate (memory growth of suppressions)
 - PRs blocked with path-evidenced findings
+- Skill contribution_pp > 0 (dual-rollout) before auto-adopt
 
-## Mental model (F78)
+---
 
-**Maker / Checker.** Hermes is the maker (agent review). A deterministic second-agent critic panel (path evidence, chain revalidation, trajectory fitness, scoped memory) re-scores every run and demotes weak APPROVE without path evidence — no extra LLM cost.
+## Mental model A — Maker / Checker (F78)
+
+**Maker.** Hermes agent runs tools on the PR and writes a security review.
+
+**Checker.** A deterministic second-agent panel (path evidence, chain revalidation, trajectory fitness, scoped memory, optional LLM critic) re-scores every run and demotes weak APPROVE without path evidence — default path is free (no extra LLM).
 
 **Compound memory.** FP rules, TP signatures, and privacy-safe federated themes compound across PRs and tenants; scoped recall keeps prompt context budgeted.
 
-**Measured gate.** Multi-corpus labeled benches (Python insecure-demo + Juice Shop synthetic) score recall before shipping harness changes.
+**Measured gate.** Multi-corpus labeled benches score recall before shipping harness changes.
 
-## Attribution-ranked inject (F89)
+---
 
-Post-run LOO attribution compounds into `.torii/skill-attribution.json`. The progressive skill router **boosts high-contribution skills** and treats historical free-riders as index-only (no full body) on the next PR.
+## Mental model B — Skill compound loop (F84–F89)
 
-## Per-skill attribution (F88)
+Torii does not dump a static SOUL forever. Skills are **measured, ranked, and retired**:
 
-Pack-level dual-rollout is necessary but not sufficient. Leave-one-out + unique keyword attribution identifies **free-rider** skills that never solo-hit; auto-adopt rejects them even when F74 validate says adopt.
+```text
+route → hit → fitness → dual → attr → inject
+  │       │       │        │      │       └─ next PR: full bodies only for winners
+  │       │       │        │      └─ LOO free-riders blocked at adopt + inject
+  │       │       │        └─ with vs ablated contribution_pp must be > 0
+  │       │       └─ hit-rate ledger demotes zombies
+  │       └─ post-run keyword hit score
+  └─ progressive: index all, full body for path themes
+```
 
-## Adopt only if skills contribute (F87)
+| Stage | What ships | Customer-facing meaning |
+|-------|------------|-------------------------|
+| **Route** | Progressive skill router | Relevant discipline, not context spam |
+| **Hit** | skill-hits.json | Did the review actually use the skill? |
+| **Fitness** | skill-fitness ledger | Unused skills go index-only |
+| **Dual** | SkillsBench-style with/ablated | Skills must beat a no-skill baseline |
+| **Attr** | LOO + unique keywords | Free-riders cannot bulk-adopt |
+| **Inject** | Attribution-ranked inject | Next PR prefers proven skills |
 
-Skill auto-adopt (F82) now requires the F86 dual-rollout gate: `skill_contribution_pp > 0` (with-skills vs ablated). Zero-contribution libraries never enter `agent/skills/active/` even if F74 validate says adopt.
+**One-liner (eng):** *Skills that do not contribute do not ship in the next prompt.*
 
-## Dual-rollout skills (F86)
+**One-liner (AppSec):** *The gate gets stricter and quieter over time — not noisier.*
 
-SkillsBench-style **with vs ablated** contribution: skill hit_rate delta must stay positive while F70 recall holds. Multi-tenant promote of skill themes requires ≥2 tenants before hub promotion.
+---
 
-## Skill fitness (F85)
+## Self-evolution (F82 + F87/F88)
 
-Post-run skill hit rates compound into `.torii/skill-fitness.json`. Chronically unused skills are **index-only** (not full-injected); high-hit skills get router boosts. Privacy-safe skill themes federate to the hub (ids + hits, no bodies/paths).
+Validated skill proposals enter `agent/skills/active/` only after offline regression gates (critic + fitness + dual contribution + per-skill attribution). Default off (`TORII_SKILL_AUTO_ADOPT=0`). Force exists for emergencies; product default is REJECT until measured.
 
-## Progressive skills (F84)
+---
 
-Active skills are **indexed** into the prompt; full skill bodies load only for path-relevant themes (extensions + triggers). Post-run **skill hit rate** measures which skills actually fire — fuel for F74/F82 evolution without context bloat.
+## Positioning (vs market 2026)
 
-## Self-evolution (F82)
+| We are | We are not |
+|--------|------------|
+| Security merge authority on every PR | Generic AI code-review chatbot |
+| Maker + checker + compound skills/memory | SAST dump with an LLM veneer |
+| Evidence + measured contribution | “Zero false positives” theater |
+| Pipeline-native AppSec (install pack) | Day-one ASPM suite |
 
-Validated skill proposals (fitness-gated) only enter `agent/skills/active/` after offline regression gates (critic fixture + fitness fixture). Default off (`TORII_SKILL_AUTO_ADOPT=0`).
+## Live proof
+Modal + Hermes + DeepSeek V4 Pro on real open-source PRs (e.g. pytorch), `POST_COMMENT=0` for dogfood, log streaming to Modal UI, redacted traces under `docs/benchmarks/traces/`.

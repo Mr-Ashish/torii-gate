@@ -4,7 +4,7 @@
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
 <title>Torii — Security gate for every pull request</title>
-<meta name="description" content="Torii is the PR/CI security gate for AI-written code. Evidence-backed findings, maker/checker critic panel, false-positive memory, merge protection. Built for teams that ship fast." />
+<meta name="description" content="Torii is the PR/CI security merge authority for AI-written code. Maker/checker critics, compound memory, measured skill loop (route→hit→fitness→dual→attr→inject). The gate gets stricter and quieter — not noisier." />
 <link rel="preconnect" href="https://fonts.googleapis.com" />
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
 <link href="https://fonts.googleapis.com/css2?family=Albert+Sans:wght@400;500;600&family=Alumni+Sans:wght@100;300;400&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet" />
@@ -100,9 +100,9 @@ tr:last-child td{border-bottom:0}
   <div class="stats">
     <div class="stat"><b>Gate</b><span>Every PR · every CI</span></div>
     <div class="stat"><b>Evidence</b><span>Path · line · tool</span></div>
-    <div class="stat"><b>Memory</b><span>FP↓ each run</span></div>
+    <div class="stat"><b>Compounds</b><span>Memory + skills</span></div>
   </div>
-  <p class="note">Torii = the threshold gate. Product you install first: <strong style="color:var(--muted)">Torii Gate</strong>. Engineering control plane remains internal; customers never need the codename.</p>
+  <p class="note">Torii = the threshold gate. Product you install first: <strong style="color:var(--muted)">Torii Gate</strong>. One-liner for AppSec fatigue: <strong style="color:var(--muted)">the gate gets stricter and quieter over time — not noisier.</strong></p>
 </div></header>
 
 <section class="sec" id="product"><div class="wrap">
@@ -118,10 +118,10 @@ tr:last-child td{border-bottom:0}
       <p>GitHub PR comments + required checks. Security pack (injection, authz, secrets, SSRF, unsafe crypto). Tool-backed findings. Labels that block merge on high severity. Org memory of false positives so the same noise dies twice.</p>
     </div>
     <div class="card">
-      <div class="num">Who buys</div>
-      <h3>Eng + AppSec</h3>
-      <p>Platform teams who already run CI. AppSec teams drowning in scanner noise. Anyone shipping AI-generated code without a security owner on every PR.</p>
-      <p style="margin-top:14px" class="note">Install → first PR comment in minutes. No annual pentest theater to get value.</p>
+      <div class="num">ICP</div>
+      <h3>Platform · AppSec · Eng lead</h3>
+      <p><strong style="color:var(--muted)">Platform/DevEx</strong> owning required checks. <strong style="color:var(--muted)">AppSec</strong> drowning in SAST + AI PR volume. <strong style="color:var(--muted)">Eng leads</strong> shipping AI code without a security owner on every PR.</p>
+      <p style="margin-top:14px" class="note">Install pack → first PR signal in minutes. Not an ASPM RFP day one. Not a style-comment bot.</p>
     </div>
   </div>
 </div></section>
@@ -147,17 +147,30 @@ tr:last-child td{border-bottom:0}
   </div>
   <div class="pipeline">
     <span class="pipe on">1 PR / CI trigger</span>
-    <span class="pipe on">2 Gate open</span>
-    <span class="pipe">3 Scope + tools</span>
-    <span class="pipe">4 Agent loop</span>
-    <span class="pipe">5 Validate</span>
-    <span class="pipe">6 Normalize</span>
-    <span class="pipe on">7 Verdict</span>
-    <span class="pipe">8 Memory + report</span>
+    <span class="pipe on">2 Assemble + route skills</span>
+    <span class="pipe">3 Maker agent (Hermes)</span>
+    <span class="pipe">4 Checker panel</span>
+    <span class="pipe on">5 Verdict + labels</span>
+    <span class="pipe">6 Memory + skill loop</span>
   </div>
+  <p class="ey" style="margin:8px 0 12px">Skill compound loop (why Torii gets quieter)</p>
+  <div class="pipeline">
+    <span class="pipe on">Route</span>
+    <span class="pipe on">Hit</span>
+    <span class="pipe on">Fitness</span>
+    <span class="pipe on">Dual</span>
+    <span class="pipe on">Attr</span>
+    <span class="pipe on">Inject</span>
+  </div>
+  <p class="note" style="margin:0 0 24px">Progressive skills → measure hits → demote zombies → dual-rollout contribution → LOO free-riders out → next PR injects winners only. <strong style="color:var(--muted)">Skills that do not contribute do not ship in the next prompt.</strong></p>
   <div class="grid2">
     <div class="card"><div class="num">Surfaces</div><h3>Where the gate sits</h3><p>Pull requests · required status checks · optional bot comments · security labels · branch protection. Later: SARIF ingest from Semgrep / CodeQL / peers.</p></div>
-    <div class="card"><div class="num">Honesty</div><h3>Evidence over slogans</h3><p>No “zero false positives.” No “95% ATT&amp;CK autonomous exploit.” We measure confirmed findings, FP rate, time-to-signal, gated PRs — and improve memory every run.</p></div>
+    <div class="card"><div class="num">Honesty</div><h3>Evidence over slogans</h3><p>No “zero false positives.” No “95% ATT&amp;CK autonomous exploit.” We measure confirmed findings, FP rate, skill contribution, time-to-signal, gated PRs — and improve memory every run.</p></div>
+  </div>
+  <div class="grid3" style="margin-top:8px">
+    <div class="card"><div class="num">Maker</div><h3>Hermes agent</h3><p>Tools on the diff. Path:line evidence. Security pack by default.</p></div>
+    <div class="card"><div class="num">Checker</div><h3>Deterministic panel</h3><p>Re-score without burning another model. Demote weak APPROVE.</p></div>
+    <div class="card"><div class="num">Compound</div><h3>Memory + skills</h3><p>FP/TP memory and measured skills rank the next review — quieter noise, sharper blocks.</p></div>
   </div>
 </div></section>
 

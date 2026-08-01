@@ -1,0 +1,16 @@
+{
+  "feature": "F90",
+  "repo": "pytorch/pytorch",
+  "pr": 191813,
+  "model": "deepseek/deepseek-v4-pro",
+  "runtime": "modal",
+  "bit3": true,
+  "log_streaming": true,
+  "elapsed_s": 80.0,
+  "post_comment": 0,
+  "brand": "skill-loop-icp",
+  "captured_at": "2026-08-01T02:16:08Z",
+  "verdict_preview": "REQUEST_CHANGES",
+  "modal_app": "https://modal.com/apps/mr-ashish/main/ap-TsSZw1GxliJE9Ss5U12taC",
+  "tool_call_turns": 5
+}
