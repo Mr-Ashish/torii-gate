@@ -1,5 +1,38 @@
 # Torii research → product log
 
+## 2026-08-01 — F126 hub gap_pressure re-prompt + fitness ingest
+
+### Papers / posts
+- FederatedSkill: multi-tenant themes must change runtime policy (re-prompt + fitness), not only always priority.
+- HASP: hub gap pressure as intervention in agent loop under shared budget.
+- MMG2Skill / F108: early analyzer + max paid retries — bias re-prompt choice, do not stack spend.
+- Loop-eng: F125 closed priority compound; partial util still ignored without hub-biased F122.
+
+### OSS design patterns stolen
+1. decide_recovery_reprompt: partial util + gap_pressure ≥ thr → hub_gap_pressure_idle.
+2. reprompt-write / Hermes wire pass hub_gap_pressure into F122 body.
+3. skill_fitness.ingest_hub_recovery: soft tool_hit_n + demote shield from hub themes.
+4. hub-score + cycle call fitness ingest; recovery-reprompt-decide.json in traces.
+
+### Insight
+Always-priority compound ranks skills; paid recovery still only fired on full local gap. Highest ROI: multi-tenant gap pressure re-prompts idle recovery CLIs and folds hub tool hits into fitness under F108.
+
+### Feature shipped (F126)
+- skill_router hub gap re-prompt bias + write suffix
+- skill_fitness ingest_hub_recovery + cycle/hub-score wire
+- run-hermes-review passes hub fields; save-trace decide artifact
+- PRODUCT + research note; traces f126-hub-gap-reprompt-fitness/
+
+### Metric
+- Offline: f126_ok hub_gap_decide + fitness; pytest pass
+- Live: Modal pytorch e2e POST_COMMENT=0
+
+### Loop-engineering / Hermes practice used
+**Budgeted intervention** — hub bias chooses when to spend the one recovery re-prompt.
+
+### SHA
+`PENDING`
+
 ## 2026-08-01 — F125 hub recovery-util post-score compound
 
 ### Papers / posts

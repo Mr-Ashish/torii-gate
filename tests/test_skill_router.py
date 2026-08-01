@@ -438,6 +438,136 @@ class SkillRouterTests(unittest.TestCase):
             self.assertNotIn("/Users/", text)
             blob = json.dumps(data)
             self.assertNotIn("/Users/", blob)
+            # F126: hub-score also soft-ingests fitness
+            fi = data.get("fitness_ingest") or {}
+            self.assertTrue(
+                int(fi.get("ingested_n") or 0) >= 1 or "soft_error" in fi, data
+            )
+
+    def test_f126_hub_gap_reprompt_partial(self):
+        """F126: high hub gap_pressure re-prompts idle recovery under partial util."""
+        with tempfile.TemporaryDirectory() as td:
+            root = Path(td)
+            fed = root / "memory" / "federation"
+            fed.mkdir(parents=True)
+            # high gap pressure signals
+            (fed / "recovery-util-signals.json").write_text(
+                json.dumps(
+                    {
+                        "signals": [
+                            {
+                                "id": "recovery-util-gap",
+                                "theme": "recovery-util-gap",
+                                "tags": ["recovery_util", "utilization_gap"],
+                                "hits": 5,
+                                "tenants": 3,
+                                "util_rate_bin": "gap",
+                                "source": "recovery_skill_util",
+                            },
+                            {
+                                "id": "recovery-util-ok",
+                                "theme": "recovery-util-ok",
+                                "tags": ["recovery_util", "util_ok"],
+                                "hits": 2,
+                                "util_rate_bin": "full",
+                                "source": "recovery_skill_util",
+                            },
+                            {
+                                "id": "recovery-util-hit-skill-prefer-product-cli",
+                                "theme": "skill-prefer-product-cli",
+                                "tags": ["recovery_util", "tool_outcome"],
+                                "hits": 1,
+                                "tool_hits": 1,
+                                "util_rate_bin": "hit",
+                                "source": "recovery_skill_util",
+                            },
+                        ]
+                    }
+                )
+                + "\n",
+                encoding="utf-8",
+            )
+            od = root / "out"
+            od.mkdir()
+            (od / "skill-router.json").write_text(
+                json.dumps(
+                    {
+                        "selected": [
+                            "skill-prefer-memory-cli-early",
+                            "skill-prefer-product-cli",
+                        ],
+                        "always_selected": [
+                            "skill-prefer-memory-cli-early",
+                            "skill-prefer-product-cli",
+                        ],
+                        "inject_chars": 900,
+                    }
+                ),
+                encoding="utf-8",
+            )
+            # partial: memory hit, product idle
+            (od / "skill-hits.json").write_text(
+                json.dumps(
+                    {
+                        "hits": [
+                            {
+                                "id": "skill-prefer-memory-cli-early",
+                                "tool_hit": True,
+                                "hit": True,
+                            },
+                            {
+                                "id": "skill-prefer-product-cli",
+                                "tool_hit": False,
+                                "hit": False,
+                            },
+                        ],
+                        "tool_hit_n": 1,
+                    }
+                ),
+                encoding="utf-8",
+            )
+            (od / "agent-loop").mkdir()
+            (od / "agent-loop" / "agent-loop.json").write_text(
+                json.dumps({"tool_call_turns": 4}), encoding="utf-8"
+            )
+            env = {
+                **os.environ,
+                "TORII_ROOT": str(root),
+                "TORII_HUB_GAP_REPROMPT": "1",
+                "TORII_HUB_GAP_PRESSURE_THR": "0.3",
+                "TORII_RECOVERY_HUB_COMPOUND": "1",
+            }
+            r = _run(["reprompt-decide", "--out-dir", str(od)], env=env)
+            self.assertIn("reprompt=1", r.stdout, r.stdout)
+            self.assertIn("hub_gap", r.stdout)
+            self.assertIn("hub_gap_bias=1", r.stdout)
+            # write prompt includes hub line
+            pin = root / "p.md"
+            pin.write_text("base prompt\n", encoding="utf-8")
+            pout = root / "p-out.md"
+            r2 = _run(
+                [
+                    "reprompt-write",
+                    "--prompt-in",
+                    str(pin),
+                    "--prompt-out",
+                    str(pout),
+                    "--idle-ids",
+                    "skill-prefer-product-cli",
+                    "--tool-turns",
+                    "4",
+                    "--hub-gap-pressure",
+                    "0.71",
+                    "--hub-gap-bias",
+                    "1",
+                ],
+                env=env,
+            )
+            self.assertEqual(r2.returncode, 0, r2.stderr + r2.stdout)
+            text = pout.read_text(encoding="utf-8")
+            self.assertIn("F126", text)
+            self.assertIn("Hub gap pressure", text)
+            self.assertNotIn("/Users/", text)
 
 
 if __name__ == "__main__":

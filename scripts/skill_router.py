@@ -40,6 +40,8 @@ Env:
   TORII_SKILL_ROUTER_REPLACE  1 (default) | 0 — replace F69 skills block
   TORII_SKILL_TOOL_OUTCOME    1 (default) | 0 — F114 tool-invocation hit scoring
   TORII_RECOVERY_HUB_COMPOUND 1 (default) | 0 — F125 hub recovery-util post-score → always prio
+  TORII_HUB_GAP_REPROMPT      1 (default) | 0 — F126 hub gap_pressure biases F122 re-prompt
+  TORII_HUB_GAP_PRESSURE_THR  default 0.34 — re-prompt idle recovery when hub gap ≥ thr
 """
 
 from __future__ import annotations
@@ -1966,6 +1968,21 @@ def recovery_reprompt_enabled() -> bool:
     return raw not in _FALSEY
 
 
+def hub_gap_reprompt_enabled() -> bool:
+    """F126: multi-tenant hub gap_pressure can bias F122 re-prompt (default on)."""
+    raw = (os.environ.get("TORII_HUB_GAP_REPROMPT") or "1").strip().lower()
+    return raw not in _FALSEY
+
+
+def hub_gap_pressure_threshold() -> float:
+    """F126: re-prompt idle recovery when hub gap_pressure ≥ thr (default 0.34)."""
+    raw = (os.environ.get("TORII_HUB_GAP_PRESSURE_THR") or "0.34").strip()
+    try:
+        return max(0.0, min(1.0, float(raw)))
+    except ValueError:
+        return 0.34
+
+
 RECOVERY_REPROMPT_MARKER = "<!-- torii-f122-recovery-skill-reprompt -->"
 
 
@@ -1975,14 +1992,36 @@ def decide_recovery_reprompt(
     already_reprompted: bool = False,
     tool_call_turns: int = 0,
     reprompt_on: bool | None = None,
+    hub: dict[str, Any] | None = None,
+    root: Path | None = None,
 ) -> dict[str, Any]:
-    """F122: re-prompt when recovery skills injected but no tool hits (after tools ran)."""
+    """F122/F126: re-prompt on local util gap or hub gap_pressure with idle recovery.
+
+    F122: recovery injected + tools ran + zero recovery tool hits → re-prompt.
+    F126: partial util (some idle) + hub gap_pressure ≥ thr → re-prompt idle skills
+    so multi-tenant gap themes bias the paid recovery attempt under F108.
+    """
     on = recovery_reprompt_enabled() if reprompt_on is None else bool(reprompt_on)
     gap = bool(util.get("utilization_gap"))
     n = int(util.get("recovery_injected_n") or 0)
     tool_n = int(util.get("tool_hit_n") or 0)
+    idle = list(util.get("idle_ids") or [])
+    util_rate = float(util.get("util_rate") or 0.0)
+
+    # F126: hub gap pressure (soft load)
+    hub_report = hub
+    if hub_report is None and hub_gap_reprompt_enabled() and recovery_hub_enabled():
+        try:
+            hub_report = post_score_recovery_hub(root=root or _root())
+        except Exception:
+            hub_report = {}
+    gap_pressure = float((hub_report or {}).get("gap_pressure") or 0.0)
+    thr = hub_gap_pressure_threshold()
+    hub_bias_on = hub_gap_reprompt_enabled()
+
     out: dict[str, Any] = {
         "feature": "F122",
+        "feature_hub_gap": "F126" if hub_bias_on else None,
         "reprompt": 0,
         "enabled": on,
         "reason": "ok",
@@ -1993,7 +2032,10 @@ def decide_recovery_reprompt(
         "already_reprompted": bool(already_reprompted),
         "util_rate": util.get("util_rate"),
         "inject_chars": util.get("inject_chars"),
-        "idle_ids": util.get("idle_ids") or [],
+        "idle_ids": idle,
+        "hub_gap_pressure": gap_pressure,
+        "hub_gap_thr": thr,
+        "hub_gap_bias": 0,
     }
     if not on:
         out["reason"] = "reprompt_off"
@@ -2004,12 +2046,38 @@ def decide_recovery_reprompt(
     if n < 1:
         out["reason"] = "no_recovery_injected"
         return out
-    if tool_n >= 1:
-        out["reason"] = "recovery_tools_used"
-        return out
     if tool_call_turns < 1:
         # F49 owns zero-tool recovery
         out["reason"] = "zero_tools_defer_f49"
+        return out
+
+    # F122 classic: full local gap (no recovery tools at all)
+    if gap and tool_n < 1:
+        out["reprompt"] = 1
+        out["reason"] = "recovery_utilization_gap"
+        if hub_bias_on and gap_pressure >= thr:
+            out["hub_gap_bias"] = 1
+            out["reason"] = "recovery_utilization_gap+hub_gap_pressure"
+        return out
+
+    # F126: partial util — some recovery tools used, some idle; hub says gap common
+    if (
+        hub_bias_on
+        and idle
+        and gap_pressure >= thr
+        and util_rate < 0.99
+        and tool_n >= 0  # tools may have fired other recovery skills
+    ):
+        out["reprompt"] = 1
+        out["hub_gap_bias"] = 1
+        out["reason"] = "hub_gap_pressure_idle"
+        return out
+
+    if tool_n >= 1 and not idle:
+        out["reason"] = "recovery_tools_used"
+        return out
+    if tool_n >= 1 and idle and (not hub_bias_on or gap_pressure < thr):
+        out["reason"] = "partial_util_hub_below_thr"
         return out
     if not gap:
         out["reason"] = "no_gap"
@@ -2024,16 +2092,31 @@ def build_recovery_reprompt_suffix(
     idle_ids: list[str] | None = None,
     tool_call_turns: int = 0,
     inject_chars: int = 0,
+    hub_gap_pressure: float = 0.0,
+    hub_gap_bias: bool = False,
 ) -> str:
     idle = idle_ids or sorted(RECOVERY_SKILL_IDS)
     idle_s = ", ".join(f"`{i}`" for i in idle[:6])
+    hub_line = ""
+    if hub_gap_bias or hub_gap_pressure >= hub_gap_pressure_threshold():
+        hub_line = (
+            f"\n**Hub gap pressure={hub_gap_pressure:.2f}** (F126 multi-tenant) — "
+            "other tenants also under-use recovery CLIs; treat this as a hard "
+            "tool call before finalizing.\n"
+        )
+    title = (
+        "## Recovery skill soft re-prompt (F122/F126)\n\n"
+        if hub_gap_bias
+        else "## Recovery skill soft re-prompt (F122)\n\n"
+    )
     return (
         "\n\n---\n\n"
         f"{RECOVERY_REPROMPT_MARKER}\n\n"
-        f"## Recovery skill soft re-prompt (F122)\n\n"
-        f"Your previous reply used **{tool_call_turns} tool turns** but **0 recovery "
-        f"skill CLIs** after always-injecting: {idle_s} "
-        f"(inject_chars≈{inject_chars}).\n\n"
+        f"{title}"
+        f"Your previous reply used **{tool_call_turns} tool turns** but recovery "
+        f"skill CLIs remain idle for: {idle_s} "
+        f"(inject_chars≈{inject_chars}).\n"
+        f"{hub_line}\n"
         "Before finalizing, call **at least one** of these once via terminal:\n\n"
         "```bash\n"
         "python3 scripts/torii.py memory -- search -- -q \"auth OR sql OR pickle OR secret\"\n"
@@ -2052,6 +2135,8 @@ def write_recovery_reprompt_prompt(
     idle_ids: list[str] | None = None,
     tool_call_turns: int = 0,
     inject_chars: int = 0,
+    hub_gap_pressure: float = 0.0,
+    hub_gap_bias: bool = False,
 ) -> Path:
     base = prompt_in.read_text(encoding="utf-8", errors="replace")
     if RECOVERY_REPROMPT_MARKER in base:
@@ -2061,6 +2146,8 @@ def write_recovery_reprompt_prompt(
             idle_ids=idle_ids,
             tool_call_turns=tool_call_turns,
             inject_chars=inject_chars,
+            hub_gap_pressure=hub_gap_pressure,
+            hub_gap_bias=hub_gap_bias,
         )
         if not text.endswith("\n"):
             text += "\n"
@@ -2088,7 +2175,7 @@ def cmd_federate_util(args: argparse.Namespace) -> int:
 
 
 def cmd_reprompt_decide(args: argparse.Namespace) -> int:
-    """F122: key=value decide whether to soft re-prompt on recovery util gap."""
+    """F122/F126: key=value decide soft re-prompt (local gap + hub gap_pressure)."""
     od = Path(args.out_dir) if args.out_dir else Path(os.environ.get("OUT_DIR") or ".")
     already = False
     if args.already_env and Path(args.already_env).is_file():
@@ -2123,7 +2210,7 @@ def cmd_reprompt_decide(args: argparse.Namespace) -> int:
         except Exception:
             pass
     dec = decide_recovery_reprompt(
-        util, already_reprompted=already, tool_call_turns=turns
+        util, already_reprompted=already, tool_call_turns=turns, root=_root()
     )
     # key=value for shell (like F106)
     print(f"reprompt={dec['reprompt']}")
@@ -2136,12 +2223,23 @@ def cmd_reprompt_decide(args: argparse.Namespace) -> int:
     print(f"inject_chars={dec.get('inject_chars') or 0}")
     print(f"util_rate={dec.get('util_rate')}")
     print(f"idle_ids={','.join(dec.get('idle_ids') or [])}")
+    print(f"hub_gap_pressure={dec.get('hub_gap_pressure')}")
+    print(f"hub_gap_thr={dec.get('hub_gap_thr')}")
+    print(f"hub_gap_bias={dec.get('hub_gap_bias')}")
+    print(f"feature_hub_gap={dec.get('feature_hub_gap') or ''}")
     print("feature=F122")
+    # soft write decide artifact for traces
+    try:
+        (od / "recovery-reprompt-decide.json").write_text(
+            json.dumps(dec, indent=2) + "\n", encoding="utf-8"
+        )
+    except OSError:
+        pass
     return 0
 
 
 def cmd_hub_score(args: argparse.Namespace) -> int:
-    """F125: post-score federated recovery util → priority deltas (+ optional inject)."""
+    """F125/F126: post-score hub recovery util → priority deltas + fitness ingest."""
     root = _root()
     hub = post_score_recovery_hub(root=root)
     inj = None
@@ -2152,6 +2250,20 @@ def cmd_hub_score(args: argparse.Namespace) -> int:
             "injected": inj.get("injected"),
             "artifact": inj.get("artifact"),
         }
+    # F126: soft ingest hub tool themes into skill fitness ledger
+    fitness_ingest = None
+    try:
+        sys.path.insert(0, str(Path(__file__).resolve().parent))
+        from skill_fitness import ingest_hub_recovery  # type: ignore
+
+        fitness_ingest = ingest_hub_recovery(hub, root=root)
+        hub["fitness_ingest"] = {
+            k: fitness_ingest.get(k)
+            for k in ("feature", "ingested_n", "skills", "privacy_ok", "ledger")
+            if k in fitness_ingest
+        }
+    except Exception as exc:
+        hub["fitness_ingest"] = {"soft_error": str(exc)[:120]}
     # OUT_DIR artifact
     od = (os.environ.get("OUT_DIR") or "").strip()
     if od:
@@ -2167,16 +2279,48 @@ def cmd_hub_score(args: argparse.Namespace) -> int:
 
 
 def cmd_reprompt_write(args: argparse.Namespace) -> int:
-    """F122: write nudged prompt for recovery skill re-run."""
+    """F122/F126: write nudged prompt for recovery skill re-run."""
     idle = [x for x in (args.idle_ids or "").split(",") if x.strip()]
+    hub_gp = 0.0
+    hub_bias = False
+    try:
+        hub_gp = float(getattr(args, "hub_gap_pressure", 0) or 0)
+    except (TypeError, ValueError):
+        hub_gp = 0.0
+    if getattr(args, "hub_gap_bias", False) or str(
+        getattr(args, "hub_gap_bias", "") or ""
+    ).strip() in ("1", "true", "yes"):
+        hub_bias = True
+    # soft load from env if shell passed hub keys
+    env_gp = (os.environ.get("TORII_HUB_GAP_PRESSURE") or "").strip()
+    if env_gp and hub_gp <= 0:
+        try:
+            hub_gp = float(env_gp)
+        except ValueError:
+            pass
+    if (os.environ.get("TORII_HUB_GAP_BIAS") or "").strip() in ("1", "true", "yes"):
+        hub_bias = True
     path = write_recovery_reprompt_prompt(
         prompt_in=Path(args.prompt_in),
         prompt_out=Path(args.prompt_out),
         idle_ids=idle or None,
         tool_call_turns=int(args.tool_turns or 0),
         inject_chars=int(args.inject_chars or 0),
+        hub_gap_pressure=hub_gp,
+        hub_gap_bias=hub_bias,
     )
-    print(json.dumps({"feature": "F122", "prompt_out": str(path), "ok": path.is_file()}))
+    print(
+        json.dumps(
+            {
+                "feature": "F122",
+                "feature_hub_gap": "F126" if hub_bias or hub_gp > 0 else None,
+                "prompt_out": str(path),
+                "hub_gap_pressure": hub_gp,
+                "hub_gap_bias": int(hub_bias),
+                "ok": path.is_file(),
+            }
+        )
+    )
     return 0 if path.is_file() else 1
 
 
@@ -2579,6 +2723,85 @@ Call second-agent critic tools when uncertain.
         hub_ok = hub_privacy and hub_skills_ok and hub_rank_ok and hub_inject_ok
         hub_blob_ok = "/Users/" not in text_hub and "fixture-tenant" not in text_hub
 
+        # F126: hub gap_pressure biases re-prompt on partial util (idle recovery)
+        os.environ["TORII_HUB_GAP_REPROMPT"] = "1"
+        os.environ["TORII_HUB_GAP_PRESSURE_THR"] = "0.30"
+        # synthetic high gap pressure hub
+        hub_gap_high = {
+            "enabled": True,
+            "gap_pressure": 0.6,
+            "priority_deltas": {"skill-prefer-product-cli": 20},
+            "skills": {
+                "skill-prefer-product-cli": {
+                    "skill_id": "skill-prefer-product-cli",
+                    "hits": 2,
+                    "tenants": 2,
+                    "tool_hits": 1,
+                    "priority_delta": 20,
+                }
+            },
+            "privacy_ok": True,
+        }
+        util_partial = {
+            "recovery_injected_n": 2,
+            "tool_hit_n": 1,
+            "util_rate": 0.5,
+            "utilization_gap": False,
+            "idle_ids": ["skill-prefer-product-cli"],
+            "inject_chars": 800,
+        }
+        dec_hub = decide_recovery_reprompt(
+            util_partial, tool_call_turns=3, hub=hub_gap_high, root=root
+        )
+        # full tools used, no idle → no re-prompt even with hub gap
+        util_full = {
+            "recovery_injected_n": 1,
+            "tool_hit_n": 1,
+            "util_rate": 1.0,
+            "utilization_gap": False,
+            "idle_ids": [],
+            "inject_chars": 400,
+        }
+        dec_full = decide_recovery_reprompt(
+            util_full, tool_call_turns=3, hub=hub_gap_high, root=root
+        )
+        # classic gap still works
+        util_classic = {
+            "recovery_injected_n": 1,
+            "tool_hit_n": 0,
+            "util_rate": 0.0,
+            "utilization_gap": True,
+            "idle_ids": ["skill-prefer-memory-cli-early"],
+            "inject_chars": 400,
+        }
+        dec_classic = decide_recovery_reprompt(
+            util_classic, tool_call_turns=2, hub=hub_gap_high, root=root
+        )
+        hub_gap_decide_ok = (
+            int(dec_hub.get("reprompt") or 0) == 1
+            and int(dec_hub.get("hub_gap_bias") or 0) == 1
+            and "hub_gap" in str(dec_hub.get("reason") or "")
+            and int(dec_full.get("reprompt") or 0) == 0
+            and int(dec_classic.get("reprompt") or 0) == 1
+        )
+        # F126 fitness ingest from hub
+        fit_ok = False
+        try:
+            import skill_fitness as _sf  # type: ignore
+
+            os.environ["TORII_SKILL_FITNESS"] = "1"
+            os.environ["TORII_SKILL_FITNESS_HUB"] = "1"
+            fit = _sf.ingest_hub_recovery(hub_score2, root=root, save=True)
+            fit_ok = (
+                int(fit.get("ingested_n") or 0) >= 1
+                and bool(fit.get("privacy_ok"))
+                and "skill-prefer-memory-cli-early" in (fit.get("skills") or [])
+            )
+        except Exception as _exc:
+            fit_ok = False
+
+        f126_ok = hub_gap_decide_ok and fit_ok
+
         fixture_pass = all(
             [
                 always_ok,
@@ -2604,6 +2827,7 @@ Call second-agent critic tools when uncertain.
                 fed_ok,
                 hub_ok,
                 hub_blob_ok,
+                f126_ok,
             ]
         )
         payload = {
@@ -2662,6 +2886,11 @@ Call second-agent critic tools when uncertain.
             "hub_rank_ok": hub_rank_ok,
             "hub_always": list(hub_always),
             "hub_blob_ok": hub_blob_ok,
+            "f126": True,
+            "f126_ok": f126_ok,
+            "hub_gap_decide_ok": hub_gap_decide_ok,
+            "hub_fitness_ok": fit_ok,
+            "dec_hub_reason": dec_hub.get("reason"),
         }
         print(json.dumps(payload, indent=2))
         return 0 if fixture_pass else 1
@@ -2706,13 +2935,23 @@ def main(argv: list[str] | None = None) -> int:
     prd.set_defaults(func=cmd_reprompt_decide)
 
     prw = sub.add_parser(
-        "reprompt-write", help="F122 write recovery-skill nudged prompt"
+        "reprompt-write", help="F122/F126 write recovery-skill nudged prompt"
     )
     prw.add_argument("--prompt-in", required=True)
     prw.add_argument("--prompt-out", required=True)
     prw.add_argument("--idle-ids", default="")
     prw.add_argument("--tool-turns", default="0")
     prw.add_argument("--inject-chars", default="0")
+    prw.add_argument(
+        "--hub-gap-pressure",
+        default="0",
+        help="F126: multi-tenant gap_pressure for prompt bias text",
+    )
+    prw.add_argument(
+        "--hub-gap-bias",
+        default="0",
+        help="F126: 1 if re-prompt was triggered by hub gap pressure",
+    )
     prw.set_defaults(func=cmd_reprompt_write)
 
     phub = sub.add_parser(

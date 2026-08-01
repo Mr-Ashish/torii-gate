@@ -168,6 +168,8 @@ budget always → compact body → score tool_hit → util gap? → budgeted re-
 
 **Hub recovery compound (F125):** federated recovery-util themes are post-scored into always-priority deltas and a privacy-safe prompt section (`hub-score` / inject) so multi-tenant tool hits compound into the next run's recovery skill budget — not write-only federation.
 
+**Hub gap re-prompt + fitness (F126):** multi-tenant `gap_pressure` biases F122 soft re-prompt when recovery tools are only partially used (idle skill ids), and hub tool-hit themes soft-ingest into the skill fitness ledger (demote shield + boost) under the shared F108 budget.
+
 **Ops:** `python3 scripts/memory_loop_status.py scorecard` → L0–L3. Smoke requires L3 on the hub tree. CI job summary annotates readiness; optional advisory `torii/memory-loop` via `TORII_MEMORY_LOOP_STATUS_COMMIT=1`.
 
 ---

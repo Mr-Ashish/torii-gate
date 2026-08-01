@@ -41,6 +41,7 @@ Env:
   TORII_SKILL_FITNESS_DEMOTE    default 0.25 hit_rate threshold
   TORII_SKILL_FITNESS_BOOST     default 2.0 max path-score bonus
   TORII_SKILL_FITNESS_TOOL      1 (default) | 0 — F116 tool_hit shield/boost/federate
+  TORII_SKILL_FITNESS_HUB       1 (default) | 0 — F126 ingest hub recovery-util deltas
   TORII_MEMORY_TENANT           optional for federate tenant hash
 """
 
@@ -59,6 +60,7 @@ from typing import Any
 
 FEATURE = "F85"
 FEATURE_TOOL = "F116"
+FEATURE_HUB = "F126"
 SCHEMA = 1
 LEDGER_NAME = "skill-fitness.json"
 
@@ -86,6 +88,139 @@ def tool_fitness_enabled() -> bool:
     """F116: tool_hit_n shields demote, boosts router, federates tool themes."""
     raw = (os.environ.get("TORII_SKILL_FITNESS_TOOL") or "1").strip().lower()
     return raw not in _FALSEY
+
+
+def hub_fitness_enabled() -> bool:
+    """F126: fold hub recovery-util post-score into local fitness ledger."""
+    raw = (os.environ.get("TORII_SKILL_FITNESS_HUB") or "1").strip().lower()
+    return raw not in _FALSEY
+
+
+def ingest_hub_recovery(
+    hub: dict[str, Any] | None = None,
+    ledger: dict[str, Any] | None = None,
+    *,
+    root: Path | None = None,
+    save: bool = True,
+) -> dict[str, Any]:
+    """F126: privacy-safe hub recovery themes → soft tool_hit / shield on ledger.
+
+    Consumes F125 post_score_recovery_hub (skill_id + hits + tool_hits only).
+    Never stores paths, tenants names, or commands.
+    """
+    root = root or _root()
+    if not hub_fitness_enabled():
+        return {
+            "feature": FEATURE_HUB,
+            "ingested_n": 0,
+            "reason": "hub_fitness_off",
+            "privacy_ok": True,
+        }
+    if hub is None:
+        # soft load from federation store via skill_router
+        try:
+            sys.path.insert(0, str(Path(__file__).resolve().parent))
+            from skill_router import post_score_recovery_hub  # type: ignore
+
+            hub = post_score_recovery_hub(root=root)
+        except Exception as exc:
+            return {
+                "feature": FEATURE_HUB,
+                "ingested_n": 0,
+                "error": str(exc)[:120],
+                "privacy_ok": True,
+            }
+    ledger = ledger if ledger is not None else load_ledger(ledger_path(root))
+    skills_doc = hub.get("skills") if isinstance(hub, dict) else None
+    if not isinstance(skills_doc, dict):
+        skills_doc = {}
+    # also accept priority_deltas-only
+    deltas = (hub.get("priority_deltas") or {}) if isinstance(hub, dict) else {}
+    ingested: list[str] = []
+    for sid, ent_h in skills_doc.items():
+        sid_s = str(sid).strip()
+        if not sid_s or _PATH_RX.search(sid_s) or "/" in sid_s or ".." in sid_s:
+            continue
+        sid_s = re.sub(r"[^A-Za-z0-9._-]+", "-", sid_s)[:96]
+        if not sid_s.startswith("skill-"):
+            continue
+        hits = 1
+        tool_hits = 0
+        tenants = 1
+        if isinstance(ent_h, dict):
+            hits = max(1, int(ent_h.get("hits") or 1))
+            tool_hits = max(0, int(ent_h.get("tool_hits") or 0))
+            tenants = max(1, int(ent_h.get("tenants") or 1))
+        # soft sample weight: cap so hub can't drown local
+        weight = min(3, max(1, min(hits, tenants)))
+        ent = _skill_entry(ledger, sid_s)
+        ent["selected_n"] = int(ent.get("selected_n") or 0) + weight
+        # hub tool themes count as tool hits (shield demote)
+        th_add = min(3, max(1, tool_hits if tool_hits else weight))
+        ent["tool_hit_n"] = int(ent.get("tool_hit_n") or 0) + th_add
+        ent["hit_n"] = int(ent.get("hit_n") or 0) + min(weight, th_add)
+        sel = int(ent["selected_n"])
+        ent["hit_rate"] = round(int(ent["hit_n"]) / sel, 4) if sel else 0.0
+        ent["tool_hit_rate"] = (
+            round(int(ent.get("tool_hit_n") or 0) / sel, 4) if sel else 0.0
+        )
+        ent["hub_ingested_n"] = int(ent.get("hub_ingested_n") or 0) + 1
+        ent["hub_priority_delta"] = int(
+            (ent_h or {}).get("priority_delta")
+            if isinstance(ent_h, dict)
+            else deltas.get(sid_s)
+            or 0
+        )
+        ent["last_seen"] = _now()
+        ent["last_hub_at"] = _now()
+        # never demote hub tool-effective recovery
+        if tool_fitness_enabled() and int(ent.get("tool_hit_n") or 0) >= 1:
+            ent["demoted"] = False
+        ingested.append(sid_s)
+
+    # deltas-only skills not in skills map
+    for sid, delta in deltas.items():
+        sid_s = str(sid).strip()
+        if sid_s in ingested:
+            continue
+        if not sid_s.startswith("skill-") or "/" in sid_s:
+            continue
+        ent = _skill_entry(ledger, sid_s)
+        ent["hub_priority_delta"] = int(delta or 0)
+        ent["last_hub_at"] = _now()
+        ingested.append(sid_s)
+
+    hist = ledger.setdefault("history", [])
+    hist.append(
+        {
+            "at": _now(),
+            "run_id": "hub_recovery",
+            "feature": FEATURE_HUB,
+            "ingested_n": len(ingested),
+            "skills": ingested[:16],
+            "gap_pressure": (hub or {}).get("gap_pressure") if isinstance(hub, dict) else None,
+        }
+    )
+    ledger["history"] = hist[-100:]
+    ledger["last_hub_ingest"] = {
+        "at": _now(),
+        "feature": FEATURE_HUB,
+        "skills": ingested[:16],
+        "n": len(ingested),
+    }
+    path = None
+    if save:
+        path = save_ledger(ledger, ledger_path(root))
+    blob = json.dumps(ingested)
+    privacy_ok = "/Users/" not in blob and "/home/" not in blob
+    return {
+        "feature": FEATURE_HUB,
+        "ingested_n": len(ingested),
+        "skills": ingested,
+        "privacy_ok": privacy_ok,
+        "ledger": str(path) if path else str(ledger_path(root)),
+        "gap_pressure": (hub or {}).get("gap_pressure") if isinstance(hub, dict) else None,
+    }
 
 
 def _int_env(name: str, default: int) -> int:
@@ -409,6 +544,14 @@ def cycle(out_dir: Path | None = None, root: Path | None = None) -> dict[str, An
                 ingested = True
             except (OSError, json.JSONDecodeError):
                 pass
+    # F126: fold hub recovery-util post-score into ledger before demote
+    hub_fit = None
+    if hub_fitness_enabled():
+        try:
+            hub_fit = ingest_hub_recovery(None, ledger, root=root, save=False)
+            # ledger already mutated; ensure demote sees tool shields
+        except Exception as exc:
+            hub_fit = {"soft_error": str(exc)[:120]}
     ledger = apply_demotions(ledger)
     path = save_ledger(ledger, ledger_path(root))
     signals = federate_signals(ledger)
@@ -438,6 +581,7 @@ def cycle(out_dir: Path | None = None, root: Path | None = None) -> dict[str, An
     return {
         "feature": FEATURE,
         "feature_tool": FEATURE_TOOL if tool_fitness_enabled() else None,
+        "feature_hub": FEATURE_HUB if hub_fitness_enabled() else None,
         "ingested": ingested,
         "hits_path": str(hits_path) if hits_path else None,
         "ledger": str(path),
@@ -451,6 +595,7 @@ def cycle(out_dir: Path | None = None, root: Path | None = None) -> dict[str, An
             1 for s in signals if "tool_outcome" in (s.get("tags") or [])
         ),
         "hub": hub_result,
+        "hub_fitness": hub_fit,
         "privacy_ok": True,
     }
 

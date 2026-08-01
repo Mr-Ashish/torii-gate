@@ -1044,6 +1044,9 @@ if [[ -f "$SKILL_ROUTER_HELPER" && $TIMED_OUT -eq 0 && "${HERMES_CLI_ARGV_BROKEN
       _rrp_tt="$(printf '%s\n' "$_rrp_kv" | sed -n 's/^tool_call_turns=//p' | head -1)"
       _rrp_idle="$(printf '%s\n' "$_rrp_kv" | sed -n 's/^idle_ids=//p' | head -1)"
       _rrp_ichars="$(printf '%s\n' "$_rrp_kv" | sed -n 's/^inject_chars=//p' | head -1)"
+      # F126: hub gap pressure bias fields from reprompt-decide
+      _rrp_hgp="$(printf '%s\n' "$_rrp_kv" | sed -n 's/^hub_gap_pressure=//p' | head -1)"
+      _rrp_hgb="$(printf '%s\n' "$_rrp_kv" | sed -n 's/^hub_gap_bias=//p' | head -1)"
       if [[ "$_rrp_do" == "1" || "$_rrp_do" == "true" ]] && [[ -f "$REPROMPT_BUDGET_HELPER" ]]; then
         _rbud_kv="$(python3 "$REPROMPT_BUDGET_HELPER" allow --out-dir "$OUT_DIR" --kind f122 2>/dev/null || true)"
         _rbud_allow="$(printf '%s\n' "$_rbud_kv" | sed -n 's/^allow=//p' | head -1)"
@@ -1056,7 +1059,7 @@ if [[ -f "$SKILL_ROUTER_HELPER" && $TIMED_OUT -eq 0 && "${HERMES_CLI_ARGV_BROKEN
       fi
       if [[ "$_rrp_do" == "1" || "$_rrp_do" == "true" ]]; then
         REC_REPROMPT_ATTEMPTED=1
-        notice "F122 recovery soft re-prompt · idle=${_rrp_idle:-?} tool_turns=${_rrp_tt:-?} (recovery_utilization_gap)"
+        notice "F122 recovery soft re-prompt · idle=${_rrp_idle:-?} tool_turns=${_rrp_tt:-?} reason=${REC_REPROMPT_REASON:-gap} hub_gap=${_rrp_hgp:-0}"
         if [[ -f "$REPROMPT_BUDGET_HELPER" ]]; then
           python3 "$REPROMPT_BUDGET_HELPER" consume --out-dir "$OUT_DIR" --kind f122 --note "attempt_start" >/dev/null 2>&1 || true
         fi
@@ -1068,12 +1071,17 @@ if [[ -f "$SKILL_ROUTER_HELPER" && $TIMED_OUT -eq 0 && "${HERMES_CLI_ARGV_BROKEN
         [[ -s "$OUT_DIR/prompt-memory-reprompt.md" ]] && _rrp_base="$OUT_DIR/prompt-memory-reprompt.md"
         [[ -s "$OUT_DIR/prompt-reprompt.md" ]] && _rrp_base="$OUT_DIR/prompt-reprompt.md"
         REC_REPROMPT_PROMPT="$OUT_DIR/prompt-recovery-reprompt.md"
+        # F126: pass hub gap pressure into recovery re-prompt body
+        export TORII_HUB_GAP_PRESSURE="${_rrp_hgp:-0}"
+        export TORII_HUB_GAP_BIAS="${_rrp_hgb:-0}"
         python3 "$SKILL_ROUTER_HELPER" reprompt-write \
           --prompt-in "$_rrp_base" \
           --prompt-out "$REC_REPROMPT_PROMPT" \
           --idle-ids "${_rrp_idle:-}" \
           --tool-turns "${_rrp_tt:-0}" \
-          --inject-chars "${_rrp_ichars:-0}" >/dev/null 2>&1 || true
+          --inject-chars "${_rrp_ichars:-0}" \
+          --hub-gap-pressure "${_rrp_hgp:-0}" \
+          --hub-gap-bias "${_rrp_hgb:-0}" >/dev/null 2>&1 || true
         if [[ -s "$REC_REPROMPT_PROMPT" ]]; then
           PROMPT="$(cat "$REC_REPROMPT_PROMPT")"
           LOG_OFFSET=0

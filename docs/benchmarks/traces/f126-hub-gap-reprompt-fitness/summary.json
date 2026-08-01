@@ -1,0 +1,22 @@
+{
+  "feature": "F126",
+  "scored_at": "2026-08-01T06:45:30Z",
+  "hub_gap_pressure": 0.3846,
+  "decide_reprompt": 1,
+  "decide_reason": "hub_gap_pressure_idle",
+  "hub_gap_bias": 1,
+  "fitness_ingested_n": 2,
+  "privacy_ok": true,
+  "model": "deepseek/deepseek-v4-pro",
+  "e2e": {
+    "repo": "pytorch/pytorch",
+    "pr": 191813,
+    "modal": true,
+    "bit3": "BIT3_OK",
+    "elapsed_s": 102.2,
+    "log_streaming": true,
+    "verdict": "REQUEST_CHANGES",
+    "post_comment": 0,
+    "modal_app": "https://modal.com/apps/mr-ashish/main/ap-WfshDcN9Y6erfq0QUsLG2H"
+  }
+}

@@ -92,6 +92,8 @@ if [[ -f "$TORII_ROOT/memory/federation/recovery-util-signals.json" ]]; then
 fi
 # F125: hub recovery-util post-score → always priority compound
 copy_if "$OUT_DIR/recovery-hub-score.json" "$TRACE_DIR/recovery-hub-score.json"
+# F126: hub gap re-prompt decide + fitness compound artifact
+copy_if "$OUT_DIR/recovery-reprompt-decide.json" "$TRACE_DIR/recovery-reprompt-decide.json"
 copy_if "$OUT_DIR/memory-tool-reprompt.env" "$TRACE_DIR/memory-tool-reprompt.env"
 copy_if "$OUT_DIR/memory-tool-audit.json" "$TRACE_DIR/memory-tool-audit.json"
 copy_if "$OUT_DIR/reprompt-budget.json" "$TRACE_DIR/reprompt-budget.json"

@@ -1,0 +1,20 @@
+{
+  "feature": "F122",
+  "feature_hub_gap": "F126",
+  "reprompt": 1,
+  "enabled": true,
+  "reason": "hub_gap_pressure_idle",
+  "utilization_gap": false,
+  "recovery_injected_n": 2,
+  "tool_hit_n": 1,
+  "tool_call_turns": 4,
+  "already_reprompted": false,
+  "util_rate": 0.5,
+  "inject_chars": 900,
+  "idle_ids": [
+    "skill-prefer-product-cli"
+  ],
+  "hub_gap_pressure": 0.3846,
+  "hub_gap_thr": 0.34,
+  "hub_gap_bias": 1
+}

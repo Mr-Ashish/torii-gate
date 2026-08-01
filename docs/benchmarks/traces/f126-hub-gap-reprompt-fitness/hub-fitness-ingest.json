@@ -1,0 +1,11 @@
+{
+  "feature": "F126",
+  "ingested_n": 2,
+  "skills": [
+    "skill-prefer-memory-cli-early",
+    "skill-prefer-product-cli"
+  ],
+  "privacy_ok": true,
+  "ledger": "/Users/ashishmishra/Documents/experiments/torii/.torii/skill-fitness.json",
+  "gap_pressure": 0.3846
+}
