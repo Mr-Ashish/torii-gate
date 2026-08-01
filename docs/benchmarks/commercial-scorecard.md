@@ -2,9 +2,9 @@
 
 # Commercial product scorecard
 
-_Generated: `2026-08-01T15:30:49Z` · schema **2** · **overall_est=8.5/10** (baseline 6.6) · commercial_ok=`True`_
+_Generated: `2026-08-01T15:38:21Z` · schema **2** · **overall_est=8.5/10** (baseline 6.6) · commercial_ok=`True`_
 
-Single commercial scorecard: golden path · buyer · public eval · install · ops · enterprise · gate cert · quieter · tool-use
+Single commercial scorecard: golden path · buyer · public eval · install · ops · enterprise · gate cert · quieter · tool-use · workflow
 
 Heuristic commercial score from hermetic surface fixtures — not a customer interview score. Cap 8.5 until live revenue proof.
 
@@ -15,7 +15,7 @@ Heuristic commercial score from hermetic surface fixtures — not a customer int
 | baseline overall | 6.6 |
 | overall_est | **8.5** |
 | lift | +1.9 |
-| surfaces pass | 9/9 |
+| surfaces pass | 10/10 |
 | post_queue_complete | True |
 
 ## Priority queue surfaces (1–6)
@@ -39,6 +39,14 @@ Gate certificate · quieter-over-time · agent tool-use — tools-as-code, not F
 | `quieter` | JTBD | own-repo quieter-over-time (dim 3) | yes |
 | `tool_use` | tools | agent tool-use quality (dims 3+12) | yes |
 
+## Core product (workflows-as-code)
+
+Deterministic pipeline graph vs LLM prose — validate offline before paid runs.
+
+| Surface | Target | Dim | Pass |
+|---------|--------|-----|:----:|
+| `workflow` | L3 | workflows-as-code (deterministic pipeline) | yes |
+
 ## Buyer artifacts
 
 | Artifact | Present |
@@ -52,6 +60,8 @@ Gate certificate · quieter-over-time · agent tool-use — tools-as-code, not F
 | `public_eval_md` | True |
 | `quieter_md` | True |
 | `tool_use_md` | True |
+| `workflow_yaml` | True |
+| `workflows_md` | True |
 
 ## Refresh
 
@@ -61,4 +71,4 @@ python3 scripts/commercial_scorecard.py fixture
 python3 scripts/torii.py commercial -- status
 ```
 
-Related: [GOLDEN-PATH](../GOLDEN-PATH.md) · [QUIETER](../QUIETER.md) · [TOOL-USE](../TOOL-USE.md) · [GATE](../GATE.md) · [public-eval](public-eval/SCORECARD.md) · [ops](../ops/DASHBOARD.md) · [enterprise](../enterprise/)
+Related: [GOLDEN-PATH](../GOLDEN-PATH.md) · [WORKFLOWS](../WORKFLOWS.md) · [QUIETER](../QUIETER.md) · [TOOL-USE](../TOOL-USE.md) · [GATE](../GATE.md) · [public-eval](public-eval/SCORECARD.md) · [ops](../ops/DASHBOARD.md) · [enterprise](../enterprise/)

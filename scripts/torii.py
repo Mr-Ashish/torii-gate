@@ -152,7 +152,7 @@ GROUPS: dict[str, dict[str, Any]] = {
     },
     "commercial": {
         "script": "commercial_scorecard.py",
-        "help": "Commercial rollup: golden/buyer/eval/install/ops/enterprise (→7.5+)",
+        "help": "Commercial rollup: queue 1–6 + cert/quieter/tools + workflow (→7.5+)",
         "examples": [
             "commercial -- fixture",
             "commercial -- report",

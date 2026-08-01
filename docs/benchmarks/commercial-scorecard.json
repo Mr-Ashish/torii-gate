@@ -1,16 +1,16 @@
 {
   "feature": "COMMERCIAL",
   "schema": 2,
-  "scored_at": "2026-08-01T15:30:49Z",
+  "scored_at": "2026-08-01T15:38:21Z",
   "scorecard_target": "7.5+",
-  "dim_lift": "commercial rollup of priority queue 1\u20136 + post-queue cert/quieter/tools",
-  "one_liner": "Single commercial scorecard: golden path \u00b7 buyer \u00b7 public eval \u00b7 install \u00b7 ops \u00b7 enterprise \u00b7 gate cert \u00b7 quieter \u00b7 tool-use",
+  "dim_lift": "commercial rollup: priority 1\u20136 + post-queue cert/quieter/tools + workflows-as-code",
+  "one_liner": "Single commercial scorecard: golden path \u00b7 buyer \u00b7 public eval \u00b7 install \u00b7 ops \u00b7 enterprise \u00b7 gate cert \u00b7 quieter \u00b7 tool-use \u00b7 workflow",
   "surfaces": [
     {
       "id": "golden_path",
       "target": "7.5",
       "dim": "commercial / simplicity path",
-      "weight": 0.18,
+      "weight": 0.17,
       "queue": "priority",
       "ok": true,
       "fixture": {
@@ -36,7 +36,7 @@
       "id": "buyer_narrative",
       "target": "8.0",
       "dim": "simplicity (narrative)",
-      "weight": 0.14,
+      "weight": 0.13,
       "queue": "priority",
       "ok": true,
       "fixture": {
@@ -64,7 +64,7 @@
       "id": "public_eval",
       "target": "8.5",
       "dim": "technical trust",
-      "weight": 0.16,
+      "weight": 0.15,
       "queue": "priority",
       "ok": true,
       "fixture": {
@@ -93,7 +93,7 @@
       "id": "install_ux",
       "target": "install",
       "dim": "install UX (dim 7)",
-      "weight": 0.11,
+      "weight": 0.1,
       "queue": "priority",
       "ok": true,
       "fixture": {
@@ -121,7 +121,7 @@
       "id": "ops",
       "target": "ops",
       "dim": "reliability/ops (dim 8)",
-      "weight": 0.11,
+      "weight": 0.1,
       "queue": "priority",
       "ok": true,
       "fixture": {
@@ -147,7 +147,7 @@
       "id": "enterprise",
       "target": "enterprise",
       "dim": "enterprise light (dim 9)",
-      "weight": 0.1,
+      "weight": 0.09,
       "queue": "priority",
       "ok": true,
       "fixture": {
@@ -171,7 +171,7 @@
       "id": "gate_certificate",
       "target": "evidence",
       "dim": "merge-authority certificate (dim 12)",
-      "weight": 0.08,
+      "weight": 0.07,
       "queue": "post",
       "ok": true,
       "fixture": {
@@ -199,7 +199,7 @@
       "id": "quieter",
       "target": "JTBD",
       "dim": "own-repo quieter-over-time (dim 3)",
-      "weight": 0.06,
+      "weight": 0.05,
       "queue": "post",
       "ok": true,
       "fixture": {
@@ -224,7 +224,7 @@
       "id": "tool_use",
       "target": "tools",
       "dim": "agent tool-use quality (dims 3+12)",
-      "weight": 0.06,
+      "weight": 0.05,
       "queue": "post",
       "ok": true,
       "fixture": {
@@ -245,6 +245,33 @@
           "scorecard_target"
         ]
       }
+    },
+    {
+      "id": "workflow",
+      "target": "L3",
+      "dim": "workflows-as-code (deterministic pipeline)",
+      "weight": 0.09,
+      "queue": "core",
+      "ok": true,
+      "fixture": {
+        "ok": true,
+        "rc": 0,
+        "fixture_pass": true,
+        "scorecard_target": null,
+        "script": "workflow_as_code.py",
+        "payload_keys": [
+          "feature",
+          "fixture_pass",
+          "valid",
+          "level",
+          "pct",
+          "phase_ok",
+          "guide_ok",
+          "stages",
+          "capabilities",
+          "workflow"
+        ]
+      }
     }
   ],
   "priority_surfaces": [
@@ -252,7 +279,7 @@
       "id": "golden_path",
       "target": "7.5",
       "dim": "commercial / simplicity path",
-      "weight": 0.18,
+      "weight": 0.17,
       "queue": "priority",
       "ok": true,
       "fixture": {
@@ -278,7 +305,7 @@
       "id": "buyer_narrative",
       "target": "8.0",
       "dim": "simplicity (narrative)",
-      "weight": 0.14,
+      "weight": 0.13,
       "queue": "priority",
       "ok": true,
       "fixture": {
@@ -306,7 +333,7 @@
       "id": "public_eval",
       "target": "8.5",
       "dim": "technical trust",
-      "weight": 0.16,
+      "weight": 0.15,
       "queue": "priority",
       "ok": true,
       "fixture": {
@@ -335,7 +362,7 @@
       "id": "install_ux",
       "target": "install",
       "dim": "install UX (dim 7)",
-      "weight": 0.11,
+      "weight": 0.1,
       "queue": "priority",
       "ok": true,
       "fixture": {
@@ -363,7 +390,7 @@
       "id": "ops",
       "target": "ops",
       "dim": "reliability/ops (dim 8)",
-      "weight": 0.11,
+      "weight": 0.1,
       "queue": "priority",
       "ok": true,
       "fixture": {
@@ -389,7 +416,7 @@
       "id": "enterprise",
       "target": "enterprise",
       "dim": "enterprise light (dim 9)",
-      "weight": 0.1,
+      "weight": 0.09,
       "queue": "priority",
       "ok": true,
       "fixture": {
@@ -415,7 +442,7 @@
       "id": "gate_certificate",
       "target": "evidence",
       "dim": "merge-authority certificate (dim 12)",
-      "weight": 0.08,
+      "weight": 0.07,
       "queue": "post",
       "ok": true,
       "fixture": {
@@ -443,7 +470,7 @@
       "id": "quieter",
       "target": "JTBD",
       "dim": "own-repo quieter-over-time (dim 3)",
-      "weight": 0.06,
+      "weight": 0.05,
       "queue": "post",
       "ok": true,
       "fixture": {
@@ -468,7 +495,7 @@
       "id": "tool_use",
       "target": "tools",
       "dim": "agent tool-use quality (dims 3+12)",
-      "weight": 0.06,
+      "weight": 0.05,
       "queue": "post",
       "ok": true,
       "fixture": {
@@ -491,12 +518,41 @@
       }
     }
   ],
+  "core_surfaces": [
+    {
+      "id": "workflow",
+      "target": "L3",
+      "dim": "workflows-as-code (deterministic pipeline)",
+      "weight": 0.09,
+      "queue": "core",
+      "ok": true,
+      "fixture": {
+        "ok": true,
+        "rc": 0,
+        "fixture_pass": true,
+        "scorecard_target": null,
+        "script": "workflow_as_code.py",
+        "payload_keys": [
+          "feature",
+          "fixture_pass",
+          "valid",
+          "level",
+          "pct",
+          "phase_ok",
+          "guide_ok",
+          "stages",
+          "capabilities",
+          "workflow"
+        ]
+      }
+    }
+  ],
   "estimate": {
     "baseline": 6.6,
     "overall_est": 8.5,
     "lift": 1.9,
-    "surfaces_pass": 9,
-    "surfaces_total": 9,
+    "surfaces_pass": 10,
+    "surfaces_total": 10,
     "pass_fraction": 1.0,
     "note": "Heuristic commercial score from hermetic surface fixtures \u2014 not a customer interview score. Cap 8.5 until live revenue proof."
   },
@@ -509,7 +565,9 @@
     "enterprise_privacy": true,
     "quieter_md": true,
     "tool_use_md": true,
-    "gate_md": true
+    "gate_md": true,
+    "workflows_md": true,
+    "workflow_yaml": true
   },
   "all_surfaces_pass": true,
   "priority_pass": true,

@@ -27,15 +27,15 @@ BASELINE_OVERALL = 6.6
 OUT_REL = Path("docs/benchmarks/commercial-scorecard.md")
 OUT_JSON = Path("docs/benchmarks/commercial-scorecard.json")
 
-# Priority queue surfaces (1–6) + post-queue (certificate / quieter / tool-use).
-# Weights sum ~1.0; post-queue lifts JTBD/simplicity without new F-stack.
+# Priority queue (1–6) + post-queue (cert / quieter / tools) + workflows-as-code.
+# Weights sum ~1.0; no new F-compound loops — package measured surfaces only.
 SURFACES: list[dict[str, Any]] = [
     {
         "id": "golden_path",
         "script": "golden_path_metrics.py",
         "target": "7.5",
         "dim": "commercial / simplicity path",
-        "weight": 0.18,
+        "weight": 0.17,
         "pass_key": "fixture_pass",
         "queue": "priority",
     },
@@ -44,7 +44,7 @@ SURFACES: list[dict[str, Any]] = [
         "script": "buyer_narrative_check.py",
         "target": "8.0",
         "dim": "simplicity (narrative)",
-        "weight": 0.14,
+        "weight": 0.13,
         "pass_key": "fixture_pass",
         "queue": "priority",
     },
@@ -53,7 +53,7 @@ SURFACES: list[dict[str, Any]] = [
         "script": "public_eval.py",
         "target": "8.5",
         "dim": "technical trust",
-        "weight": 0.16,
+        "weight": 0.15,
         "pass_key": "fixture_pass",
         "queue": "priority",
     },
@@ -62,7 +62,7 @@ SURFACES: list[dict[str, Any]] = [
         "script": "install_ux_check.py",
         "target": "install",
         "dim": "install UX (dim 7)",
-        "weight": 0.11,
+        "weight": 0.10,
         "pass_key": "fixture_pass",
         "queue": "priority",
     },
@@ -71,7 +71,7 @@ SURFACES: list[dict[str, Any]] = [
         "script": "ops_dashboard.py",
         "target": "ops",
         "dim": "reliability/ops (dim 8)",
-        "weight": 0.11,
+        "weight": 0.10,
         "pass_key": "fixture_pass",
         "queue": "priority",
     },
@@ -80,7 +80,7 @@ SURFACES: list[dict[str, Any]] = [
         "script": "enterprise_surface.py",
         "target": "enterprise",
         "dim": "enterprise light (dim 9)",
-        "weight": 0.10,
+        "weight": 0.09,
         "pass_key": "fixture_pass",
         "queue": "priority",
     },
@@ -89,7 +89,7 @@ SURFACES: list[dict[str, Any]] = [
         "script": "gate_certificate.py",
         "target": "evidence",
         "dim": "merge-authority certificate (dim 12)",
-        "weight": 0.08,
+        "weight": 0.07,
         "pass_key": "fixture_pass",
         "queue": "post",
     },
@@ -98,7 +98,7 @@ SURFACES: list[dict[str, Any]] = [
         "script": "quieter_over_time.py",
         "target": "JTBD",
         "dim": "own-repo quieter-over-time (dim 3)",
-        "weight": 0.06,
+        "weight": 0.05,
         "pass_key": "fixture_pass",
         "queue": "post",
     },
@@ -107,9 +107,18 @@ SURFACES: list[dict[str, Any]] = [
         "script": "tool_use_quality.py",
         "target": "tools",
         "dim": "agent tool-use quality (dims 3+12)",
-        "weight": 0.06,
+        "weight": 0.05,
         "pass_key": "fixture_pass",
         "queue": "post",
+    },
+    {
+        "id": "workflow",
+        "script": "workflow_as_code.py",
+        "target": "L3",
+        "dim": "workflows-as-code (deterministic pipeline)",
+        "weight": 0.09,
+        "pass_key": "fixture_pass",
+        "queue": "core",
     },
 ]
 
@@ -218,20 +227,27 @@ def build_report(root: Path | None = None) -> dict[str, Any]:
         "quieter_md": (root / "docs" / "QUIETER.md").is_file(),
         "tool_use_md": (root / "docs" / "TOOL-USE.md").is_file(),
         "gate_md": (root / "docs" / "GATE.md").is_file(),
+        "workflows_md": (root / "docs" / "WORKFLOWS.md").is_file(),
+        "workflow_yaml": (
+            root / "docs" / "workflows" / "torii-gate.workflow.yaml"
+        ).is_file(),
     }
     report = {
         "feature": FEATURE,
         "schema": SCHEMA,
         "scored_at": _now(),
         "scorecard_target": "7.5+",
-        "dim_lift": "commercial rollup of priority queue 1–6 + post-queue cert/quieter/tools",
+        "dim_lift": (
+            "commercial rollup: priority 1–6 + post-queue cert/quieter/tools + workflows-as-code"
+        ),
         "one_liner": (
             "Single commercial scorecard: golden path · buyer · public eval · "
-            "install · ops · enterprise · gate cert · quieter · tool-use"
+            "install · ops · enterprise · gate cert · quieter · tool-use · workflow"
         ),
         "surfaces": results,
         "priority_surfaces": priority,
         "post_queue_surfaces": post,
+        "core_surfaces": [r for r in results if r.get("queue") == "core"],
         "estimate": est,
         "artifacts": artifacts,
         "all_surfaces_pass": all(r.get("ok") for r in results),
@@ -300,6 +316,24 @@ def render_md(report: dict[str, Any]) -> str:
         lines.append(
             f"| `{r.get('id')}` | {r.get('target')} | {r.get('dim')} | {mark} |"
         )
+    core_rows = report.get("core_surfaces") or [
+        x for x in (report.get("surfaces") or []) if x.get("queue") == "core"
+    ]
+    if core_rows:
+        lines += [
+            "",
+            "## Core product (workflows-as-code)",
+            "",
+            "Deterministic pipeline graph vs LLM prose — validate offline before paid runs.",
+            "",
+            "| Surface | Target | Dim | Pass |",
+            "|---------|--------|-----|:----:|",
+        ]
+        for r in core_rows:
+            mark = "yes" if r.get("ok") else "**no**"
+            lines.append(
+                f"| `{r.get('id')}` | {r.get('target')} | {r.get('dim')} | {mark} |"
+            )
     lines += [
         "",
         "## Buyer artifacts",
@@ -320,6 +354,7 @@ def render_md(report: dict[str, Any]) -> str:
         "```",
         "",
         "Related: [GOLDEN-PATH](../GOLDEN-PATH.md) · "
+        "[WORKFLOWS](../WORKFLOWS.md) · "
         "[QUIETER](../QUIETER.md) · [TOOL-USE](../TOOL-USE.md) · "
         "[GATE](../GATE.md) · "
         "[public-eval](public-eval/SCORECARD.md) · "

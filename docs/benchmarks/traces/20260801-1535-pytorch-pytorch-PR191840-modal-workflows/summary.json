@@ -1,0 +1,21 @@
+{
+  "feature": "WORKFLOWS",
+  "schema_version": 1,
+  "repo": "pytorch/pytorch",
+  "pr": "191840",
+  "model": "deepseek/deepseek-v4-pro",
+  "host": "modal",
+  "bit3": true,
+  "elapsed_s": 114.1,
+  "log_streaming": true,
+  "tool_call_turns": 2,
+  "post_comment": 0,
+  "verdict": "APPROVE",
+  "block": false,
+  "certificate_id": "gc-d810cd398488ea3a",
+  "notes": "WORKFLOWS buyer surface + commercial workflow surface; verdict_rc=0 confirms report-verdict fix",
+  "scored_at": "2026-08-01T15:38:19Z",
+  "modal_run": "https://modal.com/apps/mr-ashish/main/ap-l5t6Q8kIZZoHRTScxiFMOt",
+  "cost_usd": 0.008625876000000001,
+  "verdict_rc": 0
+}

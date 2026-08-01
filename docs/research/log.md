@@ -1,4 +1,36 @@
 
+## 2026-08-01 — WORKFLOWS: buyer surface + commercial workflow L3
+
+### Papers / posts
+- Loop Engineering: pipeline as explicit stages/skills, not SOUL prose.
+- Core product brief: deterministic workflows-as-code vs LLM prose.
+- After queue+post-queue: package workflow as commercial surface + buyer doc.
+
+### Decide / copy / skip
+- **Copy:** docs/WORKFLOWS.md buyer front door (validate offline before spend).
+- **Copy:** commercial surface `workflow` (workflow_as_code fixture L3).
+- **Copy:** landing beat for workflows-as-code; PRODUCT link.
+- **Skip:** F185+ compound loops; no new pipeline stages.
+
+### Feature shipped (WORKFLOWS)
+- docs/WORKFLOWS.md · commercial 10th surface · landing card · torii help string
+- Live confirmed report-verdict.sh fix (verdict_rc=0)
+
+### Metric
+- Offline: commercial 10/10 · overall_est 8.5 · workflow fixture L3
+- Live Modal: pytorch#191840 BIT3_OK ~114.1s tools=2 verdict_rc=0 POST_COMMENT=0
+- Traces: docs/benchmarks/traces/20260801-1535-pytorch-pytorch-PR191840-modal-workflows/
+
+### scorecard_target
+simplicity (#12) · commercial completeness
+
+### dim_lift
+workflows-as-code visible to buyers + scored in commercial rollup
+
+### SHA
+_pending_
+
+
 ## 2026-08-01 — COMMERCIAL_V2: post-queue surfaces in commercial rollup
 
 ### Papers / posts

@@ -34,7 +34,7 @@ class CommercialScorecardTests(unittest.TestCase):
         self.assertTrue(data.get("post_queue_complete"), data)
         self.assertGreaterEqual(float(data["overall_est"]), 7.5)
         self.assertEqual(data["surfaces_pass"], data["surfaces_total"])
-        self.assertGreaterEqual(int(data["surfaces_total"]), 9)
+        self.assertGreaterEqual(int(data["surfaces_total"]), 10)
 
     def test_report_writes(self):
         r = _run(["report", "--json"])
@@ -43,7 +43,14 @@ class CommercialScorecardTests(unittest.TestCase):
         self.assertTrue(data.get("commercial_ok"), data)
         self.assertTrue(data.get("post_queue_complete"), data)
         ids = {s.get("id") for s in (data.get("surfaces") or [])}
-        for need in ("golden_path", "enterprise", "gate_certificate", "quieter", "tool_use"):
+        for need in (
+            "golden_path",
+            "enterprise",
+            "gate_certificate",
+            "quieter",
+            "tool_use",
+            "workflow",
+        ):
             self.assertIn(need, ids)
         md = ROOT / "docs" / "benchmarks" / "commercial-scorecard.md"
         js = ROOT / "docs" / "benchmarks" / "commercial-scorecard.json"
@@ -57,6 +64,8 @@ class CommercialScorecardTests(unittest.TestCase):
         self.assertIn("gate_certificate", body)
         self.assertIn("Post-queue", body)
         self.assertIn("tool_use", body)
+        self.assertIn("workflows-as-code", body)
+        self.assertTrue((ROOT / "docs" / "WORKFLOWS.md").is_file())
 
 
 if __name__ == "__main__":
