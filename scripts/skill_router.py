@@ -1322,11 +1322,30 @@ def select_skills(
         except Exception:
             sc_hub_report = {"enabled": False, "priority_deltas": {}, "skills": {}}
 
+    # F142: hub memory-util post-score → always/select priority for memory CLI skills
+    mem_hub_report: dict[str, Any] = {
+        "enabled": False,
+        "priority_deltas": {},
+        "skills": {},
+    }
+    try:
+        sys.path.insert(0, str(Path(__file__).resolve().parent))
+        from memory_tool_audit import (  # type: ignore
+            memory_hub_enabled,
+            post_score_memory_util_hub,
+        )
+
+        if memory_hub_enabled():
+            mem_hub_report = post_score_memory_util_hub(root=root or _root())
+    except Exception:
+        mem_hub_report = {"enabled": False, "priority_deltas": {}, "skills": {}}
+
     def _effective_always_prio(c: SkillCard) -> int:
         return (
             int(c.always_priority or 0)
             + hub_priority_delta(c.id, hub_report)
             + hub_priority_delta(c.id, sc_hub_report)
+            + hub_priority_delta(c.id, mem_hub_report)
         )
 
     # F119: always-on budget — rank always candidates by always_priority (+ F125 hub), take top N
@@ -1355,6 +1374,12 @@ def select_skills(
         hd_sc = hub_priority_delta(c.id, sc_hub_report)
         if hd_sc:
             s += min(12.0, float(hd_sc) / 4.0)
+        # F142: hub-hit memory util skills win always/residual slots
+        hd_mem = hub_priority_delta(c.id, mem_hub_report)
+        if hd_mem:
+            s += min(12.0, float(hd_mem) / 4.0)
+            if c.id in always_deferred_set:
+                s += min(6.0, float(hd_mem) / 6.0)
         ranked.append((s, c))
     ranked.sort(key=lambda x: (-x[0], x[1].id))
 
@@ -1444,6 +1469,15 @@ def select_skills(
         "scorecard_hub_priority_deltas": sc_hub_deltas,
         "scorecard_hub_gap_pressure": sc_hub_report.get("gap_pressure"),
         "scorecard_hub_skill_n": sc_hub_report.get("skill_n"),
+        "memory_hub_priority_deltas": {
+            k: v
+            for k, v in (mem_hub_report.get("priority_deltas") or {}).items()
+        },
+        "memory_hub_gap_pressure": mem_hub_report.get("gap_pressure"),
+        "memory_hub_skill_n": mem_hub_report.get("skill_n"),
+        "feature_memory_hub": "F142"
+        if (mem_hub_report.get("enabled") or mem_hub_report.get("skill_n"))
+        else None,
         "ranking": [
             {
                 "id": c.id,
@@ -1453,6 +1487,7 @@ def select_skills(
                 "always_priority_effective": _effective_always_prio(c),
                 "hub_delta": hub_priority_delta(c.id, hub_report),
                 "scorecard_hub_delta": hub_priority_delta(c.id, sc_hub_report),
+                "memory_hub_delta": hub_priority_delta(c.id, mem_hub_report),
                 "always_deferred": c.id in always_deferred_set,
                 "demoted": c.id in demoted and c.id not in always_selected_ids,
                 "free_rider": c.id in free_riders and c.id not in always_selected_ids,
@@ -1683,6 +1718,18 @@ def inject_into_prompt(
             sc_hub_inj = inject_scorecard_hub_into_prompt(dest, root=root)
         except Exception as exc:
             sc_hub_inj = {"injected": 0, "soft_error": str(exc)[:80]}
+    # F142: inject hub memory util compound section (soft)
+    mem_hub_inj: dict[str, Any] = {"injected": 0}
+    try:
+        from memory_tool_audit import (  # type: ignore
+            inject_memory_hub_into_prompt,
+            memory_hub_enabled,
+        )
+
+        if memory_hub_enabled():
+            mem_hub_inj = inject_memory_hub_into_prompt(dest, root=root)
+    except Exception as exc:
+        mem_hub_inj = {"injected": 0, "soft_error": str(exc)[:80]}
 
     result = {
         "feature": FEATURE,
@@ -1713,6 +1760,11 @@ def inject_into_prompt(
         "scorecard_hub_priority_deltas": selection.get(
             "scorecard_hub_priority_deltas"
         ),
+        "memory_hub_injected": int(mem_hub_inj.get("injected") or 0),
+        "memory_hub_skill_n": selection.get("memory_hub_skill_n"),
+        "memory_hub_gap_pressure": selection.get("memory_hub_gap_pressure"),
+        "memory_hub_priority_deltas": selection.get("memory_hub_priority_deltas"),
+        "feature_memory_hub": selection.get("feature_memory_hub"),
     }
     # write selection artifact next to prompt if OUT_DIR
     od = (os.environ.get("OUT_DIR") or "").strip()

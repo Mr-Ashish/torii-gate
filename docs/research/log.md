@@ -1,5 +1,37 @@
 # Torii research → product log
 
+## 2026-08-01 — F142 memory util hub post-score compound
+
+### Papers / posts
+- F125/F138 hub post-score: federated util → skill priority for next inject.
+- Mem0 multi-tenant: share util themes not raw memory content.
+- F141 federate without post-score left memory skill rank inert.
+
+### OSS design patterns stolen
+1. post_score_memory_util_hub + hub-score CLI + inject marker.
+2. skill_router always/select bump for skill-prefer-memory-cli-early.
+3. soft fitness ingest_hub_recovery reshape; fixture f142_*.
+4. run-torii-review/save-trace wiring.
+
+### Insight
+Federated memory util without hub post-score is inert. Highest ROI: F125-style priority compound so multi-tenant tool-effective memory skills win always slots.
+
+### Feature shipped (F142)
+- memory_tool_audit hub post-score/inject/hub-score
+- skill_router memory hub deltas; PRODUCT/research
+- traces f142-memory-util-hub-compound/
+
+### Metric
+- Offline: fixture f142_ok privacy; pytest memory_tool_audit
+- Live: Modal pytorch e2e POST_COMMENT=0
+
+### Loop-engineering / Hermes practice used
+**Federate → post-score → prioritize next cycle** — memory mirrors recovery F125.
+
+### SHA
+`PENDING`
+
+
 ## 2026-08-01 — F141 memory util federate + critic demote
 
 ### Papers / posts

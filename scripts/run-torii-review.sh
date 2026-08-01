@@ -178,6 +178,9 @@ if [[ -f "$SCRIPTS/memory_tool_audit.py" ]]; then
       fi
       stage memory_tool_audit \
         python3 "$SCRIPTS/memory_tool_audit.py" "${_f105_args[@]}" || true
+      # F142: hub post-score memory util → next-run memory skill priority
+      stage memory_hub_score \
+        python3 "$SCRIPTS/memory_tool_audit.py" hub-score || true
       ;;
   esac
 fi

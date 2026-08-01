@@ -129,6 +129,9 @@ if [[ -f "$TORII_ROOT/memory/federation/memory-util-signals.json" ]]; then
   copy_if "$TORII_ROOT/memory/federation/memory-util-signals.json" "$TRACE_DIR/memory-util-signals.fed.json"
 fi
 copy_if "$OUT_DIR/memory-util-signals.json" "$TRACE_DIR/memory-util-signals.json"
+# F142: memory util hub post-score
+copy_if "$OUT_DIR/memory-hub-score.json" "$TRACE_DIR/memory-hub-score.json"
+
 
 copy_if "$OUT_DIR/reprompt-budget.json" "$TRACE_DIR/reprompt-budget.json"
 # second-agent critic panel (includes F121 recovery util checker)

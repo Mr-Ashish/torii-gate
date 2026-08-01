@@ -82,3 +82,13 @@ Source: `skill_attribution.py attribute` / fixture.
 | f141 demote | APPROVE → COMMENT on inject_unused |
 
 Source: `memory_tool_audit.py` / second-agent critic.
+
+## F142 memory util hub compound
+
+| Metric | Meaning |
+|--------|---------|
+| memory_hub_skill_n | Memory skills with hub tool-hit themes |
+| priority_delta | Always/select rank bump from multi-tenant util |
+| gap_pressure | Federated memory util gap fraction |
+
+Source: `python3 scripts/memory_tool_audit.py hub-score`.

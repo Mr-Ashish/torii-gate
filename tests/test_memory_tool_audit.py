@@ -43,6 +43,11 @@ class MemoryToolAuditTests(unittest.TestCase):
         self.assertTrue(data.get("f141_privacy_ok"), data)
         self.assertGreaterEqual(int(data.get("f141_fed_good_n") or 0), 1)
         self.assertGreaterEqual(int(data.get("f141_fed_weak_n") or 0), 1)
+        # F142 hub post-score
+        self.assertTrue(data.get("f142") or data.get("feature_hub") == "F142")
+        self.assertTrue(data.get("f142_ok"), data)
+        self.assertGreaterEqual(int(data.get("f142_hub_delta") or 0), 5)
+        self.assertEqual(int(data.get("f142_hub_inject") or 0), 1)
 
     def test_scan_detects_torii_memory(self):
         with tempfile.TemporaryDirectory() as td:

@@ -51,11 +51,28 @@ FEATURE = "F105"
 FEATURE_REPROMPT = "F106"
 FEATURE_UTIL_EVAL = "F130"
 FEATURE_FEDERATE = "F141"
+FEATURE_HUB = "F142"
 SCHEMA = 1
 MARKER = "<!-- torii-f105-memory-tool-audit -->"
 REPROMPT_MARKER = "## Soft re-prompt (Torii F106 / memory tools)"
 REPORT_NAME = "memory-tool-audit.json"
 FED_NAME = "memory-util-signals.json"
+HUB_MARKER_OPEN = "<!-- torii-f142-memory-util-hub -->"
+HUB_MARKER_CLOSE = "<!-- /torii-f142-memory-util-hub -->"
+
+# Map privacy-safe tool theme ids → skill ids for hub priority (F142)
+_TOOL_TO_SKILL: dict[str, str] = {
+    "torii_memory": "skill-prefer-memory-cli-early",
+    "torii_product_memory": "skill-prefer-memory-cli-early",
+    "archival_search": "skill-prefer-memory-cli-early",
+    "memory_graph": "skill-prefer-memory-cli-early",
+    "memory_tiers": "skill-prefer-memory-cli-early",
+    "memory_compound": "skill-prefer-memory-cli-early",
+    "scoped_recall": "skill-prefer-memory-cli-early",
+    "memory_events": "skill-prefer-memory-cli-early",
+    "memory_consolidate": "skill-prefer-memory-cli-early",
+    "memory_loop": "skill-prefer-memory-cli-early",
+}
 
 _FALSEY = frozenset({"0", "false", "no", "off", "disabled", "n", "none", ""})
 
@@ -547,6 +564,269 @@ def federate_memory_util(
     }
 
 
+def memory_hub_enabled() -> bool:
+    """F142: post-score multi-tenant memory util → skill priority compound."""
+    raw = (os.environ.get("TORII_MEMORY_UTIL_HUB") or "1").strip().lower()
+    return raw not in _FALSEY
+
+
+def load_memory_util_hub_signals(root: Path | None = None) -> list[dict[str, Any]]:
+    """Load privacy-safe F141 memory util signals from federation store(s)."""
+    root = root or _root()
+    paths = [
+        root / "memory" / "federation" / FED_NAME,
+    ]
+    od = (os.environ.get("OUT_DIR") or "").strip()
+    if od:
+        paths.insert(0, Path(od) / FED_NAME)
+    out: list[dict[str, Any]] = []
+    seen: set[str] = set()
+    for p in paths:
+        if not p.is_file():
+            continue
+        try:
+            data = json.loads(p.read_text(encoding="utf-8"))
+        except (OSError, json.JSONDecodeError):
+            continue
+        sigs = data.get("signals") if isinstance(data, dict) else data
+        if not isinstance(sigs, list):
+            continue
+        for s in sigs:
+            if not isinstance(s, dict):
+                continue
+            tags = [str(t).lower() for t in (s.get("tags") or [])]
+            theme = str(s.get("theme") or s.get("id") or "").lower()
+            if (
+                "memory_util" not in tags
+                and "f141" not in tags
+                and not theme.startswith("memory-util")
+                and not theme.startswith("memory-tool")
+            ):
+                continue
+            blob = json.dumps(s, ensure_ascii=False)
+            if "/Users/" in blob or "/home/" in blob:
+                continue
+            key = str(s.get("id") or theme)
+            if key in seen:
+                continue
+            seen.add(key)
+            out.append(dict(s))
+    return out
+
+
+def post_score_memory_util_hub(
+    signals: list[dict[str, Any]] | None = None,
+    *,
+    root: Path | None = None,
+) -> dict[str, Any]:
+    """F142: post-score hub memory-util themes → memory skill priority deltas.
+
+    Privacy: skill_id + hits + tenant counts + util bins only (no paths/commands).
+    Mirrors F125 recovery / F138 scorecard hub compound for Mem0/Letta tool themes.
+    """
+    root = root or _root()
+    signals = signals if signals is not None else load_memory_util_hub_signals(root)
+    skill_scores: dict[str, dict[str, Any]] = {}
+    gap_hits = 0
+    ok_hits = 0
+    gap_tenants = 0
+    ok_tenants = 0
+
+    for s in signals:
+        theme = str(s.get("theme") or s.get("id") or "").lower()
+        hits = max(1, int(s.get("hits") or 1))
+        tenants = max(1, int(s.get("tenants") or len(s.get("tenant_hashes") or []) or 1))
+        util_bin = str(s.get("util_rate_bin") or "").lower()
+        tags = [str(t).lower() for t in (s.get("tags") or [])]
+
+        if (
+            theme in ("memory-util-gap", "memory-util-inject-idle")
+            or util_bin in ("gap", "idle")
+            or "utilization_gap" in tags
+        ):
+            gap_hits += hits
+            gap_tenants = max(gap_tenants, tenants)
+            continue
+        if theme in ("memory-util-ok",) or util_bin in ("full", "partial", "ok"):
+            if theme.startswith("memory-util") and "tool" not in theme:
+                ok_hits += hits
+                ok_tenants = max(ok_tenants, tenants)
+                # aggregate ok still boosts default memory skill
+                sid = "skill-prefer-memory-cli-early"
+                ent = skill_scores.setdefault(
+                    sid,
+                    {
+                        "skill_id": sid,
+                        "hits": 0,
+                        "tenants": 0,
+                        "tool_hits": 0,
+                        "priority_delta": 0,
+                        "util_rate_bin": util_bin or "ok",
+                    },
+                )
+                ent["hits"] = int(ent["hits"]) + hits
+                ent["tenants"] = max(int(ent["tenants"]), tenants)
+                ent["tool_hits"] = int(ent["tool_hits"]) + max(1, hits)
+                continue
+
+        # tool theme → skill map
+        sid = ""
+        for tool_key, skill_id in _TOOL_TO_SKILL.items():
+            if tool_key in theme or theme.endswith(tool_key.replace("_", "-")):
+                sid = skill_id
+                break
+        if not sid and theme.startswith("memory-tool-"):
+            slug = theme.replace("memory-tool-", "").replace("-", "_")
+            sid = _TOOL_TO_SKILL.get(slug, "skill-prefer-memory-cli-early")
+        if not sid:
+            continue
+
+        ent = skill_scores.setdefault(
+            sid,
+            {
+                "skill_id": sid,
+                "hits": 0,
+                "tenants": 0,
+                "tool_hits": 0,
+                "priority_delta": 0,
+                "util_rate_bin": util_bin or "hit",
+            },
+        )
+        ent["hits"] = int(ent["hits"]) + hits
+        ent["tenants"] = max(int(ent["tenants"]), tenants)
+        tool_hits = int(s.get("tool_hits") or (hits if util_bin == "hit" else 0))
+        ent["tool_hits"] = int(ent["tool_hits"]) + max(1, tool_hits)
+        if util_bin:
+            ent["util_rate_bin"] = util_bin
+
+    for sid, ent in skill_scores.items():
+        t = min(4, int(ent["tenants"]))
+        h = min(8, int(ent["hits"]))
+        th = min(6, int(ent["tool_hits"]))
+        delta = 5 + 8 * t + 2 * h + 3 * th
+        ent["priority_delta"] = min(40, int(delta))
+
+    total_sys = gap_hits + ok_hits
+    gap_pressure = round(gap_hits / total_sys, 4) if total_sys else 0.0
+
+    blob = json.dumps(skill_scores)
+    privacy_ok = (
+        "/Users/" not in blob
+        and "/home/" not in blob
+        and "C:\\\\Users" not in blob
+    )
+
+    report: dict[str, Any] = {
+        "feature": FEATURE_HUB,
+        "schema": SCHEMA,
+        "enabled": memory_hub_enabled(),
+        "signals_n": len(signals),
+        "skill_n": len(skill_scores),
+        "skills": skill_scores,
+        "priority_deltas": {k: v["priority_delta"] for k, v in skill_scores.items()},
+        "gap_hits": gap_hits,
+        "ok_hits": ok_hits,
+        "gap_tenants": gap_tenants,
+        "ok_tenants": ok_tenants,
+        "gap_pressure": gap_pressure,
+        "privacy_ok": privacy_ok,
+        "hub_ok": privacy_ok
+        and (len(skill_scores) >= 1 or ok_hits >= 1 or gap_hits >= 0),
+    }
+    return report
+
+
+def render_memory_hub_section(hub: dict[str, Any]) -> str:
+    """Privacy-safe prompt section: hub memory util themes (ids + bins only)."""
+    lines = [
+        HUB_MARKER_OPEN,
+        "## Federated memory util (F142 hub compound)",
+        "",
+        "Cross-tenant memory tool outcomes (skill/tool themes + util bins only; no paths):",
+    ]
+    skills = hub.get("skills") or {}
+    if skills:
+        ranked = sorted(
+            skills.values(),
+            key=lambda e: (-int(e.get("priority_delta") or 0), str(e.get("skill_id"))),
+        )
+        for e in ranked[:8]:
+            lines.append(
+                f"- `{e.get('skill_id')}`: hits={e.get('hits')} tenants={e.get('tenants')} "
+                f"tool_hits={e.get('tool_hits')} Δprio=+{e.get('priority_delta')} "
+                f"bin={e.get('util_rate_bin')}"
+            )
+    else:
+        lines.append(
+            "- (no hub memory util themes yet — local memory CLI always budget applies)"
+        )
+    gp = float(hub.get("gap_pressure") or 0)
+    if gp >= 0.34:
+        lines.append(
+            f"- **Hub memory util gap pressure={gp:.2f}** — prefer early "
+            "`python3 scripts/torii.py memory -- search` before re-raising themes."
+        )
+    elif int(hub.get("ok_hits") or 0) >= 1:
+        lines.append(
+            f"- Hub memory util_ok hits={hub.get('ok_hits')} — keep memory tools in the loop."
+        )
+    lines.append(HUB_MARKER_CLOSE)
+    return "\n".join(lines) + "\n"
+
+
+def inject_memory_hub_into_prompt(
+    prompt: Path,
+    hub: dict[str, Any] | None = None,
+    *,
+    root: Path | None = None,
+) -> dict[str, Any]:
+    """Inject/replace F142 hub memory util section in prompt.md."""
+    root = root or _root()
+    hub = hub if hub is not None else post_score_memory_util_hub(root=root)
+    if not memory_hub_enabled():
+        return {
+            "feature": FEATURE_HUB,
+            "injected": 0,
+            "reason": "off",
+            "hub": hub,
+        }
+    section = render_memory_hub_section(hub)
+    try:
+        original = prompt.read_text(encoding="utf-8", errors="replace")
+    except OSError as exc:
+        return {"feature": FEATURE_HUB, "injected": 0, "error": str(exc)[:120]}
+    if HUB_MARKER_OPEN in original:
+        new = re.sub(
+            rf"{re.escape(HUB_MARKER_OPEN)}.*?{re.escape(HUB_MARKER_CLOSE)}\n?",
+            section,
+            original,
+            count=1,
+            flags=re.DOTALL,
+        )
+    else:
+        marker = "## PR metadata"
+        if marker in original:
+            new = original.replace(marker, section + "\n" + marker, 1)
+        elif MARKER in original:
+            # after F105 audit section close if present
+            new = original.rstrip() + "\n\n" + section
+        else:
+            new = section + "\n" + original
+    try:
+        prompt.write_text(new if new.endswith("\n") else new + "\n", encoding="utf-8")
+    except OSError as exc:
+        return {"feature": FEATURE_HUB, "injected": 0, "error": str(exc)[:120]}
+    return {
+        "feature": FEATURE_HUB,
+        "injected": 1,
+        "chars": len(section),
+        "skill_n": int(hub.get("skill_n") or 0),
+        "gap_pressure": hub.get("gap_pressure"),
+        "privacy_ok": hub.get("privacy_ok"),
+        "priority_deltas": hub.get("priority_deltas"),
+    }
+
+
 def render_inject_section() -> str:
     return (
         f"{MARKER}\n"
@@ -853,10 +1133,12 @@ def cmd_status(args: argparse.Namespace) -> int:
                 "feature": FEATURE,
                 "reprompt_feature": FEATURE_REPROMPT,
                 "feature_federate": FEATURE_FEDERATE,
+                "feature_hub": FEATURE_HUB,
                 "enabled": enabled(),
                 "fitness_blend": fitness_blend_enabled(),
                 "reprompt_enabled": reprompt_enabled(),
                 "federate_enabled": memory_util_federate_enabled(),
+                "hub_enabled": memory_hub_enabled(),
                 "patterns": [t for t, _ in _MEMORY_CMD_PATTERNS],
             },
             indent=2,
@@ -1079,6 +1361,28 @@ def cmd_fixture(args: argparse.Namespace) -> int:
             and (td_path / "memory" / "federation" / FED_NAME).is_file()
         )
 
+        # F142: hub post-score priority + inject
+        os.environ["TORII_MEMORY_UTIL_HUB"] = "1"
+        # multi-tenant util_ok for priority
+        federate_memory_util(good, root=td_path, tenant="fixture-tenant-mem2")
+        hub = post_score_memory_util_hub(root=td_path)
+        mem_sid = "skill-prefer-memory-cli-early"
+        mem_delta = int((hub.get("priority_deltas") or {}).get(mem_sid) or 0)
+        prompt_hub = td_path / "prompt-hub.md"
+        prompt_hub.write_text("# Review\n## PR metadata\n", encoding="utf-8")
+        hub_inj = inject_memory_hub_into_prompt(prompt_hub, hub=hub, root=td_path)
+        hub_text = prompt_hub.read_text(encoding="utf-8")
+        f142_ok = (
+            bool(hub.get("privacy_ok"))
+            and int(hub.get("skill_n") or 0) >= 1
+            and mem_delta >= 5
+            and int(hub_inj.get("injected") or 0) == 1
+            and HUB_MARKER_OPEN in hub_text
+            and mem_sid in hub_text
+            and "/Users/" not in hub_text
+            and "fixture-tenant" not in hub_text
+        )
+
         fixture_pass = all(
             [
                 good_ok,
@@ -1089,13 +1393,16 @@ def cmd_fixture(args: argparse.Namespace) -> int:
                 reprompt_ok,
                 write_ok,
                 f141_ok,
+                f142_ok,
             ]
         )
         out = {
             "feature": FEATURE,
             "reprompt_feature": FEATURE_REPROMPT,
             "feature_federate": FEATURE_FEDERATE,
+            "feature_hub": FEATURE_HUB,
             "f141": True,
+            "f142": True,
             "fixture_pass": fixture_pass,
             "good_score": good["score"],
             "weak_score": weak["score"],
@@ -1111,6 +1418,12 @@ def cmd_fixture(args: argparse.Namespace) -> int:
             "f141_fed_good_n": fed_good.get("fed_n"),
             "f141_fed_weak_n": fed_weak.get("fed_n"),
             "f141_privacy_ok": fed_good.get("privacy_ok") and fed_weak.get("privacy_ok"),
+            "f142_ok": f142_ok,
+            "f142_hub_skill_n": hub.get("skill_n"),
+            "f142_hub_delta": mem_delta,
+            "f142_hub_inject": hub_inj.get("injected"),
+            "f142_hub_privacy": hub.get("privacy_ok"),
+            "f142_gap_pressure": hub.get("gap_pressure"),
             "dec_weak": dec_weak,
             "dec_good_reason": dec_good.get("reason"),
             "dec_zero_reason": dec_zero.get("reason"),
@@ -1280,6 +1593,17 @@ def main(argv: list[str] | None = None) -> int:
     pfed.add_argument("--tenant", default="")
     pfed.set_defaults(func=cmd_federate)
 
+    phub = sub.add_parser(
+        "hub-score",
+        help="F142 post-score hub memory-util themes → skill priority deltas",
+    )
+    phub.add_argument(
+        "--inject",
+        default="",
+        help="optional prompt.md path to inject memory hub section",
+    )
+    phub.set_defaults(func=cmd_hub_score)
+
     pst = sub.add_parser("status")
     pst.set_defaults(func=cmd_status)
 
@@ -1325,6 +1649,57 @@ def cmd_federate(args: argparse.Namespace) -> int:
     report = federate_memory_util(util, root=root, tenant=tenant)
     print(json.dumps(report, indent=2))
     return 0 if report.get("privacy_ok") else 1
+
+
+def cmd_hub_score(args: argparse.Namespace) -> int:
+    """F142: post-score hub memory util → priority deltas + optional inject."""
+    root = _root()
+    hub = post_score_memory_util_hub(root=root)
+    inject_path = (getattr(args, "inject", None) or "").strip()
+    if inject_path:
+        inj = inject_memory_hub_into_prompt(Path(inject_path), hub=hub, root=root)
+        hub["inject"] = {
+            "injected": inj.get("injected"),
+            "chars": inj.get("chars"),
+        }
+    # soft fitness ingest for memory skill shield
+    try:
+        sys.path.insert(0, str(Path(__file__).resolve().parent))
+        from skill_fitness import ingest_hub_recovery  # type: ignore
+
+        # reshape as hub recovery-like for soft tool_hit shield on memory skill
+        fake = {
+            "skills": {
+                sid: {
+                    "hits": e.get("hits"),
+                    "tool_hits": e.get("tool_hits"),
+                    "tenants": e.get("tenants"),
+                    "priority_delta": e.get("priority_delta"),
+                }
+                for sid, e in (hub.get("skills") or {}).items()
+            },
+            "priority_deltas": hub.get("priority_deltas") or {},
+            "gap_pressure": hub.get("gap_pressure"),
+        }
+        fit = ingest_hub_recovery(fake, root=root, save=True)
+        hub["fitness_ingest"] = {
+            k: fit.get(k)
+            for k in ("feature", "ingested_n", "skills", "privacy_ok")
+            if k in fit
+        }
+    except Exception as exc:
+        hub["fitness_ingest"] = {"soft_error": str(exc)[:120]}
+    od = (os.environ.get("OUT_DIR") or "").strip()
+    if od:
+        try:
+            p = Path(od) / "memory-hub-score.json"
+            p.parent.mkdir(parents=True, exist_ok=True)
+            p.write_text(json.dumps(hub, indent=2) + "\n", encoding="utf-8")
+            hub["artifact"] = "memory-hub-score.json"
+        except OSError:
+            pass
+    print(json.dumps(hub, indent=2))
+    return 0 if hub.get("privacy_ok") else 1
 
 
 if __name__ == "__main__":
