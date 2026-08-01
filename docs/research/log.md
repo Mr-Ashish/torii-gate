@@ -1,5 +1,37 @@
 # Torii research → product log
 
+## 2026-08-01 — F77 cross-tenant hub federated signal ingest
+
+### Papers / posts / OSS
+- IETF multi-tenant agent FL privacy draft (2026): aggregate without raw tenant payloads.
+- Multi-tenant RAG isolation: path/snippet leakage is the failure mode.
+- Prior Torii: F65 tenant dirs, F71 local federate, F75 scoped recall — hub merge missing.
+
+### OSS / eng patterns
+1. Privacy-safe signal schema (theme/CWE/keywords/basenames + tenant_hash).
+2. Unique tenant_hashes for true multi-tenant counts (not naive +1).
+3. Promote gate min_tenants/min_hits; poison path/secret strip.
+
+### Insight
+Local federation compounds one org; **hub multi-tenant promote** is what turns every customer run into shared security intelligence without leaking code.
+
+### Feature shipped (F77)
+- `scripts/federated_hub_ingest.py` — collect/ingest/promote/status/fixture/from-run
+- Hub write: `memory/federation/federated-signals.json` + INDEX; tenant-local federation copy
+- `hub-ingest-run.py` + `build-hub-payload.py` wire; F75 prefers hub federation path
+- Toggle `TORII_FEDERATED_HUB`; adopted tool `federated-hub-ingest`
+
+### Loop-engineering practice used
+**Privacy-preserving aggregation + promote scorecard** — default strip; multi-tenant evidence required to promote.
+
+### Metric
+- Offline fixture: sqli tenants=2; privacy_file_ok; promote only multi-tenant
+- Live: pytorch/pytorch#191813 deepseek/deepseek-v4-pro fitness 0.8294 L2; hub-payload federated_signals count=4; hub ingest privacy_ok; POST_COMMENT=0; Modal blocked (torii-openrouter) → local Hermes
+- pytest: 476 passed
+
+### SHA
+`(pending push)`
+
 ## 2026-08-01 — F76 multi-corpus bench + Juice Shop synthetic
 
 ### Papers / posts / OSS

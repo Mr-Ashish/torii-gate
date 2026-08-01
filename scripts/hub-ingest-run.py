@@ -322,6 +322,20 @@ def main() -> int:
         print(f"MEMORY={memory_file}")
         print(f"RUN_DIR={run_dir}")
         print("LAYOUT=local")
+        # F77: still aggregate federated signals into HUB_ROOT/memory/federation when present
+        try:
+            import sys as _sys_f77l
+            _scripts = Path(__file__).resolve().parent
+            if str(_scripts) not in _sys_f77l.path:
+                _sys_f77l.path.insert(0, str(_scripts))
+            from federated_hub_ingest import ingest_from_run  # type: ignore
+
+            _hub = Path(os.environ.get("HUB_ROOT") or root)
+            _fed_res = ingest_from_run(_hub, run)
+            if _fed_res:
+                print(f"FEDERATED_HUB={_fed_res.get('global_path')}")
+        except Exception:
+            pass
         return 0
 
     # hub layout (default); F65 optional tenant namespace
@@ -340,6 +354,25 @@ def main() -> int:
         tenant=tenant,
         hub_rel=hub_rel,
     )
+    # F77: cross-tenant privacy-safe federated signal ingest (soft)
+    try:
+        import sys as _sys_f77
+        _scripts = Path(__file__).resolve().parent
+        if str(_scripts) not in _sys_f77.path:
+            _sys_f77.path.insert(0, str(_scripts))
+        from federated_hub_ingest import ingest_from_run  # type: ignore
+
+        _fed_res = ingest_from_run(root, run)
+        if _fed_res:
+            print(f"FEDERATED_HUB={_fed_res.get('global_path')}")
+            print(f"FEDERATED_COUNT={_fed_res.get('global_count')}")
+            meta["federated_hub"] = {
+                "count": _fed_res.get("global_count"),
+                "privacy_ok": _fed_res.get("privacy_ok"),
+                "top_themes": _fed_res.get("top_themes"),
+            }
+    except Exception as _fed_exc:
+        print(f"federated_hub_ingest_soft_fail={_fed_exc}", file=sys.stderr)
     update_hub_index(root, meta)
 
     summary_path = root / ".torii-ingest-summary.txt"

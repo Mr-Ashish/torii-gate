@@ -1,8 +1,8 @@
 {
   "schema_version": 1,
-  "feature": "F76",
+  "feature": "F77",
   "description": "Torii agent tool catalog \u2014 research \u2192 eval \u2192 adopt pipeline",
-  "updated_at": "2026-08-01T00:37:25Z",
+  "updated_at": "2026-08-01T00:43:49Z",
   "tools": [
     {
       "id": "terminal",
@@ -172,6 +172,18 @@
       "rationale": "F76 labeled multi-pack offline recall fixtures + taint on JS synthetic",
       "feature": "F76",
       "adopted_at": "2026-08-01T00:37:00Z"
+    },
+    {
+      "id": "federated-hub-ingest",
+      "name": "Cross-tenant hub federated signal ingest",
+      "status": "adopted",
+      "source": "research_oss",
+      "kind": "workflow_tool",
+      "toolset": "terminal",
+      "script": "scripts/federated_hub_ingest.py",
+      "rationale": "F77 multi-tenant privacy-safe signal aggregate + promote",
+      "feature": "F77",
+      "adopted_at": "2026-08-01T00:42:00Z"
     }
   ],
   "candidates": [

@@ -192,12 +192,14 @@ def _fed_path(root: Path) -> Path:
     if env:
         return Path(env).resolve()
     for cand in (
+        root / "memory" / "federation" / "federated-signals.json",  # F77 hub
+        root / "memory" / "federation" / "promoted-signals.json",
         root / ".torii" / "federated-signals.json",
         root / "memory" / "federated-signals.json",
     ):
         if cand.is_file():
             return cand
-    return root / ".torii" / "federated-signals.json"
+    return root / "memory" / "federation" / "federated-signals.json"
 
 
 def load_tp_items(

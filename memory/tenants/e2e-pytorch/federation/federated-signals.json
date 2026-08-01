@@ -1,0 +1,143 @@
+{
+  "schema_version": 1,
+  "feature": "F77",
+  "scope": "tenant",
+  "updated_at": "2026-08-01T00:46:07Z",
+  "count": 4,
+  "privacy": "theme_cwe_keywords_basenames_tenant_hash_only",
+  "privacy_ok": true,
+  "privacy_issues": [],
+  "signals": [
+    {
+      "id": "command_injection",
+      "theme": "command_injection",
+      "cwe": [
+        "CWE-78"
+      ],
+      "tags": [
+        "command_injection",
+        "rce",
+        "shell",
+        "security",
+        "sink",
+        "flow"
+      ],
+      "keywords": [
+        "command injection",
+        "shell=true",
+        "os command",
+        "rce",
+        "subprocess",
+        "cwe-78",
+        "shell injection"
+      ],
+      "path_basenames": [
+        "app.py"
+      ],
+      "hits": 22,
+      "source": "tp_signature",
+      "tenant_hashes": [
+        "6b311f5edb4f"
+      ],
+      "tenants": 1
+    },
+    {
+      "id": "insecure_deserialization",
+      "theme": "insecure_deserialization",
+      "cwe": [
+        "CWE-502"
+      ],
+      "tags": [
+        "pickle",
+        "deserialize",
+        "security",
+        "sink",
+        "flow"
+      ],
+      "keywords": [
+        "pickle",
+        "deserialize",
+        "deserialization",
+        "unsafe load",
+        "cwe-502",
+        "pickle.loads"
+      ],
+      "path_basenames": [
+        "app.py"
+      ],
+      "hits": 22,
+      "source": "tp_signature",
+      "tenant_hashes": [
+        "6b311f5edb4f"
+      ],
+      "tenants": 1
+    },
+    {
+      "id": "secrets_exposure",
+      "theme": "secrets_exposure",
+      "cwe": [
+        "CWE-200",
+        "CWE-798"
+      ],
+      "tags": [
+        "secrets",
+        "api_key",
+        "security",
+        "sink",
+        "flow"
+      ],
+      "keywords": [
+        "secret",
+        "api key",
+        "api_key",
+        "openrouter",
+        "credential",
+        "exposes",
+        "exposure"
+      ],
+      "path_basenames": [
+        "app.py"
+      ],
+      "hits": 22,
+      "source": "tp_signature",
+      "tenant_hashes": [
+        "6b311f5edb4f"
+      ],
+      "tenants": 1
+    },
+    {
+      "id": "sql_injection",
+      "theme": "sql_injection",
+      "cwe": [
+        "CWE-89"
+      ],
+      "tags": [
+        "sqli",
+        "injection",
+        "security",
+        "sink",
+        "flow"
+      ],
+      "keywords": [
+        "sql injection",
+        "sqli",
+        "f-string",
+        "f\"select",
+        "string-formatted",
+        "execute(f",
+        "cur.execute(f",
+        "cwe-89"
+      ],
+      "path_basenames": [
+        "app.py"
+      ],
+      "hits": 22,
+      "source": "tp_signature",
+      "tenant_hashes": [
+        "6b311f5edb4f"
+      ],
+      "tenants": 1
+    }
+  ],
+  "tenant_hash": "6b311f5edb4f"
+}

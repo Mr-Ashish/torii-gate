@@ -33,3 +33,15 @@ Optional vars:
 | Variable | Default | Purpose |
 |----------|---------|---------|
 | `TORII_HUB_REPO` | `Mr-Ashish/torii-gate` | Hub repository |
+
+## Federated hub signals (F77)
+
+Privacy-safe cross-tenant themes live under:
+
+```text
+memory/federation/federated-signals.json   # global aggregate
+memory/federation/promoted-signals.json    # min_tenants / min_hits gate
+memory/tenants/{tenant}/federation/        # tenant-local copy
+```
+
+Only theme / CWE / keywords / basenames / tenant_hash — never raw paths or snippets.

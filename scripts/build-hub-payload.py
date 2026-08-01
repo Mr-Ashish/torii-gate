@@ -137,6 +137,47 @@ def main() -> int:
     if tenant:
         tenant = re.sub(r"[^A-Za-z0-9._-]+", "-", tenant).strip("-.")[:64]
 
+    # F77: privacy-safe federated signals for hub multi-tenant aggregate
+    federated_signals = None
+    fed_path = out_dir / "federated-signals.json"
+    if fed_path.is_file():
+        try:
+            raw_fed = json.loads(fed_path.read_text(encoding="utf-8", errors="replace"))
+            if isinstance(raw_fed, dict) and isinstance(raw_fed.get("signals"), list):
+                # strip any accidental heavy fields before hub
+                slim = []
+                for s in raw_fed["signals"][:48]:
+                    if not isinstance(s, dict):
+                        continue
+                    slim.append(
+                        {
+                            k: s[k]
+                            for k in (
+                                "id",
+                                "theme",
+                                "cwe",
+                                "tags",
+                                "keywords",
+                                "path_basenames",
+                                "hits",
+                                "source",
+                                "tenant_hash",
+                                "tenants",
+                                "confidence",
+                            )
+                            if k in s
+                        }
+                    )
+                federated_signals = {
+                    "schema_version": raw_fed.get("schema_version") or 1,
+                    "feature": "F71",
+                    "count": len(slim),
+                    "privacy": raw_fed.get("privacy") or "basename_theme_cwe_keywords_only",
+                    "signals": slim,
+                }
+        except json.JSONDecodeError:
+            federated_signals = None
+
     payload = {
         "schema_version": 1,
         "event": "torii-run",
@@ -154,6 +195,7 @@ def main() -> int:
         "memory_block": memory_block,
         "timings": timings,
         "fp_rules": fp_rules,
+        "federated_signals": federated_signals,
         "tenant": tenant or None,
         "meta": {
             "github_sha": os.environ.get("GITHUB_SHA"),

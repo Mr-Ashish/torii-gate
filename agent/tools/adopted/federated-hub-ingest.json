@@ -1,0 +1,26 @@
+{
+  "id": "federated-hub-ingest",
+  "name": "Cross-tenant hub federated signal ingest (F77)",
+  "status": "adopted",
+  "source": "research_oss",
+  "kind": "workflow_tool",
+  "toolset": "terminal",
+  "script": "scripts/federated_hub_ingest.py",
+  "rationale": "Privacy-preserving multi-tenant aggregation of theme/CWE/keyword security signals into memory/federation; unique tenant_hash counts; promote gate min_tenants; poison path/secret strip",
+  "eval": {
+    "scored_at": "2026-08-01T00:42:00Z",
+    "dims": {
+      "signal": 5,
+      "safety": 5,
+      "effort": 4,
+      "torii_fit": 5,
+      "cost": 5
+    },
+    "total": 24,
+    "max": 25,
+    "recommend": "adopt",
+    "notes": "two-tenant fixture multi_ok; privacy_file_ok; promote only multi-tenant themes"
+  },
+  "adopted_at": "2026-08-01T00:42:00Z",
+  "feature": "F77"
+}

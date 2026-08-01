@@ -409,6 +409,15 @@ REGISTRY: list[ToggleSpec] = [
         "F71",
     ),
     ToggleSpec(
+        "federated_hub",
+        "TORII_FEDERATED_HUB",
+        "bool",
+        True,
+        "product",
+        "F77 cross-tenant hub federated signal ingest + promote gate",
+        "F77",
+    ),
+    ToggleSpec(
         "chain_revalidate",
         "TORII_CHAIN_REVALIDATE",
         "bool",
