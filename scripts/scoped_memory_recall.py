@@ -123,6 +123,25 @@ def _item_id(kind: str, scope: str, raw_id: str, theme: str) -> str:
     return f"{kind}-{scope}-{slug}-{h}"
 
 
+def _safe_provenance(path: Path | str, root: Path | None = None) -> str:
+    """Store relative/redacted provenance only (no home-dir absolute paths)."""
+    s = str(path)
+    s = s.replace("\\", "/")
+    # strip home prefixes
+    s = re.sub(r"^/Users/[^/]+/", "", s)
+    s = re.sub(r"^/home/[^/]+/", "", s)
+    r = root or _root()
+    try:
+        rel = str(Path(path).resolve().relative_to(r.resolve()))
+        return rel.replace("\\", "/")
+    except Exception:
+        # keep tail after known anchors
+        for anchor in ("torii/", ".torii/", "memory/", "Documents/experiments/"):
+            if anchor in s:
+                return s.split(anchor, 1)[-1] if anchor != "torii/" else "torii/" + s.split("torii/", 1)[-1]
+        return Path(s).name or "[redacted]"
+
+
 @dataclass
 class MemoryItem:
     id: str
@@ -219,7 +238,7 @@ def load_tp_items(
                 source=str(s.get("source") or "tp-signatures"),
                 repo=repo,
                 tenant=tenant,
-                provenance=provenance or str(path),
+                provenance=_safe_provenance(provenance or path),
                 raw_id=raw_id,
             )
         )
@@ -275,7 +294,7 @@ def load_fp_items(
                 reason=reason,
                 repo=repo,
                 tenant=tenant,
-                provenance=provenance or str(path),
+                provenance=_safe_provenance(provenance or path),
                 raw_id=raw_id,
             )
         )
@@ -319,7 +338,7 @@ def load_federated_items(
                 hits=int(s.get("hits") or 1),
                 source="federated-signals",
                 tenant=tenant,
-                provenance=str(path),
+                provenance=_safe_provenance(path),
                 raw_id=str(s.get("id") or theme),
             )
         )
