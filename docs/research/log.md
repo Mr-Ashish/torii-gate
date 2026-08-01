@@ -30,7 +30,7 @@ ops (#8) · simplicity (#12) · JTBD cost transparency
 operators see measured cost/PR + cert without opening Modal artifacts
 
 ### SHA
-`(pending push)`
+`5077337264b68074e8f0de1a9ad2f31b8fd42912`
 
 
 ## 2026-08-01 — BRAND_SCORECARD: buyer commercial panel on scorecard-metrics
