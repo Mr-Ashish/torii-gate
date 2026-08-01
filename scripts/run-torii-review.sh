@@ -217,9 +217,11 @@ if [[ -f "$SCRIPTS/second_agent_critic.py" ]]; then
       # F128: paper-ready critic demote-rate pack (good/weak/hub-gap)
       stage critic_demote_eval \
         python3 "$SCRIPTS/second_agent_critic.py" demote-eval --out-dir "$OUT_DIR" || true
-      # F129: product brand/ops scorecard (doctor + demote metrics into OUT_DIR)
+      # F129: product brand/ops scorecard into OUT_DIR.
+      # --shallow: do not re-run demote-eval (already staged above). Reuse
+      # critic-demote-eval.json when present — prevents double demote + Modal 1500s timeouts.
       stage product_scorecard \
-        python3 "$SCRIPTS/torii.py" scorecard --out-dir "$OUT_DIR" || true
+        python3 "$SCRIPTS/torii.py" scorecard --out-dir "$OUT_DIR" --shallow || true
       # F132: self-evolve skill proposals from scorecard gap themes (soft)
       if [[ -f "$SCRIPTS/self_evolve.py" ]]; then
         case "${TORII_SELF_EVOLVE_SCORECARD:-1}" in

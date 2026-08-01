@@ -133,7 +133,8 @@ except ImportError:  # pragma: no cover
 _CHEAP = dict(
     # cpu omitted → 0.125 physical core min
     # memory omitted → soft minimum; hermes may burst — allow modest floor only if OOM
-    timeout=60 * 25,  # hard cap wall time (kills runaway spend)
+    # 35m: hermes + demote-eval + scorecard + evolve often exceeded 25m wall (BIT3 hang)
+    timeout=60 * 35,  # hard cap wall time (kills runaway spend)
 )
 
 
@@ -620,9 +621,9 @@ def review_pr(
         # F63: domain pack auto-select from changed paths (default product)
         "TORII_LENS_PACK": os.environ.get("TORII_LENS_PACK", "auto"),
         "TORII_LENS_PACKS": os.environ.get("TORII_LENS_PACKS", "1"),
-        # F36: wall-clock (script default 1500s if unset)
+        # F36: wall-clock (match Modal function budget; was 1500 and killed mid evolve)
         "TORII_REVIEW_TIMEOUT_SECONDS": os.environ.get(
-            "TORII_REVIEW_TIMEOUT_SECONDS", "1500"
+            "TORII_REVIEW_TIMEOUT_SECONDS", "2100"
         ),
         # F41: Hermes max_turns (script default 40 if unset; 0/off disables)
         "TORII_MAX_TURNS": os.environ.get("TORII_MAX_TURNS", "40"),

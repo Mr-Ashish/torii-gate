@@ -5182,3 +5182,29 @@ status --text listed 11+ surfaces after packaging queue. Highest ROI for dim 12:
 
 ### SHA
 `d75543f6507aef0422d6c89534a104484b5460f5`
+
+## 2026-08-01 — SCORECARD_NO_DOUBLE_DEMOTE live path
+
+### Papers / posts
+- Ops reliability: pipeline stages must not re-run the same expensive eval.
+- Modal wall clocks: 1500s hard timeout observed mid product_scorecard after demote-eval.
+- Loop Engineering: measure wall-time of compound stages; collapse redundant work.
+
+### Insight
+run-torii-review ran demote-eval then full scorecard which re-ran demote-eval (300s timeout ×2) + util-eval. Highest ROI: --shallow after stage + reuse critic-demote-eval.json when present.
+
+### Feature shipped (SCORECARD_NO_DOUBLE_DEMOTE)
+- product_scorecard loads prior demote/util artifacts from out_dir
+- live stage: `torii.py scorecard --out-dir OUT --shallow`
+- hermetic: shallow + prior json → demote_rate in ~1.3s
+
+### Also (same fire)
+- Modal bit-3 wall: 25m → **35m** · TORII_REVIEW_TIMEOUT_SECONDS default **2100**
+- product_scorecard now completes; prior 1500s kills hit mid evolve after demote
+
+### Metric
+- Offline reuse demote_rate from artifact
+- Live Modal e2e should finish under previous hang path
+
+### SHA
+`PENDING_PUSH`

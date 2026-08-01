@@ -1268,7 +1268,29 @@ def product_scorecard(
             [sys.executable, str(sd / "workflow_as_code.py"), "scorecard"],
             timeout=120,
         )
-    if run_demote and (sd / "second_agent_critic.py").is_file():
+    # Prefer prior demote-eval artifact (live pipeline already ran critic_demote_eval
+    # stage). Avoid double demote-eval which burned 5–15+ min on Modal and hit 1500s caps.
+    if out_dir:
+        prior_demote = Path(out_dir) / "critic-demote-eval.json"
+        if prior_demote.is_file():
+            try:
+                demote = json.loads(prior_demote.read_text(encoding="utf-8"))
+                if not isinstance(demote, dict):
+                    demote = {}
+                else:
+                    demote = {**demote, "from_prior_artifact": True}
+            except (OSError, json.JSONDecodeError):
+                demote = {}
+        prior_mu = Path(out_dir) / "memory-util-eval.json"
+        if prior_mu.is_file():
+            try:
+                mem_util = json.loads(prior_mu.read_text(encoding="utf-8"))
+                if not isinstance(mem_util, dict):
+                    mem_util = {}
+            except (OSError, json.JSONDecodeError):
+                mem_util = {}
+
+    if run_demote and not demote and (sd / "second_agent_critic.py").is_file():
         demote_cmd = [
             sys.executable,
             str(sd / "second_agent_critic.py"),
@@ -1278,7 +1300,7 @@ def product_scorecard(
             demote_cmd += ["--out-dir", str(out_dir)]
         demote = _run_json(demote_cmd, timeout=300)
     # F130: memory tool utilization paper pack (Mem0/Letta tool-call discipline)
-    if run_demote and (sd / "memory_tool_audit.py").is_file():
+    if run_demote and not mem_util and (sd / "memory_tool_audit.py").is_file():
         mu_cmd = [
             sys.executable,
             str(sd / "memory_tool_audit.py"),
