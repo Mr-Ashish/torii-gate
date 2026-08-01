@@ -887,8 +887,25 @@ def assess(root: Path | None = None, *, deep: bool = True) -> dict[str, Any]:
                 if (root / "scripts" / "skill_fitness.py").is_file()
                 else ""
             )
+            # F180 hub-archival × GEPA compound critic
+            and "run_f180_hub_gepa_compound"
+            in (
+                (root / "scripts" / "second_agent_critic.py").read_text(
+                    encoding="utf-8", errors="replace"
+                )
+                if (root / "scripts" / "second_agent_critic.py").is_file()
+                else ""
+            )
+            and "hub_gepa_compound_idle_approve" in (
+                (root / "scripts" / "second_agent_critic.py").read_text(
+                    encoding="utf-8", errors="replace"
+                )
+                if (root / "scripts" / "second_agent_critic.py").is_file()
+                else ""
+            )
+            and "F180" in hermes_sh
         ),
-        "feature_refine_loop": "F170/F179",
+        "feature_refine_loop": "F170/F180",
         # F171: chronic refine dual_fail always-priority decay
         "refine_dual_decay_ok": "ingest_refine_dual" in (
             (root / "scripts" / "skill_fitness.py").read_text(
@@ -1074,6 +1091,38 @@ def assess(root: Path | None = None, *, deep: bool = True) -> dict[str, Any]:
             else ""
         ),
         "feature_revive_loo_gate": "F179",
+        # F180: hub-archival × GEPA compound demote readiness
+        "hub_gepa_compound_ok": "run_f180_hub_gepa_compound"
+        in (
+            (root / "scripts" / "second_agent_critic.py").read_text(
+                encoding="utf-8", errors="replace"
+            )
+            if (root / "scripts" / "second_agent_critic.py").is_file()
+            else ""
+        )
+        and "hub_gepa_compound_idle_approve" in (
+            (root / "scripts" / "second_agent_critic.py").read_text(
+                encoding="utf-8", errors="replace"
+            )
+            if (root / "scripts" / "second_agent_critic.py").is_file()
+            else ""
+        )
+        and "f180_hub_gepa_compound" in (
+            (root / "scripts" / "second_agent_critic.py").read_text(
+                encoding="utf-8", errors="replace"
+            )
+            if (root / "scripts" / "second_agent_critic.py").is_file()
+            else ""
+        )
+        and "F180" in hermes_sh
+        and "hub_archival_x_gepa_compound" in (
+            (root / "scripts" / "second_agent_critic.py").read_text(
+                encoding="utf-8", errors="replace"
+            )
+            if (root / "scripts" / "second_agent_critic.py").is_file()
+            else ""
+        ),
+        "feature_hub_gepa_compound": "F180",
         # F158: fitness ledger ingest/demote for hub-archival util
         "hub_archival_fitness_ok": "ingest_hub_archival_util" in (
             (root / "scripts" / "skill_fitness.py").read_text(
@@ -1207,6 +1256,7 @@ def to_markdown(report: dict[str, Any]) -> str:
             f"- Free-rider multi-tenant revive gate (F176): **{'ok' if report.get('free_rider_revive_ok') else 'gap'}**",
             f"- Revive contribution_pp floor (F177): **{'ok' if report.get('revive_pp_gate_ok') else 'gap'}**",
             f"- Revive LOO attribution floor (F179): **{'ok' if report.get('revive_loo_gate_ok') else 'gap'}**",
+            f"- Hub-archival × GEPA compound demote (F180): **{'ok' if report.get('hub_gepa_compound_ok') else 'gap'}**",
             f"- Recovery hub gap critic/demote-eval (F128): **{'ok' if report.get('recovery_hub_gap_ok') else 'gap'}**",
             f"- Recon-warm hub critic/demote-eval (F151): **{'ok' if report.get('recon_warm_hub_ok') else 'gap'}**",
             f"- Wiring (assemble/run/hermes/save-trace): **{'ok' if report.get('wiring_ok') else 'gap'}**",
@@ -1305,6 +1355,9 @@ def cmd_scorecard(args: argparse.Namespace) -> int:
                 "revive_loo_gate_ok": report.get("revive_loo_gate_ok"),
                 "feature_revive_loo_gate": report.get("feature_revive_loo_gate")
                 or "F179",
+                "hub_gepa_compound_ok": report.get("hub_gepa_compound_ok"),
+                "feature_hub_gepa_compound": report.get("feature_hub_gepa_compound")
+                or "F180",
                 "feature_scorecard_ops": report.get("feature_scorecard_ops"),
                 "scorecard_ops_ok": report.get("scorecard_ops_ok"),
                 "scorecard_active": report.get("scorecard_active"),
@@ -1405,6 +1458,8 @@ def cmd_fixture(args: argparse.Namespace) -> int:
                 "feature_revive_pp_gate": "F177",
                 "revive_loo_gate_ok": report.get("revive_loo_gate_ok"),
                 "feature_revive_loo_gate": "F179",
+                "hub_gepa_compound_ok": report.get("hub_gepa_compound_ok"),
+                "feature_hub_gepa_compound": "F180",
                 "wiring_ok": report["wiring_ok"],
                 "deep_ok": report["deep_ok"],
                 "ready": report["ready"],

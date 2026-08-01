@@ -1088,6 +1088,7 @@ if [[ -f "$SKILL_ROUTER_HELPER" && $TIMED_OUT -eq 0 && "${HERMES_CLI_ARGV_BROKEN
                             notice "F176 free-rider revive MT gate (soft · sticky multi_tenant_decay until promote)"
                             notice "F177 revive contribution_pp floor (soft · TORII_REFINE_REVIVE_MIN_PP)"
                             notice "F179 revive LOO attribution floor (soft · skill-attribution free_rider/avg)"
+                            notice "F180 hub-archival×GEPA compound demote (soft · dual-loop free-rider)"
                             ;;
                         esac
                         ;;

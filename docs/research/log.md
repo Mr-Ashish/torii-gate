@@ -1,3 +1,34 @@
+## 2026-08-01 — F180 hub-archival × GEPA compound demote
+
+### Papers / posts
+- Loop Engineering: independent checkers miss joint free-rider paths.
+- Torii F156 hub-archival util gap + F173–F179 GEPA gates ran separately.
+- FederatedSkill / multi-tenant: dual-loop heat compounds trust failure.
+
+### OSS design patterns stolen
+1. `run_f180_hub_gepa_compound` requires ha_gap AND gepa_pressure.
+2. decide_verdict escalates to REQUEST_CHANGES on compound demote.
+3. demote-eval hub_gepa_compound_idle_approve paper metric.
+4. skill_loop hub_gepa_compound_ok; refine_loop_ok AND F180.
+
+### Insight
+APPROVE can survive one weak loop while the other is elevated. Highest ROI: compound demote when hub-archival util gap and GEPA refine pressure co-occur.
+
+### Feature shipped (F180)
+- f180 checker score 0.15 + escalate REQUEST_CHANGES
+- demote-eval / hermes notice / scorecard paper row
+- PRODUCT Mental model E F180 line
+
+### Loop-engineering
+Dual compound free-rider detection — two measured loops, one demote.
+
+### Metric
+- Offline: demote-eval hub_gepa_compound_idle_demoted; refine_loop_ok L3
+- Live Modal: pytorch#191836 BIT3_OK ~41.4s POST_COMMENT=0 log_streaming=true F180 soft wire
+
+### SHA
+`249781dfd8c293a0186bd099c81204e2219fbd90`
+
 ## 2026-08-01 — F179 LOO attribution floor for dual_pass revive
 
 ### Papers / posts

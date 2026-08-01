@@ -287,6 +287,7 @@ util gap → GEPA refine → dual-gate LOO → dual_pp → federate promote
        → free-rider MT gate (F176)
        → contribution_pp revive floor (F177)
        → LOO attribution revive floor (F179)
+       → hub-archival × GEPA compound demote (F180)
 ```
 
 | Stage | Feature | Customer-facing meaning |
@@ -304,6 +305,7 @@ util gap → GEPA refine → dual-gate LOO → dual_pp → federate promote
 | **Free-rider MT gate** | F176 | Local dual_pass cannot clear multi-tenant decay alone |
 | **Revive pp floor** | F177 | dual_pass needs min `refine_tool_contribution_pp` to re-enter always |
 | **Revive LOO floor** | F179 | free-rider / low avg_contribution LOO blocks dual_pass revive |
+| **Hub×GEPA compound** | F180 | hub-archival util gap + GEPA pressure → harder APPROVE demote |
 
 **One-liner (eng):** *Skills that fail tool util get refined, measured, and multi-tenant promoted — or they stay out of always budget; recovery is measured too.*
 
@@ -328,6 +330,8 @@ util gap → GEPA refine → dual-gate LOO → dual_pp → federate promote
 **Revive contribution_pp floor (F177):** SkillOpt-style validation — dual_pass with `refine_tool_contribution_pp` below `TORII_REFINE_REVIVE_MIN_PP` (default 10) sets `revive_pp_blocked` and does not re-enter always budget; multi-tenant promote also requires the floor. Critic `f177_revive_pp_gate` demotes low-pp recovery APPROVE; demote-eval `low_pp_revive_idle_demoted`. `refine_loop_ok` ANDs F165–F179.
 
 **Revive LOO attribution floor (F179):** skill-attribution free_rider or avg_contribution below `TORII_REFINE_REVIVE_MIN_LOO` (default 0.5, after min_n samples) blocks dual_pass revive even with high tool_pp; positive LOO soft-boosts re-entry. Critic `f179_revive_loo_gate` demotes; demote-eval `loo_revive_idle_demoted`.
+
+**Hub-archival × GEPA compound (F180):** when hub-archival util gap **and** GEPA decay/free-rider/pp/LOO pressure co-occur, second-agent `f180_hub_gepa_compound` demotes APPROVE harder (score 0.15, escalate to REQUEST_CHANGES). Paper: `hub_gepa_compound_idle_demoted`. `refine_loop_ok` ANDs F165–F180.
 
 ---
 

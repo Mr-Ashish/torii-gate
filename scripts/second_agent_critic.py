@@ -388,6 +388,12 @@ def revive_loo_gate_critic_enabled() -> bool:
     return raw not in _FALSEY
 
 
+def hub_gepa_compound_critic_enabled() -> bool:
+    """F180: demote when hub-archival util gap AND GEPA refine pressure co-occur."""
+    raw = (os.environ.get("TORII_HUB_GEPA_COMPOUND_CRITIC") or "1").strip().lower()
+    return raw not in _FALSEY
+
+
 def run_f121_recovery_util(out_dir: Path | None) -> CheckerResult:
     """F121: recovery always skills must fire tool CLIs (inject ≠ utilization)."""
     if out_dir is None:
@@ -889,6 +895,193 @@ def run_f179_revive_loo_gate(
             "blocked_n": blocked_n,
             "themes": themes[:8],
             "reason": "revive_loo_free_rider_blocked",
+        },
+    )
+
+
+
+def run_f180_hub_gepa_compound(
+    out_dir: Path | None,
+    root: Path | None = None,
+) -> CheckerResult:
+    """F180: hub-archival util gap × GEPA refine pressure → compound demote.
+
+    Independent checkers (F156 + F173/F176/F177/F179) each demote weakly.
+    When BOTH recovery util heat and GEPA decay/revive-gate pressure are elevated,
+    APPROVE is free-rider on two compound loops — demote harder (score 0.15).
+    """
+    if not hub_gepa_compound_critic_enabled():
+        return CheckerResult(
+            id="f180_hub_gepa_compound",
+            name="Hub-archival × GEPA compound (F180)",
+            ok=True,
+            score=1.0,
+            detail={"enabled": False, "feature": "F180"},
+        )
+    root = root or _root()
+    ha_gap = False
+    ha_reasons: list[str] = []
+    gepa_pressure = False
+    gepa_reasons: list[str] = []
+    themes: list[str] = []
+
+    # --- hub-archival util gap (F156/F161 signals) ---
+    try:
+        if out_dir is not None:
+            util_p = Path(out_dir) / "recovery-skill-util.json"
+            if util_p.is_file():
+                util = json.loads(util_p.read_text(encoding="utf-8"))
+                if util.get("hub_archival_util_gap") or util.get("hub_archival_idle"):
+                    ha_gap = True
+                    ha_reasons.append("recovery_util_gap")
+            # also skill-hits idle hub-archival
+            hits_p = Path(out_dir) / "skill-hits.json"
+            router_p = Path(out_dir) / "skill-router.json"
+            if hits_p.is_file() and router_p.is_file():
+                hits = json.loads(hits_p.read_text(encoding="utf-8"))
+                router = json.loads(router_p.read_text(encoding="utf-8"))
+                always = set(
+                    str(x)
+                    for x in (router.get("always_selected") or router.get("selected") or [])
+                    if "hub-archival" in str(x) or "hub_archival" in str(x)
+                )
+                hit_map = {}
+                for h in hits.get("hits") or []:
+                    if isinstance(h, dict):
+                        hit_map[str(h.get("id") or "")] = h
+                for sid in always:
+                    h = hit_map.get(sid) or {}
+                    if not h.get("tool_hit"):
+                        ha_gap = True
+                        ha_reasons.append("always_hub_archival_idle")
+                        themes.append(sid)
+    except (OSError, json.JSONDecodeError, TypeError, ValueError):
+        pass
+    # fitness chronic hub-archival gap
+    try:
+        fit_path = root / ".torii" / "skill-fitness.json"
+        envf = (os.environ.get("TORII_SKILL_FITNESS_FILE") or "").strip()
+        if envf:
+            fit_path = Path(envf)
+        if fit_path.is_file():
+            fit = json.loads(fit_path.read_text(encoding="utf-8"))
+            for sid, ent in (fit.get("skills") or {}).items():
+                if not isinstance(ent, dict):
+                    continue
+                if "hub-archival" not in str(sid) and "hub_archival" not in str(sid):
+                    continue
+                if ent.get("demoted") or float(ent.get("util_rate") or 1) < 0.34:
+                    if int(ent.get("gap_n") or 0) >= 2 or ent.get("chronic_gap"):
+                        ha_gap = True
+                        ha_reasons.append("fitness_hub_archival_gap")
+                        themes.append(str(sid))
+    except (OSError, json.JSONDecodeError, TypeError, ValueError):
+        pass
+    # federated hub-archival util gap pressure
+    try:
+        fed = root / "memory" / "federation" / "hub-archival-util-signals.json"
+        if fed.is_file():
+            data = json.loads(fed.read_text(encoding="utf-8"))
+            for s in data.get("signals") or []:
+                if not isinstance(s, dict):
+                    continue
+                tags = [str(x).lower() for x in (s.get("tags") or [])]
+                if (
+                    s.get("hub_archival_idle")
+                    or s.get("util_rate_bin") == "gap"
+                    or "utilization_gap" in tags
+                    or "hub_archival_idle" in tags
+                ):
+                    if int(s.get("tenants") or 0) >= 2 or int(s.get("hits") or 0) >= 2:
+                        ha_gap = True
+                        ha_reasons.append("federated_hub_archival_gap")
+    except (OSError, json.JSONDecodeError, TypeError, ValueError):
+        pass
+
+    # --- GEPA refine pressure (decay / free-rider / pp / loo) ---
+    try:
+        fit_path = root / ".torii" / "skill-fitness.json"
+        envf = (os.environ.get("TORII_SKILL_FITNESS_FILE") or "").strip()
+        if envf:
+            fit_path = Path(envf)
+        if fit_path.is_file():
+            fit = json.loads(fit_path.read_text(encoding="utf-8"))
+            for sid, ent in (fit.get("skills") or {}).items():
+                if not isinstance(ent, dict):
+                    continue
+                if ent.get("multi_tenant_decay") or ent.get("refine_dual_chronic_fail"):
+                    gepa_pressure = True
+                    gepa_reasons.append("multi_tenant_or_chronic_decay")
+                    themes.append(str(sid))
+                if ent.get("free_rider_revive_blocked") or ent.get("local_revive_pending_mt"):
+                    gepa_pressure = True
+                    gepa_reasons.append("free_rider_revive_pending")
+                    themes.append(str(sid))
+                if ent.get("revive_pp_blocked"):
+                    gepa_pressure = True
+                    gepa_reasons.append("revive_pp_blocked")
+                    themes.append(str(sid))
+                if ent.get("revive_loo_blocked"):
+                    gepa_pressure = True
+                    gepa_reasons.append("revive_loo_blocked")
+                    themes.append(str(sid))
+    except (OSError, json.JSONDecodeError, TypeError, ValueError):
+        pass
+    try:
+        prom = root / "memory" / "federation" / "promoted-refine-dual-decay-themes.json"
+        if prom.is_file():
+            data = json.loads(prom.read_text(encoding="utf-8"))
+            if (data.get("signals") or data.get("promoted_n") or 0) and int(
+                data.get("promoted_n") or len(data.get("signals") or [])
+            ) >= 1:
+                gepa_pressure = True
+                gepa_reasons.append("promoted_refine_decay_themes")
+    except (OSError, json.JSONDecodeError, TypeError, ValueError):
+        pass
+    try:
+        if out_dir is not None:
+            rd = Path(out_dir) / "refine-dual.json"
+            if rd.is_file():
+                data = json.loads(rd.read_text(encoding="utf-8"))
+                if data.get("refine_dual_pass") is False or float(
+                    data.get("refine_tool_contribution_pp") or 0
+                ) <= 0:
+                    # dual_fail with injected refine is GEPA pressure
+                    gepa_pressure = True
+                    gepa_reasons.append("refine_dual_fail_or_zero_pp")
+    except (OSError, json.JSONDecodeError, TypeError, ValueError):
+        pass
+
+    high = bool(ha_gap and gepa_pressure)
+    if not high:
+        return CheckerResult(
+            id="f180_hub_gepa_compound",
+            name="Hub-archival × GEPA compound (F180)",
+            ok=True,
+            score=0.85 if (ha_gap or gepa_pressure) else 1.0,
+            detail={
+                "feature": "F180",
+                "reason": "no_compound_pressure",
+                "ha_gap": ha_gap,
+                "gepa_pressure": gepa_pressure,
+                "ha_reasons": ha_reasons[:6],
+                "gepa_reasons": gepa_reasons[:6],
+            },
+        )
+    return CheckerResult(
+        id="f180_hub_gepa_compound",
+        name="Hub-archival × GEPA compound (F180)",
+        ok=False,
+        score=0.15,
+        detail={
+            "feature": "F180",
+            "high": True,
+            "ha_gap": True,
+            "gepa_pressure": True,
+            "ha_reasons": ha_reasons[:8],
+            "gepa_reasons": gepa_reasons[:8],
+            "themes": list(dict.fromkeys(themes))[:8],
+            "reason": "hub_archival_x_gepa_compound",
         },
     )
 
@@ -2090,6 +2283,21 @@ def decide_verdict(
                     f"(blocked_n={detail.get('blocked_n')};"
                     f"themes={','.join((detail.get('themes') or [])[:3])})"
                 )
+        # F180: hub-archival × GEPA compound pressure
+        hgc = next((c for c in checkers if c.id == "f180_hub_gepa_compound"), None)
+        if hgc and not hgc.ok:
+            detail = hgc.detail or {}
+            if detail.get("high") or detail.get("reason") == "hub_archival_x_gepa_compound":
+                recommended = "REQUEST_CHANGES" if recommended == "COMMENT" else "COMMENT"
+                # escalate: if already demoted to COMMENT, prefer REQUEST_CHANGES
+                if demoted and recommended == "COMMENT":
+                    recommended = "REQUEST_CHANGES"
+                demoted = True
+                reasons.append(
+                    "hub_archival_x_gepa_compound "
+                    f"(ha={','.join((detail.get('ha_reasons') or [])[:2])};"
+                    f"gepa={','.join((detail.get('gepa_reasons') or [])[:2])})"
+                )
     elif maker == "UNKNOWN":
         recommended = "COMMENT"
         demoted = True
@@ -2134,6 +2342,7 @@ def run_panel(
         run_f176_free_rider_revive(out_dir, root),
         run_f177_revive_pp_gate(out_dir, root),
         run_f179_revive_loo_gate(out_dir, root),
+        run_f180_hub_gepa_compound(out_dir, root),
     ]
     # F81: optional LLM checker after deterministic panel draft
     panel_draft = {
@@ -2162,6 +2371,17 @@ def run_panel(
             panel_draft["endorse_demote_hint"] = (
                 "free-rider dual_pass revive pending multi-tenant gate — "
                 "prefer demote weak APPROVE until FederatedSkill promote"
+            )
+    except Exception:
+        pass
+    # F180: compound hub-archival × GEPA pressure
+    try:
+        hg_chk = next((c for c in checkers if c.id == "f180_hub_gepa_compound"), None)
+        if hg_chk and not hg_chk.ok and isinstance(panel_draft, dict):
+            panel_draft["f180_hub_gepa_compound"] = (hg_chk.detail or {})
+            panel_draft["endorse_demote_hint"] = (
+                "hub-archival util gap AND GEPA refine pressure elevated — "
+                "prefer demote weak APPROVE (compound free-rider)"
             )
     except Exception:
         pass
@@ -3796,6 +4016,143 @@ def demote_eval(
                 os.environ["TORII_ROOT"] = prev_root_loo
             os.environ.pop("TORII_SECOND_CRITIC_MIN_PATH", None)
 
+
+    # F180: hub-archival util gap × GEPA multi-tenant decay → compound demote APPROVE
+    with tempfile.TemporaryDirectory() as td_hgc:
+        od = Path(td_hgc)
+        sid = "skill-prefer-hub-archival-early"
+        fed = od / "memory" / "federation"
+        fed.mkdir(parents=True)
+        (fed / "hub-archival-util-signals.json").write_text(
+            json.dumps(
+                {
+                    "schema_version": 1,
+                    "feature": "F161",
+                    "privacy_ok": True,
+                    "signals": [
+                        {
+                            "id": "hub-archival-util-gap",
+                            "theme": "hub-archival-util-gap",
+                            "tags": ["hub_archival", "utilization_gap", "hub_archival_idle", "f161"],
+                            "hits": 6,
+                            "tenants": 3,
+                            "tenant_hashes": ["a1", "b2", "c3"],
+                            "util_rate_bin": "gap",
+                            "hub_archival_idle": True,
+                        }
+                    ],
+                }
+            )
+            + "\n",
+            encoding="utf-8",
+        )
+        (fed / "promoted-refine-dual-decay-themes.json").write_text(
+            json.dumps(
+                {
+                    "schema_version": 1,
+                    "feature": "F172",
+                    "promoted_n": 1,
+                    "signals": [
+                        {
+                            "skill_id": sid,
+                            "theme": sid,
+                            "tags": ["promoted_refine_dual_decay", "f172"],
+                            "hits": 4,
+                            "tenants": 3,
+                            "fail_rate": 1.0,
+                            "decay": -30,
+                        }
+                    ],
+                }
+            )
+            + "\n",
+            encoding="utf-8",
+        )
+        torii = od / ".torii"
+        torii.mkdir(parents=True)
+        (torii / "skill-fitness.json").write_text(
+            json.dumps(
+                {
+                    "schema_version": 1,
+                    "skills": {
+                        sid: {
+                            "id": sid,
+                            "multi_tenant_decay": True,
+                            "multi_tenant_decay_tenants": 3,
+                            "refine_dual_chronic_fail": True,
+                            "refine_priority_decay": -30,
+                            "gap_n": 4,
+                            "chronic_gap": True,
+                            "util_rate": 0.2,
+                            "demoted": True,
+                        }
+                    },
+                }
+            )
+            + "\n",
+            encoding="utf-8",
+        )
+        (od / "recovery-skill-util.json").write_text(
+            json.dumps(
+                {
+                    "hub_archival_injected": True,
+                    "hub_archival_util_gap": True,
+                    "hub_archival_idle": True,
+                    "hub_archival_tool_hit": False,
+                }
+            )
+            + "\n",
+            encoding="utf-8",
+        )
+        (od / "skill-router.json").write_text(
+            json.dumps(
+                {
+                    "selected": [sid, "skill-prefer-memory-cli-early"],
+                    "always_selected": [sid, "skill-prefer-memory-cli-early"],
+                }
+            )
+            + "\n",
+            encoding="utf-8",
+        )
+        (od / "skill-hits.json").write_text(
+            json.dumps(
+                {
+                    "hits": [
+                        {"id": sid, "tool_hit": False, "hit": True, "prose_hit": True},
+                        {"id": "skill-prefer-memory-cli-early", "tool_hit": True, "hit": True},
+                    ],
+                    "tool_hit_n": 1,
+                }
+            )
+            + "\n",
+            encoding="utf-8",
+        )
+        hgc_review = od / "approve-hub-gepa-compound.md"
+        hgc_review.write_text(
+            "## Review\n**Verdict:** APPROVE\n\n### Summary\nok\n\n"
+            "### Blocking\nnone\n\n### What I checked\n`app.py:1` path ok\n",
+            encoding="utf-8",
+        )
+        prev_root_hgc = os.environ.get("TORII_ROOT")
+        os.environ["TORII_ROOT"] = str(od)
+        os.environ["TORII_HUB_GEPA_COMPOUND_CRITIC"] = "1"
+        os.environ["TORII_SECOND_CRITIC_MIN_PATH"] = "0.1"
+        try:
+            cases.append(
+                _case(
+                    "hub_gepa_compound_idle_approve",
+                    hgc_review,
+                    od,
+                    case_root=od,
+                )
+            )
+        finally:
+            if prev_root_hgc is None:
+                os.environ.pop("TORII_ROOT", None)
+            else:
+                os.environ["TORII_ROOT"] = prev_root_hgc
+            os.environ.pop("TORII_SECOND_CRITIC_MIN_PATH", None)
+
 # F162: multi-tenant hub-archival hub pressure + local util gap APPROVE
     with tempfile.TemporaryDirectory() as td_ha_hub:
         od = Path(td_ha_hub)
@@ -3925,6 +4282,9 @@ def demote_eval(
     looc = next(
         (c for c in cases if c["name"] == "loo_revive_idle_approve"), {}
     )
+    hgcc = next(
+        (c for c in cases if c["name"] == "hub_gepa_compound_idle_approve"), {}
+    )
     goodc = next((c for c in cases if c["name"] == "good_insecure"), {})
     weak_demote_ok = bool(weak.get("demoted") or weak.get("recommended") != "APPROVE")
     hub_demote_ok = bool(hubc.get("demoted")) or (
@@ -3963,6 +4323,9 @@ def demote_eval(
     revive_loo_demote_ok = bool(looc.get("demoted")) or any(
         "revive_loo" in str(r) for r in (looc.get("reasons") or [])
     )
+    hub_gepa_demote_ok = bool(hgcc.get("demoted")) or any(
+        "hub_archival_x_gepa" in str(r) for r in (hgcc.get("reasons") or [])
+    )
     # good should not be demoted from REQUEST_CHANGES to worse without reason;
     # typically maker is REQUEST_CHANGES already
     good_stable = goodc.get("maker") in ("REQUEST_CHANGES", "COMMENT", "APPROVE")
@@ -3982,6 +4345,7 @@ def demote_eval(
         "feature_free_rider_revive": "F176",
         "feature_revive_pp_gate": "F177",
         "feature_revive_loo_gate": "F179",
+        "feature_hub_gepa_compound": "F180",
         "scored_at": _now(),
         "cases": cases,
         "approve_n": len(approve_cases),
@@ -4008,6 +4372,8 @@ def demote_eval(
         "revive_pp_gate_soft_ok": revive_pp_demote_ok,
         "revive_loo_gate_demote_ok": bool(looc.get("demoted")),
         "revive_loo_gate_soft_ok": revive_loo_demote_ok,
+        "hub_gepa_compound_demote_ok": bool(hgcc.get("demoted")),
+        "hub_gepa_compound_soft_ok": hub_gepa_demote_ok,
         "good_stable": good_stable,
         "paper": {
             "metric": "critic_approve_demote_rate",
@@ -4023,9 +4389,10 @@ def demote_eval(
             "free_rider_revive_idle_demoted": bool(frvc.get("demoted")),
             "low_pp_revive_idle_demoted": bool(ppgc.get("demoted")),
             "loo_revive_idle_demoted": bool(looc.get("demoted")),
+            "hub_gepa_compound_idle_demoted": bool(hgcc.get("demoted")),
             "notes": (
                 "demote_rate = demoted APPROVE / APPROVE cases; "
-                "F173 decay; F176 free-rider; F177 pp floor; F179 LOO revive"
+                "F173–F179 revive gates; F180 hub-archival×GEPA compound"
             ),
         },
         "eval_pass": weak_demote_ok
@@ -4039,7 +4406,8 @@ def demote_eval(
         and (bool(rdhc.get("demoted")) or rd_decay_demote_ok)
         and (bool(frvc.get("demoted")) or free_rider_demote_ok)
         and (bool(ppgc.get("demoted")) or revive_pp_demote_ok)
-        and (bool(looc.get("demoted")) or revive_loo_demote_ok),
+        and (bool(looc.get("demoted")) or revive_loo_demote_ok)
+        and (bool(hgcc.get("demoted")) or hub_gepa_demote_ok),
     }
     if out_dir:
         try:

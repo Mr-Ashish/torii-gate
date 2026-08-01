@@ -1,0 +1,50 @@
+        "messages",
+        "model",
+        "provider",
+        "schema_version",
+        "session_id",
+        "sessions_files",
+        "steps",
+        "tool_call_turns",
+        "usage"
+      ]
+    },
+    "hermes_run_log_bytes": 2401,
+    "hermes_stderr_bytes": 51129
+  },
+  "elapsed_s": 41.4,
+  "trace_volume_path": "/traces/pytorch--pytorch-pr191836-1785590669",
+  "trace_volume_error": null,
+  "resources": "default-min (no cpu/memory reservation)",
+  "log_streaming": true,
+  "stream_note": "Live logs streamed to Modal UI via print+flush; Hermes 
+agent.log / hermes stderr tailed during orchestrator"
+}
+--- preview ---
+<!-- torii-review pr=191836 run=local 
+head=0bcf6af4932f6b5e2fb65cad8218241502549320 -->
+## 🏴‍☠️ Torii Review — PR #191836
+
+**Verdict:** COMMENT
+**Confidence:** low
+**Score:** 40/100
+**Review effort:** 2/5
+
+> ⚠️ **Incomplete agentic review (F45):** Hermes recorded **0 tool turns** on a 
+multi-file code PR (5 files). Torii fail-closed: **APPROVE is not allowed** 
+without workspace tools (`zero_tools_multi_file_code_nontarget_verdict`). Re-run
+so the agent reads changed files, or treat findings as low-trust.
+
+### Summary
+Agent output did not match the review contract (missing: **Verdict:**, 
+**Score:**, ### Summary, ### Blocking, ### Security audit, ### Tests & risk). 
+Raw content preserved below.
+
+### Walkthrough
+- Contract repair only — re-run for a full structured review
+
+### Architecture diag
+BIT3_OK
+Stopping app - local entrypoint completed.
+✓ App completed. View run at 
+https://modal.com/apps/mr-ashish/main/ap-PVbfD5ElyMDcmremEMgdtD
