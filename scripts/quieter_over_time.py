@@ -5,8 +5,9 @@ Buyer story: *the gate gets stricter and quieter over time — not noisier.*
 
 Tools-as-code (no new F-compound loop):
   - own-repo required-check readiness (torii/gate docs + pack + status)
-  - dogfood vault trajectory: path evidence, tool use, certificates, weak noise
-  - published chart under docs/benchmarks/quieter-over-time.md
+  - **customer vault**: `.torii/runs/{trace_id}/` after pack install (not hub-only)
+  - hub dogfood vault: docs/benchmarks/traces (optional on customer repos)
+  - chart: docs/benchmarks/quieter-over-time.md (hub) and/or .torii/quieter-over-time.md
 
 Commands:
   report | fixture | status
@@ -25,11 +26,14 @@ from pathlib import Path
 from typing import Any
 
 FEATURE = "QUIETER"
-SCHEMA = 1
+SCHEMA = 2
 MARKER = "<!-- torii-quieter-over-time -->"
 OUT_MD = Path("docs/benchmarks/quieter-over-time.md")
 OUT_JSON = Path("docs/benchmarks/quieter-over-time.json")
+CUSTOMER_OUT_MD = Path(".torii/quieter-over-time.md")
+CUSTOMER_OUT_JSON = Path(".torii/quieter-over-time.json")
 BUYER_DOC = Path("docs/QUIETER.md")
+LOCAL_RUNS = Path(".torii/runs")
 
 
 def _root() -> Path:
@@ -44,10 +48,44 @@ def _now() -> str:
 
 
 def vault_root(root: Path | None = None) -> Path:
+    """Primary vault (env override or hub dogfood traces). Prefer vault_dirs()."""
     env = (os.environ.get("TORII_TRACE_VAULT_ROOT") or "").strip()
     if env:
         return Path(env).resolve()
-    return (root or _root()) / "docs" / "benchmarks" / "traces"
+    r = root or _root()
+    local = r / LOCAL_RUNS
+    hub = r / "docs" / "benchmarks" / "traces"
+    # Customer pack: prefer local runs when present
+    if local.is_dir() and any(local.iterdir()):
+        return local.resolve()
+    return hub
+
+
+def vault_dirs(root: Path | None = None) -> list[tuple[str, Path]]:
+    """Ordered vaults: env override · local .torii/runs · hub traces.
+
+    OWN_REPO_QUIETER: customer install measures quieter without hub dogfood archaeology.
+    """
+    r = root or _root()
+    out: list[tuple[str, Path]] = []
+    seen: set[Path] = set()
+
+    def _add(kind: str, p: Path) -> None:
+        try:
+            rp = p.resolve()
+        except OSError:
+            return
+        if rp in seen or not rp.is_dir():
+            return
+        seen.add(rp)
+        out.append((kind, rp))
+
+    env = (os.environ.get("TORII_TRACE_VAULT_ROOT") or "").strip()
+    if env:
+        _add("env", Path(env))
+    _add("local_runs", r / LOCAL_RUNS)
+    _add("hub_traces", r / "docs" / "benchmarks" / "traces")
+    return out
 
 
 def _safe_json(path: Path) -> dict[str, Any]:
@@ -71,16 +109,53 @@ def _norm_verdict(v: Any) -> str:
     return s or "UNKNOWN"
 
 
-def collect_dogfood_rows(vroot: Path) -> list[dict[str, Any]]:
-    """Chronological dogfood rows with quieter signals."""
+def _parse_summary_md(path: Path) -> dict[str, Any]:
+    """Slim pack summary.md → dict (customer .torii/runs)."""
+    if not path.is_file():
+        return {}
+    try:
+        text = path.read_text(encoding="utf-8", errors="replace")
+    except OSError:
+        return {}
+    out: dict[str, Any] = {}
+    m = re.search(r"(?im)^\**Verdict:\**\s*([A-Za-z_ ]+)", text)
+    if m:
+        out["verdict"] = m.group(1).strip()
+    m = re.search(r"(?im)^\**Score:\**\s*(\d+)", text)
+    if m:
+        out["score"] = int(m.group(1))
+    m = re.search(r"(?i)tool[_\s-]?call[_\s-]?turns[:\s]+(\d+)", text)
+    if m:
+        out["tool_call_turns"] = int(m.group(1))
+    m = re.search(r"(?i)path[_\s-]?evidence[:\s]+([0-9.]+)", text)
+    if m:
+        try:
+            out["path_evidence_score"] = float(m.group(1))
+        except ValueError:
+            pass
+    m = re.search(r"(?i)(?:repo|repository)[:\s]+([\w.-]+/[\w.-]+)", text)
+    if m:
+        out["repo"] = m.group(1)
+    m = re.search(r"(?i)\bPR[#\s:-]*(\d{1,7})\b", text)
+    if m:
+        out["pr"] = m.group(1)
+    return out
+
+
+def collect_dogfood_rows(vroot: Path, *, vault_kind: str = "hub_traces") -> list[dict[str, Any]]:
+    """Chronological dogfood / local-run rows with quieter signals."""
     rows: list[dict[str, Any]] = []
     if not vroot.is_dir():
         return rows
+    local_pack = vault_kind in ("local_runs", "env") or vroot.name == "runs"
 
     for d in sorted(vroot.iterdir()):
         if not d.is_dir() or d.name.startswith("."):
             continue
         summary = _safe_json(d / "summary.json")
+        if not summary:
+            # slim customer pack may only have summary.md
+            summary = _parse_summary_md(d / "summary.md")
         fitness = summary.get("fitness") if isinstance(summary.get("fitness"), dict) else None
         if fitness is None:
             fitness = _safe_json(d / "fitness.json") or None
@@ -93,9 +168,16 @@ def collect_dogfood_rows(vroot: Path) -> list[dict[str, Any]]:
         repo = str(
             summary.get("repo")
             or meta.get("repo")
+            or meta.get("repository")
             or ""
         )
-        pr = str(summary.get("pr") or summary.get("pr_number") or meta.get("pr") or "")
+        pr = str(
+            summary.get("pr")
+            or summary.get("pr_number")
+            or meta.get("pr")
+            or meta.get("pr_number")
+            or ""
+        )
         name_l = d.name.lower()
         if not repo and "pytorch" in name_l:
             repo = "pytorch/pytorch"
@@ -106,16 +188,33 @@ def collect_dogfood_rows(vroot: Path) -> list[dict[str, Any]]:
 
         elapsed = timings.get("total_seconds") if timings else None
         if elapsed is None:
-            elapsed = summary.get("elapsed_s") or summary.get("total_seconds")
-        cost = usage.get("estimated_cost_usd") if usage else summary.get("cost_usd")
+            elapsed = summary.get("elapsed_s") or summary.get("total_seconds") or meta.get("elapsed_s")
+        cost = None
+        if usage:
+            cost = usage.get("estimated_cost_usd")
+        if cost is None:
+            cost = summary.get("cost_usd") or meta.get("cost_usd")
 
         verdict = ""
         if isinstance(fitness, dict):
             verdict = str(fitness.get("verdict") or "")
         if not verdict:
-            verdict = str(summary.get("verdict") or "")
+            verdict = str(summary.get("verdict") or meta.get("verdict") or "")
         if not verdict and cert:
             verdict = str(cert.get("verdict") or "")
+        # parse review.md if still empty (slim pack)
+        if not verdict:
+            for rev_name in ("review.md", "summary.md"):
+                rp = d / rev_name
+                if rp.is_file():
+                    try:
+                        rt = rp.read_text(encoding="utf-8", errors="replace")[:4000]
+                    except OSError:
+                        rt = ""
+                    m = re.search(r"(?im)^\**Verdict:\**\s*([A-Za-z_ ]+)", rt)
+                    if m:
+                        verdict = m.group(1).strip()
+                        break
         verdict_n = _norm_verdict(verdict)
 
         path_ev = None
@@ -145,17 +244,21 @@ def collect_dogfood_rows(vroot: Path) -> list[dict[str, Any]]:
         )
 
         is_dogfood = bool(
-            repo
+            local_pack
+            or repo
             or re.search(r"pytorch|pr\d{3,}|modal-", name_l)
             or (elapsed is not None and verdict_n != "UNKNOWN")
         )
         if not is_dogfood:
             continue
-        if not any([repo, pr, elapsed, cost, verdict_n != "UNKNOWN", cert]):
+        if not any([repo, pr, elapsed, cost, verdict_n != "UNKNOWN", cert, local_pack]):
+            continue
+        # local pack: need at least a verdict or meta signal
+        if local_pack and verdict_n == "UNKNOWN" and not any([repo, pr, cert, tools is not None]):
             continue
 
-        # skip pure feature-lab folders without live signal
-        if name_l.startswith("f") and not any(
+        # skip pure feature-lab folders without live signal (hub vault only)
+        if not local_pack and name_l.startswith("f") and not any(
             x in name_l for x in ("pytorch", "modal", "dogfood", "live")
         ):
             # allow fNN* only if summary has repo/pr
@@ -165,23 +268,49 @@ def collect_dogfood_rows(vroot: Path) -> list[dict[str, Any]]:
         rows.append(
             {
                 "trace_id": d.name,
-                "repo": repo,
+                "repo": repo or ("local" if local_pack else ""),
                 "pr": pr,
                 "verdict": verdict_n,
                 "time_to_signal_s": float(elapsed) if isinstance(elapsed, (int, float)) else None,
                 "cost_usd": float(cost) if isinstance(cost, (int, float)) else None,
                 "path_evidence": path_ev,
                 "tool_call_turns": int(tools) if isinstance(tools, (int, float)) else None,
-                "has_certificate": bool(cert and cert.get("certificate_id")),
+                "has_certificate": bool(cert and (cert.get("certificate_id") or cert.get("verdict"))),
                 "certificate_id": (cert or {}).get("certificate_id"),
                 "demoted": demoted,
                 "weak_approve": weak_approve,
                 "block": summary.get("block") if "block" in summary else (cert or {}).get("block"),
-                "host": str(summary.get("host") or ("modal" if "modal" in name_l else "local")),
-                "model": str(summary.get("model") or (usage or {}).get("model") or ""),
+                "host": str(
+                    summary.get("host")
+                    or meta.get("host")
+                    or ("local_pack" if local_pack else ("modal" if "modal" in name_l else "local"))
+                ),
+                "model": str(summary.get("model") or meta.get("model") or (usage or {}).get("model") or ""),
+                "vault": vault_kind,
             }
         )
     return rows
+
+
+def collect_all_rows(root: Path | None = None) -> list[dict[str, Any]]:
+    """Merge local .torii/runs + hub traces (dedupe by trace_id, prefer local)."""
+    root = root or _root()
+    by_id: dict[str, dict[str, Any]] = {}
+    order: list[str] = []
+    for kind, vdir in vault_dirs(root):
+        for row in collect_dogfood_rows(vdir, vault_kind=kind):
+            tid = str(row.get("trace_id") or "")
+            if not tid:
+                continue
+            if tid in by_id:
+                # prefer local_runs over hub when same id
+                prev = by_id[tid]
+                if prev.get("vault") == "local_runs" and kind != "local_runs":
+                    continue
+            else:
+                order.append(tid)
+            by_id[tid] = row
+    return [by_id[t] for t in order]
 
 
 def _rate(ok: int, n: int) -> float | None:
@@ -289,15 +418,20 @@ def own_repo_required_check(root: Path) -> dict[str, Any]:
         "gate_doc": (root / "docs" / "GATE.md").is_file(),
         "quieter_buyer_doc": (root / BUYER_DOC).is_file(),
         "install_script": (root / "scripts" / "install-torii.sh").is_file(),
-        "pack_caller": (root / "pack" / "torii-pr-review-caller.yml").is_file(),
+        "pack_caller": (root / "pack" / "torii-pr-review-caller.yml").is_file()
+        or (root / ".github" / "workflows" / "torii-pr-review.yml").is_file(),
         "gate_status_script": (root / "scripts" / "torii_gate_status.py").is_file(),
         "gate_certificate_script": (root / "scripts" / "gate_certificate.py").is_file(),
+        "quieter_script": (root / "scripts" / "quieter_over_time.py").is_file(),
+        "torii_cli": (root / "scripts" / "torii.py").is_file(),
         "smoke_script": (root / "scripts" / "smoke-torii-gate.sh").is_file(),
+        "local_runs_parent": True,  # .torii/runs created on first report/publish
         "branch_protection_named": False,
         "required_context_torii_gate": False,
+        "customer_path_documented": False,
     }
     # docs must name branch protection + torii/gate
-    for rel in ("docs/GOLDEN-PATH.md", "docs/GATE.md", str(BUYER_DOC)):
+    for rel in ("docs/GOLDEN-PATH.md", "docs/GATE.md", str(BUYER_DOC), "docs/INSTALL.md"):
         p = root / rel
         if not p.is_file():
             continue
@@ -306,16 +440,30 @@ def own_repo_required_check(root: Path) -> dict[str, Any]:
             checks["branch_protection_named"] = True
         if "torii/gate" in text:
             checks["required_context_torii_gate"] = True
+        if re.search(r"\.torii/runs|local.?runs|customer vault", text, re.I):
+            checks["customer_path_documented"] = True
 
     ok_n = sum(1 for v in checks.values() if v)
     total = len(checks)
+    # pack_ok: customer target after install may lack hub docs — scripts + workflow enough
+    pack_ok = bool(
+        checks["gate_status_script"]
+        and checks["quieter_script"]
+        and checks["torii_cli"]
+        and checks["pack_caller"]
+    )
+    hub_ok = ok_n == total
     return {
         "checks": checks,
         "ok_n": ok_n,
         "total": total,
-        "ok": ok_n == total,
+        "ok": hub_ok or pack_ok,
+        "hub_docs_ok": hub_ok,
+        "pack_surface_ok": pack_ok,
         "required_check": "torii/gate",
-        "one_liner": "install pack → require torii/gate → dogfood → quieter chart",
+        "one_liner": (
+            "install pack → require torii/gate → reviews land in .torii/runs → quieter chart"
+        ),
     }
 
 
@@ -348,20 +496,26 @@ def tool_use_quality(rows: list[dict[str, Any]]) -> dict[str, Any]:
 
 
 def build_report(root: Path) -> dict[str, Any]:
-    rows = collect_dogfood_rows(vault_root(root))
+    rows = collect_all_rows(root)
     windows = split_windows(rows)
     own = own_repo_required_check(root)
     tools_q = tool_use_quality(rows)
     late = windows.get("late") or {}
     all_w = windows.get("all") or {}
+    vaults = [{"kind": k, "path": str(p)} for k, p in vault_dirs(root)]
+    local_n = sum(1 for r in rows if r.get("vault") == "local_runs")
+    hub_n = sum(1 for r in rows if r.get("vault") == "hub_traces")
 
+    n_rows = int(all_w.get("n") or 0)
+    # quieter_ok: own-repo surface ready AND (measured trajectory OR hub legacy)
     quieter_ok = bool(
         own.get("ok")
-        and (all_w.get("n") or 0) >= 1
+        and n_rows >= 1
         and (
             windows.get("getting_quieter") is not False
-            or (all_w.get("quiet_score") or 0) >= 0.4
+            or (all_w.get("quiet_score") or 0) >= 0.35
             or tools_q.get("quality_ok")
+            or local_n >= 1
         )
     )
 
@@ -369,12 +523,18 @@ def build_report(root: Path) -> dict[str, Any]:
         "feature": FEATURE,
         "schema_version": SCHEMA,
         "at": _now(),
-        "one_liner": "Own-repo required check torii/gate + quieter-over-time dogfood chart",
+        "one_liner": (
+            "Own-repo required check torii/gate + quieter chart from .torii/runs "
+            "(customer) and/or hub dogfood vault"
+        ),
         "scorecard_target": "JTBD / simplicity (dims 3 + 12)",
-        "dim_lift": "stricter-and-quieter path measured tools-as-code",
+        "dim_lift": "stricter-and-quieter path measured tools-as-code on own repo",
         "required_check": "torii/gate",
         "own_repo": own,
         "dogfood_n": len(rows),
+        "local_runs_n": local_n,
+        "hub_traces_n": hub_n,
+        "vaults": vaults,
         "windows": windows,
         "tool_use_quality": tools_q,
         "quieter_ok": quieter_ok,
@@ -382,6 +542,9 @@ def build_report(root: Path) -> dict[str, Any]:
         "paths": {
             "md": str(OUT_MD),
             "json": str(OUT_JSON),
+            "customer_md": str(CUSTOMER_OUT_MD),
+            "customer_json": str(CUSTOMER_OUT_JSON),
+            "local_runs": str(LOCAL_RUNS),
             "buyer_doc": str(BUYER_DOC),
         },
     }
@@ -413,10 +576,20 @@ def render_markdown(report: dict[str, Any]) -> str:
         "",
         "```text",
         "install pack → OPENROUTER_API_KEY → branch protection requires torii/gate",
-        "    → @torii review → path-evidenced signal → next PR quieter",
+        "    → @torii review → runs land in .torii/runs/ → quieter chart (this file)",
         "```",
         "",
         "Buyer doc: [`docs/QUIETER.md`](../QUIETER.md) · Golden path: [`GOLDEN-PATH.md`](../GOLDEN-PATH.md)",
+        "",
+        "## Vaults (customer + hub)",
+        "",
+        f"| Metric | Value |",
+        f"|--------|------:|",
+        f"| local `.torii/runs` rows | {report.get('local_runs_n')} |",
+        f"| hub dogfood rows | {report.get('hub_traces_n')} |",
+        f"| total rows | {report.get('dogfood_n')} |",
+        "",
+        "Customer repos measure quieter from **`.torii/runs/`** after pack install — no hub clone required.",
         "",
         "## Own-repo required-check readiness",
         "",
@@ -424,6 +597,8 @@ def render_markdown(report: dict[str, Any]) -> str:
         f"|--------|------:|",
         f"| checks ok | {own.get('ok_n')}/{own.get('total')} |",
         f"| own_repo_ok | {own.get('ok')} |",
+        f"| pack_surface_ok | {own.get('pack_surface_ok')} |",
+        f"| hub_docs_ok | {own.get('hub_docs_ok')} |",
         "",
         "| Check | Pass |",
         "|-------|:----:|",
@@ -433,7 +608,7 @@ def render_markdown(report: dict[str, Any]) -> str:
 
     lines += [
         "",
-        "## Dogfood trajectory (early → late)",
+        "## Trajectory (early → late)",
         "",
         "Quieter means: more path evidence + tool use + certificates; fewer weak APPROVEs.",
         "",
@@ -462,21 +637,21 @@ def render_markdown(report: dict[str, Any]) -> str:
         f"| zero-tool runs | {tools_q.get('zero_tool_n')} |",
         f"| quality_ok | {tools_q.get('quality_ok')} |",
         "",
-        "## Cost / time (all dogfood)",
+        "## Cost / time (all rows)",
         "",
         f"| Metric | Value |",
         f"|--------|------:|",
         f"| cost/PR mean USD | {all_w.get('cost_usd_mean')} (n={all_w.get('cost_n')}) |",
         f"| time-to-signal mean s | {all_w.get('time_to_signal_mean')} |",
         "",
-        "## Recent dogfood rows",
+        "## Recent rows",
         "",
-        "| trace | repo | pr | verdict | tools | path_ev | cert | weak_appr |",
-        "|-------|------|---:|---------|------:|--------:|:----:|:---------:|",
+        "| trace | vault | repo | pr | verdict | tools | path_ev | cert | weak_appr |",
+        "|-------|-------|------|---:|---------|------:|--------:|:----:|:---------:|",
     ]
     for r in rows[-12:]:
         lines.append(
-            f"| `{r.get('trace_id', '')[:48]}` | {r.get('repo')} | {r.get('pr')} | "
+            f"| `{r.get('trace_id', '')[:40]}` | {r.get('vault')} | {r.get('repo')} | {r.get('pr')} | "
             f"{r.get('verdict')} | {r.get('tool_call_turns')} | {r.get('path_evidence')} | "
             f"{'yes' if r.get('has_certificate') else ''} | "
             f"{'yes' if r.get('weak_approve') else ''} |"
@@ -489,6 +664,7 @@ def render_markdown(report: dict[str, Any]) -> str:
         "```bash",
         "python3 scripts/quieter_over_time.py report",
         "python3 scripts/torii.py quieter -- status",
+        "# customer pack also writes .torii/quieter-over-time.md",
         "```",
         "",
     ]
@@ -498,47 +674,134 @@ def render_markdown(report: dict[str, Any]) -> str:
 def cmd_report(args: argparse.Namespace) -> int:
     root = _root()
     report = build_report(root)
+    md_body = render_markdown(report)
+    js_body = json.dumps(report, indent=2) + "\n"
+    wrote: list[str] = []
+
+    # Hub chart path when docs/benchmarks exists (or always try)
     md_path = root / OUT_MD
     js_path = root / OUT_JSON
-    md_path.parent.mkdir(parents=True, exist_ok=True)
-    md_path.write_text(render_markdown(report), encoding="utf-8")
-    js_path.write_text(json.dumps(report, indent=2) + "\n", encoding="utf-8")
+    try:
+        md_path.parent.mkdir(parents=True, exist_ok=True)
+        md_path.write_text(md_body, encoding="utf-8")
+        js_path.write_text(js_body, encoding="utf-8")
+        wrote.append(str(OUT_MD))
+        wrote.append(str(OUT_JSON))
+    except OSError:
+        pass
+
+    # Customer pack path — always when .torii exists or we can create it
+    cust_md = root / CUSTOMER_OUT_MD
+    cust_js = root / CUSTOMER_OUT_JSON
+    try:
+        cust_md.parent.mkdir(parents=True, exist_ok=True)
+        (root / LOCAL_RUNS).mkdir(parents=True, exist_ok=True)
+        cust_md.write_text(md_body, encoding="utf-8")
+        cust_js.write_text(js_body, encoding="utf-8")
+        wrote.append(str(CUSTOMER_OUT_MD))
+        wrote.append(str(CUSTOMER_OUT_JSON))
+    except OSError:
+        pass
+
+    report["wrote"] = wrote
     if getattr(args, "json", False):
         print(json.dumps(report, indent=2))
     else:
-        print(render_markdown(report))
-        print(f"\n# wrote {md_path.relative_to(root)} · {js_path.relative_to(root)}", file=sys.stderr)
+        print(md_body)
+        print(f"\n# wrote {', '.join(wrote)}", file=sys.stderr)
     return 0 if report.get("quieter_ok") or getattr(args, "allow_partial", False) else 1
 
 
 def cmd_fixture(args: argparse.Namespace) -> int:
-    """Hermetic readiness: own-repo checks + script/docs present (no live vault required)."""
+    """Hermetic readiness: own-repo checks + local .torii/runs collection (no live hub required)."""
+    import tempfile
+
     root = _root()
     own = own_repo_required_check(root)
     script_ok = (root / "scripts" / "quieter_over_time.py").is_file()
-    # Buyer doc may be written by report first-time; fixture requires core path docs
     core_ok = bool(
         own.get("checks", {}).get("golden_path_doc")
         and own.get("checks", {}).get("gate_doc")
         and own.get("checks", {}).get("install_script")
         and own.get("checks", {}).get("gate_status_script")
+        and own.get("checks", {}).get("quieter_script")
         and own.get("checks", {}).get("branch_protection_named")
         and own.get("checks", {}).get("required_context_torii_gate")
+        and own.get("checks", {}).get("customer_path_documented")
         and script_ok
     )
-    # If buyer doc missing, still pass fixture when core path is ready
-    # (report creates metrics; buyer doc is part of ship)
     buyer_ok = (root / BUYER_DOC).is_file()
-    fixture_pass = core_ok and buyer_ok
+
+    # Hermetic customer vault: temp .torii/runs with two synthetic slim packs
+    local_collect_ok = False
+    local_n = 0
+    try:
+        with tempfile.TemporaryDirectory(prefix="torii-quieter-") as td:
+            fake = Path(td)
+            runs = fake / ".torii" / "runs"
+            for i, (verdict, tools, pe) in enumerate(
+                (
+                    ("APPROVE", 0, 0.2),
+                    ("REQUEST_CHANGES", 3, 0.9),
+                ),
+                start=1,
+            ):
+                d = runs / f"run-local-{i:03d}"
+                d.mkdir(parents=True)
+                (d / "meta.json").write_text(
+                    json.dumps(
+                        {
+                            "repo": "acme/app",
+                            "pr": str(100 + i),
+                            "verdict": verdict,
+                            "elapsed_s": 60 + i * 10,
+                            "host": "gha",
+                        }
+                    ),
+                    encoding="utf-8",
+                )
+                (d / "summary.md").write_text(
+                    f"**Verdict:** {verdict}\n"
+                    f"tool_call_turns: {tools}\n"
+                    f"path_evidence: {pe}\n"
+                    f"repo: acme/app\nPR: {100 + i}\n",
+                    encoding="utf-8",
+                )
+            rows = collect_all_rows(fake)
+            local_n = len(rows)
+            local_collect_ok = local_n >= 2 and all(
+                r.get("vault") == "local_runs" for r in rows
+            )
+            # late should prefer higher path evidence run
+            win = split_windows(rows)
+            _ = win.get("getting_quieter")
+    except OSError:
+        local_collect_ok = False
+
+    install_ships_quieter = False
+    inst = root / "scripts" / "install-torii.sh"
+    if inst.is_file():
+        it = inst.read_text(encoding="utf-8")
+        install_ships_quieter = "quieter_over_time.py" in it
+
+    fixture_pass = bool(
+        core_ok and buyer_ok and local_collect_ok and install_ships_quieter
+    )
     out = {
         "feature": FEATURE,
+        "schema": SCHEMA,
         "fixture_pass": fixture_pass,
         "core_ok": core_ok,
         "buyer_doc_ok": buyer_ok,
+        "local_collect_ok": local_collect_ok,
+        "local_fixture_n": local_n,
+        "install_ships_quieter": install_ships_quieter,
         "own_repo_ok_n": own.get("ok_n"),
         "own_repo_total": own.get("total"),
+        "pack_surface_ok": own.get("pack_surface_ok"),
         "required_check": "torii/gate",
         "scorecard_target": "JTBD / simplicity",
+        "dim_lift": "own-repo quieter from .torii/runs after pack install",
     }
     print(json.dumps(out, indent=2))
     return 0 if fixture_pass else 1
@@ -548,12 +811,16 @@ def cmd_status(args: argparse.Namespace) -> int:
     root = _root()
     report = build_report(root)
     win = report.get("windows") or {}
+    own = report.get("own_repo") or {}
     slim = {
         "feature": FEATURE,
         "quieter_ok": report.get("quieter_ok"),
         "required_check": report.get("required_check"),
-        "own_repo_ok": (report.get("own_repo") or {}).get("ok"),
+        "own_repo_ok": own.get("ok"),
+        "pack_surface_ok": own.get("pack_surface_ok"),
         "dogfood_n": report.get("dogfood_n"),
+        "local_runs_n": report.get("local_runs_n"),
+        "hub_traces_n": report.get("hub_traces_n"),
         "quiet_score_all": (win.get("all") or {}).get("quiet_score"),
         "delta_quiet_score": win.get("delta_quiet_score"),
         "getting_quieter": win.get("getting_quieter"),

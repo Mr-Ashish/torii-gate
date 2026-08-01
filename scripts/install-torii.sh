@@ -189,6 +189,9 @@ RUNTIME_SCRIPTS=(
   torii_memory.py
   torii.py
   install_ux_check.py
+  quieter_over_time.py
+  gate_certificate.py
+  tool_use_quality.py
 )
 
 # Scripts omitted from --minimal (bench / eval / modal / heavy evolution).

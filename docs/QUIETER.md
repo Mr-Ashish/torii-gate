@@ -44,15 +44,25 @@ Or: **Actions → Torii Gate → Run workflow**.
 Expect: PR comment + labels + commit status **`torii/gate`**.  
 False positives die twice (memory suppressions); true positives stay path-evidenced.
 
-## 4. Measure “quieter”
+## 4. Measure “quieter” (own repo — no hub archaeology)
 
-On the hub checkout (or any vault with dogfood traces):
+After pack install, each review can land a slim pack under **`.torii/runs/{trace_id}/`** (meta + summary + review). That is your **customer vault**.
 
 ```bash
-python3 scripts/quieter_over_time.py report
+# from the installed target repo (or hub checkout)
+python3 scripts/torii.py quieter -- report
 python3 scripts/torii.py quieter -- status
-# → docs/benchmarks/quieter-over-time.md
+# writes:
+#   .torii/quieter-over-time.md      ← customer path (always when .torii/ exists)
+#   docs/benchmarks/quieter-over-time.md  ← hub path when present
 ```
+
+| Vault | Where | Who |
+|-------|--------|-----|
+| **Local runs** | `.torii/runs/` | **Your repo after install** (default measure path) |
+| Hub dogfood | `docs/benchmarks/traces/` | Torii hub maintainers only |
+
+Override: `TORII_TRACE_VAULT_ROOT=/path/to/runs`.
 
 | Signal | Quieter means |
 |--------|----------------|
@@ -63,7 +73,7 @@ python3 scripts/torii.py quieter -- status
 | **quiet_score** | composite early → late (late should hold or rise) |
 | **cost / time** | optional honesty: mean cost/PR + time-to-signal on the same chart |
 
-Hub dogfood also runs Modal on public PRs (`POST_COMMENT=0`) — traces under `docs/benchmarks/traces/`. Cost/cert tables: [`ops/cost-pr-dashboard.md`](ops/cost-pr-dashboard.md) · product brief: [`PRODUCT.md`](../PRODUCT.md) measured dogfood.
+Hub maintainers also run Modal on public PRs (`POST_COMMENT=0`) — optional second vault. Cost tables: [`ops/cost-pr-dashboard.md`](ops/cost-pr-dashboard.md) · product brief: [`PRODUCT.md`](../PRODUCT.md).
 
 ## 5. What “stricter and quieter” is *not*
 

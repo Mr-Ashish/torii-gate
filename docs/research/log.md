@@ -1,3 +1,36 @@
+## 2026-08-01 — OWN_REPO_QUIETER: .torii/runs customer vault (Phase B #3)
+
+### Papers / posts
+- Buyer JTBD: quieter-over-time must work on *their* repo after install — not only hub dogfood traces.
+- Pack install wrote slim runs under `.torii/runs/` but quieter_over_time only scanned hub vault.
+- install RUNTIME_SCRIPTS omitted quieter_over_time.py / gate_certificate.py.
+
+### Decide / copy / skip
+- **Copy:** vault_dirs = local `.torii/runs` + hub traces; slim summary.md/meta.json parse.
+- **Copy:** dual-write `.torii/quieter-over-time.md` + hub chart; QUIETER/INSTALL customer path.
+- **Copy:** ship quieter_over_time + gate_certificate + tool_use_quality in install pack.
+- **Skip:** F185+; SaaS control plane.
+
+### Feature shipped (OWN_REPO_QUIETER)
+- quieter_over_time schema 2 · local vault collect · fixture local_collect_ok
+- install RUNTIME_SCRIPTS quieter scripts
+- first-principles overall **8.0** (JTBD 8.5)
+
+### Metric
+- Offline: quieter fixture_pass · local_fixture_n=2 · commercial 8.5
+- Live Modal: pytorch#191842 BIT3_OK ~188s · fail-closed 0-tool COMMENT · POST_COMMENT=0
+- Traces: docs/benchmarks/traces/20260801-1829-pytorch-pytorch-PR191842-modal-own-repo-quieter/
+- Modal: https://modal.com/apps/mr-ashish/main/ap-BKchki5zPIFlrg6ZUd2ICM
+
+### scorecard_target
+JTBD (#3) · install (#7)
+
+### dim_lift
+Customer measures quieter from .torii/runs without hub archaeology
+
+### SHA
+(pending)
+
 ## 2026-08-01 — PRICING_PACKAGING: open-core buyer SKU surface (Phase B #2)
 
 ### Papers / posts

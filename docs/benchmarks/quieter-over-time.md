@@ -2,7 +2,7 @@
 
 # Quieter-over-time (own-repo required check)
 
-_Generated: `2026-08-01T17:14:43Z` · feature **QUIETER** · quieter_ok=`True`_
+_Generated: `2026-08-01T18:10:32Z` · feature **QUIETER** · quieter_ok=`True`_
 
 **One-liner:** Own-repo required check torii/gate + quieter-over-time dogfood chart
 
@@ -43,19 +43,19 @@ Quieter means: more path evidence + tool use + certificates; fewer weak APPROVEs
 
 | Window | n | path_ev mean | tool_use rate | cert rate | weak APPROVE | quiet_score |
 |--------|--:|-------------:|--------------:|----------:|-------------:|------------:|
-| early | 36 | 0.8938 | 0.8333 | 0.0 | 0.0 | 0.7128 |
-| late | 36 | 1.0 | 0.7778 | 0.6111 | 0.0 | 0.8556 |
-| all | 72 | 0.9717 | 0.8056 | 0.3056 | 0.0 | 0.7929 |
+| early | 38 | 0.8938 | 0.8421 | 0.0 | 0.0 | 0.7154 |
+| late | 39 | 1.0 | 0.7949 | 0.6923 | 0.0 | 0.8769 |
+| all | 77 | 0.9757 | 0.8182 | 0.3506 | 0.0 | 0.8071 |
 
-**delta quiet_score (late − early):** `0.1428` · **getting_quieter:** `True`
+**delta quiet_score (late − early):** `0.1615` · **getting_quieter:** `True`
 
 ## Agent tool-use quality (tools-as-code)
 
 | Metric | Value |
 |--------|------:|
-| measured runs | 67 |
-| tool_use_rate | 0.8657 |
-| mean turns | 5.55 |
+| measured runs | 72 |
+| tool_use_rate | 0.875 |
+| mean turns | 5.58 |
 | zero-tool runs | 9 |
 | quality_ok | True |
 
@@ -63,18 +63,13 @@ Quieter means: more path evidence + tool use + certificates; fewer weak APPROVEs
 
 | Metric | Value |
 |--------|------:|
-| cost/PR mean USD | 0.0177 (n=29) |
-| time-to-signal mean s | 98.6 |
+| cost/PR mean USD | 0.017 (n=34) |
+| time-to-signal mean s | 101.7 |
 
 ## Recent dogfood rows
 
 | trace | repo | pr | verdict | tools | path_ev | cert | weak_appr |
 |-------|------|---:|---------|------:|--------:|:----:|:---------:|
-| `20260801-1605-pytorch-pytorch-PR191840-modal-ops` | pytorch/pytorch | 191840 | REQUEST_CHANGES | 8 | 1.0 | yes |  |
-| `20260801-1610-pytorch-pytorch-PR191840-modal-bra` | pytorch/pytorch | 191840 | REQUEST_CHANGES | 4 | 1.0 | yes |  |
-| `20260801-1618-pytorch-pytorch-PR191840-modal-cos` | pytorch/pytorch | 191840 | APPROVE | 3 | 1.0 | yes |  |
-| `20260801-1624-pytorch-pytorch-PR191840-modal-lan` | pytorch/pytorch | 191840 | REQUEST_CHANGES | 6 | 1.0 | yes |  |
-| `20260801-1630-pytorch-pytorch-PR191840-modal-pro` | pytorch/pytorch | 191840 | APPROVE | 5 | 1.0 | yes |  |
 | `20260801-1636-pytorch-pytorch-PR191840-modal-rea` | pytorch/pytorch | 191840 | APPROVE | 6 | 1.0 | yes |  |
 | `20260801-1642-pytorch-pytorch-PR191840-modal-ent` | pytorch/pytorch | 191840 | APPROVE | 3 | 1.0 | yes |  |
 | `20260801-1649-pytorch-pytorch-PR191840-modal-com` | pytorch/pytorch | 191840 | APPROVE | 5 | 1.0 | yes |  |
@@ -82,6 +77,11 @@ Quieter means: more path evidence + tool use + certificates; fewer weak APPROVEs
 | `20260801-1700-pytorch-pytorch-PR191840-modal-ins` | pytorch/pytorch | 191840 | REQUEST_CHANGES | 8 | 1.0 | yes |  |
 | `20260801-1706-pytorch-pytorch-PR191840-modal-day` | pytorch/pytorch | 191840 | APPROVE | 4 | 1.0 | yes |  |
 | `20260801-1712-pytorch-pytorch-PR191840-modal-gat` | pytorch/pytorch | 191840 | APPROVE | 4 | 1.0 | yes |  |
+| `20260801-1719-pytorch-pytorch-PR191840-modal-cer` | pytorch/pytorch | 191840 | APPROVE | 9 | 1.0 | yes |  |
+| `20260801-1728-pytorch-pytorch-PR191840-modal-sta` | pytorch/pytorch | 191840 | APPROVE | 7 | 1.0 | yes |  |
+| `20260801-1743-pytorch-pytorch-PR191840-modal-ent` | pytorch/pytorch | 191840 | APPROVE | 5 | 1.0 | yes |  |
+| `20260801-1753-pytorch-pytorch-PR191840-modal-gtm` | pytorch/pytorch | 191840 | APPROVE | 4 | 1.0 | yes |  |
+| `20260801-1800-pytorch-pytorch-PR191840-modal-gol` | pytorch/pytorch | 191840 | APPROVE | 5 | 1.0 | yes |  |
 
 ## Refresh
 

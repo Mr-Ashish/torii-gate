@@ -134,9 +134,21 @@ python3 scripts/torii.py enterprise -- status
 
 ### Own-repo quieter checklist
 
+Customer vault (after install): runs accumulate under **`.torii/runs/`**.  
+Measure without cloning the Torii hub dogfood tree:
+
+```bash
+python3 scripts/torii.py quieter -- report   # → .torii/quieter-over-time.md
+python3 scripts/torii.py quieter -- status
+```
+
+See [`QUIETER.md`](QUIETER.md) · required check remains **`torii/gate`**.
+
+### Own-repo quieter checklist (branch protection)
+
 1. Required check **`torii/gate`** is on (step 3 above).  
-2. Review a few real PRs (`@torii review this pr`).  
-3. Measure: `python3 scripts/torii.py quieter -- status` → [`QUIETER.md`](QUIETER.md).  
+2. Review a few real PRs (`@torii review this pr`) — slim packs land in **`.torii/runs/`**.  
+3. Measure: `python3 scripts/torii.py quieter -- report` → `.torii/quieter-over-time.md` ([`QUIETER.md`](QUIETER.md)).  
 
 Buyer story: *the gate gets stricter and quieter over time — not noisier.*
 
