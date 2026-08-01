@@ -234,6 +234,8 @@ budget always → compact body → score tool_hit → util gap? → budgeted re-
 
 **Refine dual multi-tenant promote (F168):** FederatedSkill gate — privacy-safe `skill-refine-dual-signals.json` (skill id + contrib bins + tenant hash only); `promote-refine-dual` requires ≥2 tenants and positive `refine_tool_contribution_pp` before writing `promoted-refine-dual-themes.json` and soft fitness priority boost. Single-tenant high scores stay blocked.
 
+**Refine dual hub inject + dual_fail critic (F169):** `post_score_refine_dual_hub` boosts always-priority for multi-tenant promoted refine skills and injects a privacy-safe prompt section; second-agent checker `f169_refine_dual_fail` demotes APPROVE when refine dual fails after refined recovery skills inject (paper demote-eval `refine_dual_fail_idle_demoted`).
+
 ---
 
 ## Mental model D — Hub-archival compound loop (F155–F163)

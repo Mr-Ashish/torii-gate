@@ -1,0 +1,227 @@
+{
+  "feature": "F70",
+  "mode": "live",
+  "at": "2026-08-01T12:04:20Z",
+  "model": "deepseek/deepseek-v4-pro",
+  "hermes_rc": 0,
+  "review": "docs/benchmarks/traces/f169-refine-dual-hub-critic/live/review-bench-f70.md",
+  "score": {
+    "feature": "F70",
+    "pack_id": "insecure-demo",
+    "verdict": "REQUEST_CHANGES",
+    "expected_verdict": "REQUEST_CHANGES",
+    "verdict_ok": true,
+    "tp": 4,
+    "fn": 0,
+    "required_total": 4,
+    "recall": 1.0,
+    "precision_proxy": 0.2,
+    "cases": [
+      {
+        "case_id": "sqli-search",
+        "hit": true,
+        "matched_terms": [
+          "sql injection",
+          "sqli",
+          "f-string",
+          "f\"select",
+          "execute(f",
+          "cur.execute(f",
+          "cwe-89"
+        ],
+        "path_ok": true
+      },
+      {
+        "case_id": "pickle-load",
+        "hit": true,
+        "matched_terms": [
+          "pickle",
+          "deserialize",
+          "deserialization",
+          "cwe-502",
+          "pickle.loads"
+        ],
+        "path_ok": true
+      },
+      {
+        "case_id": "cmdi-run",
+        "hit": true,
+        "matched_terms": [
+          "command injection",
+          "shell=true",
+          "rce",
+          "subprocess",
+          "cwe-78"
+        ],
+        "path_ok": true
+      },
+      {
+        "case_id": "secret-exposure",
+        "hit": true,
+        "matched_terms": [
+          "secret",
+          "api key",
+          "api_key",
+          "openrouter",
+          "credential",
+          "exposure"
+        ],
+        "path_ok": true
+      }
+    ],
+    "path_hits": [
+      {
+        "path": "demo/insecure/app.py",
+        "line": 18
+      },
+      {
+        "path": "demo/insecure/app.py",
+        "line": 33
+      },
+      {
+        "path": "demo/insecure/app.py",
+        "line": 26
+      },
+      {
+        "path": "demo/insecure/app.py",
+        "line": 38
+      },
+      {
+        "path": "demo/insecure/app.py",
+        "line": null
+      }
+    ],
+    "critic": {
+      "feature": "F70",
+      "pass": "dual_offline",
+      "effective_aware": true,
+      "graph_supersede_aware": true,
+      "graph_multi_hop": true,
+      "graph_supersede_edges": 0,
+      "graph_hop": {
+        "multi_hop": true,
+        "hops": 2,
+        "seed_n": 4,
+        "neighborhood_n": 4,
+        "seeds": [
+          "tp:cmdi-run",
+          "tp:pickle-load",
+          "tp:secret-exposure",
+          "tp:sqli-search"
+        ]
+      },
+      "effective_floor": 0.25,
+      "chunk_count": 5,
+      "likely_fp": 0,
+      "confirmed_tp": 1,
+      "stale_tp_match": 0,
+      "superseded_tp": 0,
+      "weak_evidence": 4,
+      "precision_proxy": 0.2,
+      "effective_precision": 0.19,
+      "findings": [
+        {
+          "index": 0,
+          "status": "weak_evidence",
+          "has_path": false,
+          "paths": [],
+          "tp_signature_hits": [],
+          "tp_effective_max": null,
+          "tp_effective_scores": [],
+          "demote_reason": "",
+          "graph_filtered": null,
+          "preview": "All four findings below are confirmed sinks with live triggers \u2014 no speculation required."
+        },
+        {
+          "index": 1,
+          "status": "weak_evidence",
+          "has_path": false,
+          "paths": [],
+          "tp_signature_hits": [
+            "sqli-search"
+          ],
+          "tp_effective_max": 0.95,
+          "tp_effective_scores": [
+            0.95
+          ],
+          "demote_reason": "",
+          "graph_filtered": null,
+          "preview": "SQL Injection (CWE-89) \u2014 confirmed, live endpoint trigger"
+        },
+        {
+          "index": 2,
+          "status": "weak_evidence",
+          "has_path": false,
+          "paths": [],
+          "tp_signature_hits": [
+            "cmdi-run"
+          ],
+          "tp_effective_max": 0.95,
+          "tp_effective_scores": [
+            0.95
+          ],
+          "demote_reason": "",
+          "graph_filtered": null,
+          "preview": "Command Injection (CWE-78) \u2014 confirmed, shell=True on attacker-controlled input"
+        },
+        {
+          "index": 3,
+          "status": "weak_evidence",
+          "has_path": false,
+          "paths": [],
+          "tp_signature_hits": [
+            "pickle-load"
+          ],
+          "tp_effective_max": 0.95,
+          "tp_effective_scores": [
+            0.95
+          ],
+          "demote_reason": "",
+          "graph_filtered": null,
+          "preview": "Insecure Deserialization (CWE-502) \u2014 confirmed, pickle.loads on raw request body"
+        },
+        {
+          "index": 4,
+          "status": "confirmed_tp",
+          "has_path": true,
+          "paths": [
+            {
+              "path": "demo/insecure/app.py",
+              "line": 18
+            },
+            {
+              "path": "demo/insecure/app.py",
+              "line": 33
+            },
+            {
+              "path": "demo/insecure/app.py",
+              "line": 26
+            },
+            {
+              "path": "demo/insecure/app.py",
+              "line": 38
+            }
+          ],
+          "tp_signature_hits": [
+            "sqli-search",
+            "pickle-load",
+            "cmdi-run",
+            "secret-exposure"
+          ],
+          "tp_effective_max": 0.95,
+          "tp_effective_scores": [
+            0.95,
+            0.95,
+            0.95,
+            0.95
+          ],
+          "demote_reason": "",
+          "graph_filtered": null,
+          "preview": "Secrets Exposure (CWE-200/CWE-798) \u2014 confirmed, env var returned to caller    **1. SQL Injection \u2014 `demo/insecure/app.py:18`** `cur.execute(f\"SELECT * FROM items WHERE name = '{q}'"
+        }
+      ]
+    },
+    "score_pct": 100.0,
+    "passed": true
+  }
+}

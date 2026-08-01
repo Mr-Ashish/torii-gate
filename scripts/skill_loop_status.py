@@ -596,6 +596,36 @@ def assess(root: Path | None = None, *, deep: bool = True) -> dict[str, Any]:
         and "promote-refine-dual" in hermes_sh
         and "F168" in hermes_sh,
         "feature_refine_promote": "F168",
+        # F169: inject promoted refine dual into always priority + critic demote dual_fail
+        "refine_dual_hub_ok": "post_score_refine_dual_hub" in (
+            (root / "scripts" / "skill_router.py").read_text(
+                encoding="utf-8", errors="replace"
+            )
+            if (root / "scripts" / "skill_router.py").is_file()
+            else ""
+        )
+        and "inject_refine_dual_hub_into_prompt" in (
+            (root / "scripts" / "skill_router.py").read_text(
+                encoding="utf-8", errors="replace"
+            )
+            if (root / "scripts" / "skill_router.py").is_file()
+            else ""
+        )
+        and "f169_refine_dual_fail" in (
+            (root / "scripts" / "second_agent_critic.py").read_text(
+                encoding="utf-8", errors="replace"
+            )
+            if (root / "scripts" / "second_agent_critic.py").is_file()
+            else ""
+        )
+        and "refine_dual_fail_idle_approve" in (
+            (root / "scripts" / "second_agent_critic.py").read_text(
+                encoding="utf-8", errors="replace"
+            )
+            if (root / "scripts" / "second_agent_critic.py").is_file()
+            else ""
+        ),
+        "feature_refine_dual_hub": "F169",
         # F158: fitness ledger ingest/demote for hub-archival util
         "hub_archival_fitness_ok": "ingest_hub_archival_util" in (
             (root / "scripts" / "skill_fitness.py").read_text(
@@ -720,6 +750,7 @@ def to_markdown(report: dict[str, Any]) -> str:
             f"- Refine dual-gate LOO floor + fitness shield (F166): **{'ok' if report.get('skill_refine_attr_ok') else 'gap'}**",
             f"- Refine dual-rollout contribution_pp (F167): **{'ok' if report.get('refine_dual_ok') else 'gap'}**",
             f"- Refine dual multi-tenant promote (F168): **{'ok' if report.get('refine_promote_ok') else 'gap'}**",
+            f"- Refine dual hub always-priority + dual_fail critic (F169): **{'ok' if report.get('refine_dual_hub_ok') else 'gap'}**",
             f"- Recovery hub gap critic/demote-eval (F128): **{'ok' if report.get('recovery_hub_gap_ok') else 'gap'}**",
             f"- Recon-warm hub critic/demote-eval (F151): **{'ok' if report.get('recon_warm_hub_ok') else 'gap'}**",
             f"- Wiring (assemble/run/hermes/save-trace): **{'ok' if report.get('wiring_ok') else 'gap'}**",
@@ -796,6 +827,9 @@ def cmd_scorecard(args: argparse.Namespace) -> int:
                 "refine_promote_ok": report.get("refine_promote_ok"),
                 "feature_refine_promote": report.get("feature_refine_promote")
                 or "F168",
+                "refine_dual_hub_ok": report.get("refine_dual_hub_ok"),
+                "feature_refine_dual_hub": report.get("feature_refine_dual_hub")
+                or "F169",
                 "feature_scorecard_ops": report.get("feature_scorecard_ops"),
                 "scorecard_ops_ok": report.get("scorecard_ops_ok"),
                 "scorecard_active": report.get("scorecard_active"),
@@ -880,6 +914,8 @@ def cmd_fixture(args: argparse.Namespace) -> int:
                 "feature_refine_dual": "F167",
                 "refine_promote_ok": report.get("refine_promote_ok"),
                 "feature_refine_promote": "F168",
+                "refine_dual_hub_ok": report.get("refine_dual_hub_ok"),
+                "feature_refine_dual_hub": "F169",
                 "wiring_ok": report["wiring_ok"],
                 "deep_ok": report["deep_ok"],
                 "ready": report["ready"],

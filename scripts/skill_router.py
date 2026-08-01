@@ -353,6 +353,17 @@ def hub_archival_hub_enabled() -> bool:
     return raw not in _FALSEY
 
 
+def refine_dual_hub_enabled() -> bool:
+    """F169: promoted refine dual themes → always priority + prompt inject."""
+    raw = (os.environ.get("TORII_REFINE_DUAL_HUB") or "1").strip().lower()
+    return raw not in _FALSEY
+
+
+REFINE_DUAL_HUB_MARKER_OPEN = "<!-- torii-f169-refine-dual-hub -->"
+REFINE_DUAL_HUB_MARKER_CLOSE = "<!-- /torii-f169-refine-dual-hub -->"
+FEATURE_REFINE_DUAL_HUB = "F169"
+
+
 def hub_archival_hub_pressure_threshold() -> float:
     """F161: re-prompt/critic bias when multi-tenant ha gap_pressure ≥ thr."""
     raw = (os.environ.get("TORII_HUB_ARCHIVAL_HUB_THR") or "0.34").strip()
@@ -756,6 +767,302 @@ def hub_priority_delta(sid: str, hub: dict[str, Any] | None = None) -> int:
         return int(deltas.get(sid) or 0)
     except (TypeError, ValueError):
         return 0
+
+
+def load_refine_dual_hub_signals(root: Path | None = None) -> list[dict[str, Any]]:
+    """F169: privacy-safe promoted refine dual + dual signals from federation."""
+    root = root or _root()
+    paths = [
+        root / "memory" / "federation" / "promoted-refine-dual-themes.json",
+        root / "memory" / "federation" / "skill-refine-dual-signals.json",
+    ]
+    od = (os.environ.get("OUT_DIR") or "").strip()
+    if od:
+        paths.insert(0, Path(od) / "promoted-refine-dual-themes.json")
+        paths.insert(0, Path(od) / "skill-refine-dual-signals.json")
+        paths.insert(0, Path(od) / "refine-dual.json")
+    out: list[dict[str, Any]] = []
+    seen: set[str] = set()
+    for p in paths:
+        if not p.is_file():
+            continue
+        try:
+            data = json.loads(p.read_text(encoding="utf-8"))
+        except (OSError, json.JSONDecodeError):
+            continue
+        # refine-dual.json single-run paper metric → synthetic signal
+        if p.name == "refine-dual.json" and isinstance(data, dict):
+            for sid in data.get("refined_skill_ids") or []:
+                sid_s = str(sid)
+                if not sid_s.startswith("skill-") or sid_s in seen:
+                    continue
+                seen.add(sid_s)
+                out.append(
+                    {
+                        "id": f"run-refine-dual-{sid_s}"[:64],
+                        "theme": sid_s,
+                        "skill_id": sid_s,
+                        "tags": [
+                            "refine_dual",
+                            "f167",
+                            "f169",
+                            "dual_pass" if data.get("refine_dual_pass") else "dual_fail",
+                        ],
+                        "hits": 1,
+                        "tenants": 1,
+                        "tool_contrib_pp": float(
+                            data.get("refine_tool_contribution_pp") or 0
+                        ),
+                        "dual_pass": bool(data.get("refine_dual_pass")),
+                        "promoted": False,
+                        "source": "refine_dual_run",
+                    }
+                )
+            continue
+        sigs = data.get("signals") if isinstance(data, dict) else data
+        if not isinstance(sigs, list):
+            continue
+        promoted_scope = "promoted" in p.name or data.get("scope") == "promoted_refine_dual_themes"
+        for s in sigs:
+            if not isinstance(s, dict):
+                continue
+            sid = str(s.get("skill_id") or s.get("theme") or s.get("id") or "")
+            if not sid.startswith("skill-"):
+                continue
+            key = f"{sid}|{s.get('tenant_hash') or ''}|{s.get('id') or ''}"
+            if key in seen:
+                continue
+            seen.add(key)
+            tags = [str(t).lower() for t in (s.get("tags") or [])]
+            if not any(
+                t in tags
+                for t in (
+                    "refine_dual",
+                    "f167",
+                    "f168",
+                    "f169",
+                    "promoted_refine_dual",
+                    "gepa",
+                )
+            ) and "refine" not in str(s.get("source") or "").lower():
+                if not promoted_scope:
+                    continue
+            ent = dict(s)
+            ent["skill_id"] = sid
+            ent["theme"] = sid
+            if promoted_scope or "promoted_refine_dual" in tags:
+                ent["promoted"] = True
+            out.append(ent)
+    return out
+
+
+def post_score_refine_dual_hub(
+    root: Path | None = None,
+    *,
+    signals: list[dict[str, Any]] | None = None,
+) -> dict[str, Any]:
+    """F169: multi-tenant promoted refine dual → always priority deltas + fail pressure.
+
+    Privacy-safe: skill ids + contrib bins + tenant counts only.
+    Promoted themes get positive priority; dual_fail pressure surfaces for critic.
+    """
+    root = root or _root()
+    if not refine_dual_hub_enabled():
+        return {
+            "feature": FEATURE_REFINE_DUAL_HUB,
+            "enabled": False,
+            "priority_deltas": {},
+            "skills": {},
+            "reason": "refine_dual_hub_off",
+        }
+    signals = signals if signals is not None else load_refine_dual_hub_signals(root)
+    skills: dict[str, dict[str, Any]] = {}
+    fail_hits = 0
+    ok_hits = 0
+    for s in signals:
+        sid = str(s.get("skill_id") or s.get("theme") or "")
+        if not sid.startswith("skill-"):
+            continue
+        ent = skills.setdefault(
+            sid,
+            {
+                "skill_id": sid,
+                "hits": 0,
+                "tenants": 0,
+                "tool_contrib_pp": 0.0,
+                "promoted": False,
+                "dual_fail_n": 0,
+                "dual_pass_n": 0,
+                "priority_delta": 0,
+                "util_rate_bin": "zero",
+            },
+        )
+        ent["hits"] += max(1, int(s.get("hits") or 1))
+        tenants = int(s.get("tenants") or len(s.get("tenant_hashes") or []) or 1)
+        ent["tenants"] = max(int(ent["tenants"]), tenants)
+        ent["tool_contrib_pp"] = max(
+            float(ent["tool_contrib_pp"]), float(s.get("tool_contrib_pp") or 0)
+        )
+        tags = [str(t).lower() for t in (s.get("tags") or [])]
+        if s.get("promoted") or "promoted_refine_dual" in tags:
+            ent["promoted"] = True
+        dual_pass = s.get("dual_pass")
+        if dual_pass is False or "dual_fail" in tags:
+            ent["dual_fail_n"] = int(ent["dual_fail_n"]) + 1
+            fail_hits += 1
+        elif dual_pass or "dual_pass" in tags or ent["promoted"]:
+            ent["dual_pass_n"] = int(ent["dual_pass_n"]) + 1
+            ok_hits += 1
+        bin_ = str(s.get("util_rate_bin") or "")
+        if bin_:
+            ent["util_rate_bin"] = bin_
+
+    priority_deltas: dict[str, int] = {}
+    for sid, ent in skills.items():
+        delta = 0
+        if ent["promoted"]:
+            # multi-tenant promoted refine dual — keep in always budget
+            delta = 20 + min(20, 4 * min(5, int(ent["tenants"])))
+            if float(ent["tool_contrib_pp"]) >= 50:
+                delta += 8
+            elif float(ent["tool_contrib_pp"]) >= 10:
+                delta += 4
+        elif int(ent["dual_pass_n"]) >= 1 and float(ent["tool_contrib_pp"]) > 0:
+            delta = 8 + min(10, int(float(ent["tool_contrib_pp"]) / 10))
+        # dual_fail without promote does not boost
+        if int(ent["dual_fail_n"]) >= 1 and not ent["promoted"]:
+            delta = min(delta, 0)
+        ent["priority_delta"] = int(delta)
+        if delta:
+            priority_deltas[sid] = int(delta)
+
+    fail_pressure = 0.0
+    if fail_hits + ok_hits > 0:
+        fail_pressure = round(fail_hits / max(1, fail_hits + ok_hits), 4)
+    high_fail = fail_pressure >= 0.5 and fail_hits >= 1
+
+    blob = json.dumps({"skills": list(skills.keys()), "deltas": priority_deltas})
+    privacy_ok = "/Users/" not in blob and "/home/" not in blob
+
+    return {
+        "feature": FEATURE_REFINE_DUAL_HUB,
+        "enabled": True,
+        "signals_n": len(signals),
+        "skills": skills,
+        "priority_deltas": priority_deltas,
+        "ok_hits": ok_hits,
+        "fail_hits": fail_hits,
+        "fail_pressure": fail_pressure,
+        "high_fail": high_fail,
+        "privacy_ok": privacy_ok,
+        "hub_ok": privacy_ok and (len(priority_deltas) >= 1 or fail_hits >= 0),
+    }
+
+
+def render_refine_dual_hub_section(hub: dict[str, Any]) -> str:
+    """F169: privacy-safe prompt section for promoted refine dual themes."""
+    lines = [
+        REFINE_DUAL_HUB_MARKER_OPEN,
+        "## Federated GEPA refine dual (F168/F169 hub)",
+        "",
+        "Cross-tenant refine dual outcomes (skill ids + contrib bins only; no bodies/paths):",
+    ]
+    skills = hub.get("skills") or {}
+    if skills:
+        ranked = sorted(
+            skills.values(),
+            key=lambda e: (-int(e.get("priority_delta") or 0), str(e.get("skill_id"))),
+        )
+        for e in ranked[:6]:
+            promo = "promoted" if e.get("promoted") else "local"
+            lines.append(
+                f"- `{e.get('skill_id')}`: {promo} hits={e.get('hits')} "
+                f"tenants={e.get('tenants')} tool_pp={e.get('tool_contrib_pp')} "
+                f"Δprio=+{e.get('priority_delta')} fail_n={e.get('dual_fail_n')}"
+            )
+    else:
+        lines.append(
+            "- (no promoted refine dual themes yet — keep hub_boost tools when GEPA refine is active)"
+        )
+    if hub.get("high_fail"):
+        lines.append(
+            f"- **Refine dual fail_pressure={float(hub.get('fail_pressure') or 0):.2f}** — "
+            "do not APPROVE while refined recovery skills idle hub_boost / archival tools."
+        )
+    elif int(hub.get("ok_hits") or 0) >= 1:
+        lines.append(
+            "- Promoted/positive refine dual — fire archival hub_boost tools early (F165 body)."
+        )
+    lines.append(REFINE_DUAL_HUB_MARKER_CLOSE)
+    return "\n".join(lines) + "\n"
+
+
+def inject_refine_dual_hub_into_prompt(
+    prompt: Path,
+    hub: dict[str, Any] | None = None,
+    *,
+    root: Path | None = None,
+) -> dict[str, Any]:
+    """F169: inject/replace promoted refine dual hub section into prompt."""
+    root = root or _root()
+    hub = hub if hub is not None else post_score_refine_dual_hub(root=root)
+    if not refine_dual_hub_enabled():
+        return {
+            "feature": FEATURE_REFINE_DUAL_HUB,
+            "injected": 0,
+            "reason": "off",
+            "hub": hub,
+        }
+    if int(hub.get("signals_n") or 0) < 1 and not hub.get("high_fail"):
+        return {
+            "feature": FEATURE_REFINE_DUAL_HUB,
+            "injected": 0,
+            "reason": "no_signals",
+            "hub": hub,
+        }
+    section = render_refine_dual_hub_section(hub)
+    try:
+        original = prompt.read_text(encoding="utf-8", errors="replace")
+    except OSError as exc:
+        return {
+            "feature": FEATURE_REFINE_DUAL_HUB,
+            "injected": 0,
+            "error": str(exc)[:120],
+        }
+    if REFINE_DUAL_HUB_MARKER_OPEN in original:
+        new = re.sub(
+            rf"{re.escape(REFINE_DUAL_HUB_MARKER_OPEN)}.*?{re.escape(REFINE_DUAL_HUB_MARKER_CLOSE)}\n?",
+            section,
+            original,
+            count=1,
+            flags=re.DOTALL,
+        )
+    else:
+        # place after hub-archival hub section if present
+        if "<!-- /torii-f162-hub-archival-hub -->" in original:
+            new = original.replace(
+                "<!-- /torii-f162-hub-archival-hub -->",
+                "<!-- /torii-f162-hub-archival-hub -->\n" + section,
+                1,
+            )
+        else:
+            new = original.rstrip() + "\n\n" + section
+    try:
+        prompt.write_text(new if new.endswith("\n") else new + "\n", encoding="utf-8")
+    except OSError as exc:
+        return {
+            "feature": FEATURE_REFINE_DUAL_HUB,
+            "injected": 0,
+            "error": str(exc)[:120],
+        }
+    return {
+        "feature": FEATURE_REFINE_DUAL_HUB,
+        "injected": 1,
+        "chars": len(section),
+        "priority_deltas": hub.get("priority_deltas"),
+        "fail_pressure": hub.get("fail_pressure"),
+        "hub": hub,
+    }
 
 
 def load_scorecard_hub_signals(root: Path | None = None) -> list[dict[str, Any]]:
@@ -1711,6 +2018,18 @@ def select_skills(
         except Exception:
             ha_hub_report = {"enabled": False, "priority_deltas": {}, "skills": {}}
 
+    # F169: promoted refine dual → always priority for refined recovery skills
+    rd_hub_report: dict[str, Any] = {
+        "enabled": False,
+        "priority_deltas": {},
+        "skills": {},
+    }
+    if refine_dual_hub_enabled():
+        try:
+            rd_hub_report = post_score_refine_dual_hub(root=root or _root())
+        except Exception:
+            rd_hub_report = {"enabled": False, "priority_deltas": {}, "skills": {}}
+
     def _effective_always_prio(c: SkillCard) -> int:
         return (
             int(c.always_priority or 0)
@@ -1718,6 +2037,7 @@ def select_skills(
             + hub_priority_delta(c.id, sc_hub_report)
             + hub_priority_delta(c.id, mem_hub_report)
             + hub_priority_delta(c.id, ha_hub_report)
+            + hub_priority_delta(c.id, rd_hub_report)
         )
 
     # F119: always-on budget — rank always candidates by always_priority (+ F125 hub), take top N
@@ -1758,6 +2078,12 @@ def select_skills(
             s += min(12.0, float(hd_ha) / 4.0)
             if c.id in always_deferred_set:
                 s += min(8.0, float(hd_ha) / 5.0)
+        # F169: promoted GEPA refine dual keeps refined recovery skills in always budget
+        hd_rd = hub_priority_delta(c.id, rd_hub_report)
+        if hd_rd:
+            s += min(12.0, float(hd_rd) / 4.0)
+            if c.id in always_deferred_set:
+                s += min(8.0, float(hd_rd) / 5.0)
         ranked.append((s, c))
     ranked.sort(key=lambda x: (-x[0], x[1].id))
 
@@ -1865,6 +2191,15 @@ def select_skills(
         "feature_hub_archival_hub": FEATURE_HUB_ARCHIVAL_HUB
         if hub_archival_hub_enabled()
         else None,
+        "refine_dual_hub_priority_deltas": {
+            k: v
+            for k, v in (rd_hub_report.get("priority_deltas") or {}).items()
+        },
+        "refine_dual_hub_fail_pressure": rd_hub_report.get("fail_pressure"),
+        "refine_dual_hub_high_fail": rd_hub_report.get("high_fail"),
+        "feature_refine_dual_hub": FEATURE_REFINE_DUAL_HUB
+        if refine_dual_hub_enabled()
+        else None,
         "ranking": [
             {
                 "id": c.id,
@@ -1876,6 +2211,7 @@ def select_skills(
                 "scorecard_hub_delta": hub_priority_delta(c.id, sc_hub_report),
                 "hub_archival_hub_delta": hub_priority_delta(c.id, ha_hub_report),
                 "memory_hub_delta": hub_priority_delta(c.id, mem_hub_report),
+                "refine_dual_hub_delta": hub_priority_delta(c.id, rd_hub_report),
                 "always_deferred": c.id in always_deferred_set,
                 "demoted": c.id in demoted and c.id not in always_selected_ids,
                 "free_rider": c.id in free_riders and c.id not in always_selected_ids,
@@ -2129,6 +2465,13 @@ def inject_into_prompt(
             ha_hub_inj = inject_hub_archival_hub_into_prompt(dest, root=root)
         except Exception as exc:
             ha_hub_inj = {"injected": 0, "soft_error": str(exc)[:80]}
+    # F169: inject promoted refine dual hub (soft)
+    rd_hub_inj: dict[str, Any] = {"injected": 0}
+    if refine_dual_hub_enabled():
+        try:
+            rd_hub_inj = inject_refine_dual_hub_into_prompt(dest, root=root)
+        except Exception as exc:
+            rd_hub_inj = {"injected": 0, "soft_error": str(exc)[:80]}
 
     result = {
         "feature": FEATURE,
@@ -2172,6 +2515,17 @@ def inject_into_prompt(
         "hub_archival_hub_high": ha_hub_inj.get("high"),
         "feature_hub_archival_hub_inject": FEATURE_HUB_ARCHIVAL_HUB_INJECT
         if ha_hub_inj.get("injected")
+        else None,
+        # F169
+        "refine_dual_hub_injected": int(rd_hub_inj.get("injected") or 0),
+        "refine_dual_hub_fail_pressure": rd_hub_inj.get("fail_pressure")
+        if rd_hub_inj.get("injected")
+        else selection.get("refine_dual_hub_fail_pressure"),
+        "refine_dual_hub_priority_deltas": selection.get(
+            "refine_dual_hub_priority_deltas"
+        ),
+        "feature_refine_dual_hub": FEATURE_REFINE_DUAL_HUB
+        if rd_hub_inj.get("injected") or refine_dual_hub_enabled()
         else None,
     }
     # write selection artifact next to prompt if OUT_DIR (F160: also prompt parent)

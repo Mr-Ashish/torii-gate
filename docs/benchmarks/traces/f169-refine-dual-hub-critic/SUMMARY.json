@@ -1,0 +1,32 @@
+{
+  "feature": "F169",
+  "title": "refine dual hub always-priority + dual_fail critic",
+  "scored_at": "2026-08-01T12:06:22Z",
+  "pattern": "promoted refine dual \u2192 always \u0394prio + prompt inject; dual_fail \u2192 demote APPROVE",
+  "offline": {
+    "demote_eval_refine_dual_fail": true,
+    "refine_dual_hub_ok": true
+  },
+  "live_local": {
+    "recall": 1.0,
+    "tp": 4,
+    "verdict": "REQUEST_CHANGES",
+    "util_rate": 1.0,
+    "recovery_injected_n": 3,
+    "refine_dual_pass": true,
+    "refine_tool_contribution_pp": 50.0,
+    "refine_dual_hub_priority_deltas": {
+      "skill-prefer-memory-cli-early": 13
+    },
+    "f169_prompt": true,
+    "model": "deepseek/deepseek-v4-pro"
+  },
+  "modal": {
+    "repo": "pytorch/pytorch",
+    "pr": 191836,
+    "outcome": "BIT3_OK",
+    "elapsed_s": 122.3,
+    "log_streaming": true,
+    "post_comment": 0
+  }
+}

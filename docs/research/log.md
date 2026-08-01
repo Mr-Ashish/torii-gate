@@ -1,5 +1,39 @@
 # Torii research → product log
 
+## 2026-08-01 — F169 refine dual hub always-priority + dual_fail critic
+
+### Papers / posts
+- FederatedSkill / F168: promote without inject leaves next always budget unchanged.
+- F125/F161 hub post-score: multi-tenant themes must rank always skills.
+- Maker/Checker F156: idle recovery tools demote APPROVE — dual_fail is the GEPA twin.
+- SkillsBench: dual_fail after inject is free-rider APPROVE risk.
+
+### OSS design patterns stolen
+1. post_score_refine_dual_hub priority_deltas from promoted-refine-dual-themes.
+2. inject_refine_dual_hub_into_prompt F169 markers (privacy-safe).
+3. f169_refine_dual_fail critic + decide_verdict demote on dual_fail.
+4. demote-eval refine_dual_fail_idle_approve paper metric.
+
+### Insight
+F168 promote is write-only without router inject + critic. Highest ROI: promoted refine dual boosts always slots; dual_fail after inject demotes weak APPROVE.
+
+### Feature shipped (F169)
+- skill_router refine dual hub post-score + inject
+- second_agent f169 critic + demote-eval
+- skill_loop refine_dual_hub_ok; PRODUCT line
+
+### Metric
+- Offline: demote-eval refine_dual_fail_idle_demoted; hub Δprio>0
+- Live local: recall=1.0 util_rate=1.0 rd_deltas={'skill-prefer-memory-cli-early': 13} f169 prompt
+- Modal pytorch#191836 BIT3_OK ~122.3s POST_COMMENT=0 log_streaming=true
+
+### Loop-engineering / Hermes practice used
+**Promote → inject always budget → checker demote** — close GEPA refine compound loop.
+
+### SHA
+`(pending)`
+
+
 ## 2026-08-01 — F168 refine dual multi-tenant federate + promote
 
 ### Papers / posts

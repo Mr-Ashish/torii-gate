@@ -126,3 +126,8 @@ Generated: `2026-08-01T09:45:56Z`
 - Offline f168_ok multi promote / single blocked
 - Live F168 hermes notice; recall=1.0
 - Modal pytorch#191830 BIT3_OK ~89.6s POST_COMMENT=0
+
+## F169 refine dual hub always-priority + dual_fail critic
+- Offline demote-eval refine_dual_fail_idle_demoted; hub Δprio
+- Live F169 prompt inject + priority deltas; recall=1.0
+- Modal pytorch#191836 BIT3_OK ~122s POST_COMMENT=0

@@ -358,6 +358,12 @@ def hub_archival_util_critic_enabled() -> bool:
     return raw not in _FALSEY
 
 
+def refine_dual_fail_critic_enabled() -> bool:
+    """F169: demote APPROVE when refine dual fails after refined skills injected."""
+    raw = (os.environ.get("TORII_REFINE_DUAL_FAIL_CRITIC") or "1").strip().lower()
+    return raw not in _FALSEY
+
+
 def run_f121_recovery_util(out_dir: Path | None) -> CheckerResult:
     """F121: recovery always skills must fire tool CLIs (inject ≠ utilization)."""
     if out_dir is None:
@@ -407,6 +413,117 @@ def run_f121_recovery_util(out_dir: Path | None) -> CheckerResult:
             error=str(e)[:200],
             detail={"soft_fail": True},
         )
+
+
+def run_f169_refine_dual_fail(
+    out_dir: Path | None,
+    root: Path | None = None,
+) -> CheckerResult:
+    """F169: refined skills injected but refine dual fail / idle hub_boost → demote APPROVE.
+
+    GEPA dual-rollout (F167) measured refine contribution; when dual_fail after
+    refined recovery skills are in the always inject set, APPROVE is weak.
+    Also biases on multi-tenant fail_pressure from F169 hub post-score.
+    """
+    if not refine_dual_fail_critic_enabled():
+        return CheckerResult(
+            id="f169_refine_dual_fail",
+            name="GEPA refine dual fail (F169)",
+            ok=True,
+            score=1.0,
+            detail={"enabled": False, "feature": "F169"},
+        )
+    root = root or _root()
+    od = Path(out_dir) if out_dir else None
+    dual_fail = False
+    dual_pass = None
+    refined_injected = False
+    tool_pp = 0.0
+    fail_pressure = 0.0
+    high_fail = False
+    # refine-dual.json paper artifact
+    if od and (od / "refine-dual.json").is_file():
+        try:
+            rd = json.loads((od / "refine-dual.json").read_text(encoding="utf-8"))
+            if isinstance(rd, dict):
+                dual_pass = bool(rd.get("refine_dual_pass"))
+                dual_fail = not dual_pass
+                tool_pp = float(rd.get("refine_tool_contribution_pp") or 0)
+                if tool_pp <= 0 and int(rd.get("refine_probe_delta") or 0) <= 0:
+                    dual_fail = True
+                if rd.get("refined_skill_ids"):
+                    refined_injected = True
+        except (OSError, json.JSONDecodeError, TypeError, ValueError):
+            pass
+    # skill-router: refined skills always injected
+    if od and (od / "skill-router.json").is_file():
+        try:
+            sr = json.loads((od / "skill-router.json").read_text(encoding="utf-8"))
+            always = set(sr.get("always_selected") or sr.get("selected") or [])
+            refined = set(sr.get("refine_dual_hub_priority_deltas") or {})
+            for sid in always:
+                if "hub-archival" in str(sid) or "memory-cli" in str(sid):
+                    refined_injected = True
+            if refined:
+                refined_injected = True
+        except (OSError, json.JSONDecodeError, TypeError, ValueError):
+            pass
+    # recovery util hub_archival idle as dual_fail proxy when refined injected
+    if od and (od / "recovery-skill-util.json").is_file():
+        try:
+            util = json.loads(
+                (od / "recovery-skill-util.json").read_text(encoding="utf-8")
+            )
+            if isinstance(util, dict):
+                if util.get("hub_archival_util_gap") or util.get("hub_archival_idle"):
+                    if util.get("hub_archival_injected"):
+                        refined_injected = True
+                        dual_fail = True
+        except (OSError, json.JSONDecodeError, TypeError, ValueError):
+            pass
+    # multi-tenant fail pressure from hub post-score
+    try:
+        sys.path.insert(0, str(Path(__file__).resolve().parent))
+        from skill_router import post_score_refine_dual_hub  # type: ignore
+
+        hub = post_score_refine_dual_hub(root=root)
+        fail_pressure = float(hub.get("fail_pressure") or 0)
+        high_fail = bool(hub.get("high_fail"))
+        if high_fail:
+            dual_fail = True
+            refined_injected = refined_injected or bool(hub.get("priority_deltas"))
+    except Exception:
+        pass
+
+    if not refined_injected and dual_pass is None and not high_fail:
+        return CheckerResult(
+            id="f169_refine_dual_fail",
+            name="GEPA refine dual fail (F169)",
+            ok=True,
+            score=1.0,
+            detail={"reason": "no_refine_context", "enabled": True, "feature": "F169"},
+        )
+    bad = bool(dual_fail or high_fail)
+    score = 0.25 if bad and refined_injected else (0.55 if bad else 0.95)
+    if tool_pp > 0 and dual_pass:
+        score = max(score, 0.9)
+        bad = False
+    return CheckerResult(
+        id="f169_refine_dual_fail",
+        name="GEPA refine dual fail (F169)",
+        ok=not bad,
+        score=round(score, 4),
+        detail={
+            "feature": "F169",
+            "dual_fail": dual_fail,
+            "dual_pass": dual_pass,
+            "refined_injected": refined_injected,
+            "tool_contrib_pp": tool_pp,
+            "fail_pressure": fail_pressure,
+            "high_fail": high_fail,
+            "reason": "refine_dual_fail_idle" if bad else "refine_dual_ok",
+        },
+    )
 
 
 def run_f156_hub_archival_util(
@@ -1279,6 +1396,7 @@ def composite_panel(checkers: list[CheckerResult]) -> dict[str, Any]:
         "f143_memory_hub_gap": 0.07,  # F143 multi-tenant memory util gap
         "f150_recon_warm_hub": 0.07,  # F150 multi-tenant recon-warm ignore
         "f156_hub_archival_util": 0.08,  # F156 hub-archival inject ≠ hub_boost
+        "f169_refine_dual_fail": 0.07,  # F169 GEPA refine dual fail after inject
         "structure": 0.12,
         "f70_dual_critic": 0.20,
         "f72_chain": 0.16,
@@ -1430,6 +1548,18 @@ def decide_verdict(
                 recommended = "COMMENT"
                 demoted = True
                 reasons.append("hub_archival_util_gap_idle_no_hub_boost")
+        # F169: GEPA refine dual fail after refined recovery skills injected
+        rdf = next((c for c in checkers if c.id == "f169_refine_dual_fail"), None)
+        if rdf and not rdf.ok:
+            detail = rdf.detail or {}
+            if detail.get("dual_fail") or detail.get("high_fail"):
+                recommended = "COMMENT"
+                demoted = True
+                reasons.append(
+                    "refine_dual_fail_after_inject "
+                    f"(tool_pp={detail.get('tool_contrib_pp')};"
+                    f"fail_pressure={detail.get('fail_pressure')})"
+                )
     elif maker == "UNKNOWN":
         recommended = "COMMENT"
         demoted = True
@@ -1469,6 +1599,7 @@ def run_panel(
         run_f143_memory_hub_gap(out_dir, root),
         run_f150_recon_warm_hub(out_dir, root),
         run_f156_hub_archival_util(out_dir, root),
+        run_f169_refine_dual_fail(out_dir, root),
     ]
     # F81: optional LLM checker after deterministic panel draft
     panel_draft = {
@@ -2734,6 +2865,71 @@ def demote_eval(
                 os.environ["TORII_ROOT"] = prev_root_ha
             os.environ.pop("TORII_SECOND_CRITIC_MIN_PATH", None)
 
+    # F169: refine dual fail after refined skills injected → demote APPROVE
+    with tempfile.TemporaryDirectory() as td_rd:
+        od = Path(td_rd)
+        (od / "refine-dual.json").write_text(
+            json.dumps(
+                {
+                    "feature": "F167",
+                    "refine_dual_pass": False,
+                    "refine_tool_contribution_pp": 0.0,
+                    "refine_probe_delta": 0,
+                    "refined_skill_ids": ["skill-prefer-hub-archival-early"],
+                }
+            ),
+            encoding="utf-8",
+        )
+        (od / "skill-router.json").write_text(
+            json.dumps(
+                {
+                    "selected": ["skill-prefer-hub-archival-early"],
+                    "always_selected": ["skill-prefer-hub-archival-early"],
+                    "refine_dual_hub_priority_deltas": {
+                        "skill-prefer-hub-archival-early": 20
+                    },
+                    "inject_chars": 500,
+                }
+            ),
+            encoding="utf-8",
+        )
+        (od / "recovery-skill-util.json").write_text(
+            json.dumps(
+                {
+                    "hub_archival_injected": True,
+                    "hub_archival_util_gap": True,
+                    "hub_archival_idle": True,
+                    "hub_archival_tool_hit": False,
+                }
+            ),
+            encoding="utf-8",
+        )
+        rd_review = od / "approve-refine-dual-fail.md"
+        rd_review.write_text(
+            "## Review\n**Verdict:** APPROVE\n\n### Summary\nok\n\n"
+            "### Blocking\nnone\n\n### What I checked\n`app.py:1` path ok\n",
+            encoding="utf-8",
+        )
+        prev_root_rd = os.environ.get("TORII_ROOT")
+        os.environ["TORII_ROOT"] = str(od)
+        os.environ["TORII_REFINE_DUAL_FAIL_CRITIC"] = "1"
+        os.environ["TORII_SECOND_CRITIC_MIN_PATH"] = "0.1"
+        try:
+            cases.append(
+                _case(
+                    "refine_dual_fail_idle_approve",
+                    rd_review,
+                    od,
+                    case_root=od,
+                )
+            )
+        finally:
+            if prev_root_rd is None:
+                os.environ.pop("TORII_ROOT", None)
+            else:
+                os.environ["TORII_ROOT"] = prev_root_rd
+            os.environ.pop("TORII_SECOND_CRITIC_MIN_PATH", None)
+
     # F162: multi-tenant hub-archival hub pressure + local util gap APPROVE
     with tempfile.TemporaryDirectory() as td_ha_hub:
         od = Path(td_ha_hub)
@@ -2848,6 +3044,9 @@ def demote_eval(
         (c for c in cases if c["name"] == "hub_archival_hub_pressure_idle_approve"),
         {},
     )
+    rdfc = next(
+        (c for c in cases if c["name"] == "refine_dual_fail_idle_approve"), {}
+    )
     goodc = next((c for c in cases if c["name"] == "good_insecure"), {})
     weak_demote_ok = bool(weak.get("demoted") or weak.get("recommended") != "APPROVE")
     hub_demote_ok = bool(hubc.get("demoted")) or (
@@ -2871,6 +3070,9 @@ def demote_eval(
             "hub_archival" in str(r) for r in (hah.get("reasons") or [])
         )
     )
+    rd_fail_demote_ok = bool(rdfc.get("demoted")) or any(
+        "refine_dual_fail" in str(r) for r in (rdfc.get("reasons") or [])
+    )
     # good should not be demoted from REQUEST_CHANGES to worse without reason;
     # typically maker is REQUEST_CHANGES already
     good_stable = goodc.get("maker") in ("REQUEST_CHANGES", "COMMENT", "APPROVE")
@@ -2885,6 +3087,7 @@ def demote_eval(
         "feature_hub_archival_util": FEATURE_HUB_ARCHIVAL_UTIL,
         "feature_demote_eval_hub_archival": "F156",
         "feature_hub_archival_hub_inject": "F162",
+        "feature_refine_dual_fail": "F169",
         "scored_at": _now(),
         "cases": cases,
         "approve_n": len(approve_cases),
@@ -2901,6 +3104,8 @@ def demote_eval(
         "hub_archival_util_soft_ok": ha_util_demote_ok,
         "hub_archival_hub_pressure_demote_ok": bool(hah.get("demoted")),
         "hub_archival_hub_pressure_soft_ok": ha_hub_demote_ok,
+        "refine_dual_fail_demote_ok": bool(rdfc.get("demoted")),
+        "refine_dual_fail_soft_ok": rd_fail_demote_ok,
         "good_stable": good_stable,
         "paper": {
             "metric": "critic_approve_demote_rate",
@@ -2911,9 +3116,10 @@ def demote_eval(
             "recon_warm_hub_idle_demoted": bool(rwc.get("demoted")),
             "hub_archival_util_idle_demoted": bool(hac.get("demoted")),
             "hub_archival_hub_pressure_idle_demoted": bool(hah.get("demoted")),
+            "refine_dual_fail_idle_demoted": bool(rdfc.get("demoted")),
             "notes": (
                 "demote_rate = demoted APPROVE / APPROVE cases; "
-                "F162 adds multi-tenant hub-archival hub pressure + local util gap"
+                "F169 adds GEPA refine dual fail after inject demote"
             ),
         },
         "eval_pass": weak_demote_ok
@@ -2922,7 +3128,8 @@ def demote_eval(
         and (bool(schc.get("demoted")) or sc_hub_demote_ok)
         and (bool(rwc.get("demoted")) or rw_hub_demote_ok)
         and (bool(hac.get("demoted")) or ha_util_demote_ok)
-        and (bool(hah.get("demoted")) or ha_hub_demote_ok),
+        and (bool(hah.get("demoted")) or ha_hub_demote_ok)
+        and (bool(rdfc.get("demoted")) or rd_fail_demote_ok),
     }
     if out_dir:
         try:
