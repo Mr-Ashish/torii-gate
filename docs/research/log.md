@@ -31,7 +31,7 @@ F167 paper metrics per run do not compound. Highest ROI: FederatedSkill gate on 
 **Federate → multi-tenant gate → promote** — FederatedSkill for GEPA refine dual.
 
 ### SHA
-`(pending)`
+`d56df8ce643de51694d4da9c123ffd6b0a317dc7`
 
 
 ## 2026-08-01 — F167 GEPA refine dual-rollout contribution_pp
