@@ -1,0 +1,6 @@
+{
+  "id": "eval-trace-report",
+  "feature": "F83",
+  "script": "scripts/eval_trace_report.py",
+  "status": "adopted"
+}

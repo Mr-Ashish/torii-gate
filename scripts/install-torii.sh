@@ -162,6 +162,7 @@ RUNTIME_SCRIPTS=(
   modal_secrets_bootstrap.py
   llm_critic.py
   skill_auto_adopt.py
+  eval_trace_report.py
 )
 
 copy_file() {
@@ -263,6 +264,39 @@ while IFS= read -r -d '' f; do
 done < <(find "$SRC/agent" -maxdepth 1 -type f -print0 | sort -z)
 
 copy_tree_files "agent" "${AGENT_FILES[@]}"
+
+# F83: evolved skills (active/) + tool catalog — required for F69/F82 inject on targets
+if [[ -d "$SRC/agent/skills" ]]; then
+  if [[ "$DRY_RUN" == "1" ]]; then
+    log "dry-run: would copy agent/skills/"
+  else
+    mkdir -p "$DEST/agent/skills"
+    # copy tree but skip large proposal noise optionally — ship active + proposals + README
+    if command -v rsync >/dev/null 2>&1; then
+      rsync -a --delete --exclude '.DS_Store' "$SRC/agent/skills/" "$DEST/agent/skills/"
+    else
+      rm -rf "$DEST/agent/skills"
+      cp -R "$SRC/agent/skills" "$DEST/agent/skills"
+    fi
+    log "copied agent/skills/ (active=$(find "$DEST/agent/skills/active" -name '*.md' 2>/dev/null | wc -l | tr -d ' '))"
+  fi
+fi
+
+# F68+: adopted tool catalog JSON
+if [[ -d "$SRC/agent/tools" ]]; then
+  if [[ "$DRY_RUN" == "1" ]]; then
+    log "dry-run: would copy agent/tools/"
+  else
+    mkdir -p "$DEST/agent/tools"
+    if command -v rsync >/dev/null 2>&1; then
+      rsync -a --exclude '__pycache__' --exclude '.DS_Store' "$SRC/agent/tools/" "$DEST/agent/tools/"
+    else
+      rm -rf "$DEST/agent/tools"
+      cp -R "$SRC/agent/tools" "$DEST/agent/tools"
+    fi
+    log "copied agent/tools/"
+  fi
+fi
 
 # F56: named lens recipe packs (agent/packs/*.json)
 if [[ -d "$SRC/agent/packs" ]]; then

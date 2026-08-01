@@ -32,3 +32,8 @@ python3 scripts/workflow_as_code.py validate
 ```
 
 See hub `docs/workflows/torii-gate.workflow.yaml` for the declarative stage graph and capability matrix.
+
+## Evolved skills (F83)
+
+Pack mode copies `agent/skills/active/` (and proposals) plus `agent/tools/`. Targets receive fitness-gated skills without a hub clone.
+

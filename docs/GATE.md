@@ -63,3 +63,15 @@ python3 scripts/workflow_as_code.py status          # readiness L0–L3
 ```
 
 Install guide (generated): [`docs/workflows/INSTALL-GUIDE.md`](workflows/INSTALL-GUIDE.md).
+
+## Eval traces (F83)
+
+Paper-ready aggregate:
+
+```bash
+python3 scripts/eval_trace_report.py report
+# → docs/benchmarks/traces/EVAL-REPORT.md + eval-report.json
+```
+
+Pack installs now ship `agent/skills/active/` (evolved skills) and `agent/tools/`.
+

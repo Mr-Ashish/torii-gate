@@ -48,3 +48,4 @@ memory/eval-traces/**
 .torii-out-f80-modal.log
 .torii-out-f81-modal.log
 .torii-out-f82-modal.log
+.torii-out-f83-modal.log

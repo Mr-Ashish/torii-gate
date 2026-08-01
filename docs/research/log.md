@@ -1,5 +1,37 @@
 # Torii research → product log
 
+## 2026-08-01 — F83 pack skills ship + paper eval-trace report
+
+### Papers / posts / OSS
+- Pack completeness: evolved skills must reach targets (install matrix).
+- Eval vaults for agent papers need aggregate tables, not only raw dirs.
+- Prior Torii: F82 adopted skills; install maxdepth-1 dropped `agent/skills/`.
+
+### OSS / eng patterns
+1. rsync agent/skills + agent/tools on pack install.
+2. Aggregate summary.json → EVAL-REPORT.md/json for paper.
+3. Soft federated promote post-run.
+
+### Insight
+Self-evolution that never ships in `install-torii.sh` does not compound for customers. Highest ROI: **fix pack path + paper report**.
+
+### Feature shipped (F83)
+- install-torii copies `agent/skills/` + `agent/tools/`
+- `scripts/eval_trace_report.py` report/fixture/status
+- `docs/benchmarks/traces/EVAL-REPORT.md` + eval-report.json
+- fed promote soft stage; pack + GATE docs
+
+### Loop-engineering practice used
+**Ship what you measure** — skills + eval report as first-class artifacts.
+
+### Metric
+- Offline: fixture_pass; install ships skill-f74-*; eval report n_runs≥11; privacy_ok
+- Live: **Modal** pytorch#191813 deepseek/deepseek-v4-pro BIT3_OK ~115s; skills in prompt; log_streaming=true; POST_COMMENT=0
+- pytest: 500 passed
+
+### SHA
+`(pending push)`
+
 ## 2026-08-01 — F82 safe skill auto-adopt (self-evolution close-loop)
 
 ### Papers / posts / OSS

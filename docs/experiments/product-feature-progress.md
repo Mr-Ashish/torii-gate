@@ -29,12 +29,13 @@
 | F80 | Modal secrets bootstrap for live e2e | ops, product | **shipping** |
 | F81 | Optional LLM checker atop F78 | agent_quality, tools | **shipping** |
 | F82 | Safe skill auto-adopt + regression gates | agent_quality, memory, product | **shipping** |
+| F83 | Pack skills/tools ship + paper eval report | product, ops, bench | **shipping** |
 
 ## IN_PROGRESS
 
 | ID | Feature | Notes |
 |----|---------|-------|
-| — | — | open: real Juice Shop pin |
+| — | — | open: real Juice Shop pin (optional) |
 
 ## LEFT
 
@@ -42,7 +43,7 @@
 
 ## Counts
 
-- **features_built_count:** 39 (F44–F82)
+- **features_built_count:** 40 (F44–F83)
 - **types_built:** agent_quality, product, memory, ops, bench, tools
 - **left_count:** open research
 - **progress_pct:** n/a (open research loop)
@@ -55,4 +56,4 @@
 
 ## Status line
 
-`features_built_count=39 types_built=agent_quality,product,memory,ops,bench,tools f82=skill_auto_adopt`
+`features_built_count=40 types_built=agent_quality,product,memory,ops,bench,tools f83=pack_skills_eval_report`

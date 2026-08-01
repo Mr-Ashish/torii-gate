@@ -233,6 +233,17 @@ if [[ -f "$SCRIPTS/skill_auto_adopt.py" ]]; then
       ;;
   esac
 fi
+
+# F77/F83: promote multi-tenant federated signals (soft)
+if [[ -f "$SCRIPTS/federated_hub_ingest.py" ]]; then
+  case "${TORII_FED_PROMOTE:-1}" in
+    0|false|no|off) ;;
+    *)
+      stage fed_promote \
+        python3 "$SCRIPTS/federated_hub_ingest.py" promote || true
+      ;;
+  esac
+fi
       stage fitness_gate_evolve         python3 "$SCRIPTS/fitness_gate_evolve.py" "${_f74_args[@]}" || true
       ;;
   esac
