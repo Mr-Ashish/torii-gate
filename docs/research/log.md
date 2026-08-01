@@ -31,7 +31,7 @@ Always-on recovery skills without utilization measurement are dead weight. Highe
 **Verifier measures tool outcomes of injected skills** — default REJECT idle recovery on APPROVE.
 
 ### SHA
-`e2dd2316d96daa26d1bdc81af98917826221bc32`
+`4f91b0b97bf5cc1e350c307209321109bbd892b0`
 ## 2026-08-01 — F120 SkillReducer-lite always body compact + pack verify
 
 ### Papers / posts
