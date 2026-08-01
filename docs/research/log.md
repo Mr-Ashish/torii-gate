@@ -32,7 +32,7 @@ F155–F163 measure/re-prompt hub-archival util but leave skill bodies static. H
 **Trace → reflect → mutate → gate** — GEPA/Hermes self-evolution without full DSPy stack.
 
 ### SHA
-`(pending)`
+`dcd15be6651ffcc2886f8b55830d5e57cceae3b4`
 
 
 ## 2026-08-01 — F154 hub-archival cycle-adopt + F119 always priority
