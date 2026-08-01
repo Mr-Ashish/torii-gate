@@ -1036,6 +1036,8 @@ if [[ -f "$SKILL_ROUTER_HELPER" && $TIMED_OUT -eq 0 && "${HERMES_CLI_ARGV_BROKEN
       [[ -f "$LOOP_DIR/agent.log" ]] && _rec_score_args+=(--log "$LOOP_DIR/agent.log")
       python3 "$SKILL_ROUTER_HELPER" "${_rec_score_args[@]}" >/dev/null 2>&1 || true
       python3 "$SKILL_ROUTER_HELPER" util --out-dir "$OUT_DIR" >/dev/null 2>&1 || true
+      # F136/F137: scorecard util before composite re-prompt decide
+      python3 "$SKILL_ROUTER_HELPER" scorecard-util --out-dir "$OUT_DIR" >/dev/null 2>&1 || true
       _rrp_args=(reprompt-decide --out-dir "$OUT_DIR" --review "$RAW_OUT")
       [[ -f "$OUT_DIR/recovery-skill-reprompt.env" ]] && _rrp_args+=(--already-env "$OUT_DIR/recovery-skill-reprompt.env")
       _rrp_kv="$(python3 "$SKILL_ROUTER_HELPER" "${_rrp_args[@]}" 2>/dev/null || true)"
@@ -1047,21 +1049,31 @@ if [[ -f "$SKILL_ROUTER_HELPER" && $TIMED_OUT -eq 0 && "${HERMES_CLI_ARGV_BROKEN
       # F126: hub gap pressure bias fields from reprompt-decide
       _rrp_hgp="$(printf '%s\n' "$_rrp_kv" | sed -n 's/^hub_gap_pressure=//p' | head -1)"
       _rrp_hgb="$(printf '%s\n' "$_rrp_kv" | sed -n 's/^hub_gap_bias=//p' | head -1)"
+      # F137: scorecard util re-prompt fields
+      _rrp_sc_do="$(printf '%s\n' "$_rrp_kv" | sed -n 's/^scorecard_reprompt=//p' | head -1)"
+      _rrp_sc_idle="$(printf '%s\n' "$_rrp_kv" | sed -n 's/^scorecard_idle_ids=//p' | head -1)"
+      _rrp_sc_gap="$(printf '%s\n' "$_rrp_kv" | sed -n 's/^scorecard_utilization_gap=//p' | head -1)"
+      _rrp_sc_only="$(printf '%s\n' "$_rrp_kv" | sed -n 's/^scorecard_only=//p' | head -1)"
+      _rrp_sc_hub="$(printf '%s\n' "$_rrp_kv" | sed -n 's/^hub_scorecard_util_gap=//p' | head -1)"
       if [[ "$_rrp_do" == "1" || "$_rrp_do" == "true" ]] && [[ -f "$REPROMPT_BUDGET_HELPER" ]]; then
-        _rbud_kv="$(python3 "$REPROMPT_BUDGET_HELPER" allow --out-dir "$OUT_DIR" --kind f122 2>/dev/null || true)"
+        _rbud_kind="f122"
+        [[ "$_rrp_sc_only" == "1" ]] && _rbud_kind="f137"
+        _rbud_kv="$(python3 "$REPROMPT_BUDGET_HELPER" allow --out-dir "$OUT_DIR" --kind "$_rbud_kind" 2>/dev/null || true)"
         _rbud_allow="$(printf '%s\n' "$_rbud_kv" | sed -n 's/^allow=//p' | head -1)"
         if [[ "$_rbud_allow" != "1" && "$_rbud_allow" != "true" ]]; then
           _rbud_reason="$(printf '%s\n' "$_rbud_kv" | sed -n 's/^reason=//p' | head -1)"
-          notice "F108 re-prompt budget blocked F122 · reason=${_rbud_reason:-budget}"
+          notice "F108 re-prompt budget blocked F122/F137 · reason=${_rbud_reason:-budget}"
           REC_REPROMPT_REASON="budget_blocked:${_rbud_reason:-exhausted}"
           _rrp_do="0"
         fi
       fi
       if [[ "$_rrp_do" == "1" || "$_rrp_do" == "true" ]]; then
         REC_REPROMPT_ATTEMPTED=1
-        notice "F122 recovery soft re-prompt · idle=${_rrp_idle:-?} tool_turns=${_rrp_tt:-?} reason=${REC_REPROMPT_REASON:-gap} hub_gap=${_rrp_hgp:-0}"
+        notice "F122/F137 skill util soft re-prompt · idle=${_rrp_idle:-?} sc_idle=${_rrp_sc_idle:-?} tool_turns=${_rrp_tt:-?} reason=${REC_REPROMPT_REASON:-gap} hub_gap=${_rrp_hgp:-0} sc_reprompt=${_rrp_sc_do:-0}"
         if [[ -f "$REPROMPT_BUDGET_HELPER" ]]; then
-          python3 "$REPROMPT_BUDGET_HELPER" consume --out-dir "$OUT_DIR" --kind f122 --note "attempt_start" >/dev/null 2>&1 || true
+          _rbud_kind="f122"
+          [[ "$_rrp_sc_only" == "1" ]] && _rbud_kind="f137"
+          python3 "$REPROMPT_BUDGET_HELPER" consume --out-dir "$OUT_DIR" --kind "$_rbud_kind" --note "attempt_start" >/dev/null 2>&1 || true
         fi
         if [[ ! -f "$OUT_DIR/review-${PR_NUMBER}.attempt1.raw.md" ]]; then
           cp -f "$RAW_OUT" "$OUT_DIR/review-${PR_NUMBER}.attempt1.raw.md" 2>/dev/null || true
@@ -1074,6 +1086,8 @@ if [[ -f "$SKILL_ROUTER_HELPER" && $TIMED_OUT -eq 0 && "${HERMES_CLI_ARGV_BROKEN
         # F126: pass hub gap pressure into recovery re-prompt body
         export TORII_HUB_GAP_PRESSURE="${_rrp_hgp:-0}"
         export TORII_HUB_GAP_BIAS="${_rrp_hgb:-0}"
+        export TORII_SCORECARD_UTIL_GAP="${_rrp_sc_gap:-0}"
+        export TORII_HUB_SCORECARD_UTIL_GAP="${_rrp_sc_hub:-0}"
         python3 "$SKILL_ROUTER_HELPER" reprompt-write \
           --prompt-in "$_rrp_base" \
           --prompt-out "$REC_REPROMPT_PROMPT" \
@@ -1081,7 +1095,11 @@ if [[ -f "$SKILL_ROUTER_HELPER" && $TIMED_OUT -eq 0 && "${HERMES_CLI_ARGV_BROKEN
           --tool-turns "${_rrp_tt:-0}" \
           --inject-chars "${_rrp_ichars:-0}" \
           --hub-gap-pressure "${_rrp_hgp:-0}" \
-          --hub-gap-bias "${_rrp_hgb:-0}" >/dev/null 2>&1 || true
+          --hub-gap-bias "${_rrp_hgb:-0}" \
+          --scorecard-idle-ids "${_rrp_sc_idle:-}" \
+          --scorecard-gap "${_rrp_sc_gap:-0}" \
+          --hub-scorecard-util-gap "${_rrp_sc_hub:-0}" \
+          --scorecard-only "${_rrp_sc_only:-0}" >/dev/null 2>&1 || true
         if [[ -s "$REC_REPROMPT_PROMPT" ]]; then
           PROMPT="$(cat "$REC_REPROMPT_PROMPT")"
           LOG_OFFSET=0

@@ -2287,6 +2287,12 @@ def recovery_reprompt_enabled() -> bool:
     return raw not in _FALSEY
 
 
+def scorecard_reprompt_enabled() -> bool:
+    """F137: soft re-prompt once on scorecard util gap (default on)."""
+    raw = (os.environ.get("TORII_SCORECARD_SKILL_REPROMPT") or "1").strip().lower()
+    return raw not in _FALSEY
+
+
 def hub_gap_reprompt_enabled() -> bool:
     """F126: multi-tenant hub gap_pressure can bias F122 re-prompt (default on)."""
     raw = (os.environ.get("TORII_HUB_GAP_REPROMPT") or "1").strip().lower()
@@ -2303,6 +2309,137 @@ def hub_gap_pressure_threshold() -> float:
 
 
 RECOVERY_REPROMPT_MARKER = "<!-- torii-f122-recovery-skill-reprompt -->"
+SCORECARD_REPROMPT_MARKER = "<!-- torii-f137-scorecard-skill-reprompt -->"
+
+
+def decide_scorecard_reprompt(
+    util: dict[str, Any],
+    *,
+    already_reprompted: bool = False,
+    tool_call_turns: int = 0,
+    reprompt_on: bool | None = None,
+    root: Path | None = None,
+) -> dict[str, Any]:
+    """F137: re-prompt when scorecard-gap ops skills injected but idle tools.
+
+    Mirrors F122 recovery util re-prompt. Requires tools already ran (else F49).
+    No scorecard inject → no re-prompt (not a false positive).
+    Soft hub bias: if federated scorecard-util-gap exists, treat partial idle same.
+    """
+    on = scorecard_reprompt_enabled() if reprompt_on is None else bool(reprompt_on)
+    gap = bool(util.get("utilization_gap"))
+    n = int(util.get("scorecard_injected_n") or 0)
+    tool_n = int(util.get("tool_hit_n") or 0)
+    idle = list(util.get("idle_ids") or [])
+    util_rate = float(util.get("util_rate") or 0.0)
+
+    # soft multi-tenant scorecard util gap pressure from federation file
+    hub_gap = False
+    root = root or _root()
+    fed = root / "memory" / "federation" / "scorecard-util-signals.json"
+    if fed.is_file():
+        try:
+            doc = json.loads(fed.read_text(encoding="utf-8"))
+            for s in doc.get("signals") or []:
+                if not isinstance(s, dict):
+                    continue
+                tags = s.get("tags") or []
+                sid = str(s.get("id") or s.get("theme") or "")
+                if "utilization_gap" in tags or sid == "scorecard-util-gap":
+                    hub_gap = True
+                    break
+        except (OSError, json.JSONDecodeError, TypeError):
+            pass
+
+    out: dict[str, Any] = {
+        "feature": "F137",
+        "reprompt": 0,
+        "enabled": on,
+        "reason": "ok",
+        "utilization_gap": gap,
+        "scorecard_injected_n": n,
+        "tool_hit_n": tool_n,
+        "tool_call_turns": tool_call_turns,
+        "already_reprompted": bool(already_reprompted),
+        "util_rate": util.get("util_rate"),
+        "inject_chars": util.get("inject_chars"),
+        "idle_ids": idle,
+        "hub_scorecard_util_gap": int(hub_gap),
+    }
+    if not on:
+        out["reason"] = "reprompt_off"
+        return out
+    if already_reprompted:
+        out["reason"] = "already_reprompted"
+        return out
+    if n < 1:
+        out["reason"] = "no_scorecard_injected"
+        return out
+    if tool_call_turns < 1:
+        out["reason"] = "zero_tools_defer_f49"
+        return out
+
+    # classic full gap
+    if gap and tool_n < 1:
+        out["reprompt"] = 1
+        out["reason"] = "scorecard_utilization_gap"
+        if hub_gap:
+            out["reason"] = "scorecard_utilization_gap+fed_gap"
+        return out
+
+    # partial idle + federated gap themes (multi-tenant)
+    if hub_gap and idle and util_rate < 0.99:
+        out["reprompt"] = 1
+        out["reason"] = "scorecard_fed_gap_idle"
+        return out
+
+    if tool_n >= 1 and not idle:
+        out["reason"] = "scorecard_tools_used"
+        return out
+    if tool_n >= 1 and idle and not hub_gap:
+        out["reason"] = "partial_util_no_fed_gap"
+        return out
+    if not gap:
+        out["reason"] = "no_gap"
+        return out
+    out["reprompt"] = 1
+    out["reason"] = "scorecard_utilization_gap"
+    return out
+
+
+def build_scorecard_reprompt_suffix(
+    *,
+    idle_ids: list[str] | None = None,
+    tool_call_turns: int = 0,
+    inject_chars: int = 0,
+    hub_scorecard_util_gap: bool = False,
+) -> str:
+    idle = idle_ids or sorted(SCORECARD_SKILL_IDS)[:4]
+    idle_s = ", ".join(f"`{i}`" for i in idle[:6])
+    hub_line = ""
+    if hub_scorecard_util_gap:
+        hub_line = (
+            "\n**Federated scorecard util gap** (F136/F137 multi-tenant) — "
+            "other tenants also leave scorecard CLIs idle; call ops tools before finalizing.\n"
+        )
+    return (
+        "\n\n---\n\n"
+        f"{SCORECARD_REPROMPT_MARKER}\n\n"
+        "## Scorecard skill soft re-prompt (F137)\n\n"
+        f"Your previous reply used **{tool_call_turns} tool turns** but scorecard-gap "
+        f"ops skill CLIs remain idle for: {idle_s} "
+        f"(inject_chars≈{inject_chars}).\n"
+        f"{hub_line}\n"
+        "Before finalizing, call **at least one** of these once via terminal:\n\n"
+        "```bash\n"
+        "python3 scripts/torii.py doctor\n"
+        "python3 scripts/torii.py scorecard --shallow\n"
+        "python3 scripts/second_agent_critic.py demote-eval\n"
+        "python3 scripts/workflow_as_code.py scorecard\n"
+        "```\n\n"
+        "Treat doctor/scorecard hits as **readiness hints only** — still require "
+        "path:line evidence for security findings. Then rewrite the review.\n"
+    )
 
 
 def decide_recovery_reprompt(
@@ -2456,20 +2593,31 @@ def write_recovery_reprompt_prompt(
     inject_chars: int = 0,
     hub_gap_pressure: float = 0.0,
     hub_gap_bias: bool = False,
+    scorecard_idle_ids: list[str] | None = None,
+    scorecard_gap: bool = False,
+    hub_scorecard_util_gap: bool = False,
+    include_recovery: bool = True,
 ) -> Path:
     base = prompt_in.read_text(encoding="utf-8", errors="replace")
-    if RECOVERY_REPROMPT_MARKER in base:
-        text = base
-    else:
-        text = base.rstrip() + build_recovery_reprompt_suffix(
+    text = base
+    if include_recovery and RECOVERY_REPROMPT_MARKER not in text:
+        text = text.rstrip() + build_recovery_reprompt_suffix(
             idle_ids=idle_ids,
             tool_call_turns=tool_call_turns,
             inject_chars=inject_chars,
             hub_gap_pressure=hub_gap_pressure,
             hub_gap_bias=hub_gap_bias,
         )
-        if not text.endswith("\n"):
-            text += "\n"
+    # F137: append scorecard ops nudge when scorecard util gap
+    if scorecard_gap and SCORECARD_REPROMPT_MARKER not in text:
+        text = text.rstrip() + build_scorecard_reprompt_suffix(
+            idle_ids=scorecard_idle_ids,
+            tool_call_turns=tool_call_turns,
+            inject_chars=inject_chars,
+            hub_scorecard_util_gap=hub_scorecard_util_gap,
+        )
+    if not text.endswith("\n"):
+        text += "\n"
     prompt_out.parent.mkdir(parents=True, exist_ok=True)
     prompt_out.write_text(text, encoding="utf-8")
     return prompt_out
@@ -2494,7 +2642,7 @@ def cmd_federate_util(args: argparse.Namespace) -> int:
 
 
 def cmd_reprompt_decide(args: argparse.Namespace) -> int:
-    """F122/F126: key=value decide soft re-prompt (local gap + hub gap_pressure)."""
+    """F122/F126/F137: key=value decide soft re-prompt (recovery + scorecard util)."""
     od = Path(args.out_dir) if args.out_dir else Path(os.environ.get("OUT_DIR") or ".")
     already = False
     if args.already_env and Path(args.already_env).is_file():
@@ -2503,6 +2651,7 @@ def cmd_reprompt_decide(args: argparse.Namespace) -> int:
             already = True
     # ensure util scored
     util = score_recovery_util(od, root=_root())
+    sc_util = score_scorecard_util(od, root=_root())
     # tool turns from agent-loop if present
     turns = 0
     loop = od / "agent-loop" / "agent-loop.json"
@@ -2526,31 +2675,64 @@ def cmd_reprompt_decide(args: argparse.Namespace) -> int:
                 agent_loop=loop if loop.is_file() else None,
             )
             util = score_recovery_util(od, root=_root())
+            sc_util = score_scorecard_util(od, root=_root())
         except Exception:
             pass
     dec = decide_recovery_reprompt(
         util, already_reprompted=already, tool_call_turns=turns, root=_root()
     )
+    sc_dec = decide_scorecard_reprompt(
+        sc_util, already_reprompted=already, tool_call_turns=turns, root=_root()
+    )
+    # F137: OR scorecard gap into composite re-prompt (one paid attempt covers both)
+    composite = dict(dec)
+    composite["feature_scorecard"] = "F137"
+    composite["scorecard_reprompt"] = sc_dec
+    composite["scorecard_utilization_gap"] = sc_dec.get("utilization_gap")
+    composite["scorecard_idle_ids"] = sc_dec.get("idle_ids") or []
+    composite["scorecard_injected_n"] = sc_dec.get("scorecard_injected_n")
+    composite["hub_scorecard_util_gap"] = sc_dec.get("hub_scorecard_util_gap")
+    if int(dec.get("reprompt") or 0) == 1 and int(sc_dec.get("reprompt") or 0) == 1:
+        composite["reason"] = f"{dec.get('reason')}+{sc_dec.get('reason')}"
+        composite["reprompt"] = 1
+    elif int(sc_dec.get("reprompt") or 0) == 1 and int(dec.get("reprompt") or 0) == 0:
+        composite["reprompt"] = 1
+        composite["reason"] = sc_dec.get("reason")
+        # surface scorecard idle as idle_ids when recovery has none
+        if not composite.get("idle_ids"):
+            composite["idle_ids"] = list(sc_dec.get("idle_ids") or [])
+        composite["utilization_gap"] = True
+        composite["scorecard_only"] = 1
     # key=value for shell (like F106)
-    print(f"reprompt={dec['reprompt']}")
-    print(f"enabled={int(bool(dec['enabled']))}")
-    print(f"reason={dec['reason']}")
-    print(f"utilization_gap={int(bool(dec['utilization_gap']))}")
-    print(f"tool_hit_n={dec['tool_hit_n']}")
-    print(f"recovery_injected_n={dec['recovery_injected_n']}")
-    print(f"tool_call_turns={dec['tool_call_turns']}")
-    print(f"inject_chars={dec.get('inject_chars') or 0}")
-    print(f"util_rate={dec.get('util_rate')}")
-    print(f"idle_ids={','.join(dec.get('idle_ids') or [])}")
-    print(f"hub_gap_pressure={dec.get('hub_gap_pressure')}")
-    print(f"hub_gap_thr={dec.get('hub_gap_thr')}")
-    print(f"hub_gap_bias={dec.get('hub_gap_bias')}")
-    print(f"feature_hub_gap={dec.get('feature_hub_gap') or ''}")
+    print(f"reprompt={composite['reprompt']}")
+    print(f"enabled={int(bool(composite['enabled']) or scorecard_reprompt_enabled())}")
+    print(f"reason={composite['reason']}")
+    print(f"utilization_gap={int(bool(composite['utilization_gap']))}")
+    print(f"tool_hit_n={composite['tool_hit_n']}")
+    print(f"recovery_injected_n={composite['recovery_injected_n']}")
+    print(f"tool_call_turns={composite['tool_call_turns']}")
+    print(f"inject_chars={composite.get('inject_chars') or 0}")
+    print(f"util_rate={composite.get('util_rate')}")
+    print(f"idle_ids={','.join(composite.get('idle_ids') or [])}")
+    print(f"hub_gap_pressure={composite.get('hub_gap_pressure')}")
+    print(f"hub_gap_thr={composite.get('hub_gap_thr')}")
+    print(f"hub_gap_bias={composite.get('hub_gap_bias')}")
+    print(f"feature_hub_gap={composite.get('feature_hub_gap') or ''}")
+    print(f"scorecard_reprompt={int(sc_dec.get('reprompt') or 0)}")
+    print(f"scorecard_utilization_gap={int(bool(sc_dec.get('utilization_gap')))}")
+    print(f"scorecard_injected_n={sc_dec.get('scorecard_injected_n') or 0}")
+    print(f"scorecard_idle_ids={','.join(sc_dec.get('idle_ids') or [])}")
+    print(f"hub_scorecard_util_gap={int(sc_dec.get('hub_scorecard_util_gap') or 0)}")
+    print(f"scorecard_only={int(composite.get('scorecard_only') or 0)}")
     print("feature=F122")
-    # soft write decide artifact for traces
+    print("feature_scorecard=F137")
+    # soft write decide artifacts for traces
     try:
         (od / "recovery-reprompt-decide.json").write_text(
-            json.dumps(dec, indent=2) + "\n", encoding="utf-8"
+            json.dumps(composite, indent=2) + "\n", encoding="utf-8"
+        )
+        (od / "scorecard-reprompt-decide.json").write_text(
+            json.dumps(sc_dec, indent=2) + "\n", encoding="utf-8"
         )
     except OSError:
         pass
@@ -2597,18 +2779,26 @@ def cmd_hub_score(args: argparse.Namespace) -> int:
     return 0 if hub.get("privacy_ok") else 1
 
 
+def _flag_true(val: Any) -> bool:
+    """Parse CLI/env flag: only 1/true/yes (not bare truthy strings like '0')."""
+    return str(val or "").strip().lower() in ("1", "true", "yes", "on")
+
+
 def cmd_reprompt_write(args: argparse.Namespace) -> int:
-    """F122/F126: write nudged prompt for recovery skill re-run."""
+    """F122/F126/F137: write nudged prompt for recovery + scorecard skill re-run."""
     idle = [x for x in (args.idle_ids or "").split(",") if x.strip()]
+    sc_idle = [
+        x
+        for x in (getattr(args, "scorecard_idle_ids", None) or "").split(",")
+        if x.strip()
+    ]
     hub_gp = 0.0
     hub_bias = False
     try:
         hub_gp = float(getattr(args, "hub_gap_pressure", 0) or 0)
     except (TypeError, ValueError):
         hub_gp = 0.0
-    if getattr(args, "hub_gap_bias", False) or str(
-        getattr(args, "hub_gap_bias", "") or ""
-    ).strip() in ("1", "true", "yes"):
+    if _flag_true(getattr(args, "hub_gap_bias", "0")):
         hub_bias = True
     # soft load from env if shell passed hub keys
     env_gp = (os.environ.get("TORII_HUB_GAP_PRESSURE") or "").strip()
@@ -2617,8 +2807,25 @@ def cmd_reprompt_write(args: argparse.Namespace) -> int:
             hub_gp = float(env_gp)
         except ValueError:
             pass
-    if (os.environ.get("TORII_HUB_GAP_BIAS") or "").strip() in ("1", "true", "yes"):
+    if _flag_true(os.environ.get("TORII_HUB_GAP_BIAS")):
         hub_bias = True
+    sc_gap = False
+    if _flag_true(getattr(args, "scorecard_gap", "0")):
+        sc_gap = True
+    if _flag_true(os.environ.get("TORII_SCORECARD_UTIL_GAP")):
+        sc_gap = True
+    hub_sc_gap = False
+    if _flag_true(getattr(args, "hub_scorecard_util_gap", "0")):
+        hub_sc_gap = True
+    if _flag_true(os.environ.get("TORII_HUB_SCORECARD_UTIL_GAP")):
+        hub_sc_gap = True
+    include_recovery = True
+    if _flag_true(getattr(args, "scorecard_only", "0")):
+        include_recovery = False
+        sc_gap = True
+    # if scorecard idle provided without flag, still include scorecard section
+    if sc_idle:
+        sc_gap = True
     path = write_recovery_reprompt_prompt(
         prompt_in=Path(args.prompt_in),
         prompt_out=Path(args.prompt_out),
@@ -2627,15 +2834,23 @@ def cmd_reprompt_write(args: argparse.Namespace) -> int:
         inject_chars=int(args.inject_chars or 0),
         hub_gap_pressure=hub_gp,
         hub_gap_bias=hub_bias,
+        scorecard_idle_ids=sc_idle or None,
+        scorecard_gap=sc_gap,
+        hub_scorecard_util_gap=hub_sc_gap,
+        include_recovery=include_recovery,
     )
+    text = path.read_text(encoding="utf-8") if path.is_file() else ""
     print(
         json.dumps(
             {
                 "feature": "F122",
+                "feature_scorecard": "F137" if sc_gap else None,
                 "feature_hub_gap": "F126" if hub_bias or hub_gp > 0 else None,
                 "prompt_out": str(path),
                 "hub_gap_pressure": hub_gp,
                 "hub_gap_bias": int(hub_bias),
+                "scorecard_gap": int(sc_gap),
+                "scorecard_marker": int(SCORECARD_REPROMPT_MARKER in text),
                 "ok": path.is_file(),
             }
         )
@@ -3221,6 +3436,63 @@ Call second-agent critic tools when uncertain.
             and "fixture-tenant-sc" not in sc_fed_blob
         )
 
+        # F137: scorecard util gap → re-prompt; good util → no re-prompt
+        os.environ["TORII_SCORECARD_SKILL_REPROMPT"] = "1"
+        sc_dec_gap = decide_scorecard_reprompt(
+            sc_util_gap, already_reprompted=False, tool_call_turns=3, root=root
+        )
+        sc_dec_good = decide_scorecard_reprompt(
+            sc_util_good, already_reprompted=False, tool_call_turns=3, root=root
+        )
+        sc_dec_none = decide_scorecard_reprompt(
+            sc_util_none, already_reprompted=False, tool_call_turns=3, root=root
+        )
+        sc_dec_zero_tools = decide_scorecard_reprompt(
+            sc_util_gap, already_reprompted=False, tool_call_turns=0, root=root
+        )
+        # federated gap bias on partial
+        federate_scorecard_util(sc_util_gap, root=root, tenant="fixture-tenant-sc2")
+        sc_partial = {
+            "scorecard_injected_n": 2,
+            "tool_hit_n": 1,
+            "util_rate": 0.5,
+            "utilization_gap": False,
+            "idle_ids": ["skill-prefer-demote-eval-check"],
+            "inject_chars": 500,
+        }
+        sc_dec_fed = decide_scorecard_reprompt(
+            sc_partial, already_reprompted=False, tool_call_turns=4, root=root
+        )
+        prompt_in = root / "prompt-in.md"
+        prompt_in.write_text("# Review prompt\nDo security review.\n", encoding="utf-8")
+        prompt_out = root / "prompt-sc-reprompt.md"
+        write_recovery_reprompt_prompt(
+            prompt_in=prompt_in,
+            prompt_out=prompt_out,
+            idle_ids=[],
+            tool_call_turns=3,
+            inject_chars=600,
+            scorecard_idle_ids=["skill-prefer-product-scorecard"],
+            scorecard_gap=True,
+            hub_scorecard_util_gap=True,
+            include_recovery=False,
+        )
+        sc_prompt_text = prompt_out.read_text(encoding="utf-8")
+        f137_ok = (
+            int(sc_dec_gap.get("reprompt") or 0) == 1
+            and "scorecard_utilization_gap" in str(sc_dec_gap.get("reason") or "")
+            and int(sc_dec_good.get("reprompt") or 0) == 0
+            and int(sc_dec_none.get("reprompt") or 0) == 0
+            and sc_dec_none.get("reason") == "no_scorecard_injected"
+            and int(sc_dec_zero_tools.get("reprompt") or 0) == 0
+            and sc_dec_zero_tools.get("reason") == "zero_tools_defer_f49"
+            and int(sc_dec_fed.get("reprompt") or 0) == 1
+            and SCORECARD_REPROMPT_MARKER in sc_prompt_text
+            and "torii.py doctor" in sc_prompt_text
+            and "scorecard --shallow" in sc_prompt_text
+            and "/Users/" not in sc_prompt_text
+        )
+
         fixture_pass = all(
             [
                 always_ok,
@@ -3248,6 +3520,7 @@ Call second-agent critic tools when uncertain.
                 hub_blob_ok,
                 f126_ok,
                 sc_util_ok,
+                f137_ok,
             ]
         )
         payload = {
@@ -3257,10 +3530,12 @@ Call second-agent critic tools when uncertain.
             "f120": True,
             "f121": True,
             "f136": True,
+            "f137": True,
             "feature_always_budget": "F119",
             "feature_compact": "F120",
             "feature_util": "F121",
             "feature_scorecard_util": "F136",
+            "feature_scorecard_reprompt": "F137",
             "feature_hub_compound": FEATURE_HUB,
             "fixture_pass": fixture_pass,
             "always_ok": always_ok,
@@ -3319,6 +3594,12 @@ Call second-agent critic tools when uncertain.
             "f136_sc_none_ok": sc_util_none.get("ok"),
             "f136_sc_fed_n": sc_fed.get("fed_n"),
             "f136_sc_privacy_ok": sc_fed.get("privacy_ok"),
+            "f137_ok": f137_ok,
+            "f137_sc_reprompt_gap": sc_dec_gap.get("reprompt"),
+            "f137_sc_reprompt_good": sc_dec_good.get("reprompt"),
+            "f137_sc_reprompt_fed": sc_dec_fed.get("reprompt"),
+            "f137_sc_reason": sc_dec_gap.get("reason"),
+            "f137_prompt_has_marker": SCORECARD_REPROMPT_MARKER in sc_prompt_text,
         }
         print(json.dumps(payload, indent=2))
         return 0 if fixture_pass else 1
@@ -3366,7 +3647,8 @@ def main(argv: list[str] | None = None) -> int:
     pfed.set_defaults(func=cmd_federate_util)
 
     prd = sub.add_parser(
-        "reprompt-decide", help="F122 soft re-prompt decide on recovery util gap"
+        "reprompt-decide",
+        help="F122/F137 soft re-prompt decide on recovery+scorecard util gap",
     )
     prd.add_argument("--out-dir", default="")
     prd.add_argument("--review", default="")
@@ -3375,7 +3657,8 @@ def main(argv: list[str] | None = None) -> int:
     prd.set_defaults(func=cmd_reprompt_decide)
 
     prw = sub.add_parser(
-        "reprompt-write", help="F122/F126 write recovery-skill nudged prompt"
+        "reprompt-write",
+        help="F122/F126/F137 write recovery+scorecard skill nudged prompt",
     )
     prw.add_argument("--prompt-in", required=True)
     prw.add_argument("--prompt-out", required=True)
@@ -3391,6 +3674,26 @@ def main(argv: list[str] | None = None) -> int:
         "--hub-gap-bias",
         default="0",
         help="F126: 1 if re-prompt was triggered by hub gap pressure",
+    )
+    prw.add_argument(
+        "--scorecard-idle-ids",
+        default="",
+        help="F137: comma-separated idle scorecard skill ids",
+    )
+    prw.add_argument(
+        "--scorecard-gap",
+        default="0",
+        help="F137: 1 to append scorecard ops re-prompt section",
+    )
+    prw.add_argument(
+        "--hub-scorecard-util-gap",
+        default="0",
+        help="F137: 1 if federated scorecard-util-gap theme present",
+    )
+    prw.add_argument(
+        "--scorecard-only",
+        default="0",
+        help="F137: 1 to write scorecard section without recovery section",
     )
     prw.set_defaults(func=cmd_reprompt_write)
 

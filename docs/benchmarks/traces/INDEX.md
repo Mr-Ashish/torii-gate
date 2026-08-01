@@ -70,3 +70,4 @@ Paper/eval-safe slim traces (redacted). Large raw logs may be gitignored; always
 - `f124-recovery-util-federate/` — F124 privacy-safe recovery util federate + doctor recovery_ok (offline + Modal pytorch#191813)
 - `f135-scorecard-fitness-doctor/` — F135 scorecard skill fitness ingest + doctor panel; Modal pytorch#191813 BIT3_OK POST_COMMENT=0
 - `f136-scorecard-skill-util/` — F136 scorecard skill util mid-run + critic demote; Modal pytorch#191813 BIT3_OK POST_COMMENT=0
+- `f137-scorecard-reprompt/` — F137 scorecard util soft re-prompt; Modal pytorch#191813 BIT3_OK POST_COMMENT=0

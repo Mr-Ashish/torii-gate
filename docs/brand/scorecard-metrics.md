@@ -34,3 +34,13 @@ These are **measured** offline/ops metrics — not marketing pass rates.
 | federate | privacy-safe scorecard-util-signals.json |
 
 Source: `python3 scripts/skill_router.py scorecard-util --out-dir $OUT_DIR`.
+
+## F137 scorecard util soft re-prompt
+
+| Metric | Meaning |
+|--------|---------|
+| scorecard_reprompt | 1 when F136 gap triggers one paid soft re-run |
+| scorecard_only | 1 when recovery util ok but scorecard idle |
+| reason | scorecard_utilization_gap (+fed_gap) |
+
+Source: `skill_router.py reprompt-decide` / Hermes F122 path.

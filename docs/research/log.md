@@ -1,5 +1,37 @@
 # Torii research → product log
 
+## 2026-08-01 — F137 scorecard util soft re-prompt
+
+### Papers / posts
+- F122 recovery re-prompt: measure util gap → one paid nudge under F108.
+- SoK Agentic Skills: availability ≠ quality; idle skills need recovery loops.
+- F136 measured scorecard util gap but demote-only left no second chance.
+
+### OSS design patterns stolen
+1. decide_scorecard_reprompt + composite reprompt-decide (OR with recovery).
+2. F137 prompt marker + doctor/scorecard CLI nudge; scorecard-only write path.
+3. Hermes F122 path scores scorecard-util; F108 kind f137 when scorecard-only.
+4. Federated scorecard-util-gap biases partial idle.
+
+### Insight
+Measuring idle scorecard skills without a soft re-prompt leaves intelligence on the table. Highest ROI: one budgeted re-run that closes F136 gaps like F122 closes recovery gaps.
+
+### Feature shipped (F137)
+- skill_router decide/write scorecard re-prompt + fixture f137_*
+- run-hermes-review composite decide; save-trace artifacts
+- PRODUCT/research; traces f137-scorecard-reprompt/
+
+### Metric
+- Offline: fixture f137_ok; pytest skill_router
+- Live: Modal pytorch e2e POST_COMMENT=0
+
+### Loop-engineering / Hermes practice used
+**Measure → re-prompt once under budget** — scorecard ops mirror recovery F122.
+
+### SHA
+`PENDING`
+
+
 ## 2026-08-01 — F136 scorecard skill utilization (inject ≠ use)
 
 ### Papers / posts

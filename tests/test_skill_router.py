@@ -59,6 +59,12 @@ class SkillRouterTests(unittest.TestCase):
         self.assertTrue(data.get("f136_sc_privacy_ok"), data)
         self.assertGreaterEqual(float(data.get("f136_sc_util_rate_good") or 0), 1.0)
         self.assertGreaterEqual(int(data.get("f136_sc_fed_n") or 0), 1)
+        # F137 scorecard util soft re-prompt
+        self.assertTrue(data.get("f137") or data.get("feature_scorecard_reprompt") == "F137")
+        self.assertTrue(data.get("f137_ok"), data)
+        self.assertEqual(int(data.get("f137_sc_reprompt_gap") or 0), 1)
+        self.assertEqual(int(data.get("f137_sc_reprompt_good") or 0), 0)
+        self.assertTrue(data.get("f137_prompt_has_marker"), data)
 
     def test_f136_scorecard_util_cli(self):
         """Scorecard util gap only when scorecard skills injected without tools."""
@@ -121,6 +127,90 @@ class SkillRouterTests(unittest.TestCase):
             self.assertNotIn("/Users/", blob)
             self.assertNotIn("secret-tenant-x", blob)
             self.assertTrue((od / "scorecard-skill-util.json").is_file())
+
+    def test_f137_scorecard_reprompt_decide(self):
+        """F137: composite reprompt-decide fires on scorecard util gap only."""
+        with tempfile.TemporaryDirectory() as td:
+            root = Path(td)
+            od = root / "out"
+            od.mkdir()
+            sid = "skill-prefer-product-scorecard"
+            (od / "skill-router.json").write_text(
+                json.dumps(
+                    {
+                        "selected": [sid],
+                        "always_selected": [],
+                        "inject_chars": 400,
+                    }
+                ),
+                encoding="utf-8",
+            )
+            (od / "skill-hits.json").write_text(
+                json.dumps(
+                    {
+                        "hits": [
+                            {
+                                "id": sid,
+                                "hit": False,
+                                "tool_hit": False,
+                                "prose_hit": False,
+                            }
+                        ]
+                    }
+                ),
+                encoding="utf-8",
+            )
+            (od / "agent-loop.json").write_text(
+                json.dumps({"tool_call_turns": 3}),
+                encoding="utf-8",
+            )
+            env = {
+                "TORII_ROOT": str(root),
+                "TORII_SCORECARD_SKILL_REPROMPT": "1",
+                "TORII_RECOVERY_SKILL_REPROMPT": "1",
+            }
+            r = _run(
+                ["reprompt-decide", "--out-dir", str(od), "--tool-turns", "3"],
+                env=env,
+            )
+            self.assertEqual(r.returncode, 0, r.stderr + r.stdout)
+            kv = dict(
+                line.split("=", 1)
+                for line in r.stdout.strip().splitlines()
+                if "=" in line
+            )
+            self.assertEqual(kv.get("reprompt"), "1")
+            self.assertEqual(kv.get("scorecard_reprompt"), "1")
+            self.assertEqual(kv.get("scorecard_only"), "1")
+            self.assertIn("scorecard", kv.get("reason", ""))
+            self.assertTrue((od / "scorecard-reprompt-decide.json").is_file())
+            # write prompt scorecard-only
+            pin = od / "prompt.md"
+            pin.write_text("# base\n", encoding="utf-8")
+            pout = od / "prompt-out.md"
+            r2 = _run(
+                [
+                    "reprompt-write",
+                    "--prompt-in",
+                    str(pin),
+                    "--prompt-out",
+                    str(pout),
+                    "--scorecard-idle-ids",
+                    sid,
+                    "--scorecard-gap",
+                    "1",
+                    "--scorecard-only",
+                    "1",
+                    "--tool-turns",
+                    "3",
+                ],
+                env=env,
+            )
+            self.assertEqual(r2.returncode, 0, r2.stderr + r2.stdout)
+            text = pout.read_text(encoding="utf-8")
+            self.assertIn("torii-f137-scorecard-skill-reprompt", text)
+            self.assertIn("torii.py doctor", text)
+            self.assertNotIn("torii-f122-recovery-skill-reprompt", text)
 
     def test_status(self):
         r = _run(["status"])

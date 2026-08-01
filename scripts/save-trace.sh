@@ -100,6 +100,9 @@ fi
 copy_if "$OUT_DIR/recovery-hub-score.json" "$TRACE_DIR/recovery-hub-score.json"
 # F126: hub gap re-prompt decide + fitness compound artifact
 copy_if "$OUT_DIR/recovery-reprompt-decide.json" "$TRACE_DIR/recovery-reprompt-decide.json"
+# F137: scorecard util soft re-prompt decide + prompt
+copy_if "$OUT_DIR/scorecard-reprompt-decide.json" "$TRACE_DIR/scorecard-reprompt-decide.json"
+copy_if "$OUT_DIR/prompt-recovery-reprompt.md" "$TRACE_DIR/prompt-recovery-reprompt.md"
 # F128: paper critic demote-rate eval
 copy_if "$OUT_DIR/critic-demote-eval.json" "$TRACE_DIR/critic-demote-eval.json"
 # F129: product brand/ops scorecard (doctor + demote metrics)

@@ -1,0 +1,10 @@
+{
+  "fixture_pass": true,
+  "f137": true,
+  "f137_ok": true,
+  "f137_sc_reprompt_gap": 1,
+  "f137_sc_reprompt_good": 0,
+  "f137_sc_reason": "scorecard_utilization_gap+fed_gap",
+  "f137_prompt_has_marker": true,
+  "f136_sc_util_ok": true
+}

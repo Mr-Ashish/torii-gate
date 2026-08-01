@@ -190,6 +190,8 @@ budget always → compact body → score tool_hit → util gap? → budgeted re-
 
 **Scorecard skill utilization (F136):** mid-run measure whether injected scorecard-gap ops skills fire tool CLIs (`scorecard-skill-util.json`); federate privacy-safe util themes; second-agent critic soft-demotes APPROVE on idle scorecard skills (inject ≠ utilization, same as F121 recovery).
 
+**Scorecard util soft re-prompt (F137):** when scorecard-gap skills are injected but idle after tools ran, Hermes soft-reprompts once (F108 budget) with doctor/scorecard CLI nudge — same close-the-loop as F122 recovery re-prompt; federated scorecard-util-gap biases partial idle.
+
 **Ops:** `python3 scripts/memory_loop_status.py scorecard` → L0–L3. Smoke requires L3 on the hub tree. CI job summary annotates readiness; optional advisory `torii/memory-loop` via `TORII_MEMORY_LOOP_STATUS_COMMIT=1`.
 
 ---
