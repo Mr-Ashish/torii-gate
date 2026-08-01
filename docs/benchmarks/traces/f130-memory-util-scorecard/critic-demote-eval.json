@@ -1,0 +1,66 @@
+{
+  "feature": "F128",
+  "feature_panel": "F78",
+  "feature_hub_gap": "F127",
+  "scored_at": "2026-08-01T07:10:59Z",
+  "cases": [
+    {
+      "name": "good_insecure",
+      "maker": "REQUEST_CHANGES",
+      "recommended": "REQUEST_CHANGES",
+      "demoted": false,
+      "reasons": [],
+      "composite": 0.7009,
+      "level": "L2",
+      "f127_ok": true,
+      "f127_score": 0.85,
+      "hub_gap_reason": "hub_gap_high_local_util_ok"
+    },
+    {
+      "name": "weak_approve",
+      "maker": "APPROVE",
+      "recommended": "COMMENT",
+      "demoted": true,
+      "reasons": [
+        "composite_below_0.5 (0.4369)",
+        "path_evidence_below_0.4 (0.3)"
+      ],
+      "composite": 0.4369,
+      "level": "L1",
+      "f127_ok": true,
+      "f127_score": 0.85,
+      "hub_gap_reason": "hub_gap_high_local_util_ok"
+    },
+    {
+      "name": "hub_gap_idle_approve",
+      "maker": "APPROVE",
+      "recommended": "COMMENT",
+      "demoted": true,
+      "reasons": [
+        "composite_below_0.5 (0.2825)",
+        "recovery_skill_idle_no_tool_hit",
+        "hub_gap_pressure_idle (0.4286>=0.05)"
+      ],
+      "composite": 0.2825,
+      "level": "L0",
+      "f127_ok": false,
+      "f127_score": 0.0857,
+      "hub_gap_reason": "hub_gap_high_local_idle"
+    }
+  ],
+  "approve_n": 2,
+  "demoted_n": 2,
+  "demote_rate": 1.0,
+  "weak_demote_ok": true,
+  "hub_gap_demote_ok": true,
+  "hub_gap_soft_ok": true,
+  "good_stable": true,
+  "paper": {
+    "metric": "critic_approve_demote_rate",
+    "value": 1.0,
+    "weak_approve_demoted": true,
+    "hub_gap_idle_demoted": true,
+    "notes": "demote_rate = demoted APPROVE / APPROVE cases in offline pack"
+  },
+  "eval_pass": true
+}

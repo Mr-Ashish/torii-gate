@@ -4,6 +4,7 @@ Paper/eval-safe slim traces (redacted). Large raw logs may be gitignored; always
 
 | Date (UTC) | Repo | PR | Model | Fitness | Level | Path |
 |------------|------|----|-------|---------|-------|------|
+| 2026-08-01T07:10:59Z | local | — | deepseek/deepseek-v4-pro | memory-util | — | `f130-memory-util-scorecard` |
 | 2026-08-01T07:05:06Z | local | — | deepseek/deepseek-v4-pro | product-scorecard | — | `f129-product-scorecard-brand` |
 | 2026-08-01T06:57:42Z | local | — | deepseek/deepseek-v4-pro | demote-eval | — | `f128-doctor-demote-eval` |
 | 2026-08-01T06:50:27Z | local | — | deepseek/deepseek-v4-pro | hub-gap-critic | — | `f127-hub-gap-critic-attr` |

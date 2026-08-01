@@ -101,6 +101,8 @@ copy_if "$OUT_DIR/product-scorecard.json" "$TRACE_DIR/product-scorecard.json"
 if [[ -f "$TORII_ROOT/.torii/product-scorecard.json" ]]; then
   copy_if "$TORII_ROOT/.torii/product-scorecard.json" "$TRACE_DIR/product-scorecard.torii.json"
 fi
+# F130: memory tool utilization paper pack (Mem0/Letta tool-call discipline)
+copy_if "$OUT_DIR/memory-util-eval.json" "$TRACE_DIR/memory-util-eval.json"
 copy_if "$OUT_DIR/memory-tool-reprompt.env" "$TRACE_DIR/memory-tool-reprompt.env"
 copy_if "$OUT_DIR/memory-tool-audit.json" "$TRACE_DIR/memory-tool-audit.json"
 copy_if "$OUT_DIR/reprompt-budget.json" "$TRACE_DIR/reprompt-budget.json"

@@ -1,0 +1,28 @@
+{
+  "feature": "F130",
+  "scored_at": "2026-08-01T07:13:25Z",
+  "brand_ready": true,
+  "level": "L3",
+  "memory_tool_util_delta": 0.85,
+  "memory_util_eval_pass": true,
+  "demote_rate": 1.0,
+  "util_eval": {
+    "metric": "memory_tool_util_delta",
+    "value": 0.85,
+    "good_score": 1.0,
+    "weak_score": 0.15,
+    "notes": "Mem0/Letta pattern: memory only helps if tools are called; offline good vs inject-offered-unused weak pack"
+  },
+  "model": "deepseek/deepseek-v4-pro",
+  "e2e": {
+    "repo": "pytorch/pytorch",
+    "pr": 191813,
+    "modal": true,
+    "bit3": "BIT3_OK",
+    "elapsed_s": 91.8,
+    "log_streaming": true,
+    "verdict": "REQUEST_CHANGES",
+    "post_comment": 0,
+    "modal_app": "https://modal.com/apps/mr-ashish/main/ap-buVhPufv27YCbSxvAej0qv"
+  }
+}

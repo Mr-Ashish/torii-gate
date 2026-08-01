@@ -82,24 +82,29 @@ class ToriiProductCliTests(unittest.TestCase):
         self.assertIn("skill-prefer-product-cli", data.get("recovery_active") or [])
 
     def test_f129_product_scorecard(self):
-        """F129: scorecard packages doctor + demote metrics for brand/ops."""
+        """F129/F130: scorecard packages doctor + demote + memory util metrics."""
         with tempfile.TemporaryDirectory() as td:
-            r = _run(["scorecard", "--out-dir", td])
+            r = _run(["scorecard", "--out-dir", td], timeout=300)
             self.assertEqual(r.returncode, 0, r.stderr + r.stdout)
             data = json.loads(r.stdout)
-            self.assertEqual(data.get("feature"), "F129")
+            self.assertEqual(data.get("feature"), "F130")
             self.assertTrue(data.get("brand_ready"), data)
             m = data.get("metrics") or {}
             self.assertTrue(m.get("doctor_pass"), m)
             self.assertTrue(m.get("recovery_hub_gap_ok"), m)
             self.assertIsNotNone(m.get("critic_approve_demote_rate"), m)
             self.assertTrue(m.get("demote_eval_pass"), m)
+            self.assertTrue(m.get("memory_util_eval_pass"), m)
+            self.assertGreaterEqual(float(m.get("memory_tool_util_delta") or 0), 0.4)
             art = Path(td) / "product-scorecard.json"
             self.assertTrue(art.is_file())
+            mu = Path(td) / "memory-util-eval.json"
+            self.assertTrue(mu.is_file())
             brand = ROOT / "docs" / "brand" / "scorecard-metrics.md"
             self.assertTrue(brand.is_file())
             body = brand.read_text(encoding="utf-8")
             self.assertIn("critic_approve_demote_rate", body)
+            self.assertIn("memory_tool_util_delta", body)
             self.assertNotIn("/Users/", body)
 
 

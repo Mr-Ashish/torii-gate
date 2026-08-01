@@ -179,6 +179,23 @@ class MemoryToolAuditTests(unittest.TestCase):
             self.assertEqual(r.returncode, 0, r.stderr + r.stdout)
             self.assertTrue(json.loads(r.stdout).get("skipped"))
 
+    def test_f130_util_eval(self):
+        """F130: paper memory util pack good>>weak for product scorecard."""
+        with tempfile.TemporaryDirectory() as td:
+            r = _run(["util-eval", "--out-dir", td])
+            self.assertEqual(r.returncode, 0, r.stderr + r.stdout)
+            data = json.loads(r.stdout)
+            self.assertEqual(data.get("feature"), "F130")
+            self.assertTrue(data.get("eval_pass"), data)
+            self.assertGreaterEqual(float(data.get("delta") or 0), 0.4)
+            self.assertEqual(
+                (data.get("paper") or {}).get("metric"), "memory_tool_util_delta"
+            )
+            art = Path(td) / "memory-util-eval.json"
+            self.assertTrue(art.is_file())
+            blob = art.read_text(encoding="utf-8")
+            self.assertNotIn("/Users/", blob)
+
     def test_install_ships(self):
         with tempfile.TemporaryDirectory() as td:
             dest = Path(td) / "t"

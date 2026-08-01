@@ -397,10 +397,11 @@ def product_scorecard(
     run_demote: bool = True,
     out_dir: Path | None = None,
 ) -> dict[str, Any]:
-    """F129: brand/ops scorecard — doctor + loops + demote-eval paper metrics.
+    """F129/F130: brand/ops scorecard — doctor + loops + demote + memory util.
 
     Packages measured capabilities (not slogans) for landing, install day-2,
-    and EVAL vault: recovery_hub_gap_ok, critic_approve_demote_rate, loop levels.
+    and EVAL vault: recovery_hub_gap_ok, critic_approve_demote_rate,
+    memory_tool_util_delta (Mem0/Letta: tools must be called).
     """
     root = root or _root()
     sd = _scripts_dir(root)
@@ -408,6 +409,7 @@ def product_scorecard(
     skill: dict[str, Any] = {}
     memory: dict[str, Any] = {}
     demote: dict[str, Any] = {}
+    mem_util: dict[str, Any] = {}
 
     def _run_json(cmd: list[str], timeout: int = 180) -> dict[str, Any]:
         try:
@@ -441,6 +443,16 @@ def product_scorecard(
         if out_dir:
             demote_cmd += ["--out-dir", str(out_dir)]
         demote = _run_json(demote_cmd, timeout=300)
+    # F130: memory tool utilization paper pack (Mem0/Letta tool-call discipline)
+    if run_demote and (sd / "memory_tool_audit.py").is_file():
+        mu_cmd = [
+            sys.executable,
+            str(sd / "memory_tool_audit.py"),
+            "util-eval",
+        ]
+        if out_dir:
+            mu_cmd += ["--out-dir", str(out_dir)]
+        mem_util = _run_json(mu_cmd, timeout=120)
 
     doctor_pass = bool(doctor.get("doctor_pass"))
     recovery_ok = bool(doctor.get("recovery_ok") or skill.get("recovery_ok"))
@@ -451,6 +463,8 @@ def product_scorecard(
     )
     demote_rate = demote.get("demote_rate")
     demote_pass = bool(demote.get("eval_pass")) if demote else False
+    mem_util_delta = mem_util.get("delta") if mem_util else None
+    mem_util_pass = bool(mem_util.get("eval_pass")) if mem_util else False
     skill_level = skill.get("level")
     mem_level = memory.get("level")
 
@@ -465,6 +479,10 @@ def product_scorecard(
         "weak_approve_demoted": demote.get("weak_demote_ok"),
         "hub_gap_idle_demoted": demote.get("hub_gap_demote_ok"),
         "demote_eval_pass": demote_pass,
+        "memory_tool_util_delta": mem_util_delta,
+        "memory_tool_util_good": mem_util.get("good_score") if mem_util else None,
+        "memory_tool_util_weak": mem_util.get("weak_score") if mem_util else None,
+        "memory_util_eval_pass": mem_util_pass,
     }
     brand_ready = bool(
         doctor_pass
@@ -472,9 +490,10 @@ def product_scorecard(
         and hub_gap_ok
         and skill_level in ("L2", "L3")
         and (not run_demote or demote_pass)
+        and (not run_demote or mem_util_pass)
     )
     # Loop-Ready style level for product surface
-    if brand_ready and skill_level == "L3" and demote_pass:
+    if brand_ready and skill_level == "L3" and demote_pass and mem_util_pass:
         level = "L3"
     elif doctor_pass and recovery_ok:
         level = "L2"
@@ -484,21 +503,23 @@ def product_scorecard(
         level = "L0"
 
     report: dict[str, Any] = {
-        "feature": "F129",
+        "feature": "F130",
         "feature_cli": FEATURE,
+        "feature_scorecard": "F129",
         "schema": SCHEMA,
         "scored_at": _now(),
         "level": level,
         "brand_ready": brand_ready,
         "metrics": metrics,
         "one_liner": (
-            "Measured gate readiness: doctor + recovery hub-gap critic + "
-            f"critic demote_rate={demote_rate}."
+            "Measured gate readiness: doctor + hub-gap critic + "
+            f"demote_rate={demote_rate} + memory_util_delta={mem_util_delta}."
         ),
         "brand_lines": [
             f"Doctor pass: **{doctor_pass}** · recovery skills **{'ok' if recovery_ok else 'gap'}**",
             f"Hub gap critic path: **{'ok' if hub_gap_ok else 'gap'}** (F127/F128)",
             f"Critic APPROVE demote rate (offline pack): **{demote_rate}**",
+            f"Memory tool util delta (good−weak): **{mem_util_delta}** (F130)",
             f"Skill loop **{skill_level}** · Memory loop **{mem_level}**",
         ],
         "doctor": {
@@ -518,10 +539,20 @@ def product_scorecard(
         }
         if demote
         else None,
+        "memory_util_eval": {
+            "eval_pass": mem_util.get("eval_pass"),
+            "delta": mem_util.get("delta"),
+            "good_score": mem_util.get("good_score"),
+            "weak_score": mem_util.get("weak_score"),
+            "paper": mem_util.get("paper"),
+        }
+        if mem_util
+        else None,
         "cmds": {
             "doctor": "python3 scripts/torii.py doctor",
             "scorecard": "python3 scripts/torii.py scorecard",
             "demote_eval": "python3 scripts/second_agent_critic.py demote-eval",
+            "memory_util_eval": "python3 scripts/memory_tool_audit.py util-eval",
         },
     }
     # write artifact
@@ -552,7 +583,7 @@ def product_scorecard(
     brand_md = root / "docs" / "brand" / "scorecard-metrics.md"
     try:
         lines = [
-            "# Torii Gate — measured scorecard (F129)",
+            "# Torii Gate — measured scorecard (F129/F130)",
             "",
             f"_Generated: `{report['scored_at']}` · level **{level}** · brand_ready={brand_ready}_",
             "",
@@ -568,8 +599,11 @@ def product_scorecard(
             f"| critic_approve_demote_rate | {metrics['critic_approve_demote_rate']} |",
             f"| weak_approve_demoted | {metrics['weak_approve_demoted']} |",
             f"| hub_gap_idle_demoted | {metrics['hub_gap_idle_demoted']} |",
+            f"| memory_tool_util_delta | {metrics['memory_tool_util_delta']} |",
+            f"| memory_tool_util_good | {metrics['memory_tool_util_good']} |",
+            f"| memory_tool_util_weak | {metrics['memory_tool_util_weak']} |",
             "",
-            "Source: `python3 scripts/torii.py scorecard` · paper demote pack F128.",
+            "Source: `python3 scripts/torii.py scorecard` · demote F128 · memory util F130.",
             "",
             "These are **measured** offline/ops metrics — not marketing pass rates.",
             "",

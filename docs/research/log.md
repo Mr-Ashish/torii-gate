@@ -1,5 +1,36 @@
 # Torii research → product log
 
+## 2026-08-01 — F130 memory util-eval → product scorecard
+
+### Papers / posts
+- Mem0/Letta 2026: memory improves outcomes only when agents call memory tools.
+- IFCMemoryBench: utilization is a first-class axis next to ingestion/retrieval.
+- F129 scorecard packaged demote rate but memory util stayed eng-only fixture.
+
+### OSS design patterns stolen (memory OSS)
+1. memory_tool_audit util-eval: good CLI hits vs inject-offered unused weak.
+2. paper metric memory_tool_util_delta for EVAL vault.
+3. product scorecard brand_ready requires memory_util_eval_pass.
+4. brand scorecard-metrics.md + landing line for util delta.
+
+### Insight
+Passive memory inject is theater. Highest ROI: fold measured tool utilization delta into the same front-door scorecard as demote rate.
+
+### Feature shipped (F130)
+- memory_tool_audit util-eval + artifact
+- torii.py product_scorecard F130 metrics
+- PRODUCT/landing/research; traces f130-memory-util-scorecard/
+
+### Metric
+- Offline: util delta=0.85 eval_pass; brand_ready; pytest
+- Live: Modal pytorch e2e POST_COMMENT=0
+
+### Loop-engineering / Hermes practice used
+**Score the loop** — memory tools must fire; scorecard fails closed otherwise.
+
+### SHA
+`PENDING`
+
 ## 2026-08-01 — F129 product scorecard brand packaging
 
 ### Papers / posts

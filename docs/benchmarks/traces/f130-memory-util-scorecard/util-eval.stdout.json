@@ -1,0 +1,21 @@
+{
+  "feature": "F130",
+  "feature_audit": "F105",
+  "scored_at": "2026-08-01T07:10:59Z",
+  "good_score": 1.0,
+  "weak_score": 0.15,
+  "delta": 0.85,
+  "good_hit_count": 4,
+  "weak_utilization_gap": true,
+  "good_ok": true,
+  "weak_gap_ok": true,
+  "eval_pass": true,
+  "paper": {
+    "metric": "memory_tool_util_delta",
+    "value": 0.85,
+    "good_score": 1.0,
+    "weak_score": 0.15,
+    "notes": "Mem0/Letta pattern: memory only helps if tools are called; offline good vs inject-offered-unused weak pack"
+  },
+  "artifact": "memory-util-eval.json"
+}

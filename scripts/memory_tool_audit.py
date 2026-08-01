@@ -21,6 +21,7 @@ Commands:
   reprompt-decide — F106: whether to soft re-prompt on utilization gap
   reprompt-write  — F106: append memory-tool nudge to prompt
   fixture         — hermetic good (memory cmds) vs weak (no memory cmds) + re-prompt
+  util-eval       — F130 paper pack: memory util good/weak scores for product scorecard
   status          — feature + toggle
 
 Env:
@@ -44,6 +45,7 @@ from typing import Any
 
 FEATURE = "F105"
 FEATURE_REPROMPT = "F106"
+FEATURE_UTIL_EVAL = "F130"
 SCHEMA = 1
 MARKER = "<!-- torii-f105-memory-tool-audit -->"
 REPROMPT_MARKER = "## Soft re-prompt (Torii F106 / memory tools)"
@@ -867,6 +869,97 @@ def cmd_fixture(args: argparse.Namespace) -> int:
         return 0 if fixture_pass else 1
 
 
+def util_eval(*, out_dir: Path | None = None) -> dict[str, Any]:
+    """F130: paper-ready memory utilization pack (Mem0/Letta: tools must be called).
+
+    Offline good (memory CLI hits) vs weak (inject offered, unused) → delta + rate.
+    Same discipline as F128 critic demote-eval for product scorecard.
+    """
+    # reuse fixture hermetic cases via in-process logic
+    with tempfile.TemporaryDirectory() as td:
+        td_path = Path(td)
+        good_dir = td_path / "good"
+        weak_dir = td_path / "weak"
+        good_dir.mkdir()
+        weak_dir.mkdir()
+        (good_dir / "agent-loop").mkdir()
+        (weak_dir / "agent-loop").mkdir()
+        good_loop = _synthetic_loop(
+            [
+                "cat pr.diff",
+                'python3 scripts/torii.py memory -- search -- -q "sql injection"',
+                "python3 scripts/torii_memory.py graph -- query --path app.py --hops 2",
+            ]
+        )
+        weak_loop = _synthetic_loop(
+            ["cat pr.diff", "rg -n foo bar.py", "head -40 app.py"]
+        )
+        (good_dir / "agent-loop" / "agent-loop.json").write_text(
+            json.dumps(good_loop) + "\n", encoding="utf-8"
+        )
+        (weak_dir / "agent-loop" / "agent-loop.json").write_text(
+            json.dumps(weak_loop) + "\n", encoding="utf-8"
+        )
+        prompt = (
+            "<!-- torii-f103-memory-cli -->\n"
+            "## Memory tools\n"
+            "python3 scripts/torii.py memory -- search\n"
+        )
+        (good_dir / "prompt.md").write_text(prompt, encoding="utf-8")
+        (weak_dir / "prompt.md").write_text(prompt, encoding="utf-8")
+        good = audit_run(good_dir)
+        weak = audit_run(weak_dir)
+        good_score = float(good.get("score") or 0)
+        weak_score = float(weak.get("score") or 0)
+        delta = round(good_score - weak_score, 4)
+        good_ok = good_score >= 0.7 and int(good.get("hit_count") or 0) >= 1
+        weak_gap_ok = bool(weak.get("utilization_gap")) and weak_score <= 0.35
+        eval_pass = good_ok and weak_gap_ok and delta >= 0.4
+        report: dict[str, Any] = {
+            "feature": FEATURE_UTIL_EVAL,
+            "feature_audit": FEATURE,
+            "scored_at": _now(),
+            "good_score": good_score,
+            "weak_score": weak_score,
+            "delta": delta,
+            "good_hit_count": good.get("hit_count"),
+            "weak_utilization_gap": weak.get("utilization_gap"),
+            "good_ok": good_ok,
+            "weak_gap_ok": weak_gap_ok,
+            "eval_pass": eval_pass,
+            "paper": {
+                "metric": "memory_tool_util_delta",
+                "value": delta,
+                "good_score": good_score,
+                "weak_score": weak_score,
+                "notes": (
+                    "Mem0/Letta pattern: memory only helps if tools are called; "
+                    "offline good vs inject-offered-unused weak pack"
+                ),
+            },
+        }
+        if out_dir:
+            try:
+                od = Path(out_dir)
+                od.mkdir(parents=True, exist_ok=True)
+                dest = od / "memory-util-eval.json"
+                dest.write_text(json.dumps(report, indent=2) + "\n", encoding="utf-8")
+                report["artifact"] = dest.name
+            except OSError:
+                pass
+        return report
+
+
+def cmd_util_eval(args: argparse.Namespace) -> int:
+    """F130: paper memory utilization eval for product scorecard."""
+    od = Path(args.out_dir) if getattr(args, "out_dir", None) and args.out_dir else None
+    if od is None and (os.environ.get("OUT_DIR") or "").strip():
+        od = Path(os.environ["OUT_DIR"])
+    report = util_eval(out_dir=od)
+    print(json.dumps(report, indent=2))
+    return 0 if report.get("eval_pass") else 1
+
+
 def main(argv: list[str] | None = None) -> int:
     p = argparse.ArgumentParser(description="F105/F106 memory tool-use auditor + re-prompt")
     sub = p.add_subparsers(dest="cmd", required=True)
@@ -915,6 +1008,13 @@ def main(argv: list[str] | None = None) -> int:
     prw.add_argument("--paths-file", default="")
     prw.add_argument("--path", action="append", default=[])
     prw.set_defaults(func=cmd_reprompt_write)
+
+    pue = sub.add_parser(
+        "util-eval",
+        help="F130 paper memory util good/weak pack for product scorecard",
+    )
+    pue.add_argument("--out-dir", default="")
+    pue.set_defaults(func=cmd_util_eval)
 
     pst = sub.add_parser("status")
     pst.set_defaults(func=cmd_status)

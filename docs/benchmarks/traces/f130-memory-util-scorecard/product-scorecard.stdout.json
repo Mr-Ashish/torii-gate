@@ -1,0 +1,109 @@
+{
+  "feature": "F130",
+  "feature_cli": "F110",
+  "feature_scorecard": "F129",
+  "schema": 1,
+  "scored_at": "2026-08-01T07:10:59Z",
+  "level": "L3",
+  "brand_ready": true,
+  "metrics": {
+    "doctor_pass": true,
+    "recovery_ok": true,
+    "recovery_hub_gap_ok": true,
+    "skill_loop_level": "L3",
+    "memory_loop_level": "L3",
+    "critic_approve_demote_rate": 1.0,
+    "weak_approve_demoted": true,
+    "hub_gap_idle_demoted": true,
+    "demote_eval_pass": true,
+    "memory_tool_util_delta": 0.85,
+    "memory_tool_util_good": 1.0,
+    "memory_tool_util_weak": 0.15,
+    "memory_util_eval_pass": true
+  },
+  "one_liner": "Measured gate readiness: doctor + hub-gap critic + demote_rate=1.0 + memory_util_delta=0.85.",
+  "brand_lines": [
+    "Doctor pass: **True** \u00b7 recovery skills **ok**",
+    "Hub gap critic path: **ok** (F127/F128)",
+    "Critic APPROVE demote rate (offline pack): **1.0**",
+    "Memory tool util delta (good\u2212weak): **0.85** (F130)",
+    "Skill loop **L3** \u00b7 Memory loop **L3**"
+  ],
+  "doctor": {
+    "doctor_pass": true,
+    "recovery_ok": true,
+    "recovery_hub_gap_ok": true,
+    "recovery_active": [
+      "skill-prefer-memory-cli-early",
+      "skill-prefer-product-cli",
+      "skill-prefer-critic-early"
+    ]
+  },
+  "skill_loop": {
+    "feature": "F91",
+    "feature_recovery": "F128",
+    "level": "L3",
+    "pct": 100.0,
+    "ready": true,
+    "stages_ok": "11/11",
+    "skills_n": 9,
+    "recovery_ok": true,
+    "recovery_active": [
+      "skill-prefer-memory-cli-early",
+      "skill-prefer-product-cli",
+      "skill-prefer-critic-early"
+    ],
+    "recovery_hub_ok": true,
+    "recovery_hub_gap_ok": true,
+    "wiring_ok": true,
+    "deep_ok": null,
+    "loop": "route \u2192 hit \u2192 fitness \u2192 dual \u2192 attr \u2192 inject \u2192 util \u2192 re-prompt \u2192 hub \u2192 critic demote"
+  },
+  "memory_loop": {
+    "feature": "F96",
+    "level": "L3",
+    "pct": 100.0,
+    "ready": true,
+    "stages_ok": "12/12",
+    "wiring_ok": true,
+    "deep_ok": null,
+    "loop": "write \u2192 consolidate \u2192 effective_critic \u2192 federate \u2192 scoped_recall \u2192 tiers \u2192 archival_search \u2192 temporal_graph \u2192 memory_cli \u2192 compound_write \u2192 memory_tool_audit \u2192 tp_store"
+  },
+  "demote_eval": {
+    "eval_pass": true,
+    "demote_rate": 1.0,
+    "weak_demote_ok": true,
+    "hub_gap_demote_ok": true,
+    "paper": {
+      "metric": "critic_approve_demote_rate",
+      "value": 1.0,
+      "weak_approve_demoted": true,
+      "hub_gap_idle_demoted": true,
+      "notes": "demote_rate = demoted APPROVE / APPROVE cases in offline pack"
+    }
+  },
+  "memory_util_eval": {
+    "eval_pass": true,
+    "delta": 0.85,
+    "good_score": 1.0,
+    "weak_score": 0.15,
+    "paper": {
+      "metric": "memory_tool_util_delta",
+      "value": 0.85,
+      "good_score": 1.0,
+      "weak_score": 0.15,
+      "notes": "Mem0/Letta pattern: memory only helps if tools are called; offline good vs inject-offered-unused weak pack"
+    }
+  },
+  "cmds": {
+    "doctor": "python3 scripts/torii.py doctor",
+    "scorecard": "python3 scripts/torii.py scorecard",
+    "demote_eval": "python3 scripts/second_agent_critic.py demote-eval",
+    "memory_util_eval": "python3 scripts/memory_tool_audit.py util-eval"
+  },
+  "artifacts": [
+    "docs/benchmarks/traces/f130-memory-util-scorecard/product-scorecard.json",
+    ".torii/product-scorecard.json"
+  ],
+  "brand_md": "docs/brand/scorecard-metrics.md"
+}
