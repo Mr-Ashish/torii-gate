@@ -54,3 +54,4 @@ Paper/eval-safe slim traces (redacted). Large raw logs may be gitignored; always
 - `f118-tool-dual-gate-adopt/` — F118 tool-attr dual-gate adopt product-cli/critic (offline + Modal pytorch#191813)
 - `f119-always-budget/` — F119 always-on priority budget recovery skills (offline + Modal pytorch#191813)
 - `f120-skill-compact/` — F120 SkillReducer-lite always body compact + pack verify (offline + Modal pytorch#191813)
+- `f121-recovery-util/` — F121 recovery skill tool utilization + critic demote (offline + Modal pytorch#191813)

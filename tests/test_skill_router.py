@@ -46,6 +46,11 @@ class SkillRouterTests(unittest.TestCase):
         self.assertTrue(data.get("compact_ok"), data)
         self.assertTrue(data.get("smaller_ok"), data)
         self.assertGreaterEqual(int(data.get("f120_chars_saved") or 0), 1)
+        # F121 recovery util
+        self.assertTrue(data.get("f121") or data.get("feature_util") == "F121")
+        self.assertTrue(data.get("util_ok"), data)
+        self.assertTrue(data.get("util_gap"), data)
+        self.assertGreaterEqual(float(data.get("util_rate_good") or 0), 1.0)
 
     def test_status(self):
         r = _run(["status"])
@@ -243,6 +248,44 @@ class SkillRouterTests(unittest.TestCase):
                 self.assertTrue(h.get("tool_hit"), h)
                 self.assertTrue(h.get("hit"), h)
                 self.assertFalse(h.get("prose_hit"), h)
+
+
+    def test_f121_recovery_util_command(self):
+        """F121: util scores tool hits vs idle recovery skills."""
+        with tempfile.TemporaryDirectory() as td:
+            od = Path(td)
+            (od / "skill-router.json").write_text(
+                json.dumps(
+                    {
+                        "selected": ["skill-prefer-product-cli"],
+                        "always_selected": ["skill-prefer-product-cli"],
+                        "inject_chars": 420,
+                        "f120_chars_saved": 100,
+                    }
+                ),
+                encoding="utf-8",
+            )
+            (od / "skill-hits.json").write_text(
+                json.dumps(
+                    {
+                        "hits": [
+                            {
+                                "id": "skill-prefer-product-cli",
+                                "hit": False,
+                                "tool_hit": False,
+                            }
+                        ]
+                    }
+                ),
+                encoding="utf-8",
+            )
+            r = _run(["util", "--out-dir", str(od)])
+            self.assertEqual(r.returncode, 1, r.stderr + r.stdout)  # gap → rc 1
+            data = json.loads(r.stdout)
+            self.assertEqual(data.get("feature"), "F121")
+            self.assertTrue(data.get("utilization_gap"))
+            self.assertEqual(int(data.get("inject_chars") or 0), 420)
+            self.assertTrue((od / "recovery-skill-util.json").is_file())
 
 
 if __name__ == "__main__":

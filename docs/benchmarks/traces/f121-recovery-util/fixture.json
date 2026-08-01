@@ -1,0 +1,56 @@
+{
+  "feature": "F84",
+  "f114": true,
+  "f119": true,
+  "f120": true,
+  "f121": true,
+  "feature_always_budget": "F119",
+  "feature_compact": "F120",
+  "feature_util": "F121",
+  "fixture_pass": true,
+  "always_ok": true,
+  "always_selected": [
+    "skill-prefer-product-cli",
+    "skill-prefer-memory-cli-early"
+  ],
+  "always_deferred": [
+    "skill-tool-depth-hunks"
+  ],
+  "sec_ok": true,
+  "docs_not_first": true,
+  "always_in_md": true,
+  "inject_ok": true,
+  "stripped_ok": true,
+  "selected_py": [
+    "skill-prefer-memory-cli-early",
+    "skill-prefer-product-cli",
+    "skill-f74-prefer-chain-json"
+  ],
+  "selected_md": [
+    "skill-prefer-memory-cli-early",
+    "skill-prefer-product-cli",
+    "skill-tool-depth-hunks"
+  ],
+  "good_hit_rate": 0.3333,
+  "weak_hit_rate": 0.0,
+  "rate_ok": true,
+  "privacy_ok": true,
+  "good_hit_n": 1,
+  "memory_always_ok": true,
+  "product_always_ok": true,
+  "memory_in_py": true,
+  "product_in_py": true,
+  "tool_outcome_ok": true,
+  "tool_hit_n": 1,
+  "tool_hit_rate": 0.5,
+  "weak_tool_ok": true,
+  "compact_ok": true,
+  "compact_chars": 1354,
+  "full_chars": 2856,
+  "f120_chars_saved": 1502,
+  "smaller_ok": true,
+  "util_ok": true,
+  "util_rate_good": 1.0,
+  "util_gap": true,
+  "util_inject_chars": 1354
+}

@@ -747,6 +747,16 @@ def select_skills(
     }
 
 
+# F121: recovery skills that teach tool CLIs (must fire tools when always-injected)
+RECOVERY_SKILL_IDS: frozenset[str] = frozenset(
+    {
+        "skill-prefer-memory-cli-early",
+        "skill-prefer-product-cli",
+        "skill-prefer-critic-early",
+    }
+)
+
+
 def compact_enabled() -> bool:
     """F120: SkillReducer-lite — compact full skill bodies on inject (default on)."""
     raw = (os.environ.get("TORII_SKILL_COMPACT") or "1").strip().lower()
@@ -920,6 +930,7 @@ def inject_into_prompt(
         "stripped_f69": stripped_f69,
         "prompt": str(dest),
         "chars": len(body),
+        "inject_chars": len(body),
         "f120_chars_saved": selection.get("f120_chars_saved") or 0,
         "f120_compact": selection.get("f120_compact") or [],
     }
@@ -933,6 +944,9 @@ def inject_into_prompt(
                     {
                         **{k: v for k, v in selection.items() if k != "selected_cards"},
                         "injected_at": _now(),
+                        "inject_chars": len(body),
+                        "f120_chars_saved": selection.get("f120_chars_saved") or 0,
+                        "f120_compact": selection.get("f120_compact") or [],
                     },
                     indent=2,
                 )
@@ -1312,6 +1326,111 @@ def cmd_status(args: argparse.Namespace) -> int:
     return 0
 
 
+def score_recovery_util(
+    out_dir: Path | None = None,
+    *,
+    root: Path | None = None,
+    hits_doc: dict[str, Any] | None = None,
+    router_doc: dict[str, Any] | None = None,
+) -> dict[str, Any]:
+    """F121: recovery skills injected vs tool_hit — inject presence ≠ utilization.
+
+    SkillsBench / Mem2Act: always-injected recovery skills must fire tool CLIs
+    or they are idle prompt cost. Gap when recovery selected and tool_hit_n=0.
+    """
+    root = root or _root()
+    od = Path(out_dir) if out_dir else None
+    router: dict[str, Any] = dict(router_doc or {})
+    hits: dict[str, Any] = dict(hits_doc or {})
+    if od:
+        rp = od / "skill-router.json"
+        hp = od / "skill-hits.json"
+        if not router and rp.is_file():
+            try:
+                router = json.loads(rp.read_text(encoding="utf-8"))
+            except (OSError, json.JSONDecodeError):
+                router = {}
+        if not hits and hp.is_file():
+            try:
+                hits = json.loads(hp.read_text(encoding="utf-8"))
+            except (OSError, json.JSONDecodeError):
+                hits = {}
+
+    selected = list(router.get("selected") or [])
+    always_sel = list(router.get("always_selected") or [])
+    recovery_injected = [
+        s for s in selected if s in RECOVERY_SKILL_IDS
+    ] or [s for s in always_sel if s in RECOVERY_SKILL_IDS]
+
+    by_id: dict[str, dict[str, Any]] = {}
+    for h in hits.get("hits") or []:
+        if isinstance(h, dict) and h.get("id"):
+            by_id[str(h["id"])] = h
+
+    tool_hit_ids: list[str] = []
+    prose_hit_ids: list[str] = []
+    idle: list[str] = []
+    for sid in recovery_injected:
+        h = by_id.get(sid) or {}
+        if h.get("tool_hit"):
+            tool_hit_ids.append(sid)
+        else:
+            # tool-taught recovery skills: prose-only still counts as idle
+            idle.append(sid)
+            if h.get("prose_hit") or h.get("hit"):
+                prose_hit_ids.append(sid)
+
+    n = len(recovery_injected)
+    tool_n = len(tool_hit_ids)
+    util_rate = (tool_n / n) if n else 1.0  # no recovery → no gap
+    # gap: recovery was injected but none fired tools
+    gap = bool(n >= 1 and tool_n == 0)
+
+    inject_chars = int(router.get("inject_chars") or router.get("chars") or 0)
+    f120_saved = int(router.get("f120_chars_saved") or 0)
+
+    report = {
+        "feature": "F121",
+        "schema": SCHEMA,
+        "scored_at": _now(),
+        "recovery_ids": sorted(RECOVERY_SKILL_IDS),
+        "recovery_injected": recovery_injected,
+        "recovery_injected_n": n,
+        "tool_hit_ids": tool_hit_ids,
+        "prose_only_ids": prose_hit_ids,
+        "idle_ids": idle,
+        "tool_hit_n": tool_n,
+        "util_rate": round(util_rate, 4),
+        "utilization_gap": gap,
+        "inject_chars": inject_chars,
+        "f120_chars_saved": f120_saved,
+        "ok": not gap,
+        "score": round(util_rate, 4),
+    }
+    if od:
+        try:
+            od.mkdir(parents=True, exist_ok=True)
+            (od / "recovery-skill-util.json").write_text(
+                json.dumps(report, indent=2) + "\n", encoding="utf-8"
+            )
+        except OSError:
+            pass
+    return report
+
+
+def cmd_util(args: argparse.Namespace) -> int:
+    """F121: score recovery skill tool utilization for a run dir."""
+    od = Path(args.out_dir) if args.out_dir else None
+    if od is None and (os.environ.get("OUT_DIR") or "").strip():
+        od = Path(os.environ["OUT_DIR"])
+    if od is None:
+        print(json.dumps({"feature": "F121", "error": "need --out-dir", "ok": False}))
+        return 2
+    report = score_recovery_util(od, root=_root())
+    print(json.dumps(report, indent=2))
+    return 0 if report.get("ok") else 1
+
+
 def cmd_fixture(args: argparse.Namespace) -> int:
     """Hermetic: py paths prefer chain/exploit skills; md-only prefers always; hits score."""
     with tempfile.TemporaryDirectory() as td:
@@ -1570,6 +1689,86 @@ Verdict: REQUEST_CHANGES
         os.environ["TORII_SKILL_COMPACT"] = "1"
         smaller_ok = chars_compact <= chars_full
 
+        # F121: recovery util — with tools no gap; silent without tools → gap
+        util_out = root / "util-out"
+        util_out.mkdir(exist_ok=True)
+        (util_out / "skill-router.json").write_text(
+            json.dumps(
+                {
+                    "selected": [
+                        "skill-prefer-memory-cli-early",
+                        "skill-prefer-product-cli",
+                    ],
+                    "always_selected": [
+                        "skill-prefer-memory-cli-early",
+                        "skill-prefer-product-cli",
+                    ],
+                    "inject_chars": int(inj2.get("inject_chars") or chars_compact or 0),
+                    "f120_chars_saved": int(inj2.get("f120_chars_saved") or 0),
+                }
+            ),
+            encoding="utf-8",
+        )
+        (util_out / "skill-hits.json").write_text(
+            json.dumps(
+                {
+                    "hits": [
+                        {
+                            "id": "skill-prefer-memory-cli-early",
+                            "hit": True,
+                            "tool_hit": True,
+                            "prose_hit": False,
+                        },
+                        {
+                            "id": "skill-prefer-product-cli",
+                            "hit": True,
+                            "tool_hit": True,
+                            "prose_hit": False,
+                        },
+                    ],
+                    "tool_hit_n": 2,
+                }
+            ),
+            encoding="utf-8",
+        )
+        util_good = score_recovery_util(util_out, root=root)
+        util_gap_out = root / "util-gap"
+        util_gap_out.mkdir(exist_ok=True)
+        (util_gap_out / "skill-router.json").write_text(
+            json.dumps(
+                {
+                    "selected": ["skill-prefer-product-cli"],
+                    "always_selected": ["skill-prefer-product-cli"],
+                    "inject_chars": 500,
+                }
+            ),
+            encoding="utf-8",
+        )
+        (util_gap_out / "skill-hits.json").write_text(
+            json.dumps(
+                {
+                    "hits": [
+                        {
+                            "id": "skill-prefer-product-cli",
+                            "hit": False,
+                            "tool_hit": False,
+                            "prose_hit": False,
+                        }
+                    ],
+                    "tool_hit_n": 0,
+                }
+            ),
+            encoding="utf-8",
+        )
+        util_gap = score_recovery_util(util_gap_out, root=root)
+        util_ok = (
+            util_good.get("ok") is True
+            and float(util_good.get("util_rate") or 0) >= 1.0
+            and util_gap.get("utilization_gap") is True
+            and util_gap.get("ok") is False
+            and int(util_good.get("inject_chars") or 0) >= 1
+        )
+
         fixture_pass = all(
             [
                 always_ok,
@@ -1591,6 +1790,7 @@ Verdict: REQUEST_CHANGES
                 weak_tool_ok,
                 compact_ok,
                 smaller_ok,
+                util_ok,
             ]
         )
         payload = {
@@ -1598,8 +1798,10 @@ Verdict: REQUEST_CHANGES
             "f114": True,
             "f119": True,
             "f120": True,
+            "f121": True,
             "feature_always_budget": "F119",
             "feature_compact": "F120",
+            "feature_util": "F121",
             "fixture_pass": fixture_pass,
             "always_ok": always_ok,
             "always_selected": list(always_sel),
@@ -1629,6 +1831,10 @@ Verdict: REQUEST_CHANGES
             "full_chars": chars_full,
             "f120_chars_saved": inj2.get("f120_chars_saved"),
             "smaller_ok": smaller_ok,
+            "util_ok": util_ok,
+            "util_rate_good": util_good.get("util_rate"),
+            "util_gap": util_gap.get("utilization_gap"),
+            "util_inject_chars": util_good.get("inject_chars"),
         }
         print(json.dumps(payload, indent=2))
         return 0 if fixture_pass else 1
@@ -1645,6 +1851,11 @@ def main(argv: list[str] | None = None) -> int:
     sub.add_parser("fixture", help="Hermetic offline fixture").set_defaults(
         func=cmd_fixture
     )
+    pu = sub.add_parser(
+        "util", help="F121 recovery skill tool utilization score for a run"
+    )
+    pu.add_argument("--out-dir", default="")
+    pu.set_defaults(func=cmd_util)
 
     ps = sub.add_parser("select", help="Select skills for paths")
     ps.add_argument("--paths", nargs="*", default=None)

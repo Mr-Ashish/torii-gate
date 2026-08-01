@@ -336,6 +336,53 @@ def run_f75_memory(out_dir: Path | None, root: Path) -> CheckerResult:
         )
 
 
+def run_f121_recovery_util(out_dir: Path | None) -> CheckerResult:
+    """F121: recovery always skills must fire tool CLIs (inject ≠ utilization)."""
+    if out_dir is None:
+        return CheckerResult(
+            id="f121_recovery_util",
+            name="Recovery skill utilization (F121)",
+            ok=True,
+            score=0.5,
+            detail={"soft_skip": True, "reason": "no_out_dir"},
+        )
+    _ensure_path()
+    try:
+        from skill_router import score_recovery_util  # type: ignore
+
+        report = score_recovery_util(Path(out_dir))
+        gap = bool(report.get("utilization_gap"))
+        rate = float(report.get("util_rate") or 0)
+        n = int(report.get("recovery_injected_n") or 0)
+        # ok when no recovery injected or at least one tool hit
+        ok = not gap
+        score = rate if n else 1.0
+        return CheckerResult(
+            id="f121_recovery_util",
+            name="Recovery skill utilization (F121)",
+            ok=ok,
+            score=round(score, 4),
+            detail={
+                "utilization_gap": gap,
+                "util_rate": rate,
+                "recovery_injected": report.get("recovery_injected"),
+                "tool_hit_ids": report.get("tool_hit_ids"),
+                "idle_ids": report.get("idle_ids"),
+                "inject_chars": report.get("inject_chars"),
+                "f120_chars_saved": report.get("f120_chars_saved"),
+            },
+        )
+    except Exception as e:
+        return CheckerResult(
+            id="f121_recovery_util",
+            name="Recovery skill utilization (F121)",
+            ok=True,  # soft — do not block panel if artifact missing
+            score=0.5,
+            error=str(e)[:200],
+            detail={"soft_fail": True},
+        )
+
+
 def run_verdict_structure(review: str) -> CheckerResult:
     v = parse_verdict(review)
     has_summary = bool(re.search(r"(?m)^###?\s+Summary\b", review, re.I))
@@ -397,6 +444,7 @@ def run_f81_llm(review: str, panel_partial: dict[str, Any] | None = None) -> Che
 def composite_panel(checkers: list[CheckerResult]) -> dict[str, Any]:
     """Weighted composite; default REJECT stance on weak APPROVE."""
     weights = {
+        "f121_recovery_util": 0.08,
         "structure": 0.12,
         "f70_dual_critic": 0.22,
         "f72_chain": 0.18,
@@ -470,6 +518,12 @@ def decide_verdict(
                 recommended = "COMMENT"
                 demoted = True
                 reasons.append("high_weak_evidence_low_precision")
+        # F121: recovery skills always-injected but idle tools → soft demote APPROVE
+        rec = next((c for c in checkers if c.id == "f121_recovery_util"), None)
+        if rec and bool((rec.detail or {}).get("utilization_gap")):
+            recommended = "COMMENT"
+            demoted = True
+            reasons.append("recovery_skill_idle_no_tool_hit")
     elif maker == "UNKNOWN":
         recommended = "COMMENT"
         demoted = True
@@ -501,6 +555,7 @@ def run_panel(
         run_f72_chain(review_path, out_dir),
         run_f73_fitness(review_path, out_dir),
         run_f75_memory(out_dir, root),
+        run_f121_recovery_util(out_dir),
     ]
     # F81: optional LLM checker after deterministic panel draft
     panel_draft = {

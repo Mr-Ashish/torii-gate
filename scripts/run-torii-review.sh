@@ -282,6 +282,9 @@ if [[ -f "$SCRIPTS/skill_router.py" ]]; then
         fi
         stage skill_router_score \
           python3 "$SCRIPTS/skill_router.py" "${_f84_args[@]}" || true
+        # F121: recovery skill tool utilization (inject chars + tool_hit gap)
+        stage recovery_skill_util \
+          python3 "$SCRIPTS/skill_router.py" util --out-dir "$OUT_DIR" || true
       fi
       ;;
   esac

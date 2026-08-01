@@ -138,6 +138,8 @@ compound → write → consolidate → effective_critic → federate → scoped_
 
 **Always body compact (F120):** SkillReducer-lite keeps actionable steps/code under `TORII_SKILL_ALWAYS_MAX_CHARS` (default 480) on inject; pack install verifies memory/product-cli/critic active skills ship.
 
+**Recovery skill utilization (F121):** post-run measure inject_chars + tool_hit for always recovery skills; idle recovery tools set utilization_gap and soft-demote APPROVE in the second-agent critic panel.
+
 **Ops:** `python3 scripts/memory_loop_status.py scorecard` → L0–L3. Smoke requires L3 on the hub tree. CI job summary annotates readiness; optional advisory `torii/memory-loop` via `TORII_MEMORY_LOOP_STATUS_COMMIT=1`.
 
 ---

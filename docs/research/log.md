@@ -1,6 +1,37 @@
 # Torii research → product log
 
 
+## 2026-08-01 — F121 recovery skill utilization critic (inject ≠ tools)
+
+### Papers / posts
+- Mem2Act / F105: inject presence ≠ tool utilization.
+- SkillsBench / SoK Agentic Skills: skills help only when applied.
+- Gap after F119/F120: always recovery skills inject + compact, no post-run check they fired doctor/memory/critic CLIs.
+
+### OSS design patterns stolen
+1. score_recovery_util: util_rate = tool_hits / recovery_injected; gap if zero tools.
+2. Measure inject_chars + f120_chars_saved from skill-router.json for paper traces.
+3. F78 panel checker f121_recovery_util (weight 0.08).
+4. Soft demote APPROVE → COMMENT on recovery_skill_idle_no_tool_hit.
+
+### Insight
+Always-on recovery skills without utilization measurement are dead weight. Highest ROI: post-run util score + critic demote when product/memory/critic tools never ran.
+
+### Feature shipped (F121)
+- `skill_router.py` util command + recovery-skill-util.json
+- `second_agent_critic.py` F121 checker + demote reason
+- run-torii-review recovery_skill_util stage; PRODUCT + research note
+- traces `docs/benchmarks/traces/f121-recovery-util/`
+
+### Metric
+- Offline: util_ok; gap on idle; demote includes recovery_skill_idle
+- pytest 599; smoke PASS; Modal pytorch#191813 BIT3_OK ~46s log_streaming=true POST_COMMENT=0
+
+### Loop-engineering / Hermes practice used
+**Verifier measures tool outcomes of injected skills** — default REJECT idle recovery on APPROVE.
+
+### SHA
+`e2dd2316d96daa26d1bdc81af98917826221bc32`
 ## 2026-08-01 — F120 SkillReducer-lite always body compact + pack verify
 
 ### Papers / posts
