@@ -29,7 +29,7 @@ Consolidation without checker integration leaves stale TP boosting precision. Hi
 - Live: **Modal** pytorch#191813 deepseek/deepseek-v4-pro BIT3_OK ~157s; log_streaming=true; tool_call_turns=20; POST_COMMENT=0
 
 ### SHA
-PENDING
+a47643c5b6c5874c9290fb5517b7521e890bd949
 
 ## 2026-08-01 — F94 memory consolidation (importance · merge · decay · eviction)
 
