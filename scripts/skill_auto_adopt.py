@@ -540,6 +540,178 @@ def scorecard_adopt_enabled() -> bool:
     return raw not in _FALSEY
 
 
+def scorecard_skill_ids() -> set[str]:
+    """F132/F133/F134: known scorecard-gap ops skill stems."""
+    return {
+        "skill-prefer-product-scorecard",
+        "skill-prefer-demote-eval-check",
+        "skill-prefer-memory-util-eval",
+        "skill-prefer-workflow-scorecard",
+        "skill-prefer-hub-gap-critic",
+        "skill-prefer-dual-compound-ops",
+        "skill-prefer-recovery-skills-active",
+    }
+
+
+def list_active_scorecard_skills(root: Path) -> list[str]:
+    """Active skill ids that close scorecard gaps (privacy-safe ids only)."""
+    active = root / "agent" / "skills" / "active"
+    if not active.is_dir():
+        return []
+    known = scorecard_skill_ids()
+    out: list[str] = []
+    for p in sorted(active.glob("skill-prefer-*.md")):
+        sid = p.stem
+        if sid in known or any(
+            x in sid
+            for x in (
+                "scorecard",
+                "demote-eval",
+                "memory-util",
+                "workflow",
+                "hub-gap",
+                "dual-compound",
+                "recovery-skills",
+            )
+        ):
+            if "/" in sid or ".." in sid:
+                continue
+            out.append(sid)
+    return out
+
+
+def federate_scorecard_skills(
+    root: Path | None = None,
+    *,
+    tenant: str = "",
+    dest: Path | None = None,
+) -> dict[str, Any]:
+    """F134: privacy-safe federate of adopted scorecard-gap skill themes.
+
+    Emits skill_id + tags only (no paths, no commands, no tenant strings).
+    Mirrors FederatedSkill / F116: share themes, not trajectories.
+    """
+    import hashlib
+
+    root = root or _root()
+    tenant = tenant or (os.environ.get("TORII_MEMORY_TENANT") or "").strip()
+    th = ""
+    if tenant:
+        th = hashlib.sha256(tenant.encode("utf-8")).hexdigest()[:12]
+    skills = list_active_scorecard_skills(root)
+    signals: list[dict[str, Any]] = []
+    for sid in skills:
+        slug = re.sub(r"[^a-z0-9._-]+", "-", sid.lower())[:64]
+        sig: dict[str, Any] = {
+            "id": f"scorecard-skill-{slug}"[:64],
+            "theme": slug,
+            "cwe": [],
+            "tags": [
+                "scorecard_ops",
+                "federated_skill",
+                "f134",
+                "tool_outcome",
+            ],
+            "keywords": [
+                sid.replace("skill-prefer-", "")[:48],
+                "scorecard-gap",
+                "ops-readiness",
+            ],
+            "path_basenames": [],
+            "hits": 1,
+            "tool_hits": 1,
+            "source": "scorecard_skill_adopt",
+            "tenants": 1,
+        }
+        if th:
+            sig["tenant_hashes"] = [th]
+            sig["tenant_hash"] = th
+        signals.append(sig)
+    # aggregate readiness theme when any scorecard skills active
+    if skills:
+        ok_sig: dict[str, Any] = {
+            "id": "scorecard-ops-active",
+            "theme": "scorecard-ops-active",
+            "cwe": [],
+            "tags": ["scorecard_ops", "federated_skill", "f134", "util_ok"],
+            "keywords": ["scorecard-ops-active", f"n{len(skills)}"],
+            "path_basenames": [],
+            "hits": max(1, len(skills)),
+            "source": "scorecard_skill_adopt",
+            "tenants": 1,
+            "skill_n": len(skills),
+        }
+        if th:
+            ok_sig["tenant_hashes"] = [th]
+            ok_sig["tenant_hash"] = th
+        signals.append(ok_sig)
+
+    dest = dest or (root / "memory" / "federation" / "scorecard-skill-signals.json")
+    dest.parent.mkdir(parents=True, exist_ok=True)
+    blob = json.dumps(signals)
+    privacy_ok = (
+        "/Users/" not in blob
+        and "/home/" not in blob
+        and "C:\\\\Users" not in blob
+        and (not tenant or tenant not in blob)
+    )
+    clean = []
+    for s in signals:
+        sb = json.dumps(s)
+        if "/Users/" in sb or "/home/" in sb:
+            continue
+        clean.append(s)
+    doc = {
+        "schema_version": SCHEMA,
+        "feature": FEATURE_SCORECARD,
+        "feature_federate": "F134",
+        "scope": "scorecard_skill_adopt",
+        "updated_at": _now(),
+        "count": len(clean),
+        "privacy": "skill_id_tags_tenant_hash_only",
+        "privacy_ok": privacy_ok and len(clean) == len(signals),
+        "skill_ids": skills[:16],
+        "signals": clean,
+    }
+    dest.write_text(json.dumps(doc, indent=2) + "\n", encoding="utf-8")
+
+    hub = None
+    try:
+        sys.path.insert(0, str(_scripts()))
+        from federated_hub_ingest import ingest as hub_ingest  # type: ignore
+
+        hub_raw = hub_ingest(
+            root,
+            clean,
+            tenant=tenant,
+            source_repo="scorecard_skill_adopt",
+            write_tenant=bool(tenant),
+        )
+        # privacy-safe hub summary only (no absolute paths / raw tenant names)
+        if isinstance(hub_raw, dict):
+            hub = {
+                "feature": hub_raw.get("feature"),
+                "global_count": hub_raw.get("global_count"),
+                "privacy_ok": hub_raw.get("privacy_ok"),
+                "tenant_count": hub_raw.get("tenant_count"),
+                "top_themes": hub_raw.get("top_themes"),
+            }
+        else:
+            hub = {"ok": True}
+    except Exception as exc:
+        hub = {"soft_error": str(exc)[:120]}
+
+    return {
+        "feature": "F134",
+        "fed_path": "memory/federation/scorecard-skill-signals.json",
+        "fed_n": len(clean),
+        "skill_n": len(skills),
+        "skills": skills,
+        "privacy_ok": doc["privacy_ok"],
+        "hub": hub,
+    }
+
+
 def cycle_scorecard(
     root: Path,
     *,
@@ -633,9 +805,17 @@ def cycle_scorecard(
                 "adopted": [],
             }
 
+    # F134: federate adopted scorecard skill themes (privacy-safe)
+    fed = None
+    try:
+        fed = federate_scorecard_skills(root)
+    except Exception as exc:
+        fed = {"soft_error": str(exc)[:120]}
+
     return {
         "feature": FEATURE_SCORECARD,
         "feature_base": FEATURE,
+        "feature_federate": "F134",
         "f87": True,
         "f118": True,
         "ok": True,
@@ -646,24 +826,8 @@ def cycle_scorecard(
         "gates_pre": gates,
         "gates_post": post_gates,
         "dual_contribution_pp": (gates or {}).get("dual_contribution_pp"),
-        "active_scorecard": sorted(
-            p.stem
-            for p in (root / "agent" / "skills" / "active").glob("skill-prefer-*.md")
-            if any(
-                x in p.stem
-                for x in (
-                    "scorecard",
-                    "demote-eval",
-                    "memory-util",
-                    "workflow",
-                    "hub-gap",
-                    "dual-compound",
-                    "recovery-skills",
-                )
-            )
-        )
-        if (root / "agent" / "skills" / "active").is_dir()
-        else [],
+        "federate": fed,
+        "active_scorecard": list_active_scorecard_skills(root),
     }
 
 
@@ -777,7 +941,7 @@ def cmd_adopt(args: argparse.Namespace) -> int:
 
 
 def cmd_cycle_scorecard(args: argparse.Namespace) -> int:
-    """F133: propose-scorecard → dual-gate adopt scorecard-gap skills."""
+    """F133/F134: propose-scorecard → dual-gate adopt → federate themes."""
     root = _root()
     sc_path = Path(args.scorecard) if getattr(args, "scorecard", None) and args.scorecard else None
     report = cycle_scorecard(
@@ -790,6 +954,15 @@ def cmd_cycle_scorecard(args: argparse.Namespace) -> int:
     )
     print(json.dumps(report, indent=2))
     return 0 if report.get("ok") else 1
+
+
+def cmd_federate_scorecard(args: argparse.Namespace) -> int:
+    """F134: federate active scorecard-gap skill themes (privacy-safe)."""
+    root = _root()
+    tenant = (getattr(args, "tenant", None) or os.environ.get("TORII_MEMORY_TENANT") or "").strip()
+    report = federate_scorecard_skills(root, tenant=tenant)
+    print(json.dumps(report, indent=2))
+    return 0 if report.get("privacy_ok") else 1
 
 
 def cmd_cycle(args: argparse.Namespace) -> int:
@@ -1095,6 +1268,14 @@ When workflow_ok is false:
             sc_active = (td_path / "agent/skills/active" / f"{sc_id}.md").is_file()
             sc_cands = list_candidates(td_path, scorecard_only=True)
             sc_cand_ok = any(c["id"] == sc_id for c in sc_cands) or sc_active
+            # F134: federate adopted scorecard themes
+            fed_sc = federate_scorecard_skills(td_path, tenant="fixture-tenant-z")
+            fed_ok = (
+                bool(fed_sc.get("privacy_ok"))
+                and int(fed_sc.get("skill_n") or 0) >= 1
+                and "fixture-tenant-z" not in json.dumps(fed_sc)
+                and "/Users/" not in json.dumps(fed_sc)
+            )
 
             fixture_pass = (
                 good_v.recommend == "adopt"
@@ -1111,6 +1292,7 @@ When workflow_ok is false:
                 and sc_attr_ok
                 and ad_sc.get("ok") is True
                 and sc_active
+                and fed_ok
             )
             print(
                 json.dumps(
@@ -1135,6 +1317,10 @@ When workflow_ok is false:
                         "f133_adopt_ok": ad_sc.get("ok"),
                         "f133_active": sc_active,
                         "f133_cand_ok": sc_cand_ok,
+                        "f134": True,
+                        "f134_fed_ok": fed_ok,
+                        "f134_fed_n": fed_sc.get("fed_n"),
+                        "f134_skill_n": fed_sc.get("skill_n"),
                         "f118_attr": {
                             k: attr_yes.get(k)
                             for k in (
@@ -1172,6 +1358,12 @@ def main(argv: list[str] | None = None) -> int:
     psc.add_argument("--skip-gates", action="store_true")
     psc.add_argument("--no-propose", action="store_true")
     psc.set_defaults(func=cmd_cycle_scorecard)
+    pfed = sub.add_parser(
+        "federate-scorecard",
+        help="F134 federate active scorecard-gap skill themes (privacy-safe)",
+    )
+    pfed.add_argument("--tenant", default="")
+    pfed.set_defaults(func=cmd_federate_scorecard)
     pa = sub.add_parser("adopt")
     pa.add_argument("proposal_id", nargs="?", default="")
     pa.add_argument("--all", action="store_true")

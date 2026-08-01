@@ -1,0 +1,20 @@
+{
+  "feature": "F134",
+  "scored_at": "2026-08-01T07:38:07Z",
+  "fixture_pass": true,
+  "f134_fed_ok": true,
+  "f134_fed_n": 2,
+  "ops_bonus": 0.06,
+  "model": "deepseek/deepseek-v4-pro",
+  "e2e": {
+    "repo": "pytorch/pytorch",
+    "pr": 191813,
+    "modal": true,
+    "bit3": "BIT3_OK",
+    "elapsed_s": 97.0,
+    "log_streaming": true,
+    "verdict": "REQUEST_CHANGES",
+    "post_comment": 0,
+    "modal_app": "https://modal.com/apps/mr-ashish/main/ap-wX0uxyVwDUes3ROFljXz3i"
+  }
+}

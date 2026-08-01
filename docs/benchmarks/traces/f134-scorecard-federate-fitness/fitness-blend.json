@@ -1,0 +1,19 @@
+{
+  "composite": 0.2722,
+  "procedure": 0.655,
+  "tool_use": 0.18,
+  "f134_ops_bonus": 0.06,
+  "f134_scorecard": {
+    "brand_ready": true,
+    "scorecard_skills_n": 0,
+    "active_scorecard_n": 0,
+    "fed_n": 0,
+    "dual_triple": true
+  },
+  "feedback": [
+    "shallow What I checked / skim-only",
+    "chain JSON absent; no theme/path",
+    "f134_scorecard_brand_ready",
+    "f134_dual_compound_triple"
+  ]
+}

@@ -1,5 +1,35 @@
 # Torii research → product log
 
+## 2026-08-01 — F134 federate scorecard skills + trajectory fitness blend
+
+### Papers / posts
+- FederatedSkill: share skill themes not trajectories across tenants.
+- Hermes multi-dim fitness: ops readiness should soft-blend into procedure/tool dims.
+- F133 adopts scorecard-gap skills but themes never federated or scored into fitness.
+
+### OSS design patterns stolen
+1. federate_scorecard_skills → scorecard-skill-signals.json (ids + tags only).
+2. cycle-scorecard post-adopt federate; federate-scorecard CLI.
+3. trajectory_fitness F134 ops bonus from brand_ready + scorecard skill count.
+4. save-trace archives scorecard-skill-signals.json.
+
+### Insight
+Adopted ops skills without federation/fitness are local-only. Highest ROI: privacy-safe theme export + soft fitness blend so readiness compounds into run quality.
+
+### Feature shipped (F134)
+- skill_auto_adopt federate_scorecard_skills + trajectory_fitness blend
+- fixture f134_fed_ok; PRODUCT; traces f134-scorecard-federate-fitness/
+
+### Metric
+- Offline: fixture f134_fed_ok privacy; fitness ops_bonus; pytest
+- Live: Modal pytorch e2e POST_COMMENT=0
+
+### Loop-engineering / Hermes practice used
+**Measure → federate → fitness** — scorecard skills enter multi-tenant and run scoring.
+
+### SHA
+`PENDING`
+
 ## 2026-08-01 — F133 dual-gate adopt of scorecard-gap skills
 
 ### Papers / posts

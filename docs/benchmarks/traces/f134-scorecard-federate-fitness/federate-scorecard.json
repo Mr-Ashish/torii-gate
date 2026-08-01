@@ -1,0 +1,21 @@
+{
+  "feature": "F134",
+  "fed_path": "memory/federation/scorecard-skill-signals.json",
+  "fed_n": 0,
+  "skill_n": 0,
+  "skills": [],
+  "privacy_ok": true,
+  "hub": {
+    "feature": "F77",
+    "global_count": 9,
+    "privacy_ok": true,
+    "tenant_count": null,
+    "top_themes": [
+      "recovery-util-ok",
+      "skill-prefer-memory-cli-early",
+      "sql_injection",
+      "command_injection",
+      "insecure_deserialization"
+    ]
+  }
+}

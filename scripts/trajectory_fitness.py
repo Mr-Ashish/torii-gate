@@ -396,11 +396,65 @@ def score_length(review: str) -> tuple[float, float, int]:
     return conc, penalty, n
 
 
+def _load_scorecard_ops(root: Path | None = None) -> dict[str, Any]:
+    """F134: soft load product scorecard + federated scorecard skill themes."""
+    root = root or _root()
+    out: dict[str, Any] = {
+        "brand_ready": None,
+        "scorecard_skills_n": 0,
+        "fed_n": 0,
+    }
+    for cand in (
+        root / ".torii" / "product-scorecard.json",
+    ):
+        if cand.is_file():
+            try:
+                sc = json.loads(cand.read_text(encoding="utf-8"))
+                out["brand_ready"] = sc.get("brand_ready")
+                out["level"] = sc.get("level")
+                m = sc.get("metrics") or {}
+                out["dual_triple"] = m.get("dual_compound_triple_ready")
+                break
+            except (OSError, json.JSONDecodeError):
+                pass
+    fed = root / "memory" / "federation" / "scorecard-skill-signals.json"
+    if fed.is_file():
+        try:
+            doc = json.loads(fed.read_text(encoding="utf-8"))
+            out["fed_n"] = int(doc.get("count") or len(doc.get("signals") or []))
+            out["scorecard_skills_n"] = len(doc.get("skill_ids") or [])
+            out["privacy_ok"] = doc.get("privacy_ok")
+        except (OSError, json.JSONDecodeError):
+            pass
+    # active scorecard skills on disk
+    active = root / "agent" / "skills" / "active"
+    if active.is_dir():
+        n = sum(
+            1
+            for p in active.glob("skill-prefer-*.md")
+            if any(
+                x in p.stem
+                for x in (
+                    "scorecard",
+                    "demote-eval",
+                    "memory-util",
+                    "workflow",
+                    "hub-gap",
+                    "dual-compound",
+                )
+            )
+        )
+        out["active_scorecard_n"] = n
+        out["scorecard_skills_n"] = max(int(out.get("scorecard_skills_n") or 0), n)
+    return out
+
+
 def compute_fitness(
     review: str,
     *,
     loop: dict[str, Any] | None = None,
     chain: dict[str, Any] | None = None,
+    root: Path | None = None,
 ) -> FitnessScore:
     loop = loop or {}
     chain = chain or {}
@@ -415,6 +469,24 @@ def compute_fitness(
     chain_s, fb = score_chain_quality(chain, review)
     feedback.extend(fb)
     conc, pen, nchars = score_length(review)
+
+    # F134: soft blend scorecard ops readiness into procedure/tool dims (capped)
+    ops = _load_scorecard_ops(root or _root())
+    ops_bonus = 0.0
+    if ops.get("brand_ready") is True:
+        ops_bonus += 0.04
+        feedback.append("f134_scorecard_brand_ready")
+    n_sc = int(ops.get("scorecard_skills_n") or ops.get("active_scorecard_n") or 0)
+    if n_sc >= 1:
+        ops_bonus += min(0.06, 0.02 * n_sc)
+        feedback.append(f"f134_scorecard_skills_n={n_sc}")
+    if ops.get("dual_triple") is True:
+        ops_bonus += 0.02
+        feedback.append("f134_dual_compound_triple")
+    # apply half to procedure, half to tool_use (ops discipline)
+    if ops_bonus > 0:
+        proc_s = _clamp(proc_s + ops_bonus * 0.5)
+        tool_s = _clamp(tool_s + ops_bonus * 0.5)
 
     raw = (
         0.40 * path_s
@@ -449,6 +521,17 @@ def compute_fitness(
                 "chain_quality": 0.15,
             },
             "raw_before_penalty": round(raw, 4),
+            "f134_ops_bonus": round(ops_bonus, 4),
+            "f134_scorecard": {
+                k: ops.get(k)
+                for k in (
+                    "brand_ready",
+                    "scorecard_skills_n",
+                    "active_scorecard_n",
+                    "fed_n",
+                    "dual_triple",
+                )
+            },
         },
         scored_at=_now(),
     )

@@ -103,6 +103,11 @@ if [[ -f "$TORII_ROOT/.torii/product-scorecard.json" ]]; then
 fi
 # F130: memory tool utilization paper pack (Mem0/Letta tool-call discipline)
 copy_if "$OUT_DIR/memory-util-eval.json" "$TRACE_DIR/memory-util-eval.json"
+# F134: federated scorecard skill themes (privacy-safe)
+if [[ -f "$TORII_ROOT/memory/federation/scorecard-skill-signals.json" ]]; then
+  copy_if "$TORII_ROOT/memory/federation/scorecard-skill-signals.json" "$TRACE_DIR/scorecard-skill-signals.json"
+fi
+copy_if "$OUT_DIR/scorecard-skill-signals.json" "$TRACE_DIR/scorecard-skill-signals.out.json"
 copy_if "$OUT_DIR/memory-tool-reprompt.env" "$TRACE_DIR/memory-tool-reprompt.env"
 copy_if "$OUT_DIR/memory-tool-audit.json" "$TRACE_DIR/memory-tool-audit.json"
 copy_if "$OUT_DIR/reprompt-budget.json" "$TRACE_DIR/reprompt-budget.json"

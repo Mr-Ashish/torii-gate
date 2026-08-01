@@ -1,14 +1,14 @@
 # Torii eval-trace report (F83)
 
-Generated: `2026-08-01T07:29:18Z`
+Generated: `2026-08-01T07:35:33Z`
 
 ## Aggregate
 
-- runs: **62** (modal=35, local=27)
+- runs: **63** (modal=35, local=28)
 - log_streaming true: **4**
 - fitness composite n=8
 - composite mean/median/min/max: **0.842** / 0.8494 / 0.77 / 0.8694
-- levels: `{"L2": 4, "L3": 4, "modal-f80-live": 1, "modal-f81-llm-critic": 1, "modal-f82-skills": 1, "modal-f83-pack-eval": 1, "\u2014": 50}`
+- levels: `{"L2": 4, "L3": 4, "modal-f80-live": 1, "modal-f81-llm-critic": 1, "modal-f82-skills": 1, "modal-f83-pack-eval": 1, "\u2014": 51}`
 - models: `deepseek/deepseek-v4-pro`, `fixture`
 
 ## Runs
@@ -77,6 +77,7 @@ Generated: `2026-08-01T07:29:18Z`
 | — | local | — | — | `deepseek/deepseek-v4-pro` | — | — | F131 | `f131-workflow-dual-compound` |
 | — | local | — | — | `deepseek/deepseek-v4-pro` | — | — | F132 | `f132-scorecard-self-evolve` |
 | — | local | — | — | `deepseek/deepseek-v4-pro` | — | — | F133 | `f133-scorecard-dual-adopt` |
+| — | local | — | — | `deepseek/deepseek-v4-pro` | — | — | F134 | `f134-scorecard-federate-fitness` |
 
 ## Notes
 

@@ -184,6 +184,8 @@ budget always → compact body → score tool_hit → util gap? → budgeted re-
 
 **Scorecard dual-gate adopt (F133):** `skill_auto_adopt.py cycle-scorecard` proposes then dual-gate+tool-attr adopts F132 scorecard-gap skills (synthetic allowlisted tool blobs for scorecard/doctor/demote/util/workflow). Default REJECT until gates pass; optional post-run via `TORII_SKILL_AUTO_ADOPT_SCORECARD=1`.
 
+**Scorecard skill federate + fitness blend (F134):** adopted scorecard-gap skills federate as privacy-safe themes (`scorecard-skill-signals.json`); trajectory fitness soft-blends brand_ready / scorecard skill presence into procedure+tool dims so ops readiness compounds into run quality scores.
+
 **Ops:** `python3 scripts/memory_loop_status.py scorecard` → L0–L3. Smoke requires L3 on the hub tree. CI job summary annotates readiness; optional advisory `torii/memory-loop` via `TORII_MEMORY_LOOP_STATUS_COMMIT=1`.
 
 ---

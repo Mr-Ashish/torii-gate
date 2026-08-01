@@ -2,7 +2,7 @@
   "schema_version": 1,
   "feature": "F77",
   "scope": "global",
-  "updated_at": "2026-08-01T06:37:45Z",
+  "updated_at": "2026-08-01T07:36:03Z",
   "count": 9,
   "privacy": "theme_cwe_keywords_basenames_tenant_hash_only",
   "privacy_ok": true,
@@ -22,7 +22,7 @@
         "recovery-util-ok"
       ],
       "path_basenames": [],
-      "hits": 6,
+      "hits": 16,
       "source": "recovery_skill_util",
       "tenant_hashes": [
         "e28384f7c5c5",
@@ -46,7 +46,7 @@
         "tool-hit"
       ],
       "path_basenames": [],
-      "hits": 5,
+      "hits": 15,
       "source": "recovery_skill_util",
       "tenant_hashes": [
         "e28384f7c5c5",
@@ -78,7 +78,7 @@
       "path_basenames": [
         "app.py"
       ],
-      "hits": 298,
+      "hits": 406,
       "source": "f104_integrity_compound",
       "tenant_hashes": [
         "a04cf8718dc6"
@@ -230,7 +230,7 @@
         "idle-recovery"
       ],
       "path_basenames": [],
-      "hits": 4,
+      "hits": 14,
       "source": "recovery_skill_util",
       "tenants": 1
     },
