@@ -27,7 +27,7 @@ Supersession on a sibling file should caution the same theme on co-path. Highest
 - Live: **Modal** pytorch#191813 deepseek/deepseek-v4-pro BIT3_OK ~83s; log_streaming=true; POST_COMMENT=0
 
 ### SHA
-PENDING
+89f0d108bf031e9b8fc67efad7e01a6bf97308a4
 
 ## 2026-08-01 — F101 graph supersede demote in dual-pass critic
 
