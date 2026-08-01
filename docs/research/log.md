@@ -28,7 +28,7 @@ simplicity (#12) · JTBD honesty · GTM
 first GitHub view shows measured cost/latency not only product map
 
 ### SHA
-`(pending push)`
+`13072749c670ab0f89980257ad35719d73f1084c`
 
 
 ## 2026-08-01 — PRODUCT_COST: buyer brief measured dogfood + quieter chart refresh
