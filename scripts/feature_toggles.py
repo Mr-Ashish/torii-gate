@@ -616,6 +616,15 @@ REGISTRY: list[ToggleSpec] = [
         "F102",
     ),
     ToggleSpec(
+        "memory_cli",
+        "TORII_MEMORY_CLI",
+        "bool",
+        True,
+        "product",
+        "F103 unified torii_memory.py front door for Hermes/terminal",
+        "F103",
+    ),
+    ToggleSpec(
         "trace_vault",
         "TORII_TRACE_VAULT",
         "bool",

@@ -98,6 +98,14 @@ LOOP_STAGES: list[dict[str, Any]] = [
         "one_liner": "Zep-style supersede/theme/path edges with validity",
     },
     {
+        "id": "memory_cli",
+        "feature": "F103",
+        "script": "torii_memory.py",
+        # status only — full fixture runs doctor (avoids nested loop fixture)
+        "fixture_cmd": ["status"],
+        "one_liner": "Unified memory CLI front door for agents",
+    },
+    {
         "id": "tp_store",
         "feature": "F70",
         "script": "bench_security_gate.py",
@@ -234,6 +242,13 @@ def assess(root: Path | None = None, *, deep: bool = True) -> dict[str, Any]:
             if (root / "scripts" / "assemble-context.sh").is_file()
             else ""
         ),
+        "assemble_memory_cli": "torii_memory" in (
+            (root / "scripts" / "assemble-context.sh").read_text(
+                encoding="utf-8", errors="replace"
+            )
+            if (root / "scripts" / "assemble-context.sh").is_file()
+            else ""
+        ),
     }
     wire_ok = all(wire.values())
 
@@ -269,7 +284,7 @@ def assess(root: Path | None = None, *, deep: bool = True) -> dict[str, Any]:
     return {
         "feature": FEATURE,
         "schema": SCHEMA,
-        "loop": "write → consolidate → effective_critic → federate → scoped_recall → tiers → archival_search → temporal_graph → tp_store",
+        "loop": "write → consolidate → effective_critic → federate → scoped_recall → tiers → archival_search → temporal_graph → memory_cli → tp_store",
         "scored_at": _now(),
         "level": level,
         "pct": pct,

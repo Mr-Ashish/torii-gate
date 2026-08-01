@@ -483,6 +483,38 @@ try:
 except Exception:
     memory_graph_on = "0"
 
+# F103: unified memory CLI hint for Hermes terminal (soft)
+memory_cli_on = "0"
+try:
+    import sys as _sys_f103
+    _sys_f103.path.insert(0, str(torii_root / "scripts"))
+    from torii_memory import (  # type: ignore
+        enabled as memcli_enabled,
+        render_inject_hint as memcli_hint,
+        MARKER as memcli_marker,
+    )
+
+    if memcli_enabled():
+        _sec = memcli_hint()
+        _pp = Path(os.environ["PROMPT_PATH"])
+        _txt = _pp.read_text(encoding="utf-8") if _pp.is_file() else ""
+        if memcli_marker in _txt:
+            import re as _re_f103
+            _txt = _re_f103.sub(
+                r"<!-- torii-f103-memory-cli -->.*?<!-- /torii-f103-memory-cli -->\n?",
+                _sec,
+                _txt,
+                count=1,
+                flags=_re_f103.S,
+            )
+        else:
+            _txt = _txt.rstrip() + "\n\n" + _sec
+        _pp.write_text(_txt, encoding="utf-8")
+        memory_cli_on = "1"
+        prompt = _txt
+except Exception:
+    memory_cli_on = "0"
+
 # F71: deterministic source→sink prefilter + federated sanitized signals
 taint_prefilter_on = "0"
 taint_candidates = "0"
@@ -793,6 +825,7 @@ meta = {
     "ARCHIVAL_SEARCH_HITS": archival_search_hits,
     "MEMORY_GRAPH": memory_graph_on,
     "MEMORY_GRAPH_EDGES": memory_graph_edges,
+    "MEMORY_CLI": memory_cli_on,
     "TAINT_PREFILTER": taint_prefilter_on,
     "TAINT_CANDIDATES": taint_candidates,
     "FEDERATED_SIGNALS": federated_signals_on,

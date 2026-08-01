@@ -106,6 +106,8 @@ write → consolidate → effective_critic → federate → scoped_recall → ti
 
 **Temporal graph (F100–F102).** Zep-style edges (`supersedes`, `same_theme`, `co_path`) with `valid_from` / `valid_until`. Dual-pass critic **demotes findings that match actively superseded TPs**, with **multi-hop** path kinship (co_path/same_theme) so sibling files inherit resolve caution.
 
+**Agent front door (F103):** `python3 scripts/torii_memory.py help|search|graph|loop|doctor` — one CLI for Hermes/terminal over the whole memory stack.
+
 **Ops:** `python3 scripts/memory_loop_status.py scorecard` → L0–L3. Smoke requires L3 on the hub tree. CI job summary annotates readiness; optional advisory `torii/memory-loop` via `TORII_MEMORY_LOOP_STATUS_COMMIT=1`.
 
 ---

@@ -1,8 +1,8 @@
 {
   "schema_version": 1,
-  "feature": "F102",
+  "feature": "F103",
   "description": "Torii agent tool catalog \u2014 research \u2192 eval \u2192 adopt pipeline",
-  "updated_at": "2026-08-01T03:33:57Z",
+  "updated_at": "2026-08-01T03:41:38Z",
   "tools": [
     {
       "id": "terminal",
@@ -404,6 +404,16 @@
       "script": "scripts/memory_temporal_graph.py",
       "feature": "F102",
       "source": "memory_oss",
+      "adopted_at": "2026-08-01"
+    },
+    {
+      "id": "torii-memory-cli",
+      "name": "Unified torii_memory CLI front door (F103)",
+      "status": "adopted",
+      "script": "scripts/torii_memory.py",
+      "feature": "F103",
+      "source": "loop_engineering",
+      "toolset": "terminal",
       "adopted_at": "2026-08-01"
     }
   ],

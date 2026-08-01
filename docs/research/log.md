@@ -1,6 +1,34 @@
 # Torii research → product log
 
 
+## 2026-08-01 — F103 unified torii_memory CLI for Hermes
+
+### Papers / posts / OSS
+- MemGPT/Letta: memory as explicit agent tools; Torii had many scripts, no front door.
+- Loop-eng: discoverable entrypoints beat tribal SOUL prose.
+
+### OSS / eng patterns
+1. `torii_memory.py` dispatches search/graph/tiers/consolidate/events/recall/loop/federate.
+2. `doctor` soft fixture matrix (shallow loop scorecard — no recursion).
+3. assemble-context inject-hint + skill card points at CLI.
+
+### Insight
+Agents cannot invent the right script. Highest ROI: **one memory front door**.
+
+### Feature shipped (F103)
+- scripts/torii_memory.py help/status/doctor/dispatch/fixture
+- pack + memory_loop stage; PRODUCT agent front door
+
+### Loop-engineering practice used
+**Tools-as-code catalog surface** — help is the API.
+
+### Metric
+- Offline: fixture doctor_ok; memory_loop L3 10/10; 563 pytest; smoke PASS
+- Live: **Modal** pytorch#191813 deepseek/deepseek-v4-pro BIT3_OK ~92s; log_streaming=true; POST_COMMENT=0
+
+### SHA
+PENDING
+
 ## 2026-08-01 — F102 multi-hop co_path → supersede demote
 
 ### Papers / posts / OSS

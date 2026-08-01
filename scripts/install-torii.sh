@@ -174,6 +174,7 @@ RUNTIME_SCRIPTS=(
   memory_tiers.py
   archival_memory_search.py
   memory_temporal_graph.py
+  torii_memory.py
 )
 
 copy_file() {

@@ -11,10 +11,12 @@ title: Archival memory search when cold facts may apply
 
 When the PR touches paths that may match **prior FP/TP or MEMORY.md history**:
 
-1. Prefer the pre-injected **Archival search → core (F98)** section if present.
-2. Or run via terminal (workspace):
-   `python3 scripts/archival_memory_search.py auto --files path1,path2`
-   / `python3 scripts/archival_memory_search.py search -q "theme keywords"`
+1. Prefer the pre-injected **Archival search → core (F98)** and **Memory tools (F103)** sections if present.
+2. Prefer the unified front door (F103) via terminal:
+   `python3 scripts/torii_memory.py help`
+   `python3 scripts/torii_memory.py search -- -q "theme keywords"`
+   `python3 scripts/torii_memory.py search-auto -- --files path1,path2`
+   `python3 scripts/torii_memory.py graph -- query --path path1 --hops 2`
 3. Treat promoted hits as **hints for this PR only** — still require path:line evidence to block.
 4. Do **not** re-raise archival FP themes without new path evidence.
 5. Prefer **core** tier items over archival noise for blocking severity.
