@@ -1,14 +1,14 @@
 # Torii eval-trace report (F83)
 
-Generated: `2026-08-01T02:33:14Z`
+Generated: `2026-08-01T06:12:11Z`
 
 ## Aggregate
 
-- runs: **22** (modal=14, local=8)
+- runs: **50** (modal=35, local=15)
 - log_streaming true: **4**
 - fitness composite n=8
 - composite mean/median/min/max: **0.842** / 0.8494 / 0.77 / 0.8694
-- levels: `{"L2": 4, "L3": 4, "modal-f80-live": 1, "modal-f81-llm-critic": 1, "modal-f82-skills": 1, "modal-f83-pack-eval": 1, "\u2014": 10}`
+- levels: `{"L2": 4, "L3": 4, "modal-f80-live": 1, "modal-f81-llm-critic": 1, "modal-f82-skills": 1, "modal-f83-pack-eval": 1, "\u2014": 38}`
 - models: `deepseek/deepseek-v4-pro`, `fixture`
 
 ## Runs
@@ -37,6 +37,34 @@ Generated: `2026-08-01T02:33:14Z`
 | — | modal | pytorch/pytorch | 191813 | `deepseek/deepseek-v4-pro` | — | — | F91 | `20260801-0220-pytorch-pytorch-PR191813-modal-f91` |
 | — | modal | pytorch/pytorch | 191813 | `deepseek/deepseek-v4-pro` | — | — | F92 | `20260801-0225-pytorch-pytorch-PR191813-modal-f92` |
 | — | modal | pytorch/pytorch | 191813 | `deepseek/deepseek-v4-pro` | — | — | F93 | `20260801-0230-pytorch-pytorch-PR191813-modal-f93` |
+| — | modal | pytorch/pytorch | 191813 | `deepseek/deepseek-v4-pro` | — | — | F94 | `20260801-0235-pytorch-pytorch-PR191813-modal-f94` |
+| — | modal | pytorch/pytorch | 191813 | `deepseek/deepseek-v4-pro` | — | — | F95 | `20260801-0245-pytorch-pytorch-PR191813-modal-f95` |
+| — | modal | pytorch/pytorch | 191813 | `deepseek/deepseek-v4-pro` | — | — | F96 | `20260801-0255-pytorch-pytorch-PR191813-modal-f96` |
+| — | modal | pytorch/pytorch | 191813 | `deepseek/deepseek-v4-pro` | — | — | F97 | `20260801-0305-pytorch-pytorch-PR191813-modal-f97` |
+| — | modal | pytorch/pytorch | 191813 | `deepseek/deepseek-v4-pro` | — | — | F98 | `20260801-0315-pytorch-pytorch-PR191813-modal-f98` |
+| — | modal | pytorch/pytorch | 191813 | `deepseek/deepseek-v4-pro` | — | — | F99 | `20260801-0320-pytorch-pytorch-PR191813-modal-f99` |
+| — | modal | pytorch/pytorch | 191813 | `deepseek/deepseek-v4-pro` | — | — | F100 | `20260801-0330-pytorch-pytorch-PR191813-modal-f100` |
+| — | modal | pytorch/pytorch | 191813 | `deepseek/deepseek-v4-pro` | — | — | F101 | `20260801-0335-pytorch-pytorch-PR191813-modal-f101` |
+| — | modal | pytorch/pytorch | 191813 | `deepseek/deepseek-v4-pro` | — | — | F102 | `20260801-0340-pytorch-pytorch-PR191813-modal-f102` |
+| — | modal | pytorch/pytorch | 191813 | `deepseek/deepseek-v4-pro` | — | — | F103 | `20260801-0345-pytorch-pytorch-PR191813-modal-f103` |
+| — | modal | pytorch/pytorch | 191813 | `deepseek/deepseek-v4-pro` | — | — | F104 | `20260801-0350-pytorch-pytorch-PR191813-modal-f104` |
+| — | modal | pytorch/pytorch | 191813 | `deepseek/deepseek-v4-pro` | — | — | F105 | `20260801-0359-pytorch-pytorch-PR191813-modal-f105` |
+| — | modal | pytorch/pytorch | 191813 | `deepseek/deepseek-v4-pro` | — | — | F106 | `20260801-0407-pytorch-pytorch-PR191813-modal-f106` |
+| — | modal | pytorch/pytorch | 191813 | `deepseek/deepseek-v4-pro` | — | — | F107 | `20260801-0415-pytorch-pytorch-PR191813-modal-f107` |
+| — | modal | pytorch/pytorch | 191813 | `deepseek/deepseek-v4-pro` | — | — | F108 | `20260801-0424-pytorch-pytorch-PR191813-modal-f108` |
+| — | modal | pytorch/pytorch | 191813 | `deepseek/deepseek-v4-pro` | — | — | F109 | `20260801-0429-pytorch-pytorch-PR191813-modal-f109` |
+| — | modal | pytorch/pytorch | 191813 | `deepseek/deepseek-v4-pro` | — | — | F110 | `20260801-0435-pytorch-pytorch-PR191813-modal-f110` |
+| — | modal | pytorch/pytorch | 191813 | `deepseek/deepseek-v4-pro` | — | — | F111 | `20260801-0441-pytorch-pytorch-PR191813-modal-f111` |
+| — | modal | pytorch/pytorch | 191813 | `deepseek/deepseek-v4-pro` | — | — | F112 | `20260801-0448-pytorch-pytorch-PR191813-modal-f112` |
+| — | modal | pytorch/pytorch | 191813 | `deepseek/deepseek-v4-pro` | — | — | F113 | `20260801-0455-pytorch-pytorch-PR191813-modal-f113` |
+| — | modal | — | — | `—` | — | — | F114 | `20260801-0505-pytorch-pytorch-PR191813-modal-f114` |
+| — | local | — | — | `—` | — | — | — | `f115-tool-attr-dual` |
+| — | local | — | — | `—` | — | — | — | `f116-tool-fitness` |
+| — | local | — | — | `—` | — | — | — | `f117-tool-probe-mine` |
+| — | local | — | — | `—` | — | — | — | `f118-tool-dual-gate-adopt` |
+| — | local | — | — | `—` | — | — | — | `f119-always-budget` |
+| — | local | — | — | `—` | — | — | — | `f120-skill-compact` |
+| — | local | — | — | `—` | — | — | — | `f121-recovery-util` |
 
 ## Notes
 

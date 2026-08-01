@@ -1,0 +1,16 @@
+{
+  "feature": "F122",
+  "reprompt": 1,
+  "enabled": true,
+  "reason": "recovery_utilization_gap",
+  "utilization_gap": true,
+  "recovery_injected_n": 1,
+  "tool_hit_n": 0,
+  "tool_call_turns": 4,
+  "already_reprompted": false,
+  "util_rate": 0,
+  "inject_chars": 1354,
+  "idle_ids": [
+    "skill-prefer-product-cli"
+  ]
+}

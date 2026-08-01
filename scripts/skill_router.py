@@ -1431,6 +1431,182 @@ def cmd_util(args: argparse.Namespace) -> int:
     return 0 if report.get("ok") else 1
 
 
+def recovery_reprompt_enabled() -> bool:
+    """F122: soft re-prompt once on recovery util gap (default on)."""
+    raw = (os.environ.get("TORII_RECOVERY_SKILL_REPROMPT") or "1").strip().lower()
+    return raw not in _FALSEY
+
+
+RECOVERY_REPROMPT_MARKER = "<!-- torii-f122-recovery-skill-reprompt -->"
+
+
+def decide_recovery_reprompt(
+    util: dict[str, Any],
+    *,
+    already_reprompted: bool = False,
+    tool_call_turns: int = 0,
+    reprompt_on: bool | None = None,
+) -> dict[str, Any]:
+    """F122: re-prompt when recovery skills injected but no tool hits (after tools ran)."""
+    on = recovery_reprompt_enabled() if reprompt_on is None else bool(reprompt_on)
+    gap = bool(util.get("utilization_gap"))
+    n = int(util.get("recovery_injected_n") or 0)
+    tool_n = int(util.get("tool_hit_n") or 0)
+    out: dict[str, Any] = {
+        "feature": "F122",
+        "reprompt": 0,
+        "enabled": on,
+        "reason": "ok",
+        "utilization_gap": gap,
+        "recovery_injected_n": n,
+        "tool_hit_n": tool_n,
+        "tool_call_turns": tool_call_turns,
+        "already_reprompted": bool(already_reprompted),
+        "util_rate": util.get("util_rate"),
+        "inject_chars": util.get("inject_chars"),
+        "idle_ids": util.get("idle_ids") or [],
+    }
+    if not on:
+        out["reason"] = "reprompt_off"
+        return out
+    if already_reprompted:
+        out["reason"] = "already_reprompted"
+        return out
+    if n < 1:
+        out["reason"] = "no_recovery_injected"
+        return out
+    if tool_n >= 1:
+        out["reason"] = "recovery_tools_used"
+        return out
+    if tool_call_turns < 1:
+        # F49 owns zero-tool recovery
+        out["reason"] = "zero_tools_defer_f49"
+        return out
+    if not gap:
+        out["reason"] = "no_gap"
+        return out
+    out["reprompt"] = 1
+    out["reason"] = "recovery_utilization_gap"
+    return out
+
+
+def build_recovery_reprompt_suffix(
+    *,
+    idle_ids: list[str] | None = None,
+    tool_call_turns: int = 0,
+    inject_chars: int = 0,
+) -> str:
+    idle = idle_ids or sorted(RECOVERY_SKILL_IDS)
+    idle_s = ", ".join(f"`{i}`" for i in idle[:6])
+    return (
+        "\n\n---\n\n"
+        f"{RECOVERY_REPROMPT_MARKER}\n\n"
+        f"## Recovery skill soft re-prompt (F122)\n\n"
+        f"Your previous reply used **{tool_call_turns} tool turns** but **0 recovery "
+        f"skill CLIs** after always-injecting: {idle_s} "
+        f"(inject_chars≈{inject_chars}).\n\n"
+        "Before finalizing, call **at least one** of these once via terminal:\n\n"
+        "```bash\n"
+        "python3 scripts/torii.py memory -- search -- -q \"auth OR sql OR pickle OR secret\"\n"
+        "python3 scripts/torii.py doctor\n"
+        "python3 scripts/second_agent_critic.py score --review REVIEW.md\n"
+        "```\n\n"
+        "Treat memory/doctor hits as **hints only** — still require path:line evidence. "
+        "Then rewrite the review with evidence-backed findings.\n"
+    )
+
+
+def write_recovery_reprompt_prompt(
+    *,
+    prompt_in: Path,
+    prompt_out: Path,
+    idle_ids: list[str] | None = None,
+    tool_call_turns: int = 0,
+    inject_chars: int = 0,
+) -> Path:
+    base = prompt_in.read_text(encoding="utf-8", errors="replace")
+    if RECOVERY_REPROMPT_MARKER in base:
+        text = base
+    else:
+        text = base.rstrip() + build_recovery_reprompt_suffix(
+            idle_ids=idle_ids,
+            tool_call_turns=tool_call_turns,
+            inject_chars=inject_chars,
+        )
+        if not text.endswith("\n"):
+            text += "\n"
+    prompt_out.parent.mkdir(parents=True, exist_ok=True)
+    prompt_out.write_text(text, encoding="utf-8")
+    return prompt_out
+
+
+def cmd_reprompt_decide(args: argparse.Namespace) -> int:
+    """F122: key=value decide whether to soft re-prompt on recovery util gap."""
+    od = Path(args.out_dir) if args.out_dir else Path(os.environ.get("OUT_DIR") or ".")
+    already = False
+    if args.already_env and Path(args.already_env).is_file():
+        txt = Path(args.already_env).read_text(encoding="utf-8", errors="replace")
+        if "attempted=1" in txt or "reprompt=1" in txt:
+            already = True
+    # ensure util scored
+    util = score_recovery_util(od, root=_root())
+    # tool turns from agent-loop if present
+    turns = 0
+    loop = od / "agent-loop" / "agent-loop.json"
+    if not loop.is_file():
+        loop = od / "agent-loop.json"
+    if loop.is_file():
+        try:
+            data = json.loads(loop.read_text(encoding="utf-8"))
+            turns = int(data.get("tool_call_turns") or 0)
+        except (OSError, json.JSONDecodeError, TypeError, ValueError):
+            turns = 0
+    if args.tool_turns is not None:
+        turns = int(args.tool_turns)
+    # score hits if missing so util can see tools
+    if not (od / "skill-hits.json").is_file() and args.review:
+        try:
+            score_hits(
+                Path(args.review),
+                root=_root(),
+                out_dir=od,
+                agent_loop=loop if loop.is_file() else None,
+            )
+            util = score_recovery_util(od, root=_root())
+        except Exception:
+            pass
+    dec = decide_recovery_reprompt(
+        util, already_reprompted=already, tool_call_turns=turns
+    )
+    # key=value for shell (like F106)
+    print(f"reprompt={dec['reprompt']}")
+    print(f"enabled={int(bool(dec['enabled']))}")
+    print(f"reason={dec['reason']}")
+    print(f"utilization_gap={int(bool(dec['utilization_gap']))}")
+    print(f"tool_hit_n={dec['tool_hit_n']}")
+    print(f"recovery_injected_n={dec['recovery_injected_n']}")
+    print(f"tool_call_turns={dec['tool_call_turns']}")
+    print(f"inject_chars={dec.get('inject_chars') or 0}")
+    print(f"util_rate={dec.get('util_rate')}")
+    print(f"idle_ids={','.join(dec.get('idle_ids') or [])}")
+    print("feature=F122")
+    return 0
+
+
+def cmd_reprompt_write(args: argparse.Namespace) -> int:
+    """F122: write nudged prompt for recovery skill re-run."""
+    idle = [x for x in (args.idle_ids or "").split(",") if x.strip()]
+    path = write_recovery_reprompt_prompt(
+        prompt_in=Path(args.prompt_in),
+        prompt_out=Path(args.prompt_out),
+        idle_ids=idle or None,
+        tool_call_turns=int(args.tool_turns or 0),
+        inject_chars=int(args.inject_chars or 0),
+    )
+    print(json.dumps({"feature": "F122", "prompt_out": str(path), "ok": path.is_file()}))
+    return 0 if path.is_file() else 1
+
+
 def cmd_fixture(args: argparse.Namespace) -> int:
     """Hermetic: py paths prefer chain/exploit skills; md-only prefers always; hits score."""
     with tempfile.TemporaryDirectory() as td:
@@ -1856,6 +2032,25 @@ def main(argv: list[str] | None = None) -> int:
     )
     pu.add_argument("--out-dir", default="")
     pu.set_defaults(func=cmd_util)
+
+    prd = sub.add_parser(
+        "reprompt-decide", help="F122 soft re-prompt decide on recovery util gap"
+    )
+    prd.add_argument("--out-dir", default="")
+    prd.add_argument("--review", default="")
+    prd.add_argument("--already-env", default="")
+    prd.add_argument("--tool-turns", type=int, default=None)
+    prd.set_defaults(func=cmd_reprompt_decide)
+
+    prw = sub.add_parser(
+        "reprompt-write", help="F122 write recovery-skill nudged prompt"
+    )
+    prw.add_argument("--prompt-in", required=True)
+    prw.add_argument("--prompt-out", required=True)
+    prw.add_argument("--idle-ids", default="")
+    prw.add_argument("--tool-turns", default="0")
+    prw.add_argument("--inject-chars", default="0")
+    prw.set_defaults(func=cmd_reprompt_write)
 
     ps = sub.add_parser("select", help="Select skills for paths")
     ps.add_argument("--paths", nargs="*", default=None)

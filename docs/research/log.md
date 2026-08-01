@@ -1,6 +1,37 @@
 # Torii research → product log
 
 
+## 2026-08-01 — F122 recovery skill soft re-prompt under F108 budget
+
+### Papers / posts
+- Mem2Act / F106: utilization gap → soft re-prompt once.
+- F108 shared max_extra: F49 + F106 + F122 cannot stack unbounded paid retries.
+- F121: recovery util_rate/gap after always inject — measure without recover was incomplete.
+
+### OSS design patterns stolen
+1. reprompt-decide/write for recovery idle CLIs (doctor/memory/critic).
+2. F108 kind `f122` shares TORII_REPROMPT_MAX_EXTRA (default 1).
+3. Defer to F49 when tool_call_turns=0; no double storm.
+4. EVAL-REPORT paper table for inject_chars + util_rate + re-prompt decide.
+
+### Insight
+F121 demote alone is passive. Highest ROI: budgeted soft re-prompt that forces recovery tool use before the review freezes.
+
+### Feature shipped (F122)
+- `skill_router.py` reprompt-decide / reprompt-write
+- `reprompt_budget.py` kind f122
+- `run-hermes-review.sh` F122 soft re-run path
+- EVAL-REPORT F120–F122 metrics; traces `f122-recovery-reprompt/`
+
+### Metric
+- Offline: decide reprompt=1 on gap; budget blocks f122 after f49; fixture_pass
+- pytest 600; smoke PASS; Modal pytorch#191813 BIT3_OK ~54s log_streaming=true POST_COMMENT=0
+
+### Loop-engineering / Hermes practice used
+**Budgeted recovery loop** — one extra paid attempt max, kind-once accounting.
+
+### SHA
+`a52678dda2ce4fe559e9ca369f44a6a26f22fe6d`
 ## 2026-08-01 — F121 recovery skill utilization critic (inject ≠ tools)
 
 ### Papers / posts

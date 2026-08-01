@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""F108: Shared soft-re-prompt budget across F49 + F106 (cost control).
+"""F108: Shared soft-re-prompt budget across F49 + F106 + F122 (cost control).
 
 Research drivers:
   - Agent cost guides (2026): multi-turn re-prompts double LLM spend; need kill
@@ -16,7 +16,7 @@ Product thesis:
 
 Commands:
   init     — write budget state file for a run
-  allow    — decide if kind (f49|f106) may re-prompt (stdout key=value)
+  allow    — decide if kind (f49|f106|f122) may re-prompt (stdout key=value)
   consume  — record a successful/attempted re-prompt
   status   — show state
   fixture  — hermetic: max=1 allows first, blocks second
@@ -40,7 +40,8 @@ from typing import Any
 FEATURE = "F108"
 SCHEMA = 1
 STATE_NAME = "reprompt-budget.json"
-KINDS = frozenset({"f49", "f106", "other"})
+# f122 = recovery skill util re-prompt (F121 gap → soft re-run)
+KINDS = frozenset({"f49", "f106", "f122", "other"})
 
 _FALSEY = frozenset({"0", "false", "no", "off", "disabled", "n", "none", ""})
 
@@ -302,6 +303,7 @@ def cmd_fixture(args: argparse.Namespace) -> int:
         d2 = decide_allow(load_state(path), kind="f106")
         # kind already f49 used; f106 should be blocked by budget
         d3 = decide_allow(load_state(path), kind="f49")  # same kind blocked
+        d122 = decide_allow(load_state(path), kind="f122")  # also blocked at max=1
 
         # max=2 allows both kinds
         os.environ["TORII_REPROMPT_MAX_EXTRA"] = "2"
@@ -324,14 +326,24 @@ def cmd_fixture(args: argparse.Namespace) -> int:
         off = decide_allow(new_state(max_n=5), kind="f49")
         os.environ["TORII_REPROMPT_BUDGET"] = "1"
 
+        # max=2 also allows f122 as third would exhaust — use fresh max=2 for f122 after f49 only
+        path3 = td_path / "b3.json"
+        st3 = new_state(max_n=2)
+        save_state(path3, st3)
+        st3 = consume(load_state(path3), kind="f49")
+        save_state(path3, st3)
+        a122 = decide_allow(load_state(path3), kind="f122")
+
         ok = all(
             [
                 d1.get("allow") == 1,
                 d2.get("allow") == 0 and d2.get("reason") == "budget_exhausted",
                 d3.get("allow") == 0,  # kind already or exhausted
+                d122.get("allow") == 0,  # F122 blocked when budget used by f49
                 a1.get("allow") == 1,
                 a2.get("allow") == 1,
                 a3.get("allow") == 0,  # exhausted after 2
+                a122.get("allow") == 1,  # f122 allowed when slot remains
                 z.get("allow") == 0,
                 off.get("allow") == 0 and off.get("reason") == "budget_off",
             ]

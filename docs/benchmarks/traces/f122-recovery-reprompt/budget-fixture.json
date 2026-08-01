@@ -1,0 +1,10 @@
+{
+  "feature": "F108",
+  "fixture_pass": true,
+  "max1_first_allow": 1,
+  "max1_second_block_reason": "budget_exhausted",
+  "max2_both_allow": true,
+  "max0_block": "max_extra_zero",
+  "budget_off": "budget_off",
+  "scored_at": "2026-08-01T06:12:51Z"
+}

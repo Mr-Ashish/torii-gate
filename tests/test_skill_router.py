@@ -288,5 +288,50 @@ class SkillRouterTests(unittest.TestCase):
             self.assertTrue((od / "recovery-skill-util.json").is_file())
 
 
+    def test_f122_recovery_reprompt_decide(self):
+        """F122: reprompt-decide fires on util gap with tools; defers zero tools."""
+        with tempfile.TemporaryDirectory() as td:
+            od = Path(td)
+            (od / "skill-router.json").write_text(
+                json.dumps(
+                    {
+                        "selected": ["skill-prefer-product-cli"],
+                        "always_selected": ["skill-prefer-product-cli"],
+                        "inject_chars": 400,
+                    }
+                ),
+                encoding="utf-8",
+            )
+            (od / "skill-hits.json").write_text(
+                json.dumps(
+                    {
+                        "hits": [
+                            {
+                                "id": "skill-prefer-product-cli",
+                                "hit": False,
+                                "tool_hit": False,
+                            }
+                        ]
+                    }
+                ),
+                encoding="utf-8",
+            )
+            (od / "agent-loop").mkdir()
+            (od / "agent-loop" / "agent-loop.json").write_text(
+                json.dumps({"tool_call_turns": 3}), encoding="utf-8"
+            )
+            r = _run(["reprompt-decide", "--out-dir", str(od)])
+            self.assertEqual(r.returncode, 0, r.stderr + r.stdout)
+            self.assertIn("reprompt=1", r.stdout)
+            self.assertIn("feature=F122", r.stdout)
+            # zero tools defers
+            (od / "agent-loop" / "agent-loop.json").write_text(
+                json.dumps({"tool_call_turns": 0}), encoding="utf-8"
+            )
+            r2 = _run(["reprompt-decide", "--out-dir", str(od), "--tool-turns", "0"])
+            self.assertIn("reprompt=0", r2.stdout)
+            self.assertIn("zero_tools_defer_f49", r2.stdout)
+
+
 if __name__ == "__main__":
     unittest.main()

@@ -1009,6 +1009,214 @@ else
   } >"$OUT_DIR/memory-tool-reprompt.env" || true
 fi
 
+# ---------------------------------------------------------------------------
+# F122: soft re-prompt once when recovery always-skills injected but idle
+# (F121 util gap). Complements F106; F108 shared budget may block after F49/F106.
+# ---------------------------------------------------------------------------
+REC_REPROMPT_ATTEMPTED=0
+REC_REPROMPT_RECOVERED=0
+REC_REPROMPT_REASON="skipped"
+SKILL_ROUTER_HELPER="$TORII_ROOT/scripts/skill_router.py"
+if [[ -f "$SKILL_ROUTER_HELPER" && $TIMED_OUT -eq 0 && "${HERMES_CLI_ARGV_BROKEN:-0}" -eq 0 && -s "$RAW_OUT" ]]; then
+  case "${TORII_RECOVERY_SKILL_REPROMPT:-1}" in
+    0|false|no|off)
+      {
+        echo "reprompt=0"
+        echo "enabled=0"
+        echo "reason=reprompt_off"
+        echo "attempted=0"
+        echo "recovered=0"
+        echo "feature=F122"
+      } >"$OUT_DIR/recovery-skill-reprompt.env" || true
+      ;;
+    *)
+      # Score hits + util from this run's agent-loop
+      _rec_score_args=(score --review "$RAW_OUT" --out-dir "$OUT_DIR")
+      [[ -f "$LOOP_DIR/agent-loop.json" ]] && _rec_score_args+=(--agent-loop "$LOOP_DIR/agent-loop.json")
+      [[ -f "$LOOP_DIR/agent.log" ]] && _rec_score_args+=(--log "$LOOP_DIR/agent.log")
+      python3 "$SKILL_ROUTER_HELPER" "${_rec_score_args[@]}" >/dev/null 2>&1 || true
+      python3 "$SKILL_ROUTER_HELPER" util --out-dir "$OUT_DIR" >/dev/null 2>&1 || true
+      _rrp_args=(reprompt-decide --out-dir "$OUT_DIR" --review "$RAW_OUT")
+      [[ -f "$OUT_DIR/recovery-skill-reprompt.env" ]] && _rrp_args+=(--already-env "$OUT_DIR/recovery-skill-reprompt.env")
+      _rrp_kv="$(python3 "$SKILL_ROUTER_HELPER" "${_rrp_args[@]}" 2>/dev/null || true)"
+      _rrp_do="$(printf '%s\n' "$_rrp_kv" | sed -n 's/^reprompt=//p' | head -1)"
+      REC_REPROMPT_REASON="$(printf '%s\n' "$_rrp_kv" | sed -n 's/^reason=//p' | head -1)"
+      _rrp_tt="$(printf '%s\n' "$_rrp_kv" | sed -n 's/^tool_call_turns=//p' | head -1)"
+      _rrp_idle="$(printf '%s\n' "$_rrp_kv" | sed -n 's/^idle_ids=//p' | head -1)"
+      _rrp_ichars="$(printf '%s\n' "$_rrp_kv" | sed -n 's/^inject_chars=//p' | head -1)"
+      if [[ "$_rrp_do" == "1" || "$_rrp_do" == "true" ]] && [[ -f "$REPROMPT_BUDGET_HELPER" ]]; then
+        _rbud_kv="$(python3 "$REPROMPT_BUDGET_HELPER" allow --out-dir "$OUT_DIR" --kind f122 2>/dev/null || true)"
+        _rbud_allow="$(printf '%s\n' "$_rbud_kv" | sed -n 's/^allow=//p' | head -1)"
+        if [[ "$_rbud_allow" != "1" && "$_rbud_allow" != "true" ]]; then
+          _rbud_reason="$(printf '%s\n' "$_rbud_kv" | sed -n 's/^reason=//p' | head -1)"
+          notice "F108 re-prompt budget blocked F122 · reason=${_rbud_reason:-budget}"
+          REC_REPROMPT_REASON="budget_blocked:${_rbud_reason:-exhausted}"
+          _rrp_do="0"
+        fi
+      fi
+      if [[ "$_rrp_do" == "1" || "$_rrp_do" == "true" ]]; then
+        REC_REPROMPT_ATTEMPTED=1
+        notice "F122 recovery soft re-prompt · idle=${_rrp_idle:-?} tool_turns=${_rrp_tt:-?} (recovery_utilization_gap)"
+        if [[ -f "$REPROMPT_BUDGET_HELPER" ]]; then
+          python3 "$REPROMPT_BUDGET_HELPER" consume --out-dir "$OUT_DIR" --kind f122 --note "attempt_start" >/dev/null 2>&1 || true
+        fi
+        if [[ ! -f "$OUT_DIR/review-${PR_NUMBER}.attempt1.raw.md" ]]; then
+          cp -f "$RAW_OUT" "$OUT_DIR/review-${PR_NUMBER}.attempt1.raw.md" 2>/dev/null || true
+          [[ -d "$LOOP_DIR" ]] && rm -rf "$OUT_DIR/agent-loop-attempt1" && cp -a "$LOOP_DIR" "$OUT_DIR/agent-loop-attempt1" 2>/dev/null || true
+        fi
+        _rrp_base="$PROMPT_PATH"
+        [[ -s "$OUT_DIR/prompt-memory-reprompt.md" ]] && _rrp_base="$OUT_DIR/prompt-memory-reprompt.md"
+        [[ -s "$OUT_DIR/prompt-reprompt.md" ]] && _rrp_base="$OUT_DIR/prompt-reprompt.md"
+        REC_REPROMPT_PROMPT="$OUT_DIR/prompt-recovery-reprompt.md"
+        python3 "$SKILL_ROUTER_HELPER" reprompt-write \
+          --prompt-in "$_rrp_base" \
+          --prompt-out "$REC_REPROMPT_PROMPT" \
+          --idle-ids "${_rrp_idle:-}" \
+          --tool-turns "${_rrp_tt:-0}" \
+          --inject-chars "${_rrp_ichars:-0}" >/dev/null 2>&1 || true
+        if [[ -s "$REC_REPROMPT_PROMPT" ]]; then
+          PROMPT="$(cat "$REC_REPROMPT_PROMPT")"
+          LOG_OFFSET=0
+          if [[ -f "$LOG_FILE" ]]; then
+            LOG_OFFSET=$(wc -c <"$LOG_FILE" | tr -d ' ')
+          fi
+          echo "$LOG_OFFSET" >"$OUT_DIR/hermes-log-offset-recovery-reprompt.txt" || true
+          STDERR_FILE_RRP="$OUT_DIR/hermes-${PR_NUMBER}.recovery-reprompt.stderr"
+          set +e
+          (
+            cd "$WORKSPACE_ROOT"
+            if [[ $STREAM_LOGS -eq 1 ]]; then
+              _hermes_wrap hermes -z "$PROMPT" \
+                --provider openrouter \
+                --model "$MODEL" \
+                -t "$TOOLSETS" \
+                --usage-file "$USAGE_FILE" \
+                >"$RAW_OUT" 2> >(tee -a "$STDERR_FILE_RRP" >&2)
+            else
+              _hermes_wrap hermes -z "$PROMPT" \
+                --provider openrouter \
+                --model "$MODEL" \
+                -t "$TOOLSETS" \
+                --usage-file "$USAGE_FILE" \
+                >"$RAW_OUT" 2>"$STDERR_FILE_RRP"
+            fi
+          )
+          RC_RRP=$?
+          set -e
+          if [[ $RC_RRP -eq 124 ]]; then
+            notice "F122 recovery re-prompt TIMED OUT — keeping prior body"
+            if [[ -f "$OUT_DIR/review-${PR_NUMBER}.attempt1.raw.md" ]]; then
+              cp -f "$OUT_DIR/review-${PR_NUMBER}.attempt1.raw.md" "$RAW_OUT"
+            fi
+            REC_REPROMPT_REASON="reprompt_timeout"
+            TIMED_OUT=1
+            {
+              echo "reprompt=1"
+              echo "enabled=1"
+              echo "reason=reprompt_timeout"
+              echo "attempted=1"
+              echo "recovered=0"
+              echo "feature=F122"
+            } >"$OUT_DIR/recovery-skill-reprompt.env" || true
+          elif [[ $RC_RRP -ne 0 || ! -s "$RAW_OUT" ]]; then
+            notice "F122 recovery re-prompt failed/empty (rc=$RC_RRP) — keeping prior body"
+            if [[ -f "$OUT_DIR/review-${PR_NUMBER}.attempt1.raw.md" ]]; then
+              cp -f "$OUT_DIR/review-${PR_NUMBER}.attempt1.raw.md" "$RAW_OUT"
+            fi
+            {
+              echo "reprompt=1"
+              echo "enabled=1"
+              echo "reason=reprompt_failed"
+              echo "attempted=1"
+              echo "recovered=0"
+              echo "feature=F122"
+            } >"$OUT_DIR/recovery-skill-reprompt.env" || true
+          else
+            RC=$RC_RRP
+            if [[ -s "$STDERR_FILE_RRP" ]]; then
+              {
+                echo ""
+                echo "===== F122 recovery soft re-prompt stderr ====="
+                cat "$STDERR_FILE_RRP"
+              } >>"$STDERR_FILE" 2>/dev/null || true
+            fi
+            if [[ -f "$LOG_FILE" ]]; then
+              python3 - <<'PY' "$LOG_FILE" "$OUT_DIR/hermes-run.log" "$LOG_OFFSET"
+import sys
+from pathlib import Path
+src, dest, off = Path(sys.argv[1]), Path(sys.argv[2]), int(sys.argv[3] or 0)
+data = src.read_bytes()
+chunk = data[off:] if off < len(data) else data[-200_000:]
+dest.write_bytes(chunk)
+print(f"hermes-run.log (recovery-reprompt) bytes={len(chunk)}", file=sys.stderr)
+PY
+            fi
+            export HERMES_LOG_OFFSET="$LOG_OFFSET"
+            rm -rf "$LOOP_DIR"
+            mkdir -p "$LOOP_DIR"
+            python3 "$TORII_ROOT/scripts/capture-hermes-loop.py" || notice "capture-hermes-loop (recovery-reprompt) soft-failed"
+            # re-score util after re-run
+            _rec_score2=(score --review "$RAW_OUT" --out-dir "$OUT_DIR")
+            [[ -f "$LOOP_DIR/agent-loop.json" ]] && _rec_score2+=(--agent-loop "$LOOP_DIR/agent-loop.json")
+            python3 "$SKILL_ROUTER_HELPER" "${_rec_score2[@]}" >/dev/null 2>&1 || true
+            _util_after="$(python3 "$SKILL_ROUTER_HELPER" util --out-dir "$OUT_DIR" 2>/dev/null || true)"
+            _tool_after="$(printf '%s\n' "$_util_after" | python3 -c 'import sys,json
+try:
+ d=json.load(sys.stdin); print(int(d.get("tool_hit_n") or 0))
+except Exception:
+ print(0)' 2>/dev/null || echo 0)"
+            if [[ "${_tool_after:-0}" -ge 1 ]] 2>/dev/null; then
+              REC_REPROMPT_RECOVERED=1
+              notice "F122 recovery re-prompt recovered tool_hit_n=${_tool_after}"
+              if [[ -f "$REPROMPT_BUDGET_HELPER" ]]; then
+                python3 "$REPROMPT_BUDGET_HELPER" consume --out-dir "$OUT_DIR" --kind f122 --recovered --note "tool_hits→${_tool_after}" >/dev/null 2>&1 || true
+              fi
+            else
+              notice "F122 recovery re-prompt still tool_hit_n=${_tool_after:-0}"
+            fi
+            {
+              echo "reprompt=1"
+              echo "enabled=1"
+              echo "reason=${REC_REPROMPT_REASON:-recovery_utilization_gap}"
+              echo "attempted=1"
+              echo "recovered=$REC_REPROMPT_RECOVERED"
+              echo "tool_hit_n_after=${_tool_after:-}"
+              echo "feature=F122"
+            } >"$OUT_DIR/recovery-skill-reprompt.env" || true
+          fi
+        else
+          {
+            echo "reprompt=0"
+            echo "enabled=1"
+            echo "reason=prompt_write_failed"
+            echo "attempted=0"
+            echo "recovered=0"
+            echo "feature=F122"
+          } >"$OUT_DIR/recovery-skill-reprompt.env" || true
+        fi
+      else
+        {
+          echo "reprompt=0"
+          echo "enabled=1"
+          echo "reason=${REC_REPROMPT_REASON:-skipped}"
+          echo "attempted=0"
+          echo "recovered=0"
+          echo "feature=F122"
+        } >"$OUT_DIR/recovery-skill-reprompt.env" || true
+      fi
+      ;;
+  esac
+else
+  {
+    echo "reprompt=0"
+    echo "enabled=${TORII_RECOVERY_SKILL_REPROMPT:-1}"
+    echo "reason=preconditions_not_met"
+    echo "attempted=0"
+    echo "recovered=0"
+    echo "feature=F122"
+  } >"$OUT_DIR/recovery-skill-reprompt.env" || true
+fi
+
 # F46 / H13: detect Hermes actually blocking SOUL.md at load time
 # F48 / H16: only scan *this invocation* artifacts (offset-sliced hermes-run.log +
 # stderr). Do NOT scan the full Hermes agent.log / errors.log history — capture

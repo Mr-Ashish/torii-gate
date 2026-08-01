@@ -140,6 +140,8 @@ compound → write → consolidate → effective_critic → federate → scoped_
 
 **Recovery skill utilization (F121):** post-run measure inject_chars + tool_hit for always recovery skills; idle recovery tools set utilization_gap and soft-demote APPROVE in the second-agent critic panel.
 
+**Recovery soft re-prompt (F122):** on F121 gap with tool_turns≥1, soft re-prompt once under shared F108 budget (kind `f122`) to force doctor/memory/critic CLIs.
+
 **Ops:** `python3 scripts/memory_loop_status.py scorecard` → L0–L3. Smoke requires L3 on the hub tree. CI job summary annotates readiness; optional advisory `torii/memory-loop` via `TORII_MEMORY_LOOP_STATUS_COMMIT=1`.
 
 ---
