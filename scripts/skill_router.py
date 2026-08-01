@@ -1120,6 +1120,7 @@ def post_score_refine_dual_hub(
                             ent.get("local_revive_pending_mt")
                         )
                         se["free_rider_revive_blocked"] = bool(mt_free_rider)
+                        se["revive_pp_blocked"] = bool(ent.get("revive_pp_blocked"))
                         se["promoted"] = (not mt_free_rider) and bool(
                             ent.get("multi_tenant_revive") or ent.get("refine_dual_revived")
                         )
@@ -1270,6 +1271,17 @@ def render_refine_dual_hub_section(hub: dict[str, Any]) -> str:
         lines.append(
             f"- **F176 free-rider revive gate** on {free_n} skill(s) — local dual_pass alone "
             "cannot clear multi-tenant decay; wait for multi-tenant revive promote before full always re-boost."
+        )
+    pp_n = sum(
+        1
+        for e in (skills.values() if isinstance(skills, dict) else [])
+        if isinstance(e, dict) and e.get("revive_pp_blocked")
+    )
+    # also surface from fitness ledger via hub skills util_rate_bin pending already
+    if pp_n >= 1:
+        lines.append(
+            f"- **F177 revive contribution_pp floor** on {pp_n} skill(s) — dual_pass without "
+            "min tool_pp does not re-enter always budget (SkillOpt validation gate)."
         )
     if hub.get("high_fail"):
         lines.append(

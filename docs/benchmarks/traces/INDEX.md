@@ -112,3 +112,5 @@ Paper/eval-safe slim traces (redacted). Large raw logs may be gitignored; always
 | F175 | dual_pass revive after multi-tenant decay | f175-refine-dual-pass-revive | refine_loop_ok + multi-tenant re-boost |
 
 | F176 | free-rider multi-tenant dual_pass revive gate | `f176-free-rider-revive-gate/` | Modal pytorch#191836 BIT3_OK ~49s |
+
+| F177 | revive contribution_pp floor (SkillOpt) | `f177-revive-pp-floor/` | Modal pytorch#191836 BIT3_OK ~50s |

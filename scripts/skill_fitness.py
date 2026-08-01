@@ -131,6 +131,20 @@ def refine_dual_revive_mt_gate_enabled() -> bool:
     return raw not in _FALSEY
 
 
+def refine_dual_revive_pp_gate_enabled() -> bool:
+    """F177: SkillOpt-style contribution_pp floor for dual_pass revive re-entry."""
+    raw = (os.environ.get("TORII_SKILL_FITNESS_REVIVE_PP_GATE") or "1").strip().lower()
+    return raw not in _FALSEY
+
+
+def refine_dual_revive_min_pp() -> float:
+    """F177: min refine_tool_contribution_pp to revive (default 10)."""
+    try:
+        return float(os.environ.get("TORII_REFINE_REVIVE_MIN_PP") or "10")
+    except (TypeError, ValueError):
+        return 10.0
+
+
 def refine_dual_fail_thr() -> float:
     """F171: dual_fail_rate ≥ thr after min samples → decay (default 0.67)."""
     try:
@@ -631,37 +645,50 @@ def ingest_refine_dual(
                 and prior_decay
                 and (rate_ok or streak_ok)
             ):
-                boost = 12 + min(12, int(max(0.0, tool_pp) / 10))
-                mt_sticky = bool(
-                    e.get("multi_tenant_decay")
-                    or int(e.get("multi_tenant_decay_tenants") or 0) >= 2
-                )
-                e["refine_dual_revived"] = True
-                e["last_refine_revive_at"] = _now()
-                e["last_refine_decayed"] = False
-                e["refine_priority_decay"] = 0
-                e["demoted"] = False
-                e["gepa_refined"] = True  # restore F166 refine shield eligibility
-                if mt_sticky and refine_dual_revive_mt_gate_enabled():
-                    # F176: local dual_pass proves recovery fuel but cannot free-ride clear
-                    # multi-tenant decay / full always re-boost until FederatedSkill promote
-                    e["local_revive_pending_mt"] = True
-                    e["multi_tenant_decay"] = True  # sticky until promote_refine_dual_revive
-                    # soft local signal only (half boost, floor +4) — not full always re-entry
-                    soft = max(4, boost // 2)
-                    e["hub_priority_delta"] = max(
-                        min(int(e.get("hub_priority_delta") or 0), soft), soft
-                    )
-                    e["free_rider_revive_blocked"] = True
-                    e["feature_revive_gate"] = "F176"
+                min_pp = refine_dual_revive_min_pp()
+                pp_gate = refine_dual_revive_pp_gate_enabled()
+                # F177: SkillOpt validation — dual_pass without enough tool_pp is not revive
+                if pp_gate and float(tool_pp) < float(min_pp):
+                    e["revive_pp_blocked"] = True
+                    e["last_revive_pp_blocked"] = float(tool_pp)
+                    e["last_revive_pp_floor"] = float(min_pp)
+                    e["feature_revive_pp_gate"] = "F177"
+                    # keep decay/sticky state; do not re-enter always budget
                 else:
-                    e["multi_tenant_decay"] = False
-                    e["local_revive_pending_mt"] = False
-                    e["free_rider_revive_blocked"] = False
-                    e["hub_priority_delta"] = max(
-                        int(e.get("hub_priority_delta") or 0), boost
+                    boost = 12 + min(12, int(max(0.0, tool_pp) / 10))
+                    mt_sticky = bool(
+                        e.get("multi_tenant_decay")
+                        or int(e.get("multi_tenant_decay_tenants") or 0) >= 2
                     )
-                revived.append(sid)
+                    e["refine_dual_revived"] = True
+                    e["last_refine_revive_at"] = _now()
+                    e["last_refine_decayed"] = False
+                    e["refine_priority_decay"] = 0
+                    e["demoted"] = False
+                    e["gepa_refined"] = True  # restore F166 refine shield eligibility
+                    e["revive_pp_blocked"] = False
+                    e["last_revive_tool_pp"] = float(tool_pp)
+                    e["feature_revive_pp_gate"] = "F177"
+                    if mt_sticky and refine_dual_revive_mt_gate_enabled():
+                        # F176: local dual_pass proves recovery fuel but cannot free-ride clear
+                        # multi-tenant decay / full always re-boost until FederatedSkill promote
+                        e["local_revive_pending_mt"] = True
+                        e["multi_tenant_decay"] = True  # sticky until promote_refine_dual_revive
+                        # soft local signal only (half boost, floor +4) — not full always re-entry
+                        soft = max(4, boost // 2)
+                        e["hub_priority_delta"] = max(
+                            min(int(e.get("hub_priority_delta") or 0), soft), soft
+                        )
+                        e["free_rider_revive_blocked"] = True
+                        e["feature_revive_gate"] = "F176"
+                    else:
+                        e["multi_tenant_decay"] = False
+                        e["local_revive_pending_mt"] = False
+                        e["free_rider_revive_blocked"] = False
+                        e["hub_priority_delta"] = max(
+                            int(e.get("hub_priority_delta") or 0), boost
+                        )
+                    revived.append(sid)
         ingested += 1
     ledger["last_refine_dual_ingest"] = {
         "at": _now(),
@@ -1228,7 +1255,13 @@ def promote_refine_dual_revive(
     for sid, ent in by_sid.items():
         tenants = len(ent["tenant_hashes"])
         hits = int(ent["hits"])
-        if tenants >= min_t and hits >= min_h and float(ent["pass_rate"]) >= 0.34:
+        min_pp = refine_dual_revive_min_pp() if refine_dual_revive_pp_gate_enabled() else 0.0
+        if (
+            tenants >= min_t
+            and hits >= min_h
+            and float(ent["pass_rate"]) >= 0.34
+            and float(ent["tool_pp"]) >= float(min_pp)
+        ):
             boost = max(int(ent["boost"] or 12), 16 + min(12, 4 * tenants))
             if float(ent["tool_pp"]) >= 50:
                 boost += 8
@@ -2593,6 +2626,12 @@ def main(argv: list[str] | None = None) -> int:
     )
     pfix.set_defaults(func=cmd_fixture_refine_revive)
 
+    pfrpp = sub.add_parser(
+        "fixture-refine-revive-pp",
+        help="F177 hermetic: contribution_pp floor for dual_pass revive",
+    )
+    pfrpp.set_defaults(func=cmd_fixture_refine_revive_pp)
+
     pha = sub.add_parser(
         "ingest-hub-archival",
         help="F158 fold recovery hub-archival util gap/hit into fitness ledger",
@@ -2908,6 +2947,153 @@ def cmd_fixture_refine_revive(args: argparse.Namespace) -> int:
     }
     print(json.dumps(out, indent=2))
     return 0 if fixture_pass else 1
+
+
+def cmd_fixture_refine_revive_pp(args: argparse.Namespace) -> int:
+    """F177 hermetic: low tool_pp dual_pass does not revive; min_pp+ does."""
+    del args
+    root = _root()
+    sid = "skill-prefer-hub-archival-early"
+    os.environ["TORII_SKILL_FITNESS_REFINE_DUAL_DECAY"] = "1"
+    os.environ["TORII_SKILL_FITNESS_REFINE_DUAL_REVIVE"] = "1"
+    os.environ["TORII_SKILL_FITNESS_REVIVE_PP_GATE"] = "1"
+    os.environ["TORII_REFINE_REVIVE_MIN_PP"] = "10"
+    os.environ["TORII_SKILL_FITNESS_MIN_N"] = "3"
+    os.environ["TORII_SKILL_FITNESS_REFINE_DUAL_FAIL_THR"] = "0.67"
+    ledger = load_ledger(ledger_path(root))
+    skills = ledger.setdefault("skills", {})
+    skills[sid] = {
+        "id": sid,
+        "refine_dual_selected_n": 3,
+        "refine_dual_fail_n": 3,
+        "refine_dual_pass_n": 0,
+        "refine_dual_fail_rate": 1.0,
+        "refine_dual_pass_rate": 0.0,
+        "refine_dual_chronic_fail": True,
+        "last_refine_decayed": True,
+        "multi_tenant_decay": False,
+        "multi_tenant_decay_tenants": 0,
+        "refine_priority_decay": -25,
+        "hub_priority_delta": -20,
+        "demoted": True,
+        "gepa_refined": True,
+        "selected_n": 3,
+    }
+    save_ledger(ledger, ledger_path(root))
+    fed_dir = root / "memory" / "federation"
+    fed_dir.mkdir(parents=True, exist_ok=True)
+    for name in (
+        "skill-refine-dual-revive-signals.json",
+        "promoted-refine-dual-revive-themes.json",
+    ):
+        fp = fed_dir / name
+        if fp.is_file():
+            try:
+                fp.unlink()
+            except OSError:
+                pass
+
+    for _ in range(4):
+        rep = {
+            "refine_dual_pass": True,
+            "refine_tool_contribution_pp": 5.0,
+            "refine_probe_delta": 1,
+            "refined_skill_ids": [sid],
+            "selected": [sid],
+        }
+        ingest_refine_dual(rep, root=root, save=True)
+    ledger = load_ledger(ledger_path(root))
+    ent = (ledger.get("skills") or {}).get(sid) or {}
+    blocked_ok = bool(
+        ent.get("revive_pp_blocked")
+        and not ent.get("refine_dual_revived")
+        and int(ent.get("hub_priority_delta") or 0) <= 0
+    )
+
+    for _ in range(4):
+        rep = {
+            "refine_dual_pass": True,
+            "refine_tool_contribution_pp": 50.0,
+            "refine_probe_delta": 1,
+            "refined_skill_ids": [sid],
+            "selected": [sid],
+        }
+        ingest_refine_dual(rep, root=root, save=True)
+    ledger2 = load_ledger(ledger_path(root))
+    ent2 = (ledger2.get("skills") or {}).get(sid) or {}
+    revive_ok = bool(
+        ent2.get("refine_dual_revived")
+        and not ent2.get("revive_pp_blocked")
+        and int(ent2.get("hub_priority_delta") or 0) > 0
+        and float(ent2.get("last_revive_tool_pp") or 0) >= 10
+    )
+
+    th_a = _tenant_hash_fitness(root)
+    th_b = "fixture-tenant-b12"
+    fed_path = fed_dir / "skill-refine-dual-revive-signals.json"
+
+    def _write_sigs(tool_pp: float) -> None:
+        nl = chr(10)
+        doc = {
+            "schema_version": SCHEMA,
+            "feature": "F177",
+            "scope": "skill_refine_dual_revive",
+            "privacy_ok": True,
+            "signals": [
+                {
+                    "id": f"pp{tool_pp}-{sid}-a",
+                    "theme": sid,
+                    "skill_id": sid,
+                    "tags": ["refine_dual_revive", "f177"],
+                    "hits": 2,
+                    "tenant_hash": th_a,
+                    "tenant_hashes": [th_a],
+                    "pass_rate": 0.8,
+                    "tool_pp": tool_pp,
+                    "boost": 16,
+                    "dual_pass": True,
+                },
+                {
+                    "id": f"pp{tool_pp}-{sid}-b",
+                    "theme": sid,
+                    "skill_id": sid,
+                    "tags": ["refine_dual_revive", "f177"],
+                    "hits": 2,
+                    "tenant_hash": th_b,
+                    "tenant_hashes": [th_b],
+                    "pass_rate": 0.8,
+                    "tool_pp": tool_pp,
+                    "boost": 16,
+                    "dual_pass": True,
+                },
+            ],
+        }
+        fed_path.write_text(json.dumps(doc, indent=2) + nl, encoding="utf-8")
+
+    _write_sigs(3.0)
+    prom_low = promote_refine_dual_revive(root=root, min_tenants=2, min_hits=2)
+    low_blocked = int(prom_low.get("promoted_n") or 0) == 0
+
+    _write_sigs(50.0)
+    prom_hi = promote_refine_dual_revive(root=root, min_tenants=2, min_hits=2)
+    high_ok = int(prom_hi.get("promoted_n") or 0) >= 1 and bool(prom_hi.get("privacy_ok"))
+
+    f177_ok = bool(blocked_ok and revive_ok and low_blocked and high_ok)
+    out = {
+        "feature": "F177",
+        "fixture_pass": f177_ok,
+        "low_pp_blocked_ok": blocked_ok,
+        "high_pp_revive_ok": revive_ok,
+        "low_pp_promote_blocked": low_blocked,
+        "high_pp_promote_ok": high_ok,
+        "min_pp": refine_dual_revive_min_pp(),
+        "privacy_ok": bool(prom_hi.get("privacy_ok")),
+        "promoted_n_high": prom_hi.get("promoted_n"),
+        "hub_priority_delta": ent2.get("hub_priority_delta"),
+        "last_revive_tool_pp": ent2.get("last_revive_tool_pp"),
+    }
+    print(json.dumps(out, indent=2))
+    return 0 if f177_ok else 1
 
 
 def cmd_ingest_hub_archival(args: argparse.Namespace) -> int:

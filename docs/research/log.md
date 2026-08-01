@@ -1,3 +1,37 @@
+## 2026-08-01 — F177 contribution_pp floor for dual_pass revive
+
+### Papers / posts
+- Hermes self-evolution / SkillOpt: validation-gated recovery after reject — metrics must improve.
+- GEPA (arXiv 2507.19457): re-entry needs measured evidence, not flag-only dual_pass.
+- Assay / SkillsBench: contribution over inject-only success.
+- Torii F175–F176: dual_pass revive + free-rider MT still allowed tool_pp≈ε re-boost.
+
+### OSS design patterns stolen
+1. `TORII_REFINE_REVIVE_MIN_PP` (default 10) SkillOpt floor on local revive.
+2. Multi-tenant promote requires same tool_pp floor.
+3. Critic `f177_revive_pp_gate` + demote-eval `low_pp_revive_idle_approve`.
+4. fixture-refine-revive-pp hermetic low/high + promote gate.
+
+### Insight
+effective_pass (tool_pp>0) is too weak for always re-entry. Highest ROI: min contribution_pp floor for revive + promote + demote low-pp recovery APPROVE.
+
+### Feature shipped (F177)
+- refine_dual_revive_pp_gate + revive_pp_blocked
+- promote tool_pp floor
+- f177 critic / demote-eval / skill_loop revive_pp_gate_ok
+- hermes F177 notice; refine_loop_ok AND F177
+- PRODUCT/landing/TORII surfaces
+
+### Loop-engineering
+Validation gates on recovery — dual_pass without contribution is not re-entry.
+
+### Metric
+- Offline: fixture_pass; demote-eval low_pp_revive_idle_demoted; refine_loop_ok L3
+- Live Modal: pytorch#191836 BIT3_OK ~50.4s POST_COMMENT=0 log_streaming=true F177 soft wire
+
+### SHA
+`51c4bdc8520812347255d9ab46a382b249662650`
+
 ## 2026-08-01 — F176 free-rider multi-tenant dual_pass revive gate
 
 ### Papers / posts

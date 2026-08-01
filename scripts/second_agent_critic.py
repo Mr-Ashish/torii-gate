@@ -376,6 +376,12 @@ def free_rider_revive_critic_enabled() -> bool:
     return raw not in _FALSEY
 
 
+def revive_pp_gate_critic_enabled() -> bool:
+    """F177: demote APPROVE when dual_pass revive lacks contribution_pp floor."""
+    raw = (os.environ.get("TORII_REVIVE_PP_GATE_CRITIC") or "1").strip().lower()
+    return raw not in _FALSEY
+
+
 def run_f121_recovery_util(out_dir: Path | None) -> CheckerResult:
     """F121: recovery always skills must fire tool CLIs (inject ≠ utilization)."""
     if out_dir is None:
@@ -688,6 +694,114 @@ def run_f176_free_rider_revive(
             "themes": themes[:8],
             "multi_decay_themes": multi_decay_themes,
             "reason": "free_rider_revive_pending_mt",
+        },
+    )
+
+
+
+def run_f177_revive_pp_gate(
+    out_dir: Path | None,
+    root: Path | None = None,
+) -> CheckerResult:
+    """F177: SkillOpt contribution_pp floor — low tool_pp dual_pass cannot re-enter always.
+
+    When fitness shows revive_pp_blocked after decay, or out_dir refine-dual has
+    tool_pp below floor while multi_tenant_decay / chronic still elevated, demote
+    weak APPROVE (recovery claimed without measured contribution).
+    """
+    if not revive_pp_gate_critic_enabled():
+        return CheckerResult(
+            id="f177_revive_pp_gate",
+            name="Revive contribution_pp floor (F177)",
+            ok=True,
+            score=1.0,
+            detail={"enabled": False, "feature": "F177"},
+        )
+    root = root or _root()
+    blocked_n = 0
+    themes: list[str] = []
+    min_pp = 10.0
+    try:
+        import os as _os
+        min_pp = float(_os.environ.get("TORII_REFINE_REVIVE_MIN_PP") or "10")
+    except (TypeError, ValueError):
+        min_pp = 10.0
+    tool_pp = None
+    # fitness ledger
+    try:
+        fit_path = root / ".torii" / "skill-fitness.json"
+        envf = (os.environ.get("TORII_SKILL_FITNESS_FILE") or "").strip()
+        if envf:
+            fit_path = Path(envf)
+        if fit_path.is_file():
+            fit = json.loads(fit_path.read_text(encoding="utf-8"))
+            for sid, ent in (fit.get("skills") or {}).items():
+                if not isinstance(ent, dict):
+                    continue
+                if ent.get("revive_pp_blocked"):
+                    blocked_n += 1
+                    themes.append(str(sid))
+                # also: claimed revive with recorded tool_pp below floor
+                if ent.get("refine_dual_revived") and not ent.get("multi_tenant_revive"):
+                    lpp = float(ent.get("last_revive_tool_pp") or ent.get("last_refine_tool_pp") or 0)
+                    if 0 < lpp < min_pp:
+                        blocked_n += 1
+                        themes.append(str(sid))
+    except (OSError, json.JSONDecodeError, TypeError, ValueError):
+        pass
+    # out_dir refine-dual.json low pp + decay
+    try:
+        if out_dir is not None:
+            rd = Path(out_dir) / "refine-dual.json"
+            if rd.is_file():
+                data = json.loads(rd.read_text(encoding="utf-8"))
+                tool_pp = float(data.get("refine_tool_contribution_pp") or 0)
+                dual_pass = bool(data.get("refine_dual_pass"))
+                if dual_pass and tool_pp < min_pp:
+                    # check decay still present in fitness
+                    sticky = False
+                    fit_path = root / ".torii" / "skill-fitness.json"
+                    if fit_path.is_file():
+                        fit = json.loads(fit_path.read_text(encoding="utf-8"))
+                        for sid, ent in (fit.get("skills") or {}).items():
+                            if not isinstance(ent, dict):
+                                continue
+                            if ent.get("last_refine_decayed") or ent.get("multi_tenant_decay") or ent.get("refine_dual_chronic_fail"):
+                                sticky = True
+                                themes.append(str(sid))
+                    if sticky or blocked_n:
+                        blocked_n = max(blocked_n, 1)
+    except (OSError, json.JSONDecodeError, TypeError, ValueError):
+        pass
+
+    high = blocked_n >= 1
+    if not high:
+        return CheckerResult(
+            id="f177_revive_pp_gate",
+            name="Revive contribution_pp floor (F177)",
+            ok=True,
+            score=1.0,
+            detail={
+                "feature": "F177",
+                "reason": "no_low_pp_revive_risk",
+                "blocked_n": blocked_n,
+                "min_pp": min_pp,
+                "tool_pp": tool_pp,
+            },
+        )
+    return CheckerResult(
+        id="f177_revive_pp_gate",
+        name="Revive contribution_pp floor (F177)",
+        ok=False,
+        score=0.25,
+        detail={
+            "feature": "F177",
+            "high": True,
+            "blocked_n": blocked_n,
+            "themes": themes[:8],
+            "min_pp": min_pp,
+            "tool_pp": tool_pp,
+            "reason": "revive_pp_below_floor",
         },
     )
 
@@ -1863,6 +1977,19 @@ def decide_verdict(
                     "free_rider_revive_pending_mt "
                     f"(free_n={detail.get('free_n')};"
                     f"themes={','.join((detail.get('themes') or [])[:3])})"
+                )
+        # F177: contribution_pp floor — low tool_pp dual_pass cannot re-enter always
+        rpp = next((c for c in checkers if c.id == "f177_revive_pp_gate"), None)
+        if rpp and not rpp.ok:
+            detail = rpp.detail or {}
+            if detail.get("high") or detail.get("blocked_n"):
+                recommended = "COMMENT"
+                demoted = True
+                reasons.append(
+                    "revive_pp_below_floor "
+                    f"(blocked_n={detail.get('blocked_n')};"
+                    f"min_pp={detail.get('min_pp')};"
+                    f"tool_pp={detail.get('tool_pp')})"
                 )
     elif maker == "UNKNOWN":
         recommended = "COMMENT"
@@ -3426,6 +3553,77 @@ def demote_eval(
                 os.environ["TORII_ROOT"] = prev_root_fr
             os.environ.pop("TORII_SECOND_CRITIC_MIN_PATH", None)
 
+    # F177: low contribution_pp dual_pass revive blocked sticky decay → demote APPROVE
+    with tempfile.TemporaryDirectory() as td_pp:
+        od = Path(td_pp)
+        fed = od / "memory" / "federation"
+        fed.mkdir(parents=True)
+        sid = "skill-prefer-hub-archival-early"
+        torii = od / ".torii"
+        torii.mkdir(parents=True)
+        (torii / "skill-fitness.json").write_text(
+            json.dumps(
+                {
+                    "schema_version": 1,
+                    "skills": {
+                        sid: {
+                            "id": sid,
+                            "revive_pp_blocked": True,
+                            "last_revive_pp_blocked": 5.0,
+                            "last_revive_pp_floor": 10.0,
+                            "last_refine_decayed": True,
+                            "refine_dual_chronic_fail": True,
+                            "multi_tenant_decay": True,
+                            "multi_tenant_decay_tenants": 2,
+                            "refine_priority_decay": -20,
+                            "hub_priority_delta": -15,
+                            "refine_dual_revived": False,
+                        }
+                    },
+                }
+            )
+            + "\n",
+            encoding="utf-8",
+        )
+        (od / "refine-dual.json").write_text(
+            json.dumps(
+                {
+                    "refine_dual_pass": True,
+                    "refine_tool_contribution_pp": 5.0,
+                    "refine_probe_delta": 1,
+                    "refined_skill_ids": [sid],
+                }
+            )
+            + "\n",
+            encoding="utf-8",
+        )
+        pp_review = od / "approve-low-pp-revive.md"
+        pp_review.write_text(
+            "## Review\n**Verdict:** APPROVE\n\n### Summary\nok\n\n"
+            "### Blocking\nnone\n\n### What I checked\n`app.py:1` path ok\n",
+            encoding="utf-8",
+        )
+        prev_root_pp = os.environ.get("TORII_ROOT")
+        os.environ["TORII_ROOT"] = str(od)
+        os.environ["TORII_REVIVE_PP_GATE_CRITIC"] = "1"
+        os.environ["TORII_REFINE_REVIVE_MIN_PP"] = "10"
+        os.environ["TORII_SECOND_CRITIC_MIN_PATH"] = "0.1"
+        try:
+            cases.append(
+                _case(
+                    "low_pp_revive_idle_approve",
+                    pp_review,
+                    od,
+                    case_root=od,
+                )
+            )
+        finally:
+            if prev_root_pp is None:
+                os.environ.pop("TORII_ROOT", None)
+            else:
+                os.environ["TORII_ROOT"] = prev_root_pp
+            os.environ.pop("TORII_SECOND_CRITIC_MIN_PATH", None)
+
     # F162: multi-tenant hub-archival hub pressure + local util gap APPROVE
     with tempfile.TemporaryDirectory() as td_ha_hub:
         od = Path(td_ha_hub)
@@ -3549,6 +3747,9 @@ def demote_eval(
     frvc = next(
         (c for c in cases if c["name"] == "free_rider_revive_idle_approve"), {}
     )
+    ppgc = next(
+        (c for c in cases if c["name"] == "low_pp_revive_idle_approve"), {}
+    )
     goodc = next((c for c in cases if c["name"] == "good_insecure"), {})
     weak_demote_ok = bool(weak.get("demoted") or weak.get("recommended") != "APPROVE")
     hub_demote_ok = bool(hubc.get("demoted")) or (
@@ -3581,6 +3782,9 @@ def demote_eval(
     free_rider_demote_ok = bool(frvc.get("demoted")) or any(
         "free_rider_revive" in str(r) for r in (frvc.get("reasons") or [])
     )
+    revive_pp_demote_ok = bool(ppgc.get("demoted")) or any(
+        "revive_pp" in str(r) for r in (ppgc.get("reasons") or [])
+    )
     # good should not be demoted from REQUEST_CHANGES to worse without reason;
     # typically maker is REQUEST_CHANGES already
     good_stable = goodc.get("maker") in ("REQUEST_CHANGES", "COMMENT", "APPROVE")
@@ -3598,6 +3802,7 @@ def demote_eval(
         "feature_refine_dual_fail": "F169",
         "feature_refine_decay_hub": "F173",
         "feature_free_rider_revive": "F176",
+        "feature_revive_pp_gate": "F177",
         "scored_at": _now(),
         "cases": cases,
         "approve_n": len(approve_cases),
@@ -3620,6 +3825,8 @@ def demote_eval(
         "refine_decay_hub_soft_ok": rd_decay_demote_ok,
         "free_rider_revive_demote_ok": bool(frvc.get("demoted")),
         "free_rider_revive_soft_ok": free_rider_demote_ok,
+        "revive_pp_gate_demote_ok": bool(ppgc.get("demoted")),
+        "revive_pp_gate_soft_ok": revive_pp_demote_ok,
         "good_stable": good_stable,
         "paper": {
             "metric": "critic_approve_demote_rate",
@@ -3633,9 +3840,10 @@ def demote_eval(
             "refine_dual_fail_idle_demoted": bool(rdfc.get("demoted")),
             "refine_decay_hub_idle_demoted": bool(rdhc.get("demoted")),
             "free_rider_revive_idle_demoted": bool(frvc.get("demoted")),
+            "low_pp_revive_idle_demoted": bool(ppgc.get("demoted")),
             "notes": (
                 "demote_rate = demoted APPROVE / APPROVE cases; "
-                "F173 multi-tenant dual_fail decay; F176 free-rider revive gate"
+                "F173 decay; F176 free-rider; F177 contribution_pp revive floor"
             ),
         },
         "eval_pass": weak_demote_ok
@@ -3647,7 +3855,8 @@ def demote_eval(
         and (bool(hah.get("demoted")) or ha_hub_demote_ok)
         and (bool(rdfc.get("demoted")) or rd_fail_demote_ok)
         and (bool(rdhc.get("demoted")) or rd_decay_demote_ok)
-        and (bool(frvc.get("demoted")) or free_rider_demote_ok),
+        and (bool(frvc.get("demoted")) or free_rider_demote_ok)
+        and (bool(ppgc.get("demoted")) or revive_pp_demote_ok),
     }
     if out_dir:
         try:

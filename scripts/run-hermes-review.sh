@@ -1086,6 +1086,7 @@ if [[ -f "$SKILL_ROUTER_HELPER" && $TIMED_OUT -eq 0 && "${HERMES_CLI_ARGV_BROKEN
                             # F176: multi-tenant free-rider gate is inline in ingest/promote;
                             # notice when sticky multi_tenant_decay + local revive pending
                             notice "F176 free-rider revive MT gate (soft · sticky multi_tenant_decay until promote)"
+                            notice "F177 revive contribution_pp floor (soft · TORII_REFINE_REVIVE_MIN_PP)"
                             ;;
                         esac
                         ;;
