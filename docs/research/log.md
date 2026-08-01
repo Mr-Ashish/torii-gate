@@ -29,7 +29,7 @@ ops dim 8 + evidence/simplicity dim 12
 merge-authority certificate on every run + buyer ops one-liner
 
 ### SHA
-TBD
+909c012ecddedb6554021843d6782f3cb55df1fa
 
 
 ## 2026-08-01 — GATE_CERT: deterministic merge-authority certificate
