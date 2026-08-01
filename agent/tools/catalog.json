@@ -1,8 +1,8 @@
 {
   "schema_version": 1,
-  "feature": "F81",
+  "feature": "F82",
   "description": "Torii agent tool catalog \u2014 research \u2192 eval \u2192 adopt pipeline",
-  "updated_at": "2026-08-01T01:14:27Z",
+  "updated_at": "2026-08-01T01:29:05Z",
   "tools": [
     {
       "id": "terminal",
@@ -232,6 +232,18 @@
       "rationale": "Bounded OpenRouter JSON checker; schema-validated; soft-skip default; folds into F78 panel",
       "feature": "F81",
       "adopted_at": "2026-08-01T01:15:00Z"
+    },
+    {
+      "id": "skill-auto-adopt",
+      "name": "Safe skill auto-adopt with regression gates (F82)",
+      "status": "adopted",
+      "source": "research_oss",
+      "kind": "workflow_tool",
+      "toolset": "terminal",
+      "script": "scripts/skill_auto_adopt.py",
+      "rationale": "Close F74 evolution loop: adopt validated skills only after F78/F74 fixtures pass; rollback on post-adopt regression",
+      "feature": "F82",
+      "adopted_at": "2026-08-01T01:30:00Z"
     }
   ],
   "candidates": [

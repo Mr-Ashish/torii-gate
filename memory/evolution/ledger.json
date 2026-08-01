@@ -50,6 +50,66 @@
         "verdict_request_changes"
       ],
       "ingested_at": "2026-08-01T00:23:52Z"
+    },
+    {
+      "trajectory_id": "pr191813-20260801_060058_e26314",
+      "path": "memory/evolution/trajectories/pr191813-20260801_060058_e26314",
+      "repo": "pytorch/pytorch",
+      "pr_number": "191813",
+      "tool_call_turns": 3,
+      "signals": [
+        "f50_test_gap",
+        "verdict_request_changes"
+      ],
+      "ingested_at": "2026-08-01T00:31:45Z"
+    },
+    {
+      "trajectory_id": "pr191813-20260801_060807_018c7d",
+      "path": "memory/evolution/trajectories/pr191813-20260801_060807_018c7d",
+      "repo": "pytorch/pytorch",
+      "pr_number": "191813",
+      "tool_call_turns": 2,
+      "signals": [
+        "f50_test_gap",
+        "verdict_request_changes"
+      ],
+      "ingested_at": "2026-08-01T00:38:51Z"
+    },
+    {
+      "trajectory_id": "pr191813-20260801_061435_6c56b2",
+      "path": "memory/evolution/trajectories/pr191813-20260801_061435_6c56b2",
+      "repo": "pytorch/pytorch",
+      "pr_number": "191813",
+      "tool_call_turns": 2,
+      "signals": [
+        "f50_test_gap",
+        "verdict_request_changes"
+      ],
+      "ingested_at": "2026-08-01T00:45:14Z"
+    },
+    {
+      "trajectory_id": "pr191813-20260801_062230_88b62f",
+      "path": "memory/evolution/trajectories/pr191813-20260801_062230_88b62f",
+      "repo": "pytorch/pytorch",
+      "pr_number": "191813",
+      "tool_call_turns": 4,
+      "signals": [
+        "f50_test_gap",
+        "verdict_request_changes"
+      ],
+      "ingested_at": "2026-08-01T00:53:20Z"
+    },
+    {
+      "trajectory_id": "pr191813-20260801_063000_58460e",
+      "path": "memory/evolution/trajectories/pr191813-20260801_063000_58460e",
+      "repo": "pytorch/pytorch",
+      "pr_number": "191813",
+      "tool_call_turns": 2,
+      "signals": [
+        "f50_test_gap",
+        "verdict_request_changes"
+      ],
+      "ingested_at": "2026-08-01T01:00:38Z"
     }
   ],
   "proposals": [
@@ -67,12 +127,12 @@
         "full_chain",
         "revalidate"
       ],
-      "status": "validated_adopt",
+      "status": "adopted",
       "feature": "F74",
-      "created_at": "2026-08-01T00:23:52Z",
+      "created_at": "2026-08-01T01:00:38Z",
       "bytes": 575,
       "eval": {
-        "scored_at": "2026-08-01T00:23:52Z",
+        "scored_at": "2026-08-01T01:28:42Z",
         "dims": {
           "structure": 5,
           "actionability": 4,
@@ -134,12 +194,12 @@
         "attacker",
         "scenario"
       ],
-      "status": "validated_adopt",
+      "status": "adopted",
       "feature": "F74",
-      "created_at": "2026-08-01T00:23:52Z",
+      "created_at": "2026-08-01T01:00:38Z",
       "bytes": 562,
       "eval": {
-        "scored_at": "2026-08-01T00:23:52Z",
+        "scored_at": "2026-08-01T01:28:42Z",
         "dims": {
           "structure": 5,
           "actionability": 4,
@@ -254,9 +314,53 @@
         "bullets": 0
       },
       "feature": "F69"
+    },
+    {
+      "id": "skill-f74-exploit-scenario",
+      "title": "Exploit scenario language (fitness feedback)",
+      "path": "agent/skills/active/skill-f74-exploit-scenario.md",
+      "adopted_at": "2026-08-01T01:28:42Z",
+      "eval": {
+        "scored_at": "2026-08-01T01:28:42Z",
+        "dims": {
+          "structure": 5,
+          "actionability": 4,
+          "evidence": 4,
+          "safety": 5,
+          "size": 5
+        },
+        "total": 23,
+        "max": 25,
+        "recommend": "adopt",
+        "weak_dim_coverage": 1.0,
+        "forced": true
+      },
+      "feature": "F74"
+    },
+    {
+      "id": "skill-f74-prefer-chain-json",
+      "title": "Prefer chain JSON over inference (fitness feedback)",
+      "path": "agent/skills/active/skill-f74-prefer-chain-json.md",
+      "adopted_at": "2026-08-01T01:28:42Z",
+      "eval": {
+        "scored_at": "2026-08-01T01:28:42Z",
+        "dims": {
+          "structure": 5,
+          "actionability": 4,
+          "evidence": 4,
+          "safety": 5,
+          "size": 5
+        },
+        "total": 23,
+        "max": 25,
+        "recommend": "adopt",
+        "weak_dim_coverage": 0.75,
+        "forced": true
+      },
+      "feature": "F74"
     }
   ],
-  "updated_at": "2026-08-01T00:23:52Z",
+  "updated_at": "2026-08-01T01:28:42Z",
   "fitness_signals": [
     {
       "at": "2026-08-01T00:16:02Z",
@@ -297,6 +401,106 @@
       ],
       "low_fitness": false,
       "high_fitness": true
+    },
+    {
+      "at": "2026-08-01T00:31:45Z",
+      "feature": "F73",
+      "run_id": "20260801-0031-pytorch-pytorch-PR191813-pytorch-pr191813-f75-8809641",
+      "repo": "pytorch/pytorch",
+      "pr": "191813",
+      "composite": 0.8694,
+      "level": "L3",
+      "tool_use": 0.85,
+      "path_evidence": 0.9,
+      "procedure": 0.9375,
+      "chain_quality": 0.7,
+      "verdict": "REQUEST_CHANGES",
+      "feedback": [
+        "no trigger/exploit scenario language",
+        "chain JSON absent; inferred from path+theme"
+      ],
+      "low_fitness": false,
+      "high_fitness": true
+    },
+    {
+      "at": "2026-08-01T00:38:51Z",
+      "feature": "F73",
+      "run_id": "20260801-0038-pytorch-pytorch-PR191813-pytorch-pr191813-f76-a52db5b",
+      "repo": "pytorch/pytorch",
+      "pr": "191813",
+      "composite": 0.8294,
+      "level": "L2",
+      "tool_use": 0.65,
+      "path_evidence": 0.9,
+      "procedure": 0.9375,
+      "chain_quality": 0.7,
+      "verdict": "REQUEST_CHANGES",
+      "feedback": [
+        "no trigger/exploit scenario language",
+        "chain JSON absent; inferred from path+theme"
+      ],
+      "low_fitness": false,
+      "high_fitness": false
+    },
+    {
+      "at": "2026-08-01T00:45:14Z",
+      "feature": "F73",
+      "run_id": "20260801-0045-pytorch-pytorch-PR191813-pytorch-pr191813-f77-28220cc",
+      "repo": "pytorch/pytorch",
+      "pr": "191813",
+      "composite": 0.8294,
+      "level": "L2",
+      "tool_use": 0.65,
+      "path_evidence": 0.9,
+      "procedure": 0.9375,
+      "chain_quality": 0.7,
+      "verdict": "REQUEST_CHANGES",
+      "feedback": [
+        "no trigger/exploit scenario language",
+        "chain JSON absent; inferred from path+theme"
+      ],
+      "low_fitness": false,
+      "high_fitness": false
+    },
+    {
+      "at": "2026-08-01T00:53:19Z",
+      "feature": "F73",
+      "run_id": "20260801-0053-pytorch-pytorch-PR191813-pytorch-pr191813-f78-fd45d45",
+      "repo": "pytorch/pytorch",
+      "pr": "191813",
+      "composite": 0.8694,
+      "level": "L3",
+      "tool_use": 0.85,
+      "path_evidence": 0.9,
+      "procedure": 0.9375,
+      "chain_quality": 0.7,
+      "verdict": "REQUEST_CHANGES",
+      "feedback": [
+        "no trigger/exploit scenario language",
+        "chain JSON absent; inferred from path+theme"
+      ],
+      "low_fitness": false,
+      "high_fitness": true
+    },
+    {
+      "at": "2026-08-01T01:00:38Z",
+      "feature": "F73",
+      "run_id": "20260801-0100-pytorch-pytorch-PR191813-pytorch-pr191813-f79-1b7daed",
+      "repo": "pytorch/pytorch",
+      "pr": "191813",
+      "composite": 0.8294,
+      "level": "L2",
+      "tool_use": 0.65,
+      "path_evidence": 0.9,
+      "procedure": 0.9375,
+      "chain_quality": 0.7,
+      "verdict": "REQUEST_CHANGES",
+      "feedback": [
+        "no trigger/exploit scenario language",
+        "chain JSON absent; inferred from path+theme"
+      ],
+      "low_fitness": false,
+      "high_fitness": false
     }
   ],
   "fitness_mutations": [
@@ -319,7 +523,123 @@
       ],
       "edit": "add",
       "feature": "F74"
+    },
+    {
+      "at": "2026-08-01T00:31:46Z",
+      "proposal_id": "skill-f74-prefer-chain-json",
+      "source": "feedback:chain JSON absent; inferred from path+theme",
+      "weak_dims": [
+        "feedback"
+      ],
+      "edit": "add",
+      "feature": "F74"
+    },
+    {
+      "at": "2026-08-01T00:31:46Z",
+      "proposal_id": "skill-f74-exploit-scenario",
+      "source": "feedback:no trigger/exploit scenario language",
+      "weak_dims": [
+        "feedback"
+      ],
+      "edit": "add",
+      "feature": "F74"
+    },
+    {
+      "at": "2026-08-01T00:38:51Z",
+      "proposal_id": "skill-f74-prefer-chain-json",
+      "source": "feedback:chain JSON absent; inferred from path+theme",
+      "weak_dims": [
+        "feedback"
+      ],
+      "edit": "add",
+      "feature": "F74"
+    },
+    {
+      "at": "2026-08-01T00:38:51Z",
+      "proposal_id": "skill-f74-exploit-scenario",
+      "source": "feedback:no trigger/exploit scenario language",
+      "weak_dims": [
+        "feedback"
+      ],
+      "edit": "add",
+      "feature": "F74"
+    },
+    {
+      "at": "2026-08-01T00:45:14Z",
+      "proposal_id": "skill-f74-prefer-chain-json",
+      "source": "feedback:chain JSON absent; inferred from path+theme",
+      "weak_dims": [
+        "feedback"
+      ],
+      "edit": "add",
+      "feature": "F74"
+    },
+    {
+      "at": "2026-08-01T00:45:14Z",
+      "proposal_id": "skill-f74-exploit-scenario",
+      "source": "feedback:no trigger/exploit scenario language",
+      "weak_dims": [
+        "feedback"
+      ],
+      "edit": "add",
+      "feature": "F74"
+    },
+    {
+      "at": "2026-08-01T00:53:20Z",
+      "proposal_id": "skill-f74-prefer-chain-json",
+      "source": "feedback:chain JSON absent; inferred from path+theme",
+      "weak_dims": [
+        "feedback"
+      ],
+      "edit": "add",
+      "feature": "F74"
+    },
+    {
+      "at": "2026-08-01T00:53:20Z",
+      "proposal_id": "skill-f74-exploit-scenario",
+      "source": "feedback:no trigger/exploit scenario language",
+      "weak_dims": [
+        "feedback"
+      ],
+      "edit": "add",
+      "feature": "F74"
+    },
+    {
+      "at": "2026-08-01T01:00:38Z",
+      "proposal_id": "skill-f74-prefer-chain-json",
+      "source": "feedback:chain JSON absent; inferred from path+theme",
+      "weak_dims": [
+        "feedback"
+      ],
+      "edit": "add",
+      "feature": "F74"
+    },
+    {
+      "at": "2026-08-01T01:00:38Z",
+      "proposal_id": "skill-f74-exploit-scenario",
+      "source": "feedback:no trigger/exploit scenario language",
+      "weak_dims": [
+        "feedback"
+      ],
+      "edit": "add",
+      "feature": "F74"
     }
   ],
-  "rejected_edits": []
+  "rejected_edits": [],
+  "skill_auto_adopts": [
+    {
+      "at": "2026-08-01T01:28:42Z",
+      "id": "skill-f74-exploit-scenario",
+      "feature": "F82",
+      "total": 23,
+      "forced": true
+    },
+    {
+      "at": "2026-08-01T01:28:42Z",
+      "id": "skill-f74-prefer-chain-json",
+      "feature": "F82",
+      "total": 23,
+      "forced": true
+    }
+  ]
 }

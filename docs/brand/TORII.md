@@ -46,7 +46,7 @@ A **torii** is the gate at a threshold — ordinary ground on one side, what mat
 
 ## Differentiator (2026 market)
 
-Not another style/comment bot. Torii is a **security merge authority**: maker agent + deterministic checker panel + compound memory. Competitors optimize for PR chatter; Torii optimizes for **path-evidenced block/approve**.
+Not another style/comment bot. Torii is a **security merge authority**: maker agent + deterministic checker panel + compound memory — runnable live on **Modal** with streamed Hermes logs. Competitors optimize for PR chatter; Torii optimizes for **path-evidenced block/approve**.
 
 ## What Torii Gate does (v1 scope)
 

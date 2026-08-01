@@ -223,6 +223,16 @@ if [[ -f "$SCRIPTS/fitness_gate_evolve.py" ]]; then
         1|true|yes|on) _f74_args+=(--adopt) ;;
         *) _f74_args+=(--no-adopt) ;;
       esac
+
+# F82: safe skill auto-adopt (default off; regression-gated)
+if [[ -f "$SCRIPTS/skill_auto_adopt.py" ]]; then
+  case "${TORII_SKILL_AUTO_ADOPT:-0}" in
+    1|true|yes|on)
+      stage skill_auto_adopt \
+        python3 "$SCRIPTS/skill_auto_adopt.py" cycle || true
+      ;;
+  esac
+fi
       stage fitness_gate_evolve         python3 "$SCRIPTS/fitness_gate_evolve.py" "${_f74_args[@]}" || true
       ;;
   esac

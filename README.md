@@ -45,6 +45,18 @@ Dogfood app with intentional vulns: [`demo/insecure/`](demo/insecure/). Gate con
 
 Install on a **target** repo: copy workflow pack or point `torii_repository` at this hub (see `pack/`).
 
+## Live e2e (Modal)
+
+```bash
+python3 scripts/modal_secrets_bootstrap.py apply   # once
+modal run modal_app/app.py --bit 3 --repo owner/name --pr N \
+  --model deepseek/deepseek-v4-pro --no-post-comment
+# optional semantic checker:
+modal run modal_app/app.py --bit 3 --repo owner/name --pr N --llm-critic --no-post-comment
+```
+
+Hermes logs stream to the Modal UI (F67). Skills evolve offline with regression gates (F82).
+
 ## Stack (reused control plane)
 
 | Piece | Role |

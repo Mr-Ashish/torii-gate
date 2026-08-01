@@ -161,6 +161,7 @@ RUNTIME_SCRIPTS=(
   workflow_as_code.py
   modal_secrets_bootstrap.py
   llm_critic.py
+  skill_auto_adopt.py
 )
 
 copy_file() {

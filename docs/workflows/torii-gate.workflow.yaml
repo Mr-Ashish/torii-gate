@@ -80,6 +80,12 @@ stages:
     soft: true
     phase: memory
     feature: F74
+  - id: skill_auto_adopt
+    script: scripts/skill_auto_adopt.py
+    soft: true
+    phase: memory
+    feature: F82
+    when: TORII_SKILL_AUTO_ADOPT=1
   - id: federated_hub
     script: scripts/federated_hub_ingest.py
     soft: true
@@ -162,6 +168,10 @@ capabilities:
     feature: F81
     script: scripts/llm_critic.py
     one_liner: Optional OpenRouter LLM checker atop F78 panel
+  - id: skill_auto_adopt
+    feature: F82
+    script: scripts/skill_auto_adopt.py
+    one_liner: Safe auto-adopt of validated F74 skills with regression gates
 
 # Scripts that pack install must ship for intelligence path (F79)
 pack_scripts:
@@ -182,4 +192,5 @@ pack_scripts:
   - workflow_as_code.py
   - modal_secrets_bootstrap.py
   - llm_critic.py
+  - skill_auto_adopt.py
   - smoke-torii-gate.sh

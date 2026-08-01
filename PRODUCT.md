@@ -30,3 +30,7 @@ Platform / AppSec engineer who needs every PR checked for security without drown
 **Compound memory.** FP rules, TP signatures, and privacy-safe federated themes compound across PRs and tenants; scoped recall keeps prompt context budgeted.
 
 **Measured gate.** Multi-corpus labeled benches (Python insecure-demo + Juice Shop synthetic) score recall before shipping harness changes.
+
+## Self-evolution (F82)
+
+Validated skill proposals (fitness-gated) only enter `agent/skills/active/` after offline regression gates (critic fixture + fitness fixture). Default off (`TORII_SKILL_AUTO_ADOPT=0`).

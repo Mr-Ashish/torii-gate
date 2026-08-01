@@ -436,6 +436,15 @@ REGISTRY: list[ToggleSpec] = [
         "F81",
     ),
     ToggleSpec(
+        "skill_auto_adopt",
+        "TORII_SKILL_AUTO_ADOPT",
+        "bool",
+        False,
+        "product",
+        "F82 safe auto-adopt of validated F74 skills after regression gates",
+        "F82",
+    ),
+    ToggleSpec(
         "chain_revalidate",
         "TORII_CHAIN_REVALIDATE",
         "bool",

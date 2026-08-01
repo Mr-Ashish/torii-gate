@@ -1,5 +1,37 @@
 # Torii research → product log
 
+## 2026-08-01 — F82 safe skill auto-adopt (self-evolution close-loop)
+
+### Papers / posts / OSS
+- SkillOpt / Hermes: held-out gates before skill adopt.
+- Loop Engineering: REJECT until verified.
+- Prior Torii: F74 `validated_adopt` skills never entered `active/`.
+
+### OSS / eng patterns
+1. Pre/post regression fixtures (F78 critic + F74 fitness).
+2. Rollback active skills if post-adopt gates fail.
+3. Default off; malicious proposals never candidates.
+
+### Insight
+Evolution without adopt is theater. Highest ROI: **safe auto-adopt with offline gates** for already-validated F74 skills.
+
+### Feature shipped (F82)
+- `scripts/skill_auto_adopt.py` — candidates/gate/adopt/cycle/fixture/status
+- Adopted into active: skill-f74-prefer-chain-json, skill-f74-exploit-scenario
+- Wire run-torii-review when TORII_SKILL_AUTO_ADOPT=1
+- Brand/README Modal-live + PRODUCT self-evolution note
+
+### Loop-engineering practice used
+**Verifier before promote** — fixtures must pass before and after adopt.
+
+### Metric
+- Offline fixture_pass; gates_passed; adopted skill-f74-prefer-chain-json + skill-f74-exploit-scenario
+- Live: **Modal** pytorch#191813 deepseek/deepseek-v4-pro BIT3_OK ~74s; F74 skills in maker prompt; log_streaming=true; POST_COMMENT=0
+- pytest: 497 passed
+
+### SHA
+`(pending push)`
+
 ## 2026-08-01 — F81 optional LLM checker atop F78
 
 ### Papers / posts / OSS
