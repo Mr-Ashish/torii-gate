@@ -30,7 +30,7 @@ Maker recovery without multi-tenant agreement cannot escape demote — Federated
 - Live Modal: pytorch#191836 BIT3_OK ~49.4s POST_COMMENT=0 log_streaming=true F176 soft wire
 
 ### SHA
-`d3ec8221db015c9aa870db366748d7deb97993bc`
+`bb57478044b05721f319e0e93ca828b6b760fe47`
 
 ## 2026-08-01 — F175 dual_pass revive after multi-tenant decay
 
