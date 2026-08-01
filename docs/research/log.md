@@ -28,7 +28,7 @@ enterprise (#9) · JTBD trust
 enterprise buyers see cost honesty without fearing spend federation
 
 ### SHA
-`(pending push)`
+`f275f6a9f634a6bf27f7dd16d629d1e276f28b52`
 
 
 ## 2026-08-01 — README_COST: measured dogfood on GitHub front door
