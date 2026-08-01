@@ -226,7 +226,43 @@ budget always → compact body → score tool_hit → util gap? → budgeted re-
 
 **Hub-archival dual-gate adopt + always budget (F154):** `skill_auto_adopt cycle-hub-archival` adopts the F153 skill into `active/` with `always_priority=95` under F119 (memory 100 > hub-archival 95 > product 90 > critic 85). Soft post-F152 hermes wire closes propose→adopt so multi-tenant warm paging ships in the always inject budget.
 
-**Ops:** `python3 scripts/memory_loop_status.py scorecard` → L0–L3. Smoke requires L3 on the hub tree. CI job summary annotates readiness; optional advisory `torii/memory-loop` via `TORII_MEMORY_LOOP_STATUS_COMMIT=1`.
+---
+
+## Mental model D — Hub-archival compound loop (F155–F163)
+
+Hub-prefer archival skills are not “always inject and hope.” Torii **measures tool use, demotes idle APPROVE, re-prompts under budget, federates multi-tenant heat, and packages readiness as one product bit**:
+
+```text
+always inject → util score → critic demote → soft re-prompt → fitness → hub pressure → hub inject
+       │              │              │                │              │           │              └─ F162 prompt + demote-eval
+       │              │              │                │              │           └─ F161 multi-tenant gap_pressure
+       │              │              │                │              └─ F158 chronic hit/gap ledger
+       │              │              │                └─ F157/F159 adaptive under F108 max_extra
+       │              │              └─ F156 second-agent idle demote path
+       │              └─ F155 hub_boost tools required (inject ≠ utilization)
+       └─ F154 skill-prefer-hub-archival-early in always budget
+```
+
+| Stage | Feature | Customer-facing meaning |
+|-------|---------|-------------------------|
+| **Util** | F155 | Hub-archival inject without archival tools is a measured gap |
+| **Critic** | F156 | Idle hub-archival soft-demotes weak APPROVE |
+| **Re-prompt** | F157/F159 | One adaptive recovery attempt shares F108 budget with memory re-prompt |
+| **Fitness** | F158 | Hit/gap rates shield winners and demote chronic idle skills |
+| **Router synth** | F160 | Bench/recovery inject still gets hub-archival when assemble skips |
+| **Hub pressure** | F161 | Multi-tenant util themes bias next priority (privacy-safe) |
+| **Hub inject** | F162 | Gap pressure lands in the prompt + demote-eval pack |
+| **Product bit** | F163 | `hub_archival_loop_ok` on doctor/scorecard — one readiness flag |
+
+**One-liner (eng):** *Hub-archival skills that never page cold memory do not silently APPROVE.*
+
+**One-liner (AppSec):** *Cross-tenant retrieval heat becomes next-run always budget — without sharing paths or snippets.*
+
+**Brand pack (F164):** PRODUCT + landing + `docs/brand/scorecard-metrics.md` surface `hub_archival_loop_ok`; paper EVAL pack rolls F155–F163 live traces (util_rate, Modal BIT3, doctor flags).
+
+**Ops:** `python3 scripts/torii.py doctor` / `scorecard` → `hub_archival_loop_ok`. Smoke requires recovery + hub-archival wires when skills are active.
+
+**Ops (memory):** `python3 scripts/memory_loop_status.py scorecard` → L0–L3. Smoke requires L3 on the hub tree. CI job summary annotates readiness; optional advisory `torii/memory-loop` via `TORII_MEMORY_LOOP_STATUS_COMMIT=1`.
 
 ---
 

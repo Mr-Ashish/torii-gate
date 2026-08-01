@@ -1,0 +1,183 @@
+{
+  "feature": "F164",
+  "title": "hub-archival brand + paper EVAL pack (F155\u2013F163)",
+  "scored_at": "2026-08-01T11:03:38Z",
+  "brand": {
+    "hub_archival_loop_ok": true,
+    "product_mental_model": "D",
+    "scorecard_metrics": "docs/brand/scorecard-metrics.md",
+    "landing": "docs/brand/landing.html"
+  },
+  "pack": {
+    "fires": [
+      "F155",
+      "F156",
+      "F157",
+      "F158",
+      "F159",
+      "F160",
+      "F161",
+      "F162",
+      "F163"
+    ],
+    "trace_dirs": [
+      "f155-hub-archival-recovery-util",
+      "f156-hub-archival-util-critic",
+      "f157-hub-archival-util-reprompt",
+      "f158-hub-archival-fitness",
+      "f159-reprompt-adaptive-dual",
+      "f160-skill-router-synth",
+      "f161-hub-archival-hub-pressure",
+      "f162-hub-archival-hub-inject",
+      "f163-hub-archival-loop-product"
+    ],
+    "modal_bit3_ok_n": 9,
+    "util_rate_1_n": 4
+  },
+  "rows": [
+    {
+      "dir": "f155-hub-archival-recovery-util",
+      "feature": "F155",
+      "util_rate": 0.5,
+      "recall": 1.0,
+      "recovery_injected_n": null,
+      "pr": 191831,
+      "outcome": "BIT3_OK",
+      "elapsed_s": 55.6,
+      "log_streaming": true,
+      "hub_archival_loop_ok": null,
+      "title": "hub-archival recovery util (inject != hub_boost)"
+    },
+    {
+      "dir": "f156-hub-archival-util-critic",
+      "feature": "F156",
+      "util_rate": null,
+      "recall": 1.0,
+      "recovery_injected_n": null,
+      "pr": 191831,
+      "outcome": "BIT3_OK",
+      "elapsed_s": 117.5,
+      "log_streaming": true,
+      "hub_archival_loop_ok": null,
+      "title": "hub-archival util gap critic demote + LOO floor"
+    },
+    {
+      "dir": "f157-hub-archival-util-reprompt",
+      "feature": "F157",
+      "util_rate": null,
+      "recall": 1.0,
+      "recovery_injected_n": null,
+      "pr": 191829,
+      "outcome": "BIT3_OK",
+      "elapsed_s": 132.3,
+      "log_streaming": true,
+      "hub_archival_loop_ok": null,
+      "title": "hub-archival util soft re-prompt under F108"
+    },
+    {
+      "dir": "f158-hub-archival-fitness",
+      "feature": "F158",
+      "util_rate": null,
+      "recall": 1.0,
+      "recovery_injected_n": null,
+      "pr": 191831,
+      "outcome": "BIT3_OK",
+      "elapsed_s": 99.2,
+      "log_streaming": true,
+      "hub_archival_loop_ok": null,
+      "title": "hub-archival util fitness demote/boost"
+    },
+    {
+      "dir": "f159-reprompt-adaptive-dual",
+      "feature": "F159",
+      "util_rate": null,
+      "recall": 1.0,
+      "recovery_injected_n": null,
+      "pr": 191829,
+      "outcome": "BIT3_OK",
+      "elapsed_s": 97.7,
+      "log_streaming": true,
+      "hub_archival_loop_ok": null,
+      "title": "F108 adaptive dual-recovery re-prompt slot"
+    },
+    {
+      "dir": "f160-skill-router-synth",
+      "feature": "F160",
+      "util_rate": 1.0,
+      "recall": 1.0,
+      "recovery_injected_n": 3,
+      "pr": 191831,
+      "outcome": "BIT3_OK",
+      "elapsed_s": 89.7,
+      "log_streaming": true,
+      "hub_archival_loop_ok": null,
+      "title": "skill-router synth + bench live always inject"
+    },
+    {
+      "dir": "f161-hub-archival-hub-pressure",
+      "feature": "F161",
+      "util_rate": 1.0,
+      "recall": 1.0,
+      "recovery_injected_n": 3,
+      "pr": 191829,
+      "outcome": "BIT3_OK",
+      "elapsed_s": 53.9,
+      "log_streaming": true,
+      "hub_archival_loop_ok": null,
+      "title": "multi-tenant hub-archival gap pressure post-score"
+    },
+    {
+      "dir": "f162-hub-archival-hub-inject",
+      "feature": "F162",
+      "util_rate": 1.0,
+      "recall": 1.0,
+      "recovery_injected_n": 3,
+      "pr": 191831,
+      "outcome": "BIT3_OK",
+      "elapsed_s": 90.9,
+      "log_streaming": true,
+      "hub_archival_loop_ok": null,
+      "title": "hub-archival hub pressure prompt inject + demote-eval"
+    },
+    {
+      "dir": "f163-hub-archival-loop-product",
+      "feature": "F163",
+      "util_rate": 1.0,
+      "recall": 1.0,
+      "recovery_injected_n": 3,
+      "pr": 191829,
+      "outcome": "BIT3_OK",
+      "elapsed_s": 74.0,
+      "log_streaming": true,
+      "hub_archival_loop_ok": true,
+      "title": "hub-archival compound loop product surface + soft fitness cycle"
+    }
+  ],
+  "model": "deepseek/deepseek-v4-pro",
+  "live": {
+    "recall": 1.0,
+    "tp": 4,
+    "fn": 0,
+    "verdict": "COMMENT",
+    "passed": false,
+    "model": "deepseek/deepseek-v4-pro",
+    "recovery_injected_n": 3,
+    "util_rate": 1.0
+  },
+  "doctor": {
+    "doctor_pass": true,
+    "hub_archival_loop_ok": true,
+    "hub_archival_util_ok": true,
+    "feature_hub_archival_loop": "F163",
+    "feature_brand_pack": "F164"
+  },
+  "modal": {
+    "repo": "pytorch/pytorch",
+    "pr": 82997,
+    "outcome": "BIT3_OK",
+    "elapsed_s": 56.7,
+    "log_streaming": true,
+    "modal_url": "https://modal.com/apps/mr-ashish/main/ap-VzeCi8oijv1sytQr9SAfog",
+    "post_comment": 0
+  }
+}

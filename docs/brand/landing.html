@@ -173,17 +173,29 @@ tr:last-child td{border-bottom:0}
     <span class="pipe on">Paper traces</span>
   </div>
   <p class="note" style="margin:0 0 16px">Memory · product CLI · critic skills get a <strong style="color:var(--muted)">capped always slot</strong>, <strong style="color:var(--muted)">SkillReducer-lite bodies</strong>, and post-run <strong style="color:var(--muted)">tool utilization</strong>. Idle recovery tools soft-demote APPROVE and can spend <strong style="color:var(--muted)">one shared re-prompt</strong> — not infinite Hermes retries. Artifacts land in redacted traces for eval.</p>
+  <p class="ey" style="margin:8px 0 12px">Hub-archival compound loop (why cold memory pages in)</p>
+  <div class="pipeline">
+    <span class="pipe on">Always inject</span>
+    <span class="pipe on">Util score</span>
+    <span class="pipe on">Critic demote</span>
+    <span class="pipe on">Budgeted re-prompt</span>
+    <span class="pipe on">Fitness</span>
+    <span class="pipe on">Hub pressure</span>
+    <span class="pipe on">Hub inject</span>
+  </div>
+  <p class="note" style="margin:0 0 16px">Hub-prefer archival skills must call tools (<strong style="color:var(--muted)">inject ≠ utilization</strong>). Idle runs soft-demote APPROVE, spend one shared re-prompt, and multi-tenant gap pressure compounds into next always budget — privacy-safe themes only. One product bit: <code style="color:var(--gold)">hub_archival_loop_ok</code> on doctor/scorecard. <strong style="color:var(--muted)">Hub-archival skills that never page cold memory do not silently APPROVE.</strong></p>
   <p class="ey" style="margin:8px 0 12px">Measured scorecard (not slogans)</p>
   <div class="pipeline">
     <span class="pipe on">Doctor</span>
     <span class="pipe on">Recovery hub-gap</span>
+    <span class="pipe on">Hub-archival loop</span>
     <span class="pipe on">Demote rate</span>
     <span class="pipe on">Util delta</span>
     <span class="pipe on">Skill L3</span>
     <span class="pipe on">Memory L3</span>
     <span class="pipe on">Workflow L3</span>
   </div>
-  <p class="note" style="margin:0 0 16px">Ops surface: <code style="color:var(--gold)">python3 scripts/torii.py scorecard</code> — dual compound (skill + memory) plus <strong style="color:var(--muted)">workflows-as-code</strong> graph readiness, offline <strong style="color:var(--muted)">critic demote rate</strong> and <strong style="color:var(--muted)">memory util delta</strong>. <strong style="color:var(--muted)">Evidence over “zero false positives.”</strong></p>
+  <p class="note" style="margin:0 0 16px">Ops surface: <code style="color:var(--gold)">python3 scripts/torii.py scorecard</code> — dual compound (skill + memory) plus <strong style="color:var(--muted)">workflows-as-code</strong> graph readiness, offline <strong style="color:var(--muted)">critic demote rate</strong>, <strong style="color:var(--muted)">memory util delta</strong>, and measured <strong style="color:var(--muted)">hub_archival_loop_ok</strong> (F155–F163). <strong style="color:var(--muted)">Evidence over “zero false positives.”</strong></p>
   <p class="ey" style="margin:8px 0 12px">Memory compound loop (why noise dies twice)</p>
   <div class="pipeline">
     <span class="pipe on">Compound</span>

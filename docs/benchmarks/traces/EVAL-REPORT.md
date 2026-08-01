@@ -1,14 +1,14 @@
 # Torii eval-trace report (F83)
 
-Generated: `2026-08-01T07:35:33Z`
+Generated: `2026-08-01T09:45:56Z`
 
 ## Aggregate
 
-- runs: **63** (modal=35, local=28)
+- runs: **83** (modal=35, local=48)
 - log_streaming true: **4**
 - fitness composite n=8
 - composite mean/median/min/max: **0.842** / 0.8494 / 0.77 / 0.8694
-- levels: `{"L2": 4, "L3": 4, "modal-f80-live": 1, "modal-f81-llm-critic": 1, "modal-f82-skills": 1, "modal-f83-pack-eval": 1, "\u2014": 51}`
+- levels: `{"L2": 4, "L3": 4, "modal-f80-live": 1, "modal-f81-llm-critic": 1, "modal-f82-skills": 1, "modal-f83-pack-eval": 1, "\u2014": 71}`
 - models: `deepseek/deepseek-v4-pro`, `fixture`
 
 ## Runs
@@ -78,6 +78,28 @@ Generated: `2026-08-01T07:35:33Z`
 | — | local | — | — | `deepseek/deepseek-v4-pro` | — | — | F132 | `f132-scorecard-self-evolve` |
 | — | local | — | — | `deepseek/deepseek-v4-pro` | — | — | F133 | `f133-scorecard-dual-adopt` |
 | — | local | — | — | `deepseek/deepseek-v4-pro` | — | — | F134 | `f134-scorecard-federate-fitness` |
+| — | local | — | — | `—` | — | — | — | `f135-scorecard-fitness-doctor` |
+| — | local | — | — | `—` | — | — | — | `f136-scorecard-skill-util` |
+| — | local | — | — | `—` | — | — | — | `f137-scorecard-reprompt` |
+| — | local | — | — | `—` | — | — | — | `f138-scorecard-hub-compound` |
+| — | local | — | — | `—` | — | — | — | `f139-scorecard-hub-gap-critic` |
+| — | local | — | — | `—` | — | — | — | `f140-scorecard-hub-attr` |
+| — | local | — | — | `—` | — | — | — | `f141-memory-util-federate-critic` |
+| — | local | — | — | `—` | — | — | — | `f142-memory-util-hub-compound` |
+| — | local | — | — | `—` | — | — | — | `f143-memory-hub-gap-critic` |
+| — | local | — | — | `—` | — | — | — | `f144-graph-archival-promote` |
+| — | local | — | — | `—` | — | — | — | `f145-archival-supersede-filter` |
+| — | local | — | — | `—` | — | — | — | `f146-archival-reconsolidation` |
+| — | local | — | — | `—` | — | — | — | `f147-recon-warm-core-tier` |
+| — | local | — | — | `—` | — | — | — | `f148-recon-warm-federate` |
+| — | local | — | — | `—` | — | — | — | `f149-hub-warm-archival-query` |
+| — | local | — | — | `—` | — | — | — | `f150-recon-warm-hub-critic` |
+| — | local | — | — | `—` | — | — | — | `f151-recon-warm-hub-demote-eval` |
+| — | local | — | — | `—` | — | — | — | `f152-recon-warm-hub-reprompt` |
+| — | local | — | — | `—` | — | — | — | `f153-hub-archival-self-evolve` |
+| — | local | — | — | `—` | — | — | — | `f154-hub-archival-cycle-adopt` |
+
+| — | local+modal | pytorch/pytorch | 191829 | `deepseek/deepseek-v4-pro` | — | — | F164 | `f164-hub-archival-eval-pack` |
 
 ## Notes
 

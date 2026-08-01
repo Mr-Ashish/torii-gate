@@ -1,0 +1,25 @@
+{
+  "feature": "F136",
+  "schema": 1,
+  "scored_at": "2026-08-01T11:03:19Z",
+  "scorecard_ids": [
+    "skill-prefer-demote-eval-check",
+    "skill-prefer-dual-compound-ops",
+    "skill-prefer-hub-gap-critic",
+    "skill-prefer-memory-util-eval",
+    "skill-prefer-product-scorecard",
+    "skill-prefer-recovery-skills-active",
+    "skill-prefer-workflow-scorecard"
+  ],
+  "scorecard_injected": [],
+  "scorecard_injected_n": 0,
+  "tool_hit_ids": [],
+  "prose_only_ids": [],
+  "idle_ids": [],
+  "tool_hit_n": 0,
+  "util_rate": 1.0,
+  "utilization_gap": false,
+  "inject_chars": 3314,
+  "ok": true,
+  "score": 1.0
+}

@@ -48,6 +48,9 @@ A **torii** is the gate at a threshold — ordinary ground on one side, what mat
 | **Integrity** | Only path-evidenced findings compound; weak narrative never poisons the store. |
 | **Cost control** | Soft re-prompts recover quality within a shared paid-attempt budget. |
 | **Dual loops** | Skills that measure in; memory that pages in — both compound. |
+| **Hub-archival** | Hub-archival skills that never page cold memory do not silently APPROVE. |
+| **Hub-archival (AppSec)** | Cross-tenant retrieval heat becomes next-run always budget — without sharing paths or snippets. |
+| **Hub-archival loop** | util → critic → re-prompt → fitness → hub inject — one measured `hub_archival_loop_ok` bit. |
 | **vs SAST** | Scanners generate findings; Torii is the merge authority that compounds. |
 | **Tagline** | Nothing ships without crossing the gate. |
 

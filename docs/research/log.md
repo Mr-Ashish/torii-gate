@@ -2874,3 +2874,31 @@ Package measured compound loops as product readiness — not script archaeology.
 
 ### SHA
 `d70fea408e4767e44651bc4f3373a83f76c8902a`
+
+## 2026-08-01 — F164 hub-archival brand + paper EVAL pack
+
+### Papers / posts
+- Loop Engineering: design the loop, get a score — package measured compound loops as product readiness.
+- Mem0 discipline: inject ≠ utilization; tools must fire for memory/skills to count.
+- F155–F163 hub-archival stack complete offline; brand/EVAL surfaces lagged doctor flags.
+
+### Insight
+Highest ROI after F163: surface `hub_archival_loop_ok` on PRODUCT/landing/scorecard-metrics and roll F155–F163 live Modal proofs into one paper EVAL pack — measured capabilities, not slogans.
+
+### Feature shipped (F164)
+- PRODUCT Mental model D (F155–F163 table + one-liners)
+- TORII.md + landing.html hub-archival pipeline + scorecard callout
+- torii.py scorecard brand md rows for all hub_archival_* + brand_lines
+- docs/benchmarks/traces/f164-hub-archival-eval-pack/ (HUB-ARCHIVAL-EVAL.md + SUMMARY)
+- INDEX + EVAL-REPORT entries
+
+### Loop-engineering
+Package measured readiness into the surfaces operators and papers actually read.
+
+### Metric
+- scorecard hub_archival_loop_ok=True · brand_ready=True · L3
+- Live local recall=1.0 tp=4
+- Modal pytorch#82997 BIT3_OK ~57s log streaming
+
+### SHA
+`TBD`

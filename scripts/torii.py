@@ -815,6 +815,11 @@ def product_scorecard(
                 f"(active={sc_ops.get('active_n', 0)} fed={sc_ops.get('fed_n', 0)} "
                 f"fitness={sc_ops.get('fitness_ingested_n', 0)}) (F135)"
             ),
+            # F164: package measured hub-archival compound loop into brand surface
+            (
+                f"Hub-archival loop: **{'ok' if metrics.get('hub_archival_loop_ok') else 'gap'}** "
+                f"(util→critic→reprompt→fitness→hub inject · F155–F163)"
+            ),
         ],
         "doctor": {
             "doctor_pass": doctor.get("doctor_pass"),
@@ -896,7 +901,7 @@ def product_scorecard(
     brand_md = root / "docs" / "brand" / "scorecard-metrics.md"
     try:
         lines = [
-            "# Torii Gate — measured scorecard (F129/F130)",
+            "# Torii Gate — measured scorecard (F129/F130/F164)",
             "",
             f"_Generated: `{report['scored_at']}` · level **{level}** · brand_ready={brand_ready}_",
             "",
@@ -920,8 +925,18 @@ def product_scorecard(
             f"| memory_tool_util_delta | {metrics['memory_tool_util_delta']} |",
             f"| memory_tool_util_good | {metrics['memory_tool_util_good']} |",
             f"| memory_tool_util_weak | {metrics['memory_tool_util_weak']} |",
+            # F164: hub-archival compound loop (F155–F163) measured brand surface
+            f"| hub_archival_util_ok | {metrics.get('hub_archival_util_ok')} |",
+            f"| hub_archival_util_critic_ok | {metrics.get('hub_archival_util_critic_ok')} |",
+            f"| hub_archival_hub_ok | {metrics.get('hub_archival_hub_ok')} |",
+            f"| hub_archival_hub_inject_ok | {metrics.get('hub_archival_hub_inject_ok')} |",
+            f"| hub_archival_fitness_ok | {metrics.get('hub_archival_fitness_ok')} |",
+            f"| reprompt_adaptive_ok | {metrics.get('reprompt_adaptive_ok')} |",
+            f"| router_synth_ok | {metrics.get('router_synth_ok')} |",
+            f"| hub_archival_loop_ok | {metrics.get('hub_archival_loop_ok')} |",
+            f"| hub_archival_hub_pressure_idle_demoted | {metrics.get('hub_archival_hub_pressure_idle_demoted')} |",
             "",
-            "Source: `python3 scripts/torii.py scorecard` · workflow F131 · demote F128/F151 · util F130.",
+            "Source: `python3 scripts/torii.py scorecard` · workflow F131 · demote F128/F151 · util F130 · hub-archival F155–F163 (F164 brand pack).",
             "",
             "These are **measured** offline/ops metrics — not marketing pass rates.",
             "",
