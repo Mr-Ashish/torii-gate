@@ -19,7 +19,7 @@ _Scored: `2026-08-01T19:03:02Z` · commercial fixture **8.5** · overall **8.0**
 | Rank | Gap | Status |
 |-----:|-----|--------|
 | 1–7 | help · pricing · quieter · isolation · freshness · onboarding · pages | **shipped** |
-| 8 | Paid pilot / design-partner path | **this fire** (path shipped; revenue still $0) |
+| 8 | Paid pilot / design-partner path | **shipped** `a642760` (path; revenue still $0) |
 | 9 | First closed paid pilot (unblocks commercial >8.5) | next · human |
 | 10 | No F185+ without customer win | standing |
 

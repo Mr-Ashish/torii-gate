@@ -26,7 +26,7 @@ pricing (#10) · GTM (#11)
 Clear path free→partner→pilot without fake ARR
 
 ### SHA
-(pending)
+`a642760d73421b1e545da60b76b0e2d74b089769`
 
 ## 2026-08-01 — DEPLOYED_LANDING: GitHub Pages site from landing.html (Phase B #7)
 
