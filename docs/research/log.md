@@ -28,7 +28,7 @@ Adopted ops skills without federation/fitness are local-only. Highest ROI: priva
 **Measure → federate → fitness** — scorecard skills enter multi-tenant and run scoring.
 
 ### SHA
-`PENDING`
+`8ef9e98dc312912d46a5b799552954b3c2da8dca`
 
 ## 2026-08-01 — F133 dual-gate adopt of scorecard-gap skills
 
