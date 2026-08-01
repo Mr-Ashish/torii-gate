@@ -44,3 +44,13 @@ Source: `python3 scripts/skill_router.py scorecard-util --out-dir $OUT_DIR`.
 | reason | scorecard_utilization_gap (+fed_gap) |
 
 Source: `skill_router.py reprompt-decide` / Hermes F122 path.
+
+## F138 scorecard hub compound
+
+| Metric | Meaning |
+|--------|---------|
+| scorecard_hub_skill_n | Scorecard ops skills with hub tool-hit themes |
+| priority_delta | Select/inject rank bump from multi-tenant util |
+| gap_pressure | Federated scorecard util gap fraction |
+
+Source: `python3 scripts/skill_router.py scorecard-hub-score`.

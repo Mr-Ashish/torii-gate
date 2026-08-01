@@ -318,8 +318,11 @@ if [[ -f "$SCRIPTS/skill_router.py" ]]; then
         stage scorecard_skill_util \
           python3 "$SCRIPTS/skill_router.py" scorecard-util --out-dir "$OUT_DIR" || true
         # F125: hub recovery-util post-score → next-run always priority compound
+        # F138: also post-scores scorecard util hub → select priority + fitness
         stage recovery_hub_score \
           python3 "$SCRIPTS/skill_router.py" hub-score || true
+        stage scorecard_hub_score \
+          python3 "$SCRIPTS/skill_router.py" scorecard-hub-score || true
       fi
       ;;
   esac

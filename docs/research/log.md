@@ -1,5 +1,37 @@
 # Torii research → product log
 
+## 2026-08-01 — F138 scorecard hub post-score compound
+
+### Papers / posts
+- F125 recovery hub: federated util themes → priority deltas for next inject.
+- FederatedSkill: share skill themes not trajectories across tenants.
+- F136/F134 federated scorecard themes without post-score never ranked inject.
+
+### OSS design patterns stolen
+1. post_score_scorecard_hub + scorecard-hub-score CLI.
+2. select_skills score bump + inject `<!-- torii-f138-scorecard-hub -->`.
+3. hub-score nests scorecard_hub + fitness ingest_scorecard_skills.
+4. run-torii-review/save-trace wiring; fixture f138_*.
+
+### Insight
+Federated scorecard util without hub post-score is inert data. Highest ROI: F125-style priority compound so multi-tenant tool-effective ops skills win residual slots.
+
+### Feature shipped (F138)
+- skill_router scorecard hub post-score/inject/select
+- hub-score + scorecard-hub-score; PRODUCT/research
+- traces f138-scorecard-hub-compound/
+
+### Metric
+- Offline: fixture f138_ok privacy; pytest skill_router
+- Live: Modal pytorch e2e POST_COMMENT=0
+
+### Loop-engineering / Hermes practice used
+**Federate → post-score → prioritize next cycle** — scorecard ops mirror recovery F125.
+
+### SHA
+`PENDING`
+
+
 ## 2026-08-01 — F137 scorecard util soft re-prompt
 
 ### Papers / posts

@@ -59,6 +59,7 @@ from typing import Any
 
 FEATURE = "F84"
 FEATURE_HUB = "F125"
+FEATURE_SCORECARD_HUB = "F138"
 SCHEMA = 1
 MARKER_OPEN = "<!-- torii-f84-skill-router -->"
 MARKER_CLOSE = "<!-- /torii-f84-skill-router -->"
@@ -66,6 +67,8 @@ F69_OPEN = "<!-- torii-f69-skills -->"
 F69_CLOSE = "<!-- /torii-f69-skills -->"
 HUB_MARKER_OPEN = "<!-- torii-f125-recovery-hub -->"
 HUB_MARKER_CLOSE = "<!-- /torii-f125-recovery-hub -->"
+SCORECARD_HUB_MARKER_OPEN = "<!-- torii-f138-scorecard-hub -->"
+SCORECARD_HUB_MARKER_CLOSE = "<!-- /torii-f138-scorecard-hub -->"
 
 _FALSEY = frozenset({"0", "false", "no", "off", "disabled", "n", "none", ""})
 
@@ -304,11 +307,26 @@ def recovery_hub_enabled() -> bool:
     return raw not in _FALSEY
 
 
+def scorecard_hub_enabled() -> bool:
+    """F138: consume federated scorecard-util themes into select priority (default on)."""
+    raw = (os.environ.get("TORII_SCORECARD_HUB_COMPOUND") or "1").strip().lower()
+    return raw not in _FALSEY
+
+
 def _is_skill_id_theme(theme: str) -> bool:
     t = (theme or "").strip().lower()
-    if not t or t in ("recovery-util-ok", "recovery-util-gap", "recovery_util"):
+    if not t or t in (
+        "recovery-util-ok",
+        "recovery-util-gap",
+        "recovery_util",
+        "scorecard-util-ok",
+        "scorecard-util-gap",
+        "scorecard-ops-active",
+    ):
         return False
-    if t.startswith("recovery-util-hit-"):
+    if t.startswith("recovery-util-hit-") or t.startswith("scorecard-util-hit-"):
+        return True
+    if t.startswith("scorecard-skill-"):
         return True
     if t.startswith("skill-"):
         return True
@@ -508,6 +526,333 @@ def hub_priority_delta(sid: str, hub: dict[str, Any] | None = None) -> int:
         return int(deltas.get(sid) or 0)
     except (TypeError, ValueError):
         return 0
+
+
+def load_scorecard_hub_signals(root: Path | None = None) -> list[dict[str, Any]]:
+    """Load privacy-safe scorecard util/ops signals from federation store(s)."""
+    root = root or _root()
+    paths = [
+        root / "memory" / "federation" / "scorecard-util-signals.json",
+        root / "memory" / "federation" / "scorecard-skill-signals.json",
+    ]
+    od = (os.environ.get("OUT_DIR") or "").strip()
+    if od:
+        paths.insert(0, Path(od) / "scorecard-util-signals.json")
+        paths.insert(1, Path(od) / "scorecard-skill-signals.json")
+    out: list[dict[str, Any]] = []
+    seen: set[str] = set()
+    for p in paths:
+        if not p.is_file():
+            continue
+        try:
+            data = json.loads(p.read_text(encoding="utf-8"))
+        except (OSError, json.JSONDecodeError):
+            continue
+        sigs = data.get("signals") if isinstance(data, dict) else data
+        # F134 skill_ids without per-skill signal body
+        extra_ids = []
+        if isinstance(data, dict):
+            extra_ids = list(data.get("skill_ids") or [])
+        if not isinstance(sigs, list):
+            sigs = []
+        for s in list(sigs):
+            if not isinstance(s, dict):
+                continue
+            tags = [str(t).lower() for t in (s.get("tags") or [])]
+            theme = str(s.get("theme") or s.get("id") or "").lower()
+            src = str(s.get("source") or "").lower()
+            is_sc = (
+                "scorecard_util" in tags
+                or "scorecard_ops" in tags
+                or "f136" in tags
+                or "f134" in tags
+                or "f138" in tags
+                or theme.startswith("scorecard-")
+                or "scorecard" in src
+                or is_scorecard_skill_id(theme)
+                or any(is_scorecard_skill_id(str(k)) for k in (s.get("keywords") or []))
+            )
+            if not is_sc and not _is_skill_id_theme(theme):
+                continue
+            blob = json.dumps(s, ensure_ascii=False)
+            if "/Users/" in blob or "/home/" in blob:
+                continue
+            key = str(s.get("id") or theme)
+            if key in seen:
+                for existing in out:
+                    if str(existing.get("id") or existing.get("theme")) == key:
+                        existing["hits"] = int(existing.get("hits") or 0) + int(
+                            s.get("hits") or 1
+                        )
+                        th = list(existing.get("tenant_hashes") or [])
+                        for h in s.get("tenant_hashes") or []:
+                            if h not in th:
+                                th.append(h)
+                        if th:
+                            existing["tenant_hashes"] = th[:64]
+                            existing["tenants"] = len(th)
+                        break
+                continue
+            seen.add(key)
+            out.append(dict(s))
+        for sid in extra_ids:
+            sid_s = str(sid).strip()
+            if not is_scorecard_skill_id(sid_s) or sid_s in seen:
+                continue
+            seen.add(sid_s)
+            out.append(
+                {
+                    "id": f"scorecard-skill-{sid_s}"[:64],
+                    "theme": sid_s,
+                    "tags": ["scorecard_ops", "f134", "f138", "federated_skill"],
+                    "hits": 1,
+                    "tool_hits": 1,
+                    "source": "scorecard_skill_adopt",
+                    "util_rate_bin": "hit",
+                    "tenants": 1,
+                }
+            )
+    return out
+
+
+def post_score_scorecard_hub(
+    signals: list[dict[str, Any]] | None = None,
+    *,
+    root: Path | None = None,
+) -> dict[str, Any]:
+    """F138: post-score hub scorecard-util themes → per-skill select priority deltas.
+
+    Privacy: skill_id + hits + tenant counts + util bins only (no paths/commands).
+    Mirrors F125 recovery hub compound for F136/F134 scorecard ops skills.
+    """
+    root = root or _root()
+    signals = signals if signals is not None else load_scorecard_hub_signals(root)
+    skill_scores: dict[str, dict[str, Any]] = {}
+    gap_hits = 0
+    ok_hits = 0
+    gap_tenants = 0
+    ok_tenants = 0
+
+    for s in signals:
+        theme = str(s.get("theme") or s.get("id") or "").lower()
+        hits = max(1, int(s.get("hits") or 1))
+        tenants = max(1, int(s.get("tenants") or len(s.get("tenant_hashes") or []) or 1))
+        util_bin = str(s.get("util_rate_bin") or "").lower()
+        tags = [str(t).lower() for t in (s.get("tags") or [])]
+
+        if (
+            theme in ("scorecard-util-gap",)
+            or util_bin == "gap"
+            or "utilization_gap" in tags
+        ):
+            gap_hits += hits
+            gap_tenants = max(gap_tenants, tenants)
+            continue
+        if theme in ("scorecard-util-ok", "scorecard-ops-active") or util_bin in (
+            "full",
+            "partial",
+            "ok",
+        ):
+            if theme.startswith("scorecard-util") or theme == "scorecard-ops-active":
+                ok_hits += hits
+                ok_tenants = max(ok_tenants, tenants)
+                # scorecard-ops-active may carry skill_n only — no per-skill
+                if theme == "scorecard-ops-active":
+                    continue
+                # util-ok aggregate: continue after counting
+                if theme == "scorecard-util-ok":
+                    continue
+
+        sid = _skill_id_from_hub_theme(theme, str(s.get("id") or ""))
+        # strip scorecard-skill- / scorecard-util-hit- prefixes
+        if not sid:
+            raw = re.sub(
+                r"^(scorecard-util-hit-|scorecard-skill-)",
+                "",
+                theme,
+            )
+            sid = _skill_id_from_hub_theme(raw, raw)
+        if not sid:
+            for kw in s.get("keywords") or []:
+                sid = _skill_id_from_hub_theme(str(kw))
+                if sid and is_scorecard_skill_id(sid):
+                    break
+                sid = ""
+        if not sid or not is_scorecard_skill_id(sid):
+            # allow known scorecard ids only
+            if sid and sid.startswith("skill-prefer-") and any(
+                x in sid
+                for x in (
+                    "scorecard",
+                    "demote-eval",
+                    "memory-util",
+                    "hub-gap",
+                    "dual-compound",
+                    "workflow",
+                    "recovery-skills",
+                )
+            ):
+                pass
+            else:
+                continue
+
+        ent = skill_scores.setdefault(
+            sid,
+            {
+                "skill_id": sid,
+                "hits": 0,
+                "tenants": 0,
+                "tool_hits": 0,
+                "priority_delta": 0,
+                "util_rate_bin": util_bin or "hit",
+            },
+        )
+        ent["hits"] = int(ent["hits"]) + hits
+        ent["tenants"] = max(int(ent["tenants"]), tenants)
+        tool_hits = int(s.get("tool_hits") or (hits if util_bin in ("hit", "full") else 0))
+        ent["tool_hits"] = int(ent["tool_hits"]) + max(1, tool_hits)
+        if util_bin:
+            ent["util_rate_bin"] = util_bin
+
+    for sid, ent in skill_scores.items():
+        t = min(4, int(ent["tenants"]))
+        h = min(8, int(ent["hits"]))
+        th = min(6, int(ent["tool_hits"]))
+        delta = 5 + 8 * t + 2 * h + 3 * th
+        ent["priority_delta"] = min(40, int(delta))
+
+    total_sys = gap_hits + ok_hits
+    gap_pressure = round(gap_hits / total_sys, 4) if total_sys else 0.0
+
+    blob = json.dumps(skill_scores)
+    privacy_ok = (
+        "/Users/" not in blob
+        and "/home/" not in blob
+        and "C:\\\\Users" not in blob
+    )
+
+    report: dict[str, Any] = {
+        "feature": FEATURE_SCORECARD_HUB,
+        "schema": SCHEMA,
+        "enabled": scorecard_hub_enabled(),
+        "signals_n": len(signals),
+        "skill_n": len(skill_scores),
+        "skills": skill_scores,
+        "priority_deltas": {k: v["priority_delta"] for k, v in skill_scores.items()},
+        "gap_hits": gap_hits,
+        "ok_hits": ok_hits,
+        "gap_tenants": gap_tenants,
+        "ok_tenants": ok_tenants,
+        "gap_pressure": gap_pressure,
+        "privacy_ok": privacy_ok,
+        "hub_ok": privacy_ok
+        and (len(skill_scores) >= 1 or ok_hits >= 1 or gap_hits >= 0),
+    }
+    return report
+
+
+def render_scorecard_hub_section(hub: dict[str, Any]) -> str:
+    """Privacy-safe prompt section: hub scorecard util themes (ids + bins only)."""
+    lines = [
+        SCORECARD_HUB_MARKER_OPEN,
+        "## Federated scorecard util (F138 hub compound)",
+        "",
+        "Cross-tenant scorecard-gap ops tool outcomes (skill ids + util bins only; no paths):",
+    ]
+    skills = hub.get("skills") or {}
+    if skills:
+        ranked = sorted(
+            skills.values(),
+            key=lambda e: (-int(e.get("priority_delta") or 0), str(e.get("skill_id"))),
+        )
+        for e in ranked[:8]:
+            lines.append(
+                f"- `{e.get('skill_id')}`: hits={e.get('hits')} tenants={e.get('tenants')} "
+                f"tool_hits={e.get('tool_hits')} Δprio=+{e.get('priority_delta')} "
+                f"bin={e.get('util_rate_bin')}"
+            )
+    else:
+        lines.append(
+            "- (no hub scorecard skill themes yet — local scorecard adopt applies)"
+        )
+    gp = float(hub.get("gap_pressure") or 0)
+    if gp >= 0.34:
+        lines.append(
+            f"- **Hub scorecard util gap pressure={gp:.2f}** — prefer early "
+            "doctor/scorecard/demote-eval CLI calls when ops skills are in scope."
+        )
+    elif int(hub.get("ok_hits") or 0) >= 1:
+        lines.append(
+            f"- Hub scorecard util_ok hits={hub.get('ok_hits')} — keep ops CLIs in the loop."
+        )
+    lines.append(SCORECARD_HUB_MARKER_CLOSE)
+    return "\n".join(lines) + "\n"
+
+
+def inject_scorecard_hub_into_prompt(
+    prompt: Path,
+    hub: dict[str, Any] | None = None,
+    *,
+    root: Path | None = None,
+) -> dict[str, Any]:
+    """Inject/replace F138 hub scorecard section in prompt.md."""
+    root = root or _root()
+    hub = hub if hub is not None else post_score_scorecard_hub(root=root)
+    if not scorecard_hub_enabled():
+        return {
+            "feature": FEATURE_SCORECARD_HUB,
+            "injected": 0,
+            "reason": "off",
+            "hub": hub,
+        }
+    section = render_scorecard_hub_section(hub)
+    try:
+        original = prompt.read_text(encoding="utf-8", errors="replace")
+    except OSError as exc:
+        return {
+            "feature": FEATURE_SCORECARD_HUB,
+            "injected": 0,
+            "error": str(exc)[:120],
+        }
+    if SCORECARD_HUB_MARKER_OPEN in original:
+        new = re.sub(
+            rf"{re.escape(SCORECARD_HUB_MARKER_OPEN)}.*?"
+            rf"{re.escape(SCORECARD_HUB_MARKER_CLOSE)}\n?",
+            section,
+            original,
+            count=1,
+            flags=re.DOTALL,
+        )
+    else:
+        # place after recovery hub or skill router block
+        if HUB_MARKER_CLOSE in original:
+            new = original.replace(
+                HUB_MARKER_CLOSE, HUB_MARKER_CLOSE + "\n\n" + section, 1
+            )
+        elif MARKER_CLOSE in original:
+            new = original.replace(MARKER_CLOSE, MARKER_CLOSE + "\n\n" + section, 1)
+        else:
+            marker = "## PR metadata"
+            if marker in original:
+                new = original.replace(marker, section + "\n" + marker, 1)
+            else:
+                new = section + "\n" + original
+    try:
+        prompt.write_text(new, encoding="utf-8")
+    except OSError as exc:
+        return {
+            "feature": FEATURE_SCORECARD_HUB,
+            "injected": 0,
+            "error": str(exc)[:120],
+        }
+    return {
+        "feature": FEATURE_SCORECARD_HUB,
+        "injected": 1,
+        "chars": len(section),
+        "skill_n": int(hub.get("skill_n") or 0),
+        "gap_pressure": hub.get("gap_pressure"),
+        "privacy_ok": hub.get("privacy_ok"),
+    }
 
 
 def render_recovery_hub_section(hub: dict[str, Any]) -> str:
@@ -969,8 +1314,20 @@ def select_skills(
     elif hub_report is None:
         hub_report = {"enabled": False, "priority_deltas": {}, "skills": {}}
 
+    # F138: hub scorecard-util post-score → select priority for ops skills
+    sc_hub_report: dict[str, Any] = {"enabled": False, "priority_deltas": {}, "skills": {}}
+    if scorecard_hub_enabled():
+        try:
+            sc_hub_report = post_score_scorecard_hub(root=root or _root())
+        except Exception:
+            sc_hub_report = {"enabled": False, "priority_deltas": {}, "skills": {}}
+
     def _effective_always_prio(c: SkillCard) -> int:
-        return int(c.always_priority or 0) + hub_priority_delta(c.id, hub_report)
+        return (
+            int(c.always_priority or 0)
+            + hub_priority_delta(c.id, hub_report)
+            + hub_priority_delta(c.id, sc_hub_report)
+        )
 
     # F119: always-on budget — rank always candidates by always_priority (+ F125 hub), take top N
     always_cands = [c for c in cards if c.always]
@@ -994,6 +1351,10 @@ def select_skills(
         hd = hub_priority_delta(c.id, hub_report)
         if hd and c.id in always_deferred_set:
             s += min(12.0, float(hd) / 4.0)
+        # F138: hub-hit scorecard ops skills win residual full-body slots
+        hd_sc = hub_priority_delta(c.id, sc_hub_report)
+        if hd_sc:
+            s += min(12.0, float(hd_sc) / 4.0)
         ranked.append((s, c))
     ranked.sort(key=lambda x: (-x[0], x[1].id))
 
@@ -1047,11 +1408,19 @@ def select_skills(
         for k, v in (hub_report.get("priority_deltas") or {}).items()
         if any(c.id == k for c in cards)
     }
+    sc_hub_deltas = {
+        k: v
+        for k, v in (sc_hub_report.get("priority_deltas") or {}).items()
+        if any(c.id == k for c in cards) or is_scorecard_skill_id(k)
+    }
 
     return {
         "feature": FEATURE,
         "feature_always_budget": "F119",
         "feature_hub_compound": FEATURE_HUB if recovery_hub_enabled() else None,
+        "feature_scorecard_hub": FEATURE_SCORECARD_HUB
+        if scorecard_hub_enabled()
+        else None,
         "schema": SCHEMA,
         "f89": True,
         "path_themes": sorted(path_themes),
@@ -1072,6 +1441,9 @@ def select_skills(
         "hub_priority_deltas": hub_deltas,
         "hub_gap_pressure": hub_report.get("gap_pressure"),
         "hub_skill_n": hub_report.get("skill_n"),
+        "scorecard_hub_priority_deltas": sc_hub_deltas,
+        "scorecard_hub_gap_pressure": sc_hub_report.get("gap_pressure"),
+        "scorecard_hub_skill_n": sc_hub_report.get("skill_n"),
         "ranking": [
             {
                 "id": c.id,
@@ -1080,6 +1452,7 @@ def select_skills(
                 "always_priority": c.always_priority,
                 "always_priority_effective": _effective_always_prio(c),
                 "hub_delta": hub_priority_delta(c.id, hub_report),
+                "scorecard_hub_delta": hub_priority_delta(c.id, sc_hub_report),
                 "always_deferred": c.id in always_deferred_set,
                 "demoted": c.id in demoted and c.id not in always_selected_ids,
                 "free_rider": c.id in free_riders and c.id not in always_selected_ids,
@@ -1303,11 +1676,21 @@ def inject_into_prompt(
     hub_inj: dict[str, Any] = {"injected": 0}
     if recovery_hub_enabled() and hub_report is not None:
         hub_inj = inject_recovery_hub_into_prompt(dest, hub=hub_report, root=root)
+    # F138: inject hub scorecard util compound section (soft)
+    sc_hub_inj: dict[str, Any] = {"injected": 0}
+    if scorecard_hub_enabled():
+        try:
+            sc_hub_inj = inject_scorecard_hub_into_prompt(dest, root=root)
+        except Exception as exc:
+            sc_hub_inj = {"injected": 0, "soft_error": str(exc)[:80]}
 
     result = {
         "feature": FEATURE,
         "feature_compact": "F120" if compact_enabled() else None,
         "feature_hub_compound": FEATURE_HUB if recovery_hub_enabled() else None,
+        "feature_scorecard_hub": FEATURE_SCORECARD_HUB
+        if scorecard_hub_enabled()
+        else None,
         "injected": 1,
         "selected": selection["selected"],
         "always_selected": selection.get("always_selected"),
@@ -1324,6 +1707,12 @@ def inject_into_prompt(
         "hub_skill_n": selection.get("hub_skill_n"),
         "hub_gap_pressure": selection.get("hub_gap_pressure"),
         "hub_priority_deltas": selection.get("hub_priority_deltas"),
+        "scorecard_hub_injected": int(sc_hub_inj.get("injected") or 0),
+        "scorecard_hub_skill_n": selection.get("scorecard_hub_skill_n"),
+        "scorecard_hub_gap_pressure": selection.get("scorecard_hub_gap_pressure"),
+        "scorecard_hub_priority_deltas": selection.get(
+            "scorecard_hub_priority_deltas"
+        ),
     }
     # write selection artifact next to prompt if OUT_DIR
     od = (os.environ.get("OUT_DIR") or "").strip()
@@ -2740,7 +3129,7 @@ def cmd_reprompt_decide(args: argparse.Namespace) -> int:
 
 
 def cmd_hub_score(args: argparse.Namespace) -> int:
-    """F125/F126: post-score hub recovery util → priority deltas + fitness ingest."""
+    """F125/F126/F138: post-score hub recovery + scorecard util → priority deltas."""
     root = _root()
     hub = post_score_recovery_hub(root=root)
     inj = None
@@ -2765,6 +3154,60 @@ def cmd_hub_score(args: argparse.Namespace) -> int:
         }
     except Exception as exc:
         hub["fitness_ingest"] = {"soft_error": str(exc)[:120]}
+    # F138: scorecard hub post-score (+ optional inject + fitness)
+    sc_hub = post_score_scorecard_hub(root=root)
+    if inject_path and scorecard_hub_enabled():
+        sc_inj = inject_scorecard_hub_into_prompt(
+            Path(inject_path), hub=sc_hub, root=root
+        )
+        sc_hub["inject"] = {
+            "injected": sc_inj.get("injected"),
+            "chars": sc_inj.get("chars"),
+        }
+    try:
+        sys.path.insert(0, str(Path(__file__).resolve().parent))
+        from skill_fitness import ingest_scorecard_skills  # type: ignore
+
+        # synthesize skill_ids from hub for fitness shield
+        sc_doc = {
+            "privacy_ok": sc_hub.get("privacy_ok", True),
+            "skill_ids": list((sc_hub.get("skills") or {}).keys()),
+            "signals": [
+                {
+                    "id": f"scorecard-hub-{sid}"[:64],
+                    "theme": sid,
+                    "tags": ["scorecard_ops", "f138", "tool_outcome"],
+                    "keywords": [sid],
+                    "path_basenames": [],
+                    "hits": int((sc_hub.get("skills") or {}).get(sid, {}).get("hits") or 1),
+                    "tool_hits": int(
+                        (sc_hub.get("skills") or {}).get(sid, {}).get("tool_hits") or 1
+                    ),
+                }
+                for sid in (sc_hub.get("skills") or {})
+            ],
+        }
+        sc_fit = ingest_scorecard_skills(sc_doc, root=root, save=True)
+        sc_hub["fitness_ingest"] = {
+            k: sc_fit.get(k)
+            for k in ("feature", "ingested_n", "skills", "privacy_ok", "scorecard_ops_ok")
+            if k in sc_fit
+        }
+    except Exception as exc:
+        sc_hub["fitness_ingest"] = {"soft_error": str(exc)[:120]}
+    hub["scorecard_hub"] = {
+        k: sc_hub.get(k)
+        for k in (
+            "feature",
+            "skill_n",
+            "priority_deltas",
+            "gap_pressure",
+            "privacy_ok",
+            "hub_ok",
+            "fitness_ingest",
+            "inject",
+        )
+    }
     # OUT_DIR artifact
     od = (os.environ.get("OUT_DIR") or "").strip()
     if od:
@@ -2773,10 +3216,39 @@ def cmd_hub_score(args: argparse.Namespace) -> int:
             p.parent.mkdir(parents=True, exist_ok=True)
             p.write_text(json.dumps(hub, indent=2) + "\n", encoding="utf-8")
             hub["artifact"] = str(p)
+            p2 = Path(od) / "scorecard-hub-score.json"
+            p2.write_text(json.dumps(sc_hub, indent=2) + "\n", encoding="utf-8")
+            hub["scorecard_artifact"] = "scorecard-hub-score.json"
         except OSError:
             pass
     print(json.dumps(hub, indent=2))
-    return 0 if hub.get("privacy_ok") else 1
+    return 0 if hub.get("privacy_ok") and sc_hub.get("privacy_ok", True) else 1
+
+
+def cmd_scorecard_hub_score(args: argparse.Namespace) -> int:
+    """F138: post-score hub scorecard util themes only."""
+    root = _root()
+    sc_hub = post_score_scorecard_hub(root=root)
+    inject_path = (getattr(args, "inject", None) or "").strip()
+    if inject_path:
+        sc_inj = inject_scorecard_hub_into_prompt(
+            Path(inject_path), hub=sc_hub, root=root
+        )
+        sc_hub["inject"] = {
+            "injected": sc_inj.get("injected"),
+            "chars": sc_inj.get("chars"),
+        }
+    od = (os.environ.get("OUT_DIR") or "").strip()
+    if od:
+        try:
+            p = Path(od) / "scorecard-hub-score.json"
+            p.parent.mkdir(parents=True, exist_ok=True)
+            p.write_text(json.dumps(sc_hub, indent=2) + "\n", encoding="utf-8")
+            sc_hub["artifact"] = str(p)
+        except OSError:
+            pass
+    print(json.dumps(sc_hub, indent=2))
+    return 0 if sc_hub.get("privacy_ok") else 1
 
 
 def _flag_true(val: Any) -> bool:
@@ -3493,6 +3965,53 @@ Call second-agent critic tools when uncertain.
             and "/Users/" not in sc_prompt_text
         )
 
+        # F138: scorecard hub post-score → priority deltas + inject
+        os.environ["TORII_SCORECARD_HUB_COMPOUND"] = "1"
+        federate_scorecard_util(sc_util_good, root=root, tenant="fixture-tenant-sc3")
+        federate_scorecard_util(sc_util_good, root=root, tenant="fixture-tenant-sc4")
+        sc_hub = post_score_scorecard_hub(root=root)
+        sc_sid = "skill-prefer-product-scorecard"
+        sc_delta = int((sc_hub.get("priority_deltas") or {}).get(sc_sid) or 0)
+        # plant active scorecard skill file for select rank
+        (active / f"{sc_sid}.md").write_text(
+            f"""---
+id: {sc_sid}
+title: Prefer product scorecard
+themes: scorecard,ops,doctor
+---
+
+## Skill: product-scorecard
+
+Call `python3 scripts/torii.py doctor` and scorecard early.
+""",
+            encoding="utf-8",
+        )
+        cards_sc = catalog(root)
+        sel_sc = select_skills(
+            cards_sc, ["src/auth.py"], max_full=6, max_always=2, root=root
+        )
+        sc_rank = next(
+            (r for r in (sel_sc.get("ranking") or []) if r.get("id") == sc_sid),
+            None,
+        )
+        sc_hub_delta_rank = int((sc_rank or {}).get("scorecard_hub_delta") or 0)
+        sc_prompt = root / "prompt-sc-hub.md"
+        sc_prompt.write_text("# Review\n## PR metadata\n", encoding="utf-8")
+        sc_inj = inject_scorecard_hub_into_prompt(sc_prompt, hub=sc_hub, root=root)
+        sc_text = sc_prompt.read_text(encoding="utf-8")
+        f138_ok = (
+            bool(sc_hub.get("privacy_ok"))
+            and int(sc_hub.get("skill_n") or 0) >= 1
+            and sc_delta >= 5
+            and sc_hub_delta_rank >= 5
+            and int(sc_inj.get("injected") or 0) == 1
+            and SCORECARD_HUB_MARKER_OPEN in sc_text
+            and sc_sid in sc_text
+            and "/Users/" not in sc_text
+            and "fixture-tenant" not in sc_text
+            and bool(sel_sc.get("scorecard_hub_priority_deltas"))
+        )
+
         fixture_pass = all(
             [
                 always_ok,
@@ -3521,6 +4040,7 @@ Call second-agent critic tools when uncertain.
                 f126_ok,
                 sc_util_ok,
                 f137_ok,
+                f138_ok,
             ]
         )
         payload = {
@@ -3531,11 +4051,13 @@ Call second-agent critic tools when uncertain.
             "f121": True,
             "f136": True,
             "f137": True,
+            "f138": True,
             "feature_always_budget": "F119",
             "feature_compact": "F120",
             "feature_util": "F121",
             "feature_scorecard_util": "F136",
             "feature_scorecard_reprompt": "F137",
+            "feature_scorecard_hub": FEATURE_SCORECARD_HUB,
             "feature_hub_compound": FEATURE_HUB,
             "fixture_pass": fixture_pass,
             "always_ok": always_ok,
@@ -3600,6 +4122,12 @@ Call second-agent critic tools when uncertain.
             "f137_sc_reprompt_fed": sc_dec_fed.get("reprompt"),
             "f137_sc_reason": sc_dec_gap.get("reason"),
             "f137_prompt_has_marker": SCORECARD_REPROMPT_MARKER in sc_prompt_text,
+            "f138_ok": f138_ok,
+            "f138_sc_hub_skill_n": sc_hub.get("skill_n"),
+            "f138_sc_hub_delta": sc_delta,
+            "f138_sc_hub_inject": sc_inj.get("injected"),
+            "f138_sc_hub_privacy": sc_hub.get("privacy_ok"),
+            "f138_sc_hub_gap_pressure": sc_hub.get("gap_pressure"),
         }
         print(json.dumps(payload, indent=2))
         return 0 if fixture_pass else 1
@@ -3699,7 +4227,7 @@ def main(argv: list[str] | None = None) -> int:
 
     phub = sub.add_parser(
         "hub-score",
-        help="F125 post-score hub recovery-util themes → always priority deltas",
+        help="F125/F138 post-score hub recovery+scorecard util → priority deltas",
     )
     phub.add_argument(
         "--inject",
@@ -3707,6 +4235,17 @@ def main(argv: list[str] | None = None) -> int:
         help="optional prompt.md path to inject hub section",
     )
     phub.set_defaults(func=cmd_hub_score)
+
+    psch = sub.add_parser(
+        "scorecard-hub-score",
+        help="F138 post-score hub scorecard-util themes → select priority deltas",
+    )
+    psch.add_argument(
+        "--inject",
+        default="",
+        help="optional prompt.md path to inject scorecard hub section",
+    )
+    psch.set_defaults(func=cmd_scorecard_hub_score)
 
     ps = sub.add_parser("select", help="Select skills for paths")
     ps.add_argument("--paths", nargs="*", default=None)

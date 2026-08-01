@@ -286,6 +286,8 @@ def assess(root: Path | None = None, *, deep: bool = True) -> dict[str, Any]:
         # F136: scorecard skill util mid-run
         "run_scorecard_util": "scorecard-util" in run_sh or "scorecard_skill_util" in run_sh,
         "save_trace_scorecard_util": "scorecard-skill-util.json" in save_tr,
+        "run_scorecard_hub": "scorecard-hub-score" in run_sh or "scorecard_hub" in run_sh,
+        "save_trace_scorecard_hub": "scorecard-hub-score.json" in save_tr,
         "hermes_f122_reprompt": "F122" in hermes_sh or "recovery-skill-reprompt" in hermes_sh,
         "save_trace_recovery": "recovery-skill-util.json" in save_tr,
         # F125: hub recovery post-score compound (router inject path + trace archive)

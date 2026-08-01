@@ -65,6 +65,13 @@ class SkillRouterTests(unittest.TestCase):
         self.assertEqual(int(data.get("f137_sc_reprompt_gap") or 0), 1)
         self.assertEqual(int(data.get("f137_sc_reprompt_good") or 0), 0)
         self.assertTrue(data.get("f137_prompt_has_marker"), data)
+        # F138 scorecard hub post-score compound
+        self.assertTrue(data.get("f138") or data.get("feature_scorecard_hub") == "F138")
+        self.assertTrue(data.get("f138_ok"), data)
+        self.assertGreaterEqual(int(data.get("f138_sc_hub_skill_n") or 0), 1)
+        self.assertGreaterEqual(int(data.get("f138_sc_hub_delta") or 0), 5)
+        self.assertEqual(int(data.get("f138_sc_hub_inject") or 0), 1)
+        self.assertTrue(data.get("f138_sc_hub_privacy"), data)
 
     def test_f136_scorecard_util_cli(self):
         """Scorecard util gap only when scorecard skills injected without tools."""
@@ -211,6 +218,65 @@ class SkillRouterTests(unittest.TestCase):
             self.assertIn("torii-f137-scorecard-skill-reprompt", text)
             self.assertIn("torii.py doctor", text)
             self.assertNotIn("torii-f122-recovery-skill-reprompt", text)
+
+    def test_f138_scorecard_hub_score_cli(self):
+        """F138: scorecard-hub-score emits priority deltas privacy-safe."""
+        with tempfile.TemporaryDirectory() as td:
+            root = Path(td)
+            fed = root / "memory" / "federation"
+            fed.mkdir(parents=True)
+            sid = "skill-prefer-product-scorecard"
+            (fed / "scorecard-util-signals.json").write_text(
+                json.dumps(
+                    {
+                        "privacy_ok": True,
+                        "signals": [
+                            {
+                                "id": f"scorecard-util-hit-{sid}",
+                                "theme": sid,
+                                "tags": [
+                                    "scorecard_util",
+                                    "tool_outcome",
+                                    "f136",
+                                    "federated_skill",
+                                ],
+                                "hits": 3,
+                                "tool_hits": 3,
+                                "tenants": 2,
+                                "util_rate_bin": "hit",
+                                "tenant_hashes": ["abc", "def"],
+                                "source": "scorecard_skill_util",
+                            },
+                            {
+                                "id": "scorecard-util-ok",
+                                "theme": "scorecard-util-ok",
+                                "tags": ["scorecard_util", "util_ok", "f136"],
+                                "hits": 2,
+                                "util_rate_bin": "full",
+                                "source": "scorecard_skill_util",
+                            },
+                        ],
+                    }
+                ),
+                encoding="utf-8",
+            )
+            env = {
+                "TORII_ROOT": str(root),
+                "TORII_SCORECARD_HUB_COMPOUND": "1",
+                "OUT_DIR": str(root / "out"),
+            }
+            (root / "out").mkdir()
+            r = _run(["scorecard-hub-score"], env=env)
+            self.assertEqual(r.returncode, 0, r.stderr + r.stdout)
+            data = json.loads(r.stdout)
+            self.assertEqual(data.get("feature"), "F138")
+            self.assertTrue(data.get("privacy_ok"), data)
+            self.assertGreaterEqual(int(data.get("skill_n") or 0), 1)
+            deltas = data.get("priority_deltas") or {}
+            self.assertGreaterEqual(int(deltas.get(sid) or 0), 5)
+            blob = r.stdout
+            self.assertNotIn("/Users/", blob)
+            self.assertTrue((root / "out" / "scorecard-hub-score.json").is_file())
 
     def test_status(self):
         r = _run(["status"])

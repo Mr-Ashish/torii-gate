@@ -32,3 +32,4 @@ Also mirrored from LOOP.md budget/observability: each fire records metrics (reca
 - F135: scorecard skill fitness ingest (FederatedSkill themes → ledger shield) + doctor panel
 - F136: scorecard skill util (inject≠use) + federate + f136 critic demote
 - F137: scorecard util soft re-prompt (F122-style) under F108 budget
+- F138: scorecard hub post-score → select priority (F125-style for ops skills)
