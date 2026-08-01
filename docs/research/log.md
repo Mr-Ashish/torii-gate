@@ -29,7 +29,7 @@ LLM critics without a free deterministic base burn money and fail closed poorly.
 - pytest: 494 passed
 
 ### SHA
-`(pending push)`
+`39d55323aa90648f5d6b05d71ff5e7c3df276a27`
 
 ## 2026-08-01 — F80 Modal secrets bootstrap (live e2e unblock)
 
