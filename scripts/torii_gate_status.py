@@ -148,6 +148,40 @@ def skill_loop_snapshot(root: Path | None = None) -> dict:
         return {"available": False, "error": str(exc)[:120]}
 
 
+def memory_loop_snapshot(root: Path | None = None) -> dict:
+    """F96: optional memory compound loop readiness (does not affect merge exit)."""
+    try:
+        import importlib.util
+        import os
+
+        r = root
+        if r is None:
+            env = (os.environ.get("TORII_ROOT") or "").strip()
+            r = Path(env).resolve() if env else Path(__file__).resolve().parents[1]
+        mlp = r / "scripts" / "memory_loop_status.py"
+        if not mlp.is_file():
+            return {"available": False}
+        spec = importlib.util.spec_from_file_location("memory_loop_status", mlp)
+        if spec is None or spec.loader is None:
+            return {"available": False}
+        mod = importlib.util.module_from_spec(spec)
+        sys.modules["memory_loop_status"] = mod
+        spec.loader.exec_module(mod)
+        rep = mod.assess(r, deep=False)
+        return {
+            "available": True,
+            "feature": "F96",
+            "level": rep.get("level"),
+            "pct": rep.get("pct"),
+            "ready": rep.get("ready"),
+            "stages_ok": f"{rep.get('stages_ok')}/{rep.get('stages_total')}",
+            "wiring_ok": rep.get("wiring_ok"),
+            "loop": rep.get("loop"),
+        }
+    except Exception as exc:
+        return {"available": False, "error": str(exc)[:120]}
+
+
 def main(argv: list[str] | None = None) -> int:
     ap = argparse.ArgumentParser(description="Torii Gate status from review markdown")
     ap.add_argument("review", type=Path, nargs="?", default=None, help="Path to review-*.md")
@@ -163,12 +197,27 @@ def main(argv: list[str] | None = None) -> int:
         action="store_true",
         help="F91: print skill loop readiness only (no review required)",
     )
+    ap.add_argument(
+        "--memory-loop",
+        action="store_true",
+        help="F96: include memory compound loop readiness (shallow; never blocks merge alone)",
+    )
+    ap.add_argument(
+        "--memory-loop-only",
+        action="store_true",
+        help="F96: print memory loop readiness only (no review required)",
+    )
     args = ap.parse_args(argv)
 
     if args.skill_loop_only:
         snap = skill_loop_snapshot()
         print(json.dumps(snap, indent=2) if args.json or True else snap)
         # exit 0 if ready else 1 for ops, but not used in CI gate path
+        return 0 if snap.get("ready") else 1
+
+    if args.memory_loop_only:
+        snap = memory_loop_snapshot()
+        print(json.dumps(snap, indent=2))
         return 0 if snap.get("ready") else 1
 
     if args.review is None or not args.review.is_file():
@@ -181,6 +230,8 @@ def main(argv: list[str] | None = None) -> int:
     decision["parsed"] = parsed
     if args.skill_loop:
         decision["skill_loop"] = skill_loop_snapshot()
+    if args.memory_loop:
+        decision["memory_loop"] = memory_loop_snapshot()
 
     if args.json:
         print(json.dumps(decision, indent=2))
@@ -191,6 +242,12 @@ def main(argv: list[str] | None = None) -> int:
             print(
                 f"skill_loop\t{sl.get('level')}\t"
                 f"stages={sl.get('stages_ok')} skills={sl.get('skills_n')} ready={sl.get('ready')}"
+            )
+        if args.memory_loop and isinstance(decision.get("memory_loop"), dict):
+            ml = decision["memory_loop"]
+            print(
+                f"memory_loop\t{ml.get('level')}\t"
+                f"stages={ml.get('stages_ok')} wiring={ml.get('wiring_ok')} ready={ml.get('ready')}"
             )
 
     if args.strict and decision.get("block"):

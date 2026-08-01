@@ -193,18 +193,21 @@ def _fp_path(root: Path) -> Path:
 
 
 def _fed_path(root: Path) -> Path:
+    """F96: prefer multi-tenant **promoted** signals (often carry effective_score)."""
     env = (os.environ.get("TORII_FEDERATED_SIGNALS_FILE") or "").strip()
     if env:
         return Path(env).resolve()
+    # Prefer promoted (F77/F95 gate) over raw global aggregate
     for cand in (
-        root / "memory" / "federation" / "federated-signals.json",  # F77 hub
         root / "memory" / "federation" / "promoted-signals.json",
+        root / "memory" / "federation" / "federated-signals.json",  # F77 hub
+        root / ".torii" / "promoted-signals.json",
         root / ".torii" / "federated-signals.json",
         root / "memory" / "federated-signals.json",
     ):
         if cand.is_file():
             return cand
-    return root / "memory" / "federation" / "federated-signals.json"
+    return root / "memory" / "federation" / "promoted-signals.json"
 
 
 def load_tp_items(
@@ -326,7 +329,7 @@ def load_federated_items(
     scope: str = "global",
     tenant: str = "",
 ) -> list[MemoryItem]:
-    """Privacy-safe theme/CWE/keywords only — no private paths (F71)."""
+    """Privacy-safe theme/CWE/keywords + F95 effective scores — no private paths (F71/F96)."""
     data = _load_json(path)
     if data is None:
         return []
@@ -345,6 +348,17 @@ def load_federated_items(
         kws = [str(k) for k in (s.get("keywords") or [])][:16]
         # reject if any keyword looks like absolute home path
         kws = [k for k in kws if "/Users/" not in k and not k.startswith("/home/")]
+
+        def _f(v: Any) -> float | None:
+            if v is None:
+                return None
+            try:
+                return max(0.0, min(1.0, float(v)))
+            except (TypeError, ValueError):
+                return None
+
+        # basenames only (never inject as path_globs for privacy)
+        src_label = "promoted-signals" if "promoted" in path.name else "federated-signals"
         out.append(
             MemoryItem(
                 id=_item_id("federated", scope, str(s.get("id") or theme), theme),
@@ -355,17 +369,26 @@ def load_federated_items(
                 keywords=kws,
                 path_globs=[],  # never paths from federated
                 hits=int(s.get("hits") or 1),
-                source="federated-signals",
+                source=src_label,
                 tenant=tenant,
                 provenance=_safe_provenance(path),
                 raw_id=str(s.get("id") or theme),
+                importance_score=_f(s.get("importance_score")),
+                decay_weight=_f(s.get("decay_weight")),
+                effective_score=_f(s.get("effective_score")),
             )
         )
     return out
 
 
+def _max_eff(a: float | None, b: float | None) -> float | None:
+    if a is None and b is None:
+        return None
+    return max(a or 0.0, b or 0.0)
+
+
 def merge_items(items: list[MemoryItem]) -> list[MemoryItem]:
-    """Dedupe by kind+raw theme+scope preference; sum hits."""
+    """Dedupe by kind+raw theme+scope preference; sum hits; max effective_score (F96)."""
     best: dict[str, MemoryItem] = {}
     for it in items:
         # key ignores scope so we can keep highest-priority scope copy + hits
@@ -382,6 +405,8 @@ def merge_items(items: list[MemoryItem]) -> list[MemoryItem]:
             it.path_globs = list(
                 dict.fromkeys(list(it.path_globs) + list(old.path_globs))
             )[:16]
+            it.effective_score = _max_eff(it.effective_score, old.effective_score)
+            it.importance_score = _max_eff(it.importance_score, old.importance_score)
             best[k] = it
         else:
             old.hits = int(old.hits) + int(it.hits)
@@ -391,6 +416,8 @@ def merge_items(items: list[MemoryItem]) -> list[MemoryItem]:
             old.path_globs = list(
                 dict.fromkeys(list(old.path_globs) + list(it.path_globs))
             )[:16]
+            old.effective_score = _max_eff(old.effective_score, it.effective_score)
+            old.importance_score = _max_eff(old.importance_score, it.importance_score)
             best[k] = old
     return list(best.values())
 
@@ -586,7 +613,7 @@ def rank_score(item: MemoryItem, changed_paths: list[str]) -> float:
     pm = path_match(item, changed_paths)
     scope_w = SCOPE_RANK.get(item.scope, 0) / 50.0
     hits_w = min(1.0, (item.hits or 1) / 10.0)
-    # F94: when consolidation annotated effective_score, blend into rank
+    # F94/F96: effective_score from consolidation or promoted federated signals
     eff_w = 0.0
     try:
         raw_eff = getattr(item, "effective_score", None)
@@ -596,12 +623,17 @@ def rank_score(item: MemoryItem, changed_paths: list[str]) -> float:
             eff_w = max(0.0, min(1.0, float(raw_eff)))
     except (TypeError, ValueError):
         eff_w = 0.0
+    # F96: promoted federated high-strength themes get a theme boost (still < path match)
+    fed_boost = 0.0
+    if item.kind == "federated" and eff_w >= 0.5:
+        fed_boost = 0.06 * eff_w
     # path match dominates; theme-only items still rank via scope+hits but lower
     if pm > 0:
-        base = 0.50 * pm + 0.22 * scope_w + 0.18 * hits_w
-        return base + 0.10 * eff_w if eff_w else base + 0.02 * hits_w
-    base = 0.15 * scope_w + 0.10 * hits_w + (0.05 if item.kind == "tp" else 0.0)
-    return base + (0.08 * eff_w if eff_w else 0.0)
+        base = 0.48 * pm + 0.20 * scope_w + 0.16 * hits_w
+        return base + (0.14 * eff_w if eff_w else 0.02 * hits_w) + fed_boost
+    base = 0.14 * scope_w + 0.10 * hits_w + (0.05 if item.kind == "tp" else 0.0)
+    # theme-only: effective is the main quality signal (F96)
+    return base + (0.14 * eff_w if eff_w else 0.0) + fed_boost
 
 
 @dataclass
@@ -753,7 +785,8 @@ def render_section(result: dict[str, Any]) -> str:
         MARKER,
         "## Scoped memory recall (F75 — Mem0 multi-scope, budgeted)",
         "",
-        "Selective TP/FP memory ranked by **path match → scope (run>repo>tenant>agent>global) → hits**.",
+        "Selective TP/FP memory ranked by **path match → scope → hits → effective_score** (F94/F96).",
+        "Promoted federated themes carry privacy-safe **effective_score**; stale low-strength items rank down.",
         "Conflicts: path-anchored FP suppresses theme-only TP; path-matched TP beats unanchored FP.",
         "Do **not** re-raise FP-suppressed themes without **new** path evidence.",
         "",
@@ -1091,6 +1124,7 @@ def cmd_fixture(args: argparse.Namespace) -> int:
                 "cwe": ["CWE-89"],
                 "keywords": ["sql injection", "cwe-89"],
                 "hits": 10,
+                "effective_score": 0.4,
             },
             {
                 "id": "poison",
@@ -1102,6 +1136,32 @@ def cmd_fixture(args: argparse.Namespace) -> int:
     }
     (torii / "federated-signals.json").write_text(
         json.dumps(fed, indent=2) + "\n", encoding="utf-8"
+    )
+    # F96: promoted signals preferred + higher effective ranks first
+    fed_dir = td / "memory" / "federation"
+    fed_dir.mkdir(parents=True, exist_ok=True)
+    promoted = {
+        "signals": [
+            {
+                "id": "command_injection",
+                "theme": "command_injection",
+                "cwe": ["CWE-78"],
+                "keywords": ["shell=true", "command injection"],
+                "hits": 6,
+                "effective_score": 0.91,
+                "importance_score": 0.85,
+            },
+            {
+                "id": "weak_info",
+                "theme": "info_disclosure",
+                "keywords": ["debug"],
+                "hits": 20,
+                "effective_score": 0.08,
+            },
+        ]
+    }
+    (fed_dir / "promoted-signals.json").write_text(
+        json.dumps(promoted, indent=2) + "\n", encoding="utf-8"
     )
 
     old = {
@@ -1117,7 +1177,8 @@ def cmd_fixture(args: argparse.Namespace) -> int:
         os.environ["TORII_ROOT"] = str(td)
         os.environ["TORII_TP_SIGNATURES_FILE"] = str(torii / "tp-signatures.json")
         os.environ["TORII_FP_RULES_FILE"] = str(torii / "fp-rules.json")
-        os.environ["TORII_FEDERATED_SIGNALS_FILE"] = str(torii / "federated-signals.json")
+        # Prefer promoted-signals via _fed_path (unset explicit fed file after writing promoted)
+        os.environ.pop("TORII_FEDERATED_SIGNALS_FILE", None)
         os.environ["TORII_SCOPED_MEMORY_FILE"] = str(torii / STORE_NAME)
         os.environ["TORII_SCOPED_MEMORY"] = "1"
         os.environ["TORII_SCOPED_TP_MAX"] = "4"
@@ -1146,6 +1207,23 @@ def cmd_fixture(args: argparse.Namespace) -> int:
             for kw in it.keywords:
                 if "/Users/" in kw:
                     privacy_ok = False
+        # F96: promoted high-effective federated ranks above low-effective
+        fed_items = [i for i in items if i.kind == "federated"]
+        fed_by_theme = {i.theme: i for i in fed_items}
+        promoted_ok = (
+            "command_injection" in fed_by_theme
+            and float(fed_by_theme["command_injection"].effective_score or 0) >= 0.9
+        )
+        # theme-only rank: high effective > low effective (no path match)
+        high = MemoryItem(
+            id="h", kind="federated", scope="global", theme="command_injection",
+            hits=2, effective_score=0.91,
+        )
+        low = MemoryItem(
+            id="l", kind="federated", scope="global", theme="info_disclosure",
+            hits=20, effective_score=0.08,
+        )
+        effective_rank_ok = rank_score(high, []) > rank_score(low, [])
         # inject
         prompt = td / "prompt.md"
         prompt.write_text("# prompt\n\n<!-- torii-f70-tp-signatures -->\n## bulk TP\n- all\n\n", encoding="utf-8")
@@ -1163,10 +1241,13 @@ def cmd_fixture(args: argparse.Namespace) -> int:
             and privacy_ok
             and inject_ok
             and replace_ok
+            and promoted_ok
+            and effective_rank_ok
             and result["metrics"]["tp_returned"] <= 4
         )
         payload = {
             "feature": FEATURE,
+            "feature_f96": True,
             "fixture_pass": fixture_pass,
             "tmpdir": str(td),
             "ingest_count": ing["count"],
@@ -1176,6 +1257,8 @@ def cmd_fixture(args: argparse.Namespace) -> int:
             "path_ok": path_ok,
             "has_conflict": has_conflict,
             "privacy_ok": privacy_ok,
+            "promoted_ok": promoted_ok,
+            "effective_rank_ok": effective_rank_ok,
             "inject_ok": inject_ok,
             "replace_ok": replace_ok,
             "metrics": result["metrics"],

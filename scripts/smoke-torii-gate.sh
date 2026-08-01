@@ -163,7 +163,7 @@ else
 fi
 
 # --- 6. F91/F92 skill compound loop readiness ---
-log "[6/6] skill compound loop readiness (F91)"
+log "[6/7] skill compound loop readiness (F91)"
 if [[ ! -f "$SKILL_LOOP" ]]; then
   # Pack targets may omit until re-install; fail on hub product tree only
   if [[ -d "$ROOT/agent/skills/active" ]]; then
@@ -206,6 +206,53 @@ else
         pass "torii_gate_status --skill-loop-only ready"
       else
         fail "torii_gate_status --skill-loop-only not ready"
+      fi
+      ;;
+  esac
+fi
+
+# --- 7. F96 memory compound loop readiness ---
+MEMORY_LOOP="$ROOT/scripts/memory_loop_status.py"
+log "[7/7] memory compound loop readiness (F96)"
+if [[ ! -f "$MEMORY_LOOP" ]]; then
+  if [[ -f "$ROOT/scripts/scoped_memory_recall.py" ]]; then
+    fail "missing $MEMORY_LOOP (hub tree expects F96 memory_loop_status.py)"
+  else
+    pass "skip memory_loop (script not in pack tree)"
+  fi
+else
+  case "${TORII_SMOKE_MEMORY_LOOP:-1}" in
+    0|false|FALSE|off|OFF|no|NO)
+      if OUT="$(python3 "$MEMORY_LOOP" scorecard --shallow 2>/dev/null)"; then
+        LVL="$(python3 -c 'import json,sys; print(json.load(sys.stdin).get("level",""))' <<<"$OUT")"
+        READY="$(python3 -c 'import json,sys; print(json.load(sys.stdin).get("ready",False))' <<<"$OUT")"
+        if [[ "$READY" == "True" || "$READY" == "true" ]] && [[ "$LVL" == "L2" || "$LVL" == "L3" ]]; then
+          pass "memory_loop shallow level=$LVL ready=$READY"
+        else
+          fail "memory_loop shallow not ready: $OUT"
+        fi
+      else
+        fail "memory_loop scorecard --shallow failed"
+      fi
+      ;;
+    *)
+      if OUT="$(python3 "$MEMORY_LOOP" fixture 2>/dev/null)"; then
+        LVL="$(python3 -c 'import json,sys; print(json.load(sys.stdin).get("level",""))' <<<"$OUT")"
+        PASSF="$(python3 -c 'import json,sys; print(json.load(sys.stdin).get("fixture_pass",False))' <<<"$OUT")"
+        if [[ "$PASSF" == "True" || "$PASSF" == "true" ]] && [[ "$LVL" == "L3" ]]; then
+          pass "memory_loop fixture L3"
+        else
+          log "  detail: $OUT"
+          fail "memory_loop fixture expected L3 fixture_pass, got level=$LVL pass=$PASSF"
+        fi
+      else
+        python3 "$MEMORY_LOOP" fixture 2>&1 | tail -30 || true
+        fail "memory_loop fixture"
+      fi
+      if python3 "$STATUS" --memory-loop-only >/dev/null 2>&1; then
+        pass "torii_gate_status --memory-loop-only ready"
+      else
+        fail "torii_gate_status --memory-loop-only not ready"
       fi
       ;;
   esac

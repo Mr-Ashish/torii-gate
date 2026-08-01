@@ -1,0 +1,6 @@
+{
+  "id": "memory-loop-status",
+  "feature": "F96",
+  "status": "adopted",
+  "one_liner": "L0-L3 readiness for write\u2192consolidate\u2192critic\u2192federate\u2192scoped inject"
+}

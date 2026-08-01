@@ -1,6 +1,36 @@
 # Torii research → product log
 
 
+## 2026-08-01 — F96 memory loop readiness + promoted effective inject rank
+
+### Papers / posts / OSS
+- Loop Engineering readiness scorecards (skill_loop F91 pattern applied to memory).
+- F75 inject ranked path/scope/hits; F95 federated effective floats not preferred at inject.
+- Memory stack F70–F95 lacked a single ops surface for "is compound memory ready?"
+
+### OSS / eng patterns
+1. Prefer `promoted-signals.json` in F75 `_fed_path`; load + rank by `effective_score`.
+2. `memory_loop_status` L0–L3: write→consolidate→effective_critic→federate→scoped_recall→tp_store.
+3. Smoke [7/7] + `torii_gate_status --memory-loop-only`.
+
+### Insight
+Intelligence without readiness rots. Highest ROI: **scorecard the memory loop** and **inject promoted strength**.
+
+### Feature shipped (F96)
+- scoped_memory_recall promoted prefer + effective rank/merge
+- memory_loop_status status/scorecard/fixture/markdown
+- smoke + gate ops surface; pack install; PRODUCT
+
+### Loop-engineering practice used
+**Readiness scorecard on the compound memory loop** — measured stages, not prose.
+
+### Metric
+- Offline: memory_loop L3; scoped fixture promoted+effective_rank; 543 pytest; smoke PASS
+- Live: **Modal** pytorch#191813 deepseek/deepseek-v4-pro BIT3_OK ~80s; log_streaming=true; POST_COMMENT=0
+
+### SHA
+PENDING
+
 ## 2026-08-01 — F95 effective-aware dual-pass critic + federated strength
 
 ### Papers / posts / OSS

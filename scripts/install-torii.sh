@@ -170,6 +170,7 @@ RUNTIME_SCRIPTS=(
   skill_loop_status.py
   memory_event_policy.py
   memory_consolidate.py
+  memory_loop_status.py
 )
 
 copy_file() {

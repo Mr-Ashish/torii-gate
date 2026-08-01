@@ -1,8 +1,8 @@
 {
   "schema_version": 1,
-  "feature": "F95",
+  "feature": "F96",
   "description": "Torii agent tool catalog \u2014 research \u2192 eval \u2192 adopt pipeline",
-  "updated_at": "2026-08-01T02:45:51Z",
+  "updated_at": "2026-08-01T02:54:59Z",
   "tools": [
     {
       "id": "terminal",
@@ -349,6 +349,15 @@
       ],
       "feature": "F95",
       "source": "memory_oss",
+      "adopted_at": "2026-08-01"
+    },
+    {
+      "id": "memory-loop-status",
+      "name": "Memory compound loop readiness L0-L3 (F96)",
+      "status": "adopted",
+      "script": "scripts/memory_loop_status.py",
+      "feature": "F96",
+      "source": "loop_engineering",
       "adopted_at": "2026-08-01"
     }
   ],
