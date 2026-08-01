@@ -1,0 +1,20 @@
+{
+  "feature": "BRAND_FED_COST",
+  "schema_version": 1,
+  "repo": "pytorch/pytorch",
+  "pr": "191840",
+  "model": "deepseek/deepseek-v4-pro",
+  "host": "modal",
+  "bit3": true,
+  "elapsed_s": 132.5,
+  "log_streaming": true,
+  "tool_call_turns": 9,
+  "post_comment": 0,
+  "verdict": "REQUEST_CHANGES",
+  "block": true,
+  "certificate_id": "gc-332eb8180a333c36",
+  "notes": "BRAND_FED_COST brand scorecard cost rows + federation never-spend",
+  "scored_at": "2026-08-01T16:57:39Z",
+  "modal_run": "https://modal.com/apps/mr-ashish/main/ap-FOyBhdPeXaplVOcupBRytb",
+  "cost_usd": 0.024852913
+}

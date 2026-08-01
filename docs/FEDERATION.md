@@ -34,7 +34,9 @@ Full allow/deny table: [`enterprise/PRIVACY.md`](enterprise/PRIVACY.md).
 
 ## What never leaves a tenant
 
-Full paths · source snippets · secrets · raw org/repo names · PR authors · evidence quotes.
+Full paths · source snippets · secrets · raw org/repo names · PR authors · evidence quotes · **cost/PR USD estimates · hermes token counts · Modal run URLs**.
+
+Measured dogfood cost/latency lives in the **local hub vault** (`docs/benchmarks/traces/`, [ops/cost-pr-dashboard.md](ops/cost-pr-dashboard.md)) — themes federation never carries spend data. See [enterprise/PRIVACY.md](enterprise/PRIVACY.md) · Cost / PR telemetry.
 
 ## Operator path
 
@@ -56,6 +58,7 @@ python3 scripts/enterprise_surface.py report
 | Repo-local memory | **on** (no hub required) |
 | Hub federation | **opt-in** |
 | Promote min tenants | **2** (single tenant cannot promote alone) |
+| Cost / PR telemetry | **local vault only** (never federated) |
 
 ## How it ties to quieter + tools
 

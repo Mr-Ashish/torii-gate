@@ -2,7 +2,7 @@
 
 # Commercial product scorecard
 
-_Generated: `2026-08-01T16:51:50Z` · schema **2** · **overall_est=8.5/10** (baseline 6.6) · commercial_ok=`True`_
+_Generated: `2026-08-01T16:54:45Z` · schema **2** · **overall_est=8.5/10** (baseline 6.6) · commercial_ok=`True`_
 
 Single commercial scorecard: golden path · buyer · public eval · install · ops · enterprise · gate cert · quieter · tool-use · workflow · measured cost/PR
 

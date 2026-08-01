@@ -1,6 +1,6 @@
 # Torii Gate — product scorecard
 
-_Generated: `2026-08-01T16:13:41Z` · level **L3** · brand_ready=**True**_
+_Generated: `2026-08-01T16:54:46Z` · level **L3** · brand_ready=**True**_
 
 Buyers start here. Advanced loop metrics (engineers) are below the fold.
 
@@ -14,10 +14,15 @@ Buyers start here. Advanced loop metrics (engineers) are below the fold.
 | dual_compound L3 | skill L3 · memory L3 · workflow L3 |
 | doctor_pass | True |
 | product_surfaces | 10/10 |
+| cost_honesty_ok | True |
+| cost/PR p50 (USD) | 0.016 |
+| time-to-signal p50 (s) | 92.3 |
+
+Measured dogfood cost/latency is **local vault only** (not federated). Audit: [cost-pr-dashboard](../ops/cost-pr-dashboard.md) · [commercial Cost honesty](../benchmarks/commercial-scorecard.md) · [enterprise/PRIVACY](../enterprise/PRIVACY.md).
 
 Commands: `python3 scripts/torii.py commercial -- status` · `python3 scripts/torii.py doctor` · `python3 scripts/torii.py ops -- status`
 
-Docs: [INSTALL](../INSTALL.md) · [GOLDEN-PATH](../GOLDEN-PATH.md) · [QUIETER](../QUIETER.md) · [MEMORY](../MEMORY.md) · [WORKFLOWS](../WORKFLOWS.md) · [commercial-scorecard](../benchmarks/commercial-scorecard.md)
+Docs: [INSTALL](../INSTALL.md) · [GOLDEN-PATH](../GOLDEN-PATH.md) · [QUIETER](../QUIETER.md) · [MEMORY](../MEMORY.md) · [WORKFLOWS](../WORKFLOWS.md) · [commercial-scorecard](../benchmarks/commercial-scorecard.md) · [FEDERATION](../FEDERATION.md)
 
 ---
 

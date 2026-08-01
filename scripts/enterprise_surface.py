@@ -175,6 +175,11 @@ def docs_surface(root: Path) -> dict[str, bool]:
             "tenant hash" in fed_txt.lower() and "path" in fed_txt.lower()
         ),
         "federation_buyer_mentions_gate": "torii/gate" in fed_txt,
+        # BRAND_FED_COST: buyer federation doc states cost is not federated
+        "federation_buyer_cost_local": bool(
+            re.search(r"cost/PR|cost\s*/\s*PR|USD|hermes", fed_txt, re.I)
+            and re.search(r"never|local vault|not federat", fed_txt, re.I)
+        ),
     }
 
 
@@ -356,6 +361,7 @@ def cmd_fixture(args: argparse.Namespace) -> int:
         "docs_federation_buyer": bool(docs.get("federation_buyer_doc")),
         "docs_federation_buyer_privacy": bool(docs.get("federation_buyer_mentions_privacy")),
         "docs_federation_buyer_gate": bool(docs.get("federation_buyer_mentions_gate")),
+        "docs_federation_buyer_cost_local": bool(docs.get("federation_buyer_cost_local")),
         "federation_audited": int(fed.get("files_n") or 0) >= 1,
         "federation_all_ok": bool(fed.get("all_ok")),
         "hub_fixture": bool(hub.get("fixture_pass")),

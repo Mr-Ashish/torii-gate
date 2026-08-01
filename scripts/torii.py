@@ -1288,10 +1288,30 @@ def product_scorecard(
     except Exception:
         product_panel = {}
 
+    # BRAND_COST: cost honesty from commercial status (local vault p50s)
+    cost_honesty_ok = commercial_panel.get("cost_honesty_ok")
+    cost_p50 = commercial_panel.get("cost_p50_usd")
+    tts_p50 = None
+    try:
+        dpath = root / "docs" / "ops" / "dashboard.json"
+        if dpath.is_file():
+            dj = json.loads(dpath.read_text(encoding="utf-8"))
+            cpr = dj.get("cost_per_pr") or {}
+            if cost_honesty_ok is None:
+                cost_honesty_ok = cpr.get("cost_ok")
+            if cost_p50 is None:
+                cost_p50 = (cpr.get("cost_usd") or {}).get("p50")
+            tts_p50 = (cpr.get("time_to_signal_s") or {}).get("p50")
+    except (OSError, json.JSONDecodeError, TypeError):
+        pass
+
     report["commercial"] = {
         "commercial_ok": commercial_panel.get("commercial_ok"),
         "overall_est": commercial_panel.get("overall_est"),
         "surfaces_pass": commercial_panel.get("surfaces_pass"),
+        "cost_honesty_ok": cost_honesty_ok,
+        "cost_p50_usd": cost_p50,
+        "tts_p50_s": tts_p50,
     }
     report["product_surfaces"] = {
         "ok": product_panel.get("ok"),
@@ -1319,6 +1339,14 @@ def product_scorecard(
             f"| dual_compound L3 | skill {metrics['skill_loop_level']} · memory {metrics['memory_loop_level']} · workflow {metrics['workflow_level']} |",
             f"| doctor_pass | {metrics['doctor_pass']} |",
             f"| product_surfaces | {product_panel.get('ok_n')}/{product_panel.get('total')} |",
+            f"| cost_honesty_ok | {cost_honesty_ok} |",
+            f"| cost/PR p50 (USD) | {cost_p50} |",
+            f"| time-to-signal p50 (s) | {tts_p50} |",
+            "",
+            "Measured dogfood cost/latency is **local vault only** (not federated). "
+            "Audit: [cost-pr-dashboard](../ops/cost-pr-dashboard.md) · "
+            "[commercial Cost honesty](../benchmarks/commercial-scorecard.md) · "
+            "[enterprise/PRIVACY](../enterprise/PRIVACY.md).",
             "",
             "Commands: `python3 scripts/torii.py commercial -- status` · "
             "`python3 scripts/torii.py doctor` · "
@@ -1326,7 +1354,8 @@ def product_scorecard(
             "",
             "Docs: [INSTALL](../INSTALL.md) · [GOLDEN-PATH](../GOLDEN-PATH.md) · "
             "[QUIETER](../QUIETER.md) · [MEMORY](../MEMORY.md) · "
-            "[WORKFLOWS](../WORKFLOWS.md) · [commercial-scorecard](../benchmarks/commercial-scorecard.md)",
+            "[WORKFLOWS](../WORKFLOWS.md) · [commercial-scorecard](../benchmarks/commercial-scorecard.md) · "
+            "[FEDERATION](../FEDERATION.md)",
             "",
             "---",
             "",

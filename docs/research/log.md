@@ -1,4 +1,38 @@
 
+## 2026-08-01 — BRAND_FED_COST: brand scorecard cost rows + federation never-spend
+
+### Papers / posts
+- COMMERCIAL_COST put cost honesty on commercial rollup; brand scorecard still omitted p50.
+- Federation buyer doc listed path/snippet deny but not cost/USD (enterprise privacy gap).
+- Simplicity: one brand surface should show commercial_ok **and** cost honesty.
+
+### Decide / copy / skip
+- **Copy:** scorecard brand panel cost_honesty_ok · cost/PR p50 · TTS p50 + local-vault note.
+- **Copy:** FEDERATION.md never-leaves includes USD/tokens; defaults cost local.
+- **Copy:** enterprise fixture federation_buyer_cost_local.
+- **Skip:** F185+; no new loops.
+
+### Feature shipped (BRAND_FED_COST)
+- torii.py scorecard brand cost rows
+- FEDERATION.md cost-not-federated contract
+- enterprise_surface check
+
+### Metric
+- Offline: brand cost_honesty_ok · cost_p50≈0.016 · enterprise fixture · commercial 8.5
+- Live Modal: pytorch#191840 BIT3_OK ~132.5s tools=9 POST_COMMENT=0 cert in vault
+- Traces: docs/benchmarks/traces/20260801-1654-pytorch-pytorch-PR191840-modal-brand-fed-cost/
+- Modal: https://modal.com/apps/mr-ashish/main/ap-FOyBhdPeXaplVOcupBRytb
+
+### scorecard_target
+simplicity (#12) · enterprise (#9) · commercial trust
+
+### dim_lift
+brand + federation surfaces close the cost-honesty loop
+
+### SHA
+`(pending push)`
+
+
 ## 2026-08-01 — COMMERCIAL_COST: cost honesty panel on commercial rollup + doctor
 
 ### Papers / posts
