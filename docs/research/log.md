@@ -29,7 +29,7 @@ Measuring idle scorecard skills without a soft re-prompt leaves intelligence on 
 **Measure → re-prompt once under budget** — scorecard ops mirror recovery F122.
 
 ### SHA
-`PENDING`
+`223bfd69a180a94ba3f416412216425deafb23e9`
 
 
 ## 2026-08-01 — F136 scorecard skill utilization (inject ≠ use)
