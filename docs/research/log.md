@@ -26,7 +26,7 @@ Close the compound loop: promote → decay → **revive** so measured recovery r
 - Modal pytorch#191836 BIT3_OK ~77.9s POST_COMMENT=0 log_streaming=true F175 soft wire
 
 ### SHA
-`PENDING`
+`3e81f94ea21e2d14908b48726074c97bf0ac0aed`
 
 # Torii research → product log
 
