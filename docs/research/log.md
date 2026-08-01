@@ -30,7 +30,7 @@ enterprise (#9) · ops (#8) · simplicity (#12) · GTM
 front doors + day-2 status show enterprise tenant and fail-closed without archaeology
 
 ### SHA
-_pending_
+f1cc0b14cc5eaee74dbaa4fae5132d7f98b4e649
 
 
 ## 2026-08-01 — ENT_INSTALL_TENANT: install --tenant + enterprise/quieter install path
