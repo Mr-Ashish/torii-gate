@@ -29,7 +29,7 @@ pricing (#10) · GTM (#11) · ICP (#2)
 Buyers find packaging without Hub71 archaeology
 
 ### SHA
-(pending)
+`7a5c0ca519a269b9341be2d3cebff7ff6cd0dbd6`
 
 ## 2026-08-01 — HELP_CLI_COLLAPSE + first-principles scorecard (Phase B)
 
