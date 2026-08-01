@@ -607,6 +607,7 @@ def cmd_scorecard(args: argparse.Namespace) -> int:
     report = validate(root, wf)
     pc = pack_check(root, wf)
     skill_loop: dict[str, Any] | None = None
+    memory_loop: dict[str, Any] | None = None
     try:
         import importlib.util
 
@@ -626,18 +627,52 @@ def cmd_scorecard(args: argparse.Namespace) -> int:
                     "skills_n": sl.get("active_skills_n"),
                     "wiring_ok": sl.get("wiring_ok"),
                 }
+        mlp = root / "scripts" / "memory_loop_status.py"
+        if mlp.is_file():
+            spec = importlib.util.spec_from_file_location("memory_loop_status", mlp)
+            if spec and spec.loader:
+                mod = importlib.util.module_from_spec(spec)
+                sys.modules["memory_loop_status"] = mod
+                spec.loader.exec_module(mod)
+                if hasattr(mod, "assess"):
+                    ml = mod.assess(root, deep=False)
+                    memory_loop = {
+                        "level": ml.get("level"),
+                        "pct": ml.get("pct"),
+                        "ready": ml.get("ready"),
+                        "stages_ok": f"{ml.get('stages_ok')}/{ml.get('stages_total')}",
+                        "wiring_ok": ml.get("wiring_ok"),
+                    }
     except Exception as exc:
-        skill_loop = {"error": str(exc)[:120]}
+        if skill_loop is None:
+            skill_loop = {"error": str(exc)[:120]}
+        else:
+            memory_loop = {"error": str(exc)[:120]}
+    # F131 dual compound: skill + memory next to workflow graph
+    dual = {
+        "skill_level": (skill_loop or {}).get("level"),
+        "memory_level": (memory_loop or {}).get("level"),
+        "workflow_level": report["level"],
+        "both_loops_l3": (skill_loop or {}).get("level") == "L3"
+        and (memory_loop or {}).get("level") == "L3",
+        "triple_ready": (skill_loop or {}).get("level") == "L3"
+        and (memory_loop or {}).get("level") == "L3"
+        and report["level"] == "L3"
+        and bool(report.get("valid")),
+    }
     print(
         json.dumps(
             {
                 "feature": FEATURE,
+                "feature_dual": "F131",
                 "level": report["level"],
                 "pct": report["pct"],
                 "valid": report["valid"],
                 "pack_install_lists_all": pc.get("install_lists_all"),
                 "missing_from_install": pc.get("missing_from_install"),
                 "skill_loop": skill_loop,
+                "memory_loop": memory_loop,
+                "dual_compound": dual,
             },
             indent=2,
         )

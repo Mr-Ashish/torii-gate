@@ -1,0 +1,31 @@
+{
+  "feature": "F79",
+  "feature_dual": "F131",
+  "level": "L3",
+  "pct": 100.0,
+  "valid": true,
+  "pack_install_lists_all": true,
+  "missing_from_install": [],
+  "skill_loop": {
+    "level": "L3",
+    "pct": 100.0,
+    "ready": true,
+    "stages_ok": "11/11",
+    "skills_n": 9,
+    "wiring_ok": true
+  },
+  "memory_loop": {
+    "level": "L3",
+    "pct": 100.0,
+    "ready": true,
+    "stages_ok": "12/12",
+    "wiring_ok": true
+  },
+  "dual_compound": {
+    "skill_level": "L3",
+    "memory_level": "L3",
+    "workflow_level": "L3",
+    "both_loops_l3": true,
+    "triple_ready": true
+  }
+}

@@ -178,10 +178,12 @@ tr:last-child td{border-bottom:0}
     <span class="pipe on">Doctor</span>
     <span class="pipe on">Recovery hub-gap</span>
     <span class="pipe on">Demote rate</span>
+    <span class="pipe on">Util delta</span>
     <span class="pipe on">Skill L3</span>
     <span class="pipe on">Memory L3</span>
+    <span class="pipe on">Workflow L3</span>
   </div>
-  <p class="note" style="margin:0 0 16px">Ops surface: <code style="color:var(--gold)">python3 scripts/torii.py scorecard</code> — fails closed without recovery hub-gap critic, reports offline <strong style="color:var(--muted)">critic APPROVE demote rate</strong> and <strong style="color:var(--muted)">memory tool util delta</strong> (Mem0/Letta: tools must be called). <strong style="color:var(--muted)">Evidence over “zero false positives.”</strong></p>
+  <p class="note" style="margin:0 0 16px">Ops surface: <code style="color:var(--gold)">python3 scripts/torii.py scorecard</code> — dual compound (skill + memory) plus <strong style="color:var(--muted)">workflows-as-code</strong> graph readiness, offline <strong style="color:var(--muted)">critic demote rate</strong> and <strong style="color:var(--muted)">memory util delta</strong>. <strong style="color:var(--muted)">Evidence over “zero false positives.”</strong></p>
   <p class="ey" style="margin:8px 0 12px">Memory compound loop (why noise dies twice)</p>
   <div class="pipeline">
     <span class="pipe on">Compound</span>

@@ -1,5 +1,36 @@
 # Torii research → product log
 
+## 2026-08-01 — F131 workflow scorecard + dual compound brand panel
+
+### Papers / posts
+- Loop engineering 2026: value is the outer agent cycle (workflow graph), not one-shot prompts.
+- F79 workflows-as-code scored L0–L3 offline but never entered product brand_ready.
+- Dual compound (skills + memory) needs a third leg: declared pipeline stages on disk.
+
+### OSS design patterns stolen
+1. workflow_as_code scorecard dual_compound (skill+memory+workflow levels).
+2. torii.py workflow -- group; product_scorecard requires workflow_ok.
+3. brand metrics + landing Workflow L3 pipe; triple_ready flag.
+4. PRODUCT mental model: two intelligence loops + workflows-as-code graph.
+
+### Insight
+Scorecards without the pipeline graph under-claim install readiness. Highest ROI: fold F79 into the front-door scorecard and brand dual-compound panel.
+
+### Feature shipped (F131)
+- workflow dual_compound fields; torii workflow group
+- product_scorecard F131 brand_ready + metrics
+- landing/PRODUCT/research; traces f131-workflow-dual-compound/
+
+### Metric
+- Offline: triple_ready L3 brand_ready; pytest
+- Live: Modal pytorch e2e POST_COMMENT=0
+
+### Loop-engineering / Hermes practice used
+**Workflows as code + readiness scorecard** — pipeline graph is first-class product metric.
+
+### SHA
+`PENDING`
+
 ## 2026-08-01 — F130 memory util-eval → product scorecard
 
 ### Papers / posts

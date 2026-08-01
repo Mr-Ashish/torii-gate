@@ -178,6 +178,8 @@ budget always → compact body → score tool_hit → util gap? → budgeted re-
 
 **Memory util scorecard (F130):** Mem0/Letta pattern — memory only helps if tools are called. `memory_tool_audit.py util-eval` offline good vs inject-unused weak pack yields `memory_tool_util_delta`; product scorecard fails closed without it next to demote rate.
 
+**Workflow + dual compound (F131):** workflows-as-code scorecard folds into `torii.py scorecard` / `torii.py workflow -- scorecard`; brand panel requires skill L3 + memory L3 + workflow L3 (`dual_compound.triple_ready`) so the pipeline graph is as visible as the two intelligence loops.
+
 **Ops:** `python3 scripts/memory_loop_status.py scorecard` → L0–L3. Smoke requires L3 on the hub tree. CI job summary annotates readiness; optional advisory `torii/memory-loop` via `TORII_MEMORY_LOOP_STATUS_COMMIT=1`.
 
 ---

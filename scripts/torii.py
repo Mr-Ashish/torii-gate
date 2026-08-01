@@ -86,6 +86,15 @@ GROUPS: dict[str, dict[str, Any]] = {
         "examples": ["smoke"],
         "shell": True,
     },
+    "workflow": {
+        "script": "workflow_as_code.py",
+        "help": "Workflows-as-code validate + scorecard (F79/F131)",
+        "examples": [
+            "workflow -- scorecard",
+            "workflow -- validate",
+            "workflow -- fixture",
+        ],
+    },
 }
 
 
@@ -410,6 +419,7 @@ def product_scorecard(
     memory: dict[str, Any] = {}
     demote: dict[str, Any] = {}
     mem_util: dict[str, Any] = {}
+    workflow: dict[str, Any] = {}
 
     def _run_json(cmd: list[str], timeout: int = 180) -> dict[str, Any]:
         try:
@@ -434,6 +444,12 @@ def product_scorecard(
     memory = _run_json(
         [sys.executable, str(sd / "memory_loop_status.py"), "scorecard", "--shallow"]
     )
+    # F131: workflows-as-code readiness (loop-eng style pipeline graph)
+    if (sd / "workflow_as_code.py").is_file():
+        workflow = _run_json(
+            [sys.executable, str(sd / "workflow_as_code.py"), "scorecard"],
+            timeout=120,
+        )
     if run_demote and (sd / "second_agent_critic.py").is_file():
         demote_cmd = [
             sys.executable,
@@ -467,6 +483,20 @@ def product_scorecard(
     mem_util_pass = bool(mem_util.get("eval_pass")) if mem_util else False
     skill_level = skill.get("level")
     mem_level = memory.get("level")
+    wf_level = workflow.get("level") if workflow else None
+    wf_valid = bool(workflow.get("valid")) if workflow else False
+    wf_ok = wf_valid and wf_level in ("L2", "L3")
+
+    # F131 dual compound brand panel: skill + memory + workflow levels
+    dual_compound = {
+        "skill_loop_level": skill_level,
+        "memory_loop_level": mem_level,
+        "workflow_level": wf_level,
+        "workflow_valid": wf_valid,
+        "workflow_pct": workflow.get("pct") if workflow else None,
+        "both_loops_l3": skill_level == "L3" and mem_level == "L3",
+        "triple_ready": skill_level == "L3" and mem_level == "L3" and wf_ok,
+    }
 
     # brand headline metrics (privacy-safe floats/bools only)
     metrics = {
@@ -475,6 +505,10 @@ def product_scorecard(
         "recovery_hub_gap_ok": hub_gap_ok,
         "skill_loop_level": skill_level,
         "memory_loop_level": mem_level,
+        "workflow_level": wf_level,
+        "workflow_valid": wf_valid,
+        "workflow_ok": wf_ok,
+        "dual_compound_triple_ready": dual_compound["triple_ready"],
         "critic_approve_demote_rate": demote_rate,
         "weak_approve_demoted": demote.get("weak_demote_ok"),
         "hub_gap_idle_demoted": demote.get("hub_gap_demote_ok"),
@@ -489,13 +523,21 @@ def product_scorecard(
         and recovery_ok
         and hub_gap_ok
         and skill_level in ("L2", "L3")
+        and wf_ok
         and (not run_demote or demote_pass)
         and (not run_demote or mem_util_pass)
     )
     # Loop-Ready style level for product surface
-    if brand_ready and skill_level == "L3" and demote_pass and mem_util_pass:
+    if (
+        brand_ready
+        and skill_level == "L3"
+        and mem_level == "L3"
+        and wf_level == "L3"
+        and demote_pass
+        and mem_util_pass
+    ):
         level = "L3"
-    elif doctor_pass and recovery_ok:
+    elif doctor_pass and recovery_ok and wf_ok:
         level = "L2"
     elif recovery_ok or doctor_pass:
         level = "L1"
@@ -503,16 +545,18 @@ def product_scorecard(
         level = "L0"
 
     report: dict[str, Any] = {
-        "feature": "F130",
+        "feature": "F131",
         "feature_cli": FEATURE,
         "feature_scorecard": "F129",
+        "feature_memory_util": "F130",
         "schema": SCHEMA,
         "scored_at": _now(),
         "level": level,
         "brand_ready": brand_ready,
         "metrics": metrics,
+        "dual_compound": dual_compound,
         "one_liner": (
-            "Measured gate readiness: doctor + hub-gap critic + "
+            "Measured gate readiness: dual compound (skill+memory) + workflow graph + "
             f"demote_rate={demote_rate} + memory_util_delta={mem_util_delta}."
         ),
         "brand_lines": [
@@ -520,7 +564,7 @@ def product_scorecard(
             f"Hub gap critic path: **{'ok' if hub_gap_ok else 'gap'}** (F127/F128)",
             f"Critic APPROVE demote rate (offline pack): **{demote_rate}**",
             f"Memory tool util delta (good−weak): **{mem_util_delta}** (F130)",
-            f"Skill loop **{skill_level}** · Memory loop **{mem_level}**",
+            f"Dual compound: skill **{skill_level}** · memory **{mem_level}** · workflow **{wf_level}** (F131)",
         ],
         "doctor": {
             "doctor_pass": doctor.get("doctor_pass"),
@@ -530,6 +574,14 @@ def product_scorecard(
         },
         "skill_loop": skill,
         "memory_loop": memory,
+        "workflow": {
+            "level": wf_level,
+            "valid": wf_valid,
+            "pct": workflow.get("pct"),
+            "pack_install_lists_all": workflow.get("pack_install_lists_all"),
+        }
+        if workflow
+        else None,
         "demote_eval": {
             "eval_pass": demote.get("eval_pass"),
             "demote_rate": demote.get("demote_rate"),
@@ -551,6 +603,7 @@ def product_scorecard(
         "cmds": {
             "doctor": "python3 scripts/torii.py doctor",
             "scorecard": "python3 scripts/torii.py scorecard",
+            "workflow": "python3 scripts/torii.py workflow -- scorecard",
             "demote_eval": "python3 scripts/second_agent_critic.py demote-eval",
             "memory_util_eval": "python3 scripts/memory_tool_audit.py util-eval",
         },
@@ -596,6 +649,9 @@ def product_scorecard(
             f"| recovery_hub_gap_ok | {metrics['recovery_hub_gap_ok']} |",
             f"| skill_loop_level | {metrics['skill_loop_level']} |",
             f"| memory_loop_level | {metrics['memory_loop_level']} |",
+            f"| workflow_level | {metrics['workflow_level']} |",
+            f"| workflow_valid | {metrics['workflow_valid']} |",
+            f"| dual_compound_triple_ready | {metrics['dual_compound_triple_ready']} |",
             f"| critic_approve_demote_rate | {metrics['critic_approve_demote_rate']} |",
             f"| weak_approve_demoted | {metrics['weak_approve_demoted']} |",
             f"| hub_gap_idle_demoted | {metrics['hub_gap_idle_demoted']} |",
@@ -603,7 +659,7 @@ def product_scorecard(
             f"| memory_tool_util_good | {metrics['memory_tool_util_good']} |",
             f"| memory_tool_util_weak | {metrics['memory_tool_util_weak']} |",
             "",
-            "Source: `python3 scripts/torii.py scorecard` · demote F128 · memory util F130.",
+            "Source: `python3 scripts/torii.py scorecard` · workflow F131 · demote F128 · util F130.",
             "",
             "These are **measured** offline/ops metrics — not marketing pass rates.",
             "",

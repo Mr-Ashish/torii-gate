@@ -1,0 +1,28 @@
+{
+  "feature": "F131",
+  "scored_at": "2026-08-01T07:19:58Z",
+  "brand_ready": true,
+  "level": "L3",
+  "dual_compound": {
+    "skill_loop_level": "L3",
+    "memory_loop_level": "L3",
+    "workflow_level": "L3",
+    "workflow_valid": true,
+    "workflow_pct": 100.0,
+    "both_loops_l3": true,
+    "triple_ready": true
+  },
+  "workflow_level": "L3",
+  "model": "deepseek/deepseek-v4-pro",
+  "e2e": {
+    "repo": "pytorch/pytorch",
+    "pr": 191813,
+    "modal": true,
+    "bit3": "BIT3_OK",
+    "elapsed_s": 87.8,
+    "log_streaming": true,
+    "verdict": "REQUEST_CHANGES",
+    "post_comment": 0,
+    "modal_app": "https://modal.com/apps/mr-ashish/main/ap-z99mE2XX5n5je4JxgaJq9K"
+  }
+}

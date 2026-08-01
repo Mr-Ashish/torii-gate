@@ -82,12 +82,12 @@ class ToriiProductCliTests(unittest.TestCase):
         self.assertIn("skill-prefer-product-cli", data.get("recovery_active") or [])
 
     def test_f129_product_scorecard(self):
-        """F129/F130: scorecard packages doctor + demote + memory util metrics."""
+        """F129–F131: scorecard packages doctor + demote + util + workflow dual compound."""
         with tempfile.TemporaryDirectory() as td:
             r = _run(["scorecard", "--out-dir", td], timeout=300)
             self.assertEqual(r.returncode, 0, r.stderr + r.stdout)
             data = json.loads(r.stdout)
-            self.assertEqual(data.get("feature"), "F130")
+            self.assertEqual(data.get("feature"), "F131")
             self.assertTrue(data.get("brand_ready"), data)
             m = data.get("metrics") or {}
             self.assertTrue(m.get("doctor_pass"), m)
@@ -96,6 +96,10 @@ class ToriiProductCliTests(unittest.TestCase):
             self.assertTrue(m.get("demote_eval_pass"), m)
             self.assertTrue(m.get("memory_util_eval_pass"), m)
             self.assertGreaterEqual(float(m.get("memory_tool_util_delta") or 0), 0.4)
+            self.assertTrue(m.get("workflow_ok"), m)
+            self.assertEqual(m.get("workflow_level"), "L3")
+            dc = data.get("dual_compound") or {}
+            self.assertTrue(dc.get("triple_ready"), dc)
             art = Path(td) / "product-scorecard.json"
             self.assertTrue(art.is_file())
             mu = Path(td) / "memory-util-eval.json"
@@ -105,7 +109,18 @@ class ToriiProductCliTests(unittest.TestCase):
             body = brand.read_text(encoding="utf-8")
             self.assertIn("critic_approve_demote_rate", body)
             self.assertIn("memory_tool_util_delta", body)
+            self.assertIn("workflow_level", body)
             self.assertNotIn("/Users/", body)
+
+    def test_workflow_group(self):
+        """F131: torii.py workflow -- scorecard reachable."""
+        r = _run(["workflow", "--", "scorecard"], timeout=120)
+        self.assertEqual(r.returncode, 0, r.stderr + r.stdout)
+        data = json.loads(r.stdout)
+        self.assertEqual(data.get("feature"), "F79")
+        self.assertEqual(data.get("feature_dual"), "F131")
+        self.assertTrue(data.get("valid"), data)
+        self.assertTrue((data.get("dual_compound") or {}).get("triple_ready"), data)
 
 
 if __name__ == "__main__":
