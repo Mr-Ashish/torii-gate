@@ -27,7 +27,7 @@ enterprise (#9)
 Tenant-A canaries never appear in tenant-B inject; federation sanitize strips path/snippet
 
 ### SHA
-(pending)
+`054055ae535bc85c73e808a6955bd07dfd5bff4f`
 
 ## 2026-08-01 — OWN_REPO_QUIETER: .torii/runs customer vault (Phase B #3)
 

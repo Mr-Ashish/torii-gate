@@ -46,7 +46,7 @@ _Scored: `2026-08-01T18:36:35Z` · baseline **6.6** · commercial fixture **8.5*
 | 1 | CLI cognitive-load collapse | #12 | **shipped** |
 | 2 | Pricing / packaging | #10 | **shipped** |
 | 3 | Own-repo quieter path | #3 · #7 | **shipped** |
-| 4 | Enterprise isolation hermetic proof | #9 | **this fire** |
+| 4 | Enterprise isolation hermetic proof | #9 | **shipped** `054055a` |
 | 5 | Public eval freshness badge | #5 · #11 | next |
 | 6 | Required-check onboarding in GH Actions summary | #3 · #7 | later |
 | 7 | Deployed landing | #11 | later |
