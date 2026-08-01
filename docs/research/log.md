@@ -26,7 +26,7 @@ Brand without ops readiness is untestable. Highest ROI: **L0–L3 skill-loop sco
 - Live: **Modal** pytorch#191813 deepseek/deepseek-v4-pro BIT3_OK ~120s; log_streaming=true; POST_COMMENT=0
 
 ### SHA
-_PENDING_
+5da51871070b3c6e1651273179aff14fc87fb90f
 
 ## 2026-08-01 — F90 brand skill loop + ICP packaging
 
