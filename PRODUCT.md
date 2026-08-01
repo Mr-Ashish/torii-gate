@@ -188,6 +188,8 @@ budget always → compact body → score tool_hit → util gap? → budgeted re-
 
 **Scorecard fitness ingest + doctor panel (F135):** F134 themes enter the skill fitness ledger (`ingest-scorecard` / cycle) with tool-hit shield + router boost; doctor and product scorecard surface `scorecard_ops_ok` (soft metric). Adopted ops skills no longer rot as zombies before live hits.
 
+**Scorecard skill utilization (F136):** mid-run measure whether injected scorecard-gap ops skills fire tool CLIs (`scorecard-skill-util.json`); federate privacy-safe util themes; second-agent critic soft-demotes APPROVE on idle scorecard skills (inject ≠ utilization, same as F121 recovery).
+
 **Ops:** `python3 scripts/memory_loop_status.py scorecard` → L0–L3. Smoke requires L3 on the hub tree. CI job summary annotates readiness; optional advisory `torii/memory-loop` via `TORII_MEMORY_LOOP_STATUS_COMMIT=1`.
 
 ---

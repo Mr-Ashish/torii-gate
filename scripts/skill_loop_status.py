@@ -283,6 +283,9 @@ def assess(root: Path | None = None, *, deep: bool = True) -> dict[str, Any]:
         "run_skill_attribution": "skill_attribution.py" in run_sh,
         "run_skill_dual_promote": "skill_dual_rollout.py" in run_sh,
         "run_recovery_util": "recovery_skill_util" in run_sh or "util --out-dir" in run_sh,
+        # F136: scorecard skill util mid-run
+        "run_scorecard_util": "scorecard-util" in run_sh or "scorecard_skill_util" in run_sh,
+        "save_trace_scorecard_util": "scorecard-skill-util.json" in save_tr,
         "hermes_f122_reprompt": "F122" in hermes_sh or "recovery-skill-reprompt" in hermes_sh,
         "save_trace_recovery": "recovery-skill-util.json" in save_tr,
         # F125: hub recovery post-score compound (router inject path + trace archive)
@@ -447,6 +450,9 @@ def cmd_scorecard(args: argparse.Namespace) -> int:
                 "recovery_active": report.get("recovery_active"),
                 "recovery_hub_ok": report.get("recovery_hub_ok"),
                 "recovery_hub_gap_ok": report.get("recovery_hub_gap_ok"),
+                "feature_scorecard_ops": report.get("feature_scorecard_ops"),
+                "scorecard_ops_ok": report.get("scorecard_ops_ok"),
+                "scorecard_active": report.get("scorecard_active"),
                 "wiring_ok": report["wiring_ok"],
                 "deep_ok": report.get("deep_ok"),
                 "loop": report["loop"],

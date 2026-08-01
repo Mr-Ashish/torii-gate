@@ -51,6 +51,76 @@ class SkillRouterTests(unittest.TestCase):
         self.assertTrue(data.get("util_ok"), data)
         self.assertTrue(data.get("util_gap"), data)
         self.assertGreaterEqual(float(data.get("util_rate_good") or 0), 1.0)
+        # F136 scorecard skill util
+        self.assertTrue(data.get("f136") or data.get("feature_scorecard_util") == "F136")
+        self.assertTrue(data.get("f136_sc_util_ok"), data)
+        self.assertTrue(data.get("f136_sc_util_gap"), data)
+        self.assertTrue(data.get("f136_sc_none_ok"), data)
+        self.assertTrue(data.get("f136_sc_privacy_ok"), data)
+        self.assertGreaterEqual(float(data.get("f136_sc_util_rate_good") or 0), 1.0)
+        self.assertGreaterEqual(int(data.get("f136_sc_fed_n") or 0), 1)
+
+    def test_f136_scorecard_util_cli(self):
+        """Scorecard util gap only when scorecard skills injected without tools."""
+        with tempfile.TemporaryDirectory() as td:
+            root = Path(td)
+            od = root / "out"
+            od.mkdir()
+            sid = "skill-prefer-product-scorecard"
+            (od / "skill-router.json").write_text(
+                json.dumps({"selected": [sid], "inject_chars": 400}),
+                encoding="utf-8",
+            )
+            (od / "skill-hits.json").write_text(
+                json.dumps(
+                    {
+                        "hits": [
+                            {
+                                "id": sid,
+                                "hit": False,
+                                "tool_hit": False,
+                                "prose_hit": False,
+                            }
+                        ]
+                    }
+                ),
+                encoding="utf-8",
+            )
+            env = {
+                "TORII_ROOT": str(root),
+                "TORII_SCORECARD_UTIL_FEDERATE": "1",
+                "TORII_MEMORY_TENANT": "secret-tenant-x",
+            }
+            r = _run(["scorecard-util", "--out-dir", str(od)], env=env)
+            self.assertEqual(r.returncode, 1, r.stderr + r.stdout)
+            rep = json.loads(r.stdout)
+            self.assertTrue(rep["utilization_gap"])
+            self.assertFalse(rep["ok"])
+            self.assertEqual(rep.get("feature"), "F136")
+            (od / "skill-hits.json").write_text(
+                json.dumps(
+                    {
+                        "hits": [
+                            {
+                                "id": sid,
+                                "hit": True,
+                                "tool_hit": True,
+                                "prose_hit": False,
+                            }
+                        ]
+                    }
+                ),
+                encoding="utf-8",
+            )
+            r2 = _run(["scorecard-util", "--out-dir", str(od)], env=env)
+            self.assertEqual(r2.returncode, 0, r2.stderr + r2.stdout)
+            rep2 = json.loads(r2.stdout)
+            self.assertFalse(rep2["utilization_gap"])
+            self.assertTrue(rep2["ok"])
+            blob = r2.stdout
+            self.assertNotIn("/Users/", blob)
+            self.assertNotIn("secret-tenant-x", blob)
+            self.assertTrue((od / "scorecard-skill-util.json").is_file())
 
     def test_status(self):
         r = _run(["status"])

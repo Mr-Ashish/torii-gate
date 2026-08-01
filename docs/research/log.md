@@ -1,5 +1,38 @@
 # Torii research → product log
 
+## 2026-08-01 — F136 scorecard skill utilization (inject ≠ use)
+
+### Papers / posts
+- Mem2Act / SkillsBench / F121: inject presence ≠ utilization — measure tool hits mid-run.
+- Ragas ToolCallAccuracy / agent eval 2026: mid-run tool selection is the quality signal.
+- F132–F135 adopt/federate/fitness scorecard skills without mid-run util left idle ops unmeasured.
+
+### OSS design patterns stolen
+1. skill_router.score_scorecard_util + scorecard-util CLI → scorecard-skill-util.json.
+2. federate_scorecard_util privacy-safe bins; second-agent f136 checker + APPROVE demote.
+3. run-torii-review + save-trace wiring; trajectory soft ops_bonus ±0.03.
+4. Fixture good/gap/none; tests; PRODUCT packaging.
+
+### Insight
+Adopted scorecard skills without tool-hit measurement are dashboard theater. Highest ROI: F121-style util gap + critic demote for ops skills.
+
+### Feature shipped (F136)
+- skill_router scorecard-util + federate + fixture f136_*
+- second_agent_critic f136_scorecard_util weight 0.06 demote
+- run-torii-review/save-trace; trajectory blend; PRODUCT/research
+- traces f136-scorecard-skill-util/
+
+### Metric
+- Offline: fixture f136_sc_util_ok privacy; pytest skill_router
+- Live: Modal pytorch e2e POST_COMMENT=0
+
+### Loop-engineering / Hermes practice used
+**Measure mid-run tool utilization** — scorecard ops mirror recovery util F121/F124.
+
+### SHA
+`PENDING`
+
+
 ## 2026-08-01 — F135 scorecard skill fitness ingest + doctor panel
 
 ### Papers / posts

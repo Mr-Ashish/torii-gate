@@ -314,6 +314,9 @@ if [[ -f "$SCRIPTS/skill_router.py" ]]; then
         # F121: recovery skill tool utilization (inject chars + tool_hit gap)
         stage recovery_skill_util \
           python3 "$SCRIPTS/skill_router.py" util --out-dir "$OUT_DIR" || true
+        # F136: scorecard-gap ops skill tool utilization (inject ≠ utilization)
+        stage scorecard_skill_util \
+          python3 "$SCRIPTS/skill_router.py" scorecard-util --out-dir "$OUT_DIR" || true
         # F125: hub recovery-util post-score → next-run always priority compound
         stage recovery_hub_score \
           python3 "$SCRIPTS/skill_router.py" hub-score || true

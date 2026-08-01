@@ -1098,6 +1098,39 @@ RECOVERY_SKILL_IDS: frozenset[str] = frozenset(
     }
 )
 
+# F136: scorecard-gap ops skills (F132–F135) — inject ≠ utilization
+SCORECARD_SKILL_IDS: frozenset[str] = frozenset(
+    {
+        "skill-prefer-product-scorecard",
+        "skill-prefer-demote-eval-check",
+        "skill-prefer-memory-util-eval",
+        "skill-prefer-workflow-scorecard",
+        "skill-prefer-hub-gap-critic",
+        "skill-prefer-dual-compound-ops",
+        "skill-prefer-recovery-skills-active",
+    }
+)
+
+
+def is_scorecard_skill_id(sid: str) -> bool:
+    """True if skill id is a known scorecard-gap ops skill (privacy-safe id only)."""
+    s = str(sid or "").strip()
+    if not s or "/" in s or ".." in s:
+        return False
+    if s in SCORECARD_SKILL_IDS:
+        return True
+    return any(
+        x in s
+        for x in (
+            "scorecard",
+            "demote-eval",
+            "memory-util",
+            "hub-gap",
+            "dual-compound",
+            "workflow-scorecard",
+        )
+    )
+
 
 def compact_enabled() -> bool:
     """F120: SkillReducer-lite — compact full skill bodies on inject (default on)."""
@@ -1962,6 +1995,292 @@ def cmd_util(args: argparse.Namespace) -> int:
     return 0 if report.get("ok") else 1
 
 
+def score_scorecard_util(
+    out_dir: Path | None = None,
+    *,
+    root: Path | None = None,
+    hits_doc: dict[str, Any] | None = None,
+    router_doc: dict[str, Any] | None = None,
+) -> dict[str, Any]:
+    """F136: scorecard-gap ops skills injected vs tool_hit — inject ≠ utilization.
+
+    F132–F135 adopt/federate/fitness scorecard skills; without mid-run tool
+    measurement they are dashboard theater (Mem2Act / SkillsBench / F121 pattern).
+    Gap only when ≥1 scorecard skill was selected and none fired tools.
+    No scorecard inject → ok=True (no false gap).
+    """
+    root = root or _root()
+    od = Path(out_dir) if out_dir else None
+    router: dict[str, Any] = dict(router_doc or {})
+    hits: dict[str, Any] = dict(hits_doc or {})
+    if od:
+        rp = od / "skill-router.json"
+        hp = od / "skill-hits.json"
+        if not router and rp.is_file():
+            try:
+                router = json.loads(rp.read_text(encoding="utf-8"))
+            except (OSError, json.JSONDecodeError):
+                router = {}
+        if not hits and hp.is_file():
+            try:
+                hits = json.loads(hp.read_text(encoding="utf-8"))
+            except (OSError, json.JSONDecodeError):
+                hits = {}
+
+    selected = list(router.get("selected") or [])
+    always_sel = list(router.get("always_selected") or [])
+    pool = list(dict.fromkeys([*selected, *always_sel]))
+    sc_injected = [s for s in pool if is_scorecard_skill_id(s)]
+
+    by_id: dict[str, dict[str, Any]] = {}
+    for h in hits.get("hits") or []:
+        if isinstance(h, dict) and h.get("id"):
+            by_id[str(h["id"])] = h
+
+    tool_hit_ids: list[str] = []
+    prose_hit_ids: list[str] = []
+    idle: list[str] = []
+    for sid in sc_injected:
+        h = by_id.get(sid) or {}
+        if h.get("tool_hit"):
+            tool_hit_ids.append(sid)
+        else:
+            idle.append(sid)
+            if h.get("prose_hit") or h.get("hit"):
+                prose_hit_ids.append(sid)
+
+    n = len(sc_injected)
+    tool_n = len(tool_hit_ids)
+    util_rate = (tool_n / n) if n else 1.0
+    gap = bool(n >= 1 and tool_n == 0)
+    inject_chars = int(router.get("inject_chars") or router.get("chars") or 0)
+
+    report = {
+        "feature": "F136",
+        "schema": SCHEMA,
+        "scored_at": _now(),
+        "scorecard_ids": sorted(SCORECARD_SKILL_IDS),
+        "scorecard_injected": sc_injected,
+        "scorecard_injected_n": n,
+        "tool_hit_ids": tool_hit_ids,
+        "prose_only_ids": prose_hit_ids,
+        "idle_ids": idle,
+        "tool_hit_n": tool_n,
+        "util_rate": round(util_rate, 4),
+        "utilization_gap": gap,
+        "inject_chars": inject_chars,
+        "ok": not gap,
+        "score": round(util_rate, 4),
+    }
+    if od:
+        try:
+            od.mkdir(parents=True, exist_ok=True)
+            (od / "scorecard-skill-util.json").write_text(
+                json.dumps(report, indent=2) + "\n", encoding="utf-8"
+            )
+        except OSError:
+            pass
+    return report
+
+
+def federate_scorecard_util(
+    util: dict[str, Any],
+    *,
+    root: Path | None = None,
+    tenant: str = "",
+    dest: Path | None = None,
+) -> dict[str, Any]:
+    """F136: privacy-safe federate of scorecard util themes (ids + bins only)."""
+    import hashlib
+    import re as _re
+
+    root = root or _root()
+    tenant = tenant or (os.environ.get("TORII_MEMORY_TENANT") or "").strip()
+    th = ""
+    if tenant:
+        th = hashlib.sha256(tenant.encode("utf-8")).hexdigest()[:12]
+
+    signals: list[dict[str, Any]] = []
+    tool_ids = list(util.get("tool_hit_ids") or [])
+    idle_ids = list(util.get("idle_ids") or [])
+    util_rate = float(util.get("util_rate") or 0)
+    inject_chars = int(util.get("inject_chars") or 0)
+
+    def _slug(sid: str) -> str:
+        return _re.sub(r"[^a-z0-9._-]+", "-", sid.lower())[:64]
+
+    for sid in tool_ids:
+        if "/" in sid or ".." in sid:
+            continue
+        sig: dict[str, Any] = {
+            "id": _slug(f"scorecard-util-hit-{sid}"),
+            "theme": _slug(sid),
+            "cwe": [],
+            "tags": [
+                "scorecard_util",
+                "scorecard_ops",
+                "tool_outcome",
+                "f136",
+                "federated_skill",
+            ],
+            "keywords": [sid.replace("skill-", "")[:48], "scorecard-util", "tool-hit"],
+            "path_basenames": [],
+            "hits": 1,
+            "tool_hits": 1,
+            "source": "scorecard_skill_util",
+            "tenants": 1,
+            "util_rate_bin": "hit",
+        }
+        if th:
+            sig["tenant_hashes"] = [th]
+            sig["tenant_hash"] = th
+        signals.append(sig)
+
+    if util.get("utilization_gap"):
+        gap_sig: dict[str, Any] = {
+            "id": "scorecard-util-gap",
+            "theme": "scorecard-util-gap",
+            "cwe": [],
+            "tags": [
+                "scorecard_util",
+                "utilization_gap",
+                "f136",
+                "federated_skill",
+            ],
+            "keywords": ["scorecard-util-gap", "idle-scorecard"],
+            "path_basenames": [],
+            "hits": 1,
+            "source": "scorecard_skill_util",
+            "tenants": 1,
+            "idle_n": len(idle_ids),
+            "injected_n": int(util.get("scorecard_injected_n") or 0),
+            "inject_chars_bucket": (
+                "0"
+                if inject_chars <= 0
+                else "lt2k"
+                if inject_chars < 2000
+                else "2k-4k"
+                if inject_chars < 4000
+                else "gte4k"
+            ),
+            "util_rate_bin": "gap",
+        }
+        if th:
+            gap_sig["tenant_hashes"] = [th]
+            gap_sig["tenant_hash"] = th
+        signals.append(gap_sig)
+    elif tool_ids:
+        ok_sig: dict[str, Any] = {
+            "id": "scorecard-util-ok",
+            "theme": "scorecard-util-ok",
+            "cwe": [],
+            "tags": ["scorecard_util", "util_ok", "f136", "federated_skill"],
+            "keywords": ["scorecard-util-ok"],
+            "path_basenames": [],
+            "hits": max(1, len(tool_ids)),
+            "source": "scorecard_skill_util",
+            "tenants": 1,
+            "tool_hit_n": len(tool_ids),
+            "util_rate_bin": (
+                "full"
+                if util_rate >= 0.99
+                else "partial"
+                if util_rate >= 0.34
+                else "low"
+            ),
+        }
+        if th:
+            ok_sig["tenant_hashes"] = [th]
+            ok_sig["tenant_hash"] = th
+        signals.append(ok_sig)
+
+    dest = dest or (root / "memory" / "federation" / "scorecard-util-signals.json")
+    dest.parent.mkdir(parents=True, exist_ok=True)
+    blob = json.dumps(signals)
+    privacy_ok = (
+        "/Users/" not in blob
+        and "/home/" not in blob
+        and "C:\\\\Users" not in blob
+        and (not tenant or tenant not in blob)
+    )
+    clean = []
+    for s in signals:
+        sb = json.dumps(s)
+        if "/Users/" in sb or "/home/" in sb:
+            continue
+        if tenant and tenant in sb:
+            continue
+        clean.append(s)
+    doc = {
+        "schema_version": SCHEMA,
+        "feature": "F136",
+        "scope": "scorecard_skill_util",
+        "updated_at": _now(),
+        "count": len(clean),
+        "privacy": "skill_id_util_bins_tenant_hash_only",
+        "privacy_ok": privacy_ok and len(clean) == len(signals),
+        "signals": clean,
+    }
+    dest.write_text(json.dumps(doc, indent=2) + "\n", encoding="utf-8")
+
+    hub = None
+    try:
+        sys.path.insert(0, str(Path(__file__).resolve().parent))
+        from federated_hub_ingest import ingest as hub_ingest  # type: ignore
+
+        hub_raw = hub_ingest(
+            root,
+            clean,
+            tenant=tenant,
+            source_repo="scorecard_skill_util",
+            write_tenant=bool(tenant),
+        )
+        if isinstance(hub_raw, dict):
+            hub = {
+                "feature": hub_raw.get("feature"),
+                "global_count": hub_raw.get("global_count"),
+                "privacy_ok": hub_raw.get("privacy_ok"),
+                "tenant_count": hub_raw.get("tenant_count"),
+            }
+        else:
+            hub = {"ok": True}
+    except Exception as exc:
+        hub = {"soft_error": str(exc)[:120]}
+
+    return {
+        "feature": "F136",
+        "fed_path": "memory/federation/scorecard-util-signals.json",
+        "fed_n": len(clean),
+        "privacy_ok": doc["privacy_ok"],
+        "hub": hub,
+        "signals": clean,
+    }
+
+
+def cmd_scorecard_util(args: argparse.Namespace) -> int:
+    """F136: score scorecard-gap skill tool utilization (+ soft federate)."""
+    od = Path(args.out_dir) if args.out_dir else None
+    if od is None and (os.environ.get("OUT_DIR") or "").strip():
+        od = Path(os.environ["OUT_DIR"])
+    if od is None:
+        print(json.dumps({"feature": "F136", "error": "need --out-dir", "ok": False}))
+        return 2
+    report = score_scorecard_util(od, root=_root())
+    do_fed = not getattr(args, "no_federate", False)
+    raw_fed = (os.environ.get("TORII_SCORECARD_UTIL_FEDERATE") or "1").strip().lower()
+    if raw_fed in _FALSEY:
+        do_fed = False
+    if do_fed:
+        fed = federate_scorecard_util(report, root=_root())
+        report["federate"] = {
+            "fed_n": fed.get("fed_n"),
+            "privacy_ok": fed.get("privacy_ok"),
+            "fed_path": fed.get("fed_path"),
+        }
+    print(json.dumps(report, indent=2))
+    return 0 if report.get("ok") else 1
+
+
 def recovery_reprompt_enabled() -> bool:
     """F122: soft re-prompt once on recovery util gap (default on)."""
     raw = (os.environ.get("TORII_RECOVERY_SKILL_REPROMPT") or "1").strip().lower()
@@ -2802,6 +3121,106 @@ Call second-agent critic tools when uncertain.
 
         f126_ok = hub_gap_decide_ok and fit_ok
 
+        # F136: scorecard util — tool hits ok; idle scorecard skill → gap; none → ok
+        sc_util_out = root / "sc-util-out"
+        sc_util_out.mkdir(exist_ok=True)
+        sc_sid = "skill-prefer-product-scorecard"
+        (sc_util_out / "skill-router.json").write_text(
+            json.dumps(
+                {
+                    "selected": [sc_sid],
+                    "always_selected": [],
+                    "inject_chars": 600,
+                }
+            ),
+            encoding="utf-8",
+        )
+        (sc_util_out / "skill-hits.json").write_text(
+            json.dumps(
+                {
+                    "hits": [
+                        {
+                            "id": sc_sid,
+                            "hit": True,
+                            "tool_hit": True,
+                            "prose_hit": False,
+                        }
+                    ],
+                    "tool_hit_n": 1,
+                }
+            ),
+            encoding="utf-8",
+        )
+        sc_util_good = score_scorecard_util(sc_util_out, root=root)
+        sc_gap_out = root / "sc-util-gap"
+        sc_gap_out.mkdir(exist_ok=True)
+        (sc_gap_out / "skill-router.json").write_text(
+            json.dumps(
+                {
+                    "selected": [sc_sid, "skill-prefer-demote-eval-check"],
+                    "inject_chars": 900,
+                }
+            ),
+            encoding="utf-8",
+        )
+        (sc_gap_out / "skill-hits.json").write_text(
+            json.dumps(
+                {
+                    "hits": [
+                        {
+                            "id": sc_sid,
+                            "hit": False,
+                            "tool_hit": False,
+                            "prose_hit": False,
+                        },
+                        {
+                            "id": "skill-prefer-demote-eval-check",
+                            "hit": True,
+                            "tool_hit": False,
+                            "prose_hit": True,
+                        },
+                    ],
+                    "tool_hit_n": 0,
+                }
+            ),
+            encoding="utf-8",
+        )
+        sc_util_gap = score_scorecard_util(sc_gap_out, root=root)
+        sc_none_out = root / "sc-util-none"
+        sc_none_out.mkdir(exist_ok=True)
+        (sc_none_out / "skill-router.json").write_text(
+            json.dumps({"selected": ["skill-prefer-product-cli"], "inject_chars": 100}),
+            encoding="utf-8",
+        )
+        (sc_none_out / "skill-hits.json").write_text(
+            json.dumps({"hits": [], "tool_hit_n": 0}),
+            encoding="utf-8",
+        )
+        sc_util_none = score_scorecard_util(sc_none_out, root=root)
+        sc_fed = federate_scorecard_util(
+            sc_util_good, root=root, tenant="fixture-tenant-sc"
+        )
+        sc_fed_gap = federate_scorecard_util(
+            sc_util_gap, root=root, tenant="fixture-tenant-sc"
+        )
+        sc_fed_blob = json.dumps(sc_fed.get("signals") or []) + json.dumps(
+            sc_fed_gap.get("signals") or []
+        )
+        sc_util_ok = (
+            sc_util_good.get("ok") is True
+            and float(sc_util_good.get("util_rate") or 0) >= 1.0
+            and sc_util_gap.get("utilization_gap") is True
+            and sc_util_gap.get("ok") is False
+            and sc_util_none.get("ok") is True
+            and float(sc_util_none.get("util_rate") or 0) >= 1.0
+            and int(sc_util_none.get("scorecard_injected_n") or 0) == 0
+            and bool(sc_fed.get("privacy_ok"))
+            and int(sc_fed.get("fed_n") or 0) >= 1
+            and bool(sc_fed_gap.get("privacy_ok"))
+            and "/Users/" not in sc_fed_blob
+            and "fixture-tenant-sc" not in sc_fed_blob
+        )
+
         fixture_pass = all(
             [
                 always_ok,
@@ -2828,6 +3247,7 @@ Call second-agent critic tools when uncertain.
                 hub_ok,
                 hub_blob_ok,
                 f126_ok,
+                sc_util_ok,
             ]
         )
         payload = {
@@ -2836,9 +3256,11 @@ Call second-agent critic tools when uncertain.
             "f119": True,
             "f120": True,
             "f121": True,
+            "f136": True,
             "feature_always_budget": "F119",
             "feature_compact": "F120",
             "feature_util": "F121",
+            "feature_scorecard_util": "F136",
             "feature_hub_compound": FEATURE_HUB,
             "fixture_pass": fixture_pass,
             "always_ok": always_ok,
@@ -2891,6 +3313,12 @@ Call second-agent critic tools when uncertain.
             "hub_gap_decide_ok": hub_gap_decide_ok,
             "hub_fitness_ok": fit_ok,
             "dec_hub_reason": dec_hub.get("reason"),
+            "f136_sc_util_ok": sc_util_ok,
+            "f136_sc_util_rate_good": sc_util_good.get("util_rate"),
+            "f136_sc_util_gap": sc_util_gap.get("utilization_gap"),
+            "f136_sc_none_ok": sc_util_none.get("ok"),
+            "f136_sc_fed_n": sc_fed.get("fed_n"),
+            "f136_sc_privacy_ok": sc_fed.get("privacy_ok"),
         }
         print(json.dumps(payload, indent=2))
         return 0 if fixture_pass else 1
@@ -2917,6 +3345,18 @@ def main(argv: list[str] | None = None) -> int:
         help="F124: skip privacy-safe recovery util federation",
     )
     pu.set_defaults(func=cmd_util)
+
+    pscu = sub.add_parser(
+        "scorecard-util",
+        help="F136 scorecard-gap skill tool utilization score for a run",
+    )
+    pscu.add_argument("--out-dir", default="")
+    pscu.add_argument(
+        "--no-federate",
+        action="store_true",
+        help="Skip privacy-safe scorecard util federation",
+    )
+    pscu.set_defaults(func=cmd_scorecard_util)
 
     pfed = sub.add_parser(
         "federate-util", help="F124 federate recovery util themes (privacy-safe)"

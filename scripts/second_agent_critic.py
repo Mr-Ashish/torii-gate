@@ -386,6 +386,52 @@ def run_f121_recovery_util(out_dir: Path | None) -> CheckerResult:
         )
 
 
+def run_f136_scorecard_util(out_dir: Path | None) -> CheckerResult:
+    """F136: scorecard-gap ops skills must fire tool CLIs when injected."""
+    if out_dir is None:
+        return CheckerResult(
+            id="f136_scorecard_util",
+            name="Scorecard skill utilization (F136)",
+            ok=True,
+            score=0.5,
+            detail={"soft_skip": True, "reason": "no_out_dir"},
+        )
+    _ensure_path()
+    try:
+        from skill_router import score_scorecard_util  # type: ignore
+
+        report = score_scorecard_util(Path(out_dir))
+        gap = bool(report.get("utilization_gap"))
+        rate = float(report.get("util_rate") or 0)
+        n = int(report.get("scorecard_injected_n") or 0)
+        ok = not gap
+        score = rate if n else 1.0
+        return CheckerResult(
+            id="f136_scorecard_util",
+            name="Scorecard skill utilization (F136)",
+            ok=ok,
+            score=round(score, 4),
+            detail={
+                "utilization_gap": gap,
+                "util_rate": rate,
+                "scorecard_injected": report.get("scorecard_injected"),
+                "scorecard_injected_n": n,
+                "tool_hit_ids": report.get("tool_hit_ids"),
+                "idle_ids": report.get("idle_ids"),
+                "inject_chars": report.get("inject_chars"),
+            },
+        )
+    except Exception as e:
+        return CheckerResult(
+            id="f136_scorecard_util",
+            name="Scorecard skill utilization (F136)",
+            ok=True,
+            score=0.5,
+            error=str(e)[:200],
+            detail={"soft_fail": True},
+        )
+
+
 def hub_gap_critic_enabled() -> bool:
     """F127: multi-tenant hub gap_pressure participates in critic panel."""
     raw = (os.environ.get("TORII_HUB_GAP_CRITIC") or "1").strip().lower()
@@ -570,6 +616,7 @@ def composite_panel(checkers: list[CheckerResult]) -> dict[str, Any]:
     """Weighted composite; default REJECT stance on weak APPROVE."""
     weights = {
         "f121_recovery_util": 0.08,
+        "f136_scorecard_util": 0.06,  # F136 scorecard-gap ops util
         "f127_hub_gap": 0.08,  # F127 multi-tenant recovery gap pressure
         "structure": 0.12,
         "f70_dual_critic": 0.20,
@@ -650,6 +697,12 @@ def decide_verdict(
             recommended = "COMMENT"
             demoted = True
             reasons.append("recovery_skill_idle_no_tool_hit")
+        # F136: scorecard ops skills injected but idle tools → soft demote APPROVE
+        scu = next((c for c in checkers if c.id == "f136_scorecard_util"), None)
+        if scu and bool((scu.detail or {}).get("utilization_gap")):
+            recommended = "COMMENT"
+            demoted = True
+            reasons.append("scorecard_skill_idle_no_tool_hit")
         # F127: multi-tenant hub gap + local idle recovery → demote APPROVE
         hubc = next((c for c in checkers if c.id == "f127_hub_gap"), None)
         if hubc and not hubc.ok:
@@ -694,6 +747,7 @@ def run_panel(
         run_f73_fitness(review_path, out_dir),
         run_f75_memory(out_dir, root),
         run_f121_recovery_util(out_dir),
+        run_f136_scorecard_util(out_dir),
         run_f127_hub_gap_recovery(out_dir, root),
     ]
     # F81: optional LLM checker after deterministic panel draft

@@ -84,6 +84,12 @@ copy_if "$OUT_DIR/skill-router.json" "$TRACE_DIR/skill-router.json"
 copy_if "$OUT_DIR/skill-hits.json" "$TRACE_DIR/skill-hits.json"
 copy_if "$OUT_DIR/skill-attribution.json" "$TRACE_DIR/skill-attribution.json"
 copy_if "$OUT_DIR/recovery-skill-util.json" "$TRACE_DIR/recovery-skill-util.json"
+# F136: scorecard-gap skill utilization (tool_hit vs inject)
+copy_if "$OUT_DIR/scorecard-skill-util.json" "$TRACE_DIR/scorecard-skill-util.json"
+if [[ -f "$TORII_ROOT/memory/federation/scorecard-util-signals.json" ]]; then
+  copy_if "$TORII_ROOT/memory/federation/scorecard-util-signals.json" "$TRACE_DIR/scorecard-util-signals.fed.json"
+fi
+copy_if "$OUT_DIR/scorecard-util-signals.json" "$TRACE_DIR/scorecard-util-signals.json"
 copy_if "$OUT_DIR/recovery-skill-reprompt.env" "$TRACE_DIR/recovery-skill-reprompt.env"
 # F124: privacy-safe federated recovery util themes (also under memory/federation)
 copy_if "$OUT_DIR/recovery-util-signals.json" "$TRACE_DIR/recovery-util-signals.json"

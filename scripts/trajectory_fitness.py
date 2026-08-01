@@ -483,6 +483,30 @@ def compute_fitness(
     if ops.get("dual_triple") is True:
         ops_bonus += 0.02
         feedback.append("f134_dual_compound_triple")
+    # F136: mid-run scorecard skill util (tool_hit) soft-blend when present
+    sc_util_path = None
+    for cand in (
+        (root or _root()) / ".torii-out" / "scorecard-skill-util.json",
+        Path(os.environ.get("OUT_DIR") or "") / "scorecard-skill-util.json"
+        if (os.environ.get("OUT_DIR") or "").strip()
+        else None,
+    ):
+        if cand and cand.is_file():
+            sc_util_path = cand
+            break
+    if sc_util_path is not None:
+        try:
+            scu = json.loads(sc_util_path.read_text(encoding="utf-8"))
+            if scu.get("utilization_gap"):
+                ops_bonus = max(0.0, ops_bonus - 0.03)
+                feedback.append("f136_scorecard_util_gap")
+            elif int(scu.get("tool_hit_n") or 0) >= 1:
+                ops_bonus += 0.03
+                feedback.append(
+                    f"f136_scorecard_util_rate={scu.get('util_rate')}"
+                )
+        except (OSError, json.JSONDecodeError, TypeError):
+            pass
     # apply half to procedure, half to tool_use (ops discipline)
     if ops_bonus > 0:
         proc_s = _clamp(proc_s + ops_bonus * 0.5)

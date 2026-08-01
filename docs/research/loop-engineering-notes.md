@@ -30,3 +30,4 @@ Also mirrored from LOOP.md budget/observability: each fire records metrics (reca
 
 - F70/F71 used eval-first + compound memory; F72 adds the **separate checker role** those benches lacked as a named gate.
 - F135: scorecard skill fitness ingest (FederatedSkill themes → ledger shield) + doctor panel
+- F136: scorecard skill util (inject≠use) + federate + f136 critic demote
