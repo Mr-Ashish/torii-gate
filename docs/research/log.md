@@ -28,7 +28,7 @@ Pack dual-rollout is necessary but not sufficient. Highest ROI: **attribute whic
 - Live: **Modal** pytorch#191813 deepseek/deepseek-v4-pro BIT3_OK ~93s; log_streaming=true; POST_COMMENT=0
 
 ### SHA
-_PENDING_
+e02ed8cbf103409122fe0a3cf6cc2b147d02ae62
 
 ## 2026-08-01 — F87 dual contribution gate on skill auto-adopt
 
