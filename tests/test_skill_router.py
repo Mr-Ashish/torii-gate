@@ -41,6 +41,11 @@ class SkillRouterTests(unittest.TestCase):
         self.assertTrue(data.get("f119") or data.get("feature_always_budget") == "F119")
         self.assertTrue(data.get("product_in_py"), data)
         self.assertIn("skill-prefer-product-cli", data.get("always_selected") or [])
+        # F120 SkillReducer compact
+        self.assertTrue(data.get("f120") or data.get("feature_compact") == "F120")
+        self.assertTrue(data.get("compact_ok"), data)
+        self.assertTrue(data.get("smaller_ok"), data)
+        self.assertGreaterEqual(int(data.get("f120_chars_saved") or 0), 1)
 
     def test_status(self):
         r = _run(["status"])
@@ -159,6 +164,16 @@ class SkillRouterTests(unittest.TestCase):
             )
             self.assertEqual(r.returncode, 0, r.stderr + r.stdout)
             self.assertTrue((dest / "scripts" / "skill_router.py").is_file())
+            # F120: pack ships dual-gate recovery skills
+            for name in (
+                "skill-prefer-memory-cli-early.md",
+                "skill-prefer-product-cli.md",
+                "skill-prefer-critic-early.md",
+            ):
+                self.assertTrue(
+                    (dest / "agent" / "skills" / "active" / name).is_file(),
+                    f"pack missing {name}",
+                )
 
     def test_f114_memory_skill_always_on(self):
         """F114: skill-prefer-memory-cli-early is always routed when active."""

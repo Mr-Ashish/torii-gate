@@ -136,6 +136,8 @@ compound → write → consolidate → effective_critic → federate → scoped_
 
 **Always-on budget (F119):** full-body inject is capped (`TORII_SKILL_ROUTER_ALWAYS_MAX=3`); recovery skills (memory → product-cli → critic) outrank soft always (tool-depth/preserve) so F118 skills ship in the prompt without context bloat (SkillReducer).
 
+**Always body compact (F120):** SkillReducer-lite keeps actionable steps/code under `TORII_SKILL_ALWAYS_MAX_CHARS` (default 480) on inject; pack install verifies memory/product-cli/critic active skills ship.
+
 **Ops:** `python3 scripts/memory_loop_status.py scorecard` → L0–L3. Smoke requires L3 on the hub tree. CI job summary annotates readiness; optional advisory `torii/memory-loop` via `TORII_MEMORY_LOOP_STATUS_COMMIT=1`.
 
 ---

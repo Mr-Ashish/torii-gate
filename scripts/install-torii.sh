@@ -295,6 +295,17 @@ if [[ -d "$SRC/agent/skills" ]]; then
       cp -R "$SRC/agent/skills" "$DEST/agent/skills"
     fi
     log "copied agent/skills/ (active=$(find "$DEST/agent/skills/active" -name '*.md' 2>/dev/null | wc -l | tr -d ' '))"
+    # F120: pack must ship recovery always skills (F113/F118 dual-gate adopted)
+    for _rs in \
+      skill-prefer-memory-cli-early.md \
+      skill-prefer-product-cli.md \
+      skill-prefer-critic-early.md
+    do
+      if [[ ! -f "$DEST/agent/skills/active/$_rs" ]]; then
+        die "pack missing active recovery skill: agent/skills/active/$_rs (F120)"
+      fi
+    done
+    log "verified recovery skills (memory + product-cli + critic) in pack active/"
   fi
 fi
 

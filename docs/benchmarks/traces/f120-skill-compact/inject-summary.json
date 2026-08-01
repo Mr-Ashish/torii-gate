@@ -1,0 +1,35 @@
+{
+  "selected": [
+    "skill-prefer-memory-cli-early",
+    "skill-prefer-product-cli",
+    "skill-prefer-critic-early",
+    "skill-f74-exploit-scenario"
+  ],
+  "always_selected": [
+    "skill-prefer-memory-cli-early",
+    "skill-prefer-product-cli",
+    "skill-prefer-critic-early"
+  ],
+  "inject_chars": 3057,
+  "f120_chars_saved": 671,
+  "f120_compact": [
+    {
+      "id": "skill-prefer-memory-cli-early",
+      "saved": 265,
+      "cap": 480,
+      "always": true
+    },
+    {
+      "id": "skill-prefer-product-cli",
+      "saved": 230,
+      "cap": 480,
+      "always": true
+    },
+    {
+      "id": "skill-prefer-critic-early",
+      "saved": 176,
+      "cap": 480,
+      "always": true
+    }
+  ]
+}

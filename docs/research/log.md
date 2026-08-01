@@ -1,6 +1,36 @@
 # Torii research → product log
 
 
+## 2026-08-01 — F120 SkillReducer-lite always body compact + pack verify
+
+### Papers / posts
+- SkillReducer (arXiv 2603.29919): ~39% body compression via progressive disclosure core vs background.
+- Agent Skills composition cliff: instruction bloat dilutes attention.
+- Gap after F119: always budget of 3 still injects multi-kB recovery prose.
+
+### OSS design patterns stolen
+1. compact_skill_body keeps headings/numbered steps/code; drops background prose.
+2. ALWAYS_MAX_CHARS=480 / FULL_MAX_CHARS=900 caps on inject.
+3. Lean on-disk recovery skill bodies (memory/product/critic).
+4. install-torii.sh dies if pack missing F113/F118 recovery active skills.
+
+### Insight
+Always budget without body compaction still wastes context. Highest ROI: SkillReducer-lite on inject + pack verify so every install ships compact recovery skills.
+
+### Feature shipped (F120)
+- `skill_router.py` compact_skill_body + inject metrics f120_chars_saved
+- compact active recovery skills; install pack verify; fixture F120
+- traces `docs/benchmarks/traces/f120-skill-compact/`
+
+### Metric
+- Offline: fixture compact_ok; inject saves ≥1 char; pack install has 3 recovery skills
+- pytest 598; smoke PASS; Modal pytorch#191813 BIT3_OK ~55s log_streaming=true POST_COMMENT=0
+
+### Loop-engineering / Hermes practice used
+**Token budget constraint on always inject** — compact before ship.
+
+### SHA
+`f5f13679e72f542703fddbae961953708b70f801`
 ## 2026-08-01 — F119 always-on skill budget with recovery priority
 
 ### Papers / posts

@@ -53,3 +53,4 @@ Paper/eval-safe slim traces (redacted). Large raw logs may be gitignored; always
 - `f117-tool-probe-mine/` — F117 allowlisted tool-probe mine + proposals (offline + Modal pytorch#191813)
 - `f118-tool-dual-gate-adopt/` — F118 tool-attr dual-gate adopt product-cli/critic (offline + Modal pytorch#191813)
 - `f119-always-budget/` — F119 always-on priority budget recovery skills (offline + Modal pytorch#191813)
+- `f120-skill-compact/` — F120 SkillReducer-lite always body compact + pack verify (offline + Modal pytorch#191813)

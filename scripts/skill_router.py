@@ -34,6 +34,9 @@ Env:
   TORII_SKILL_ROUTER_ALWAYS      comma ids always included (optional)
   TORII_SKILL_ROUTER_ALWAYS_MAX  default 3 always full-body slots (F119 budget)
   TORII_SKILL_ROUTER_ALWAYS_PRIO comma id:priority overrides (F119)
+  TORII_SKILL_COMPACT            1 (default) | 0 — F120 SkillReducer-lite body compact
+  TORII_SKILL_ALWAYS_MAX_CHARS   default 480 — always skill body cap after compact
+  TORII_SKILL_FULL_MAX_CHARS     default 900 — non-always selected body cap
   TORII_SKILL_ROUTER_REPLACE  1 (default) | 0 — replace F69 skills block
   TORII_SKILL_TOOL_OUTCOME    1 (default) | 0 — F114 tool-invocation hit scoring
 """
@@ -744,13 +747,84 @@ def select_skills(
     }
 
 
+def compact_enabled() -> bool:
+    """F120: SkillReducer-lite — compact full skill bodies on inject (default on)."""
+    raw = (os.environ.get("TORII_SKILL_COMPACT") or "1").strip().lower()
+    return raw not in _FALSEY
+
+
+def always_max_chars() -> int:
+    return _int_env("TORII_SKILL_ALWAYS_MAX_CHARS", 480)
+
+
+def full_max_chars() -> int:
+    return _int_env("TORII_SKILL_FULL_MAX_CHARS", 900)
+
+
+def compact_skill_body(body: str, max_chars: int) -> tuple[str, int]:
+    """Keep actionable rules (headings, numbered steps, code) under max_chars.
+
+    Returns (text, chars_saved). SkillReducer stage-2 lite: drop background prose.
+    """
+    if not body:
+        return body, 0
+    original_len = len(body)
+    if original_len <= max_chars:
+        return body, 0
+    keep: list[str] = []
+    for line in body.splitlines():
+        s = line.strip()
+        if not s:
+            if keep and keep[-1] != "":
+                keep.append("")
+            continue
+        # actionable: headings, ordered/unordered lists, code, short imperatives
+        if (
+            s.startswith("#")
+            or re.match(r"^\d+[\.)]\s+\S", s)
+            or s.startswith(("-", "*", "•"))
+            or "`" in s
+            or s.lower().startswith(
+                ("call ", "run ", "prefer ", "use ", "do not ", "never ", "always ")
+            )
+        ):
+            keep.append(line.rstrip())
+            continue
+        # short policy lines with security verbs
+        if len(s) <= 120 and any(
+            k in s.lower()
+            for k in (
+                "path:line",
+                "unvalidated",
+                "request changes",
+                "hint",
+                "evidence",
+                "budget",
+            )
+        ):
+            keep.append(line.rstrip())
+    text = "\n".join(keep).strip()
+    if not text:
+        text = body.strip()
+    if len(text) > max_chars:
+        cut = max_chars - 24
+        text = text[: max(0, cut)].rstrip() + "\n…(F120 compacted)"
+    saved = max(0, original_len - len(text))
+    return text, saved
+
+
 def render_injection(cards_all: list[SkillCard], selection: dict[str, Any]) -> str:
     selected_ids = set(selection.get("selected") or [])
     selected_cards: list[SkillCard] = selection.get("selected_cards") or [
         c for c in cards_all if c.id in selected_ids
     ]
+    always_ids = set(selection.get("always_selected") or [])
+    do_compact = compact_enabled()
+    a_max = always_max_chars()
+    f_max = full_max_chars()
+    compact_meta: list[dict[str, Any]] = []
     lines: list[str] = [
-        "## Skill router (F84 — progressive disclosure)",
+        "## Skill router (F84/F119/F120 — progressive disclosure + compact)",
         "",
         "Use the **index** for awareness; follow **selected full skills** as reviewer discipline.",
         f"Routed themes: {', '.join(selection.get('path_themes') or []) or 'review'}.",
@@ -771,8 +845,22 @@ def render_injection(cards_all: list[SkillCard], selection: dict[str, Any]) -> s
     for c in selected_cards:
         lines.append(f"#### {c.id}")
         lines.append("")
-        lines.append(c.body)
+        body = c.body
+        if do_compact:
+            # budgeted always skills get tighter cap (SkillReducer always cost)
+            is_always = c.always or c.id in always_ids
+            cap = a_max if is_always else f_max
+            body, saved = compact_skill_body(body, cap)
+            if saved:
+                compact_meta.append(
+                    {"id": c.id, "saved": saved, "cap": cap, "always": is_always}
+                )
+        lines.append(body)
         lines.append("")
+    # stash compact meta on selection for inject artifact (soft)
+    if compact_meta:
+        selection["f120_compact"] = compact_meta
+        selection["f120_chars_saved"] = sum(int(x["saved"]) for x in compact_meta)
     return "\n".join(lines).rstrip() + "\n"
 
 
@@ -822,14 +910,18 @@ def inject_into_prompt(
 
     result = {
         "feature": FEATURE,
+        "feature_compact": "F120" if compact_enabled() else None,
         "injected": 1,
         "selected": selection["selected"],
+        "always_selected": selection.get("always_selected"),
         "catalog_n": len(cards),
         "paths_n": selection["paths_n"],
         "path_themes": selection["path_themes"],
         "stripped_f69": stripped_f69,
         "prompt": str(dest),
         "chars": len(body),
+        "f120_chars_saved": selection.get("f120_chars_saved") or 0,
+        "f120_compact": selection.get("f120_compact") or [],
     }
     # write selection artifact next to prompt if OUT_DIR
     od = (os.environ.get("OUT_DIR") or "").strip()
@@ -1451,6 +1543,33 @@ Verdict: REQUEST_CHANGES
         memory_in_py = "skill-prefer-memory-cli-early" in set(inj["selected"])
 
         product_in_py = "skill-prefer-product-cli" in set(inj["selected"])
+        # F120: fat always body is compacted under ALWAYS_MAX_CHARS
+        fat = active / "skill-prefer-memory-cli-early.md"
+        if fat.is_file():
+            # append background bloat then re-inject
+            fat.write_text(
+                fat.read_text(encoding="utf-8")
+                + "\n\n"
+                + ("Background context not needed for the agent loop. " * 30)
+                + "\n",
+                encoding="utf-8",
+            )
+        os.environ["TORII_SKILL_COMPACT"] = "1"
+        os.environ["TORII_SKILL_ALWAYS_MAX_CHARS"] = "480"
+        cards2 = catalog(root)
+        inj2 = inject_into_prompt(prompt, root=root, paths=py_paths)
+        text2 = prompt.read_text(encoding="utf-8")
+        compact_ok = int(inj2.get("f120_chars_saved") or 0) >= 1
+        compact_marker_ok = "F120 compacted" in text2 or compact_ok
+        # without compact, inject would be larger
+        os.environ["TORII_SKILL_COMPACT"] = "0"
+        inj3 = inject_into_prompt(prompt, root=root, paths=py_paths)
+        chars_compact = int(inj2.get("chars") or 0)
+        chars_full = int(inj3.get("chars") or 0)
+        # restore compact on
+        os.environ["TORII_SKILL_COMPACT"] = "1"
+        smaller_ok = chars_compact <= chars_full
+
         fixture_pass = all(
             [
                 always_ok,
@@ -1470,13 +1589,17 @@ Verdict: REQUEST_CHANGES
                 tool_outcome_ok,
                 tool_rate_ok,
                 weak_tool_ok,
+                compact_ok,
+                smaller_ok,
             ]
         )
         payload = {
             "feature": FEATURE,
             "f114": True,
             "f119": True,
+            "f120": True,
             "feature_always_budget": "F119",
+            "feature_compact": "F120",
             "fixture_pass": fixture_pass,
             "always_ok": always_ok,
             "always_selected": list(always_sel),
@@ -1501,6 +1624,11 @@ Verdict: REQUEST_CHANGES
             "tool_hit_n": tool_hits.get("tool_hit_n"),
             "tool_hit_rate": tool_hits.get("tool_hit_rate"),
             "weak_tool_ok": weak_tool_ok,
+            "compact_ok": compact_ok,
+            "compact_chars": chars_compact,
+            "full_chars": chars_full,
+            "f120_chars_saved": inj2.get("f120_chars_saved"),
+            "smaller_ok": smaller_ok,
         }
         print(json.dumps(payload, indent=2))
         return 0 if fixture_pass else 1
