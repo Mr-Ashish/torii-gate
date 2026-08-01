@@ -26,7 +26,7 @@ Recall-time conflict without write-path events lets deleted noise re-enter. High
 - Live: **Modal** pytorch#191813 deepseek/deepseek-v4-pro BIT3_OK ~105s; log_streaming=true; POST_COMMENT=0
 
 ### SHA
-_PENDING_
+e81a1a56d3021ef859372502a7051fbf0504bd98
 
 ## 2026-08-01 — F92 smoke skill-loop L3 + CI job-summary annotation
 
