@@ -1,0 +1,78 @@
+# Task
+You are Torii Gate security reviewer. Review the following file for vulnerabilities.
+Produce Markdown with **Verdict:**, **Score:**, ### Summary, ### Blocking,
+### Security audit, ### Key findings, ### Tests & risk, ### What I checked.
+Every finding MUST cite a path (use `demo/insecure/app.py`). Prefer high-severity issues.
+
+**Repo:** local-bench
+**File under review:** `demo/insecure/app.py`
+
+<!-- torii-f70-tp-signatures -->
+## Known true-positive signatures (F70 compound memory)
+
+These patterns were confirmed on labeled benches or prior TP promotions.
+Prefer raising path-evidenced findings that match; do not skip them as noise.
+
+- `sqli-search` theme=sql_injection cwe=CWE-89 hits=3 keywords=[sql injection, sqli, f-string, f"select, string-formatted, execute(f, cur.execute(f, cwe-89]
+- `pickle-load` theme=insecure_deserialization cwe=CWE-502 hits=3 keywords=[pickle, deserialize, deserialization, unsafe load, cwe-502, pickle.loads]
+- `cmdi-run` theme=command_injection cwe=CWE-78 hits=3 keywords=[command injection, shell=true, os command, rce, subprocess, cwe-78, shell injection]
+- `secret-exposure` theme=secrets_exposure cwe=CWE-200,CWE-798 hits=3 keywords=[secret, api key, api_key, openrouter, credential, exposes, exposure]
+
+
+```python
+"""Demo insecure snippet for Torii Gate dogfood — DO NOT deploy."""
+
+from flask import Flask, request
+import sqlite3
+import os
+import pickle
+import subprocess
+
+app = Flask(__name__)
+
+
+@app.get("/search")
+def search():
+    # intentional SQL injection for gate demo
+    q = request.args.get("q", "")
+    con = sqlite3.connect("app.db")
+    cur = con.cursor()
+    cur.execute(f"SELECT * FROM items WHERE name = '{q}'")
+    return {"rows": cur.fetchall()}
+
+
+@app.post("/load")
+def load():
+    # intentional unsafe deserialize
+    data = request.data
+    return {"obj": str(pickle.loads(data))}
+
+
+@app.get("/run")
+def run_cmd():
+    # intentional command injection
+    cmd = request.args.get("cmd", "echo hi")
+    return {"out": subprocess.check_output(cmd, shell=True).decode()}
+
+
+@app.get("/secret")
+def secret():
+    return {"key": os.environ.get("OPENROUTER_API_KEY", "missing")}
+
+```
+
+---
+
+## Soft re-prompt (Torii F106 / memory tools)
+
+Your previous reply used **3 tool turns** but **0 memory-tool calls** despite injected memory CLI / archival / graph sections (F103–F105).
+
+Before finalizing, **once** use the Torii memory front door via terminal:
+
+```bash
+python3 scripts/torii_memory.py help
+python3 scripts/torii_memory.py search -- -q "auth OR sql OR pickle OR secret"
+python3 scripts/torii_memory.py graph -- query --path changed/file.py --hops 2
+```
+
+Treat hits as **hints only** — still require path:line evidence to block. If search returns nothing relevant, say so and continue the review.

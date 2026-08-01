@@ -1065,6 +1065,11 @@ if [[ -f "$SKILL_ROUTER_HELPER" && $TIMED_OUT -eq 0 && "${HERMES_CLI_ARGV_BROKEN
         [[ "$_rrp_bkind" == "f157" || "$_rrp_ha_gap" == "1" ]] && _rbud_kind="f157"
         _rbud_kv="$(python3 "$REPROMPT_BUDGET_HELPER" allow --out-dir "$OUT_DIR" --kind "$_rbud_kind" 2>/dev/null || true)"
         _rbud_allow="$(printf '%s\n' "$_rbud_kv" | sed -n 's/^allow=//p' | head -1)"
+        _rbud_adapt="$(printf '%s\n' "$_rbud_kv" | sed -n 's/^adaptive_expanded=//p' | head -1)"
+        _rbud_areason="$(printf '%s\n' "$_rbud_kv" | sed -n 's/^adaptive_reason=//p' | head -1)"
+        if [[ "$_rbud_adapt" == "1" ]]; then
+          notice "F159 adaptive dual-recovery slot · kind=${_rbud_kind} reason=${_rbud_areason:-complementary}"
+        fi
         if [[ "$_rbud_allow" != "1" && "$_rbud_allow" != "true" ]]; then
           _rbud_reason="$(printf '%s\n' "$_rbud_kv" | sed -n 's/^reason=//p' | head -1)"
           notice "F108 re-prompt budget blocked F122/F137/F157 · reason=${_rbud_reason:-budget}"
@@ -1074,7 +1079,7 @@ if [[ -f "$SKILL_ROUTER_HELPER" && $TIMED_OUT -eq 0 && "${HERMES_CLI_ARGV_BROKEN
       fi
       if [[ "$_rrp_do" == "1" || "$_rrp_do" == "true" ]]; then
         REC_REPROMPT_ATTEMPTED=1
-        notice "F122/F137/F157 skill util soft re-prompt · idle=${_rrp_idle:-?} sc_idle=${_rrp_sc_idle:-?} tool_turns=${_rrp_tt:-?} reason=${REC_REPROMPT_REASON:-gap} hub_gap=${_rrp_hgp:-0} sc_reprompt=${_rrp_sc_do:-0} ha_gap=${_rrp_ha_gap:-0} kind=${_rbud_kind:-f122}"
+        notice "F122/F137/F157 skill util soft re-prompt · idle=${_rrp_idle:-?} sc_idle=${_rrp_sc_idle:-?} tool_turns=${_rrp_tt:-?} reason=${REC_REPROMPT_REASON:-gap} hub_gap=${_rrp_hgp:-0} sc_reprompt=${_rrp_sc_do:-0} ha_gap=${_rrp_ha_gap:-0} kind=${_rbud_kind:-f122} adaptive=${_rbud_adapt:-0}"
         if [[ -f "$REPROMPT_BUDGET_HELPER" ]]; then
           _rbud_kind="f122"
           [[ "$_rrp_sc_only" == "1" ]] && _rbud_kind="f137"

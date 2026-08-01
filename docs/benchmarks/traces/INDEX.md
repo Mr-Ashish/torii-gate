@@ -4,6 +4,7 @@ Paper/eval-safe slim traces (redacted). Large raw logs may be gitignored; always
 
 | Date (UTC) | Repo | PR | Model | Fitness | Level | Path |
 |------------|------|----|-------|---------|-------|------|
+| 2026-08-01T10:29:08Z | pytorch/pytorch | 191829 | deepseek/deepseek-v4-pro | reprompt-adaptive | — | `f159-reprompt-adaptive-dual` |
 | 2026-08-01T10:21:56Z | pytorch/pytorch | 191831 | deepseek/deepseek-v4-pro | hub-archival-fitness | — | `f158-hub-archival-fitness` |
 | 2026-08-01T10:16:00Z | pytorch/pytorch | 191829 | deepseek/deepseek-v4-pro | hub-archival-reprompt | — | `f157-hub-archival-util-reprompt` |
 | 2026-08-01T10:07:10Z | pytorch/pytorch | 191831 | deepseek/deepseek-v4-pro | hub-archival-util-critic | — | `f156-hub-archival-util-critic` |

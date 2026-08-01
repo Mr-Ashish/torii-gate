@@ -1,0 +1,236 @@
+{
+  "schema_version": 1,
+  "captured_at": "2026-08-01T10:26:16Z",
+  "model": "deepseek/deepseek-v4-pro",
+  "provider": "openrouter",
+  "session_id": "20260801_155550_c34826",
+  "hermes_home": "/Users/ashishmishra/Documents/experiments/torii/.torii-hermes-home",
+  "usage": {
+    "estimated_cost_usd": 0.005258222,
+    "cost_status": "estimated",
+    "cost_source": "provider_models_api",
+    "input_tokens": 8798,
+    "output_tokens": 1582,
+    "cache_read_tokens": 15104,
+    "cache_write_tokens": 0,
+    "reasoning_tokens": 321,
+    "total_tokens": 25484,
+    "api_calls": 4,
+    "model": "deepseek/deepseek-v4-pro",
+    "provider": "openrouter",
+    "session_id": "20260801_155550_c34826",
+    "completed": true,
+    "failed": false,
+    "service_tier": null
+  },
+  "tool_call_turns": 3,
+  "message_count": 8,
+  "steps": [
+    {
+      "step": 0,
+      "kind": "user",
+      "role": "user",
+      "timestamp": 1785579950.687396,
+      "content_preview": "# Task\nYou are Torii Gate security reviewer. Review the following file for vulnerabilities.\nProduce Markdown with **Verdict:**, **Score:**, ### Summary, ### Blocking,\n### Security audit, ### Key findings, ### Tests & risk, ### What I checked.\nEvery finding MUST cite a path (use `demo/insecure/app.py`). Prefer high-severity issues.\n\n**Repo:** local-bench\n**File under review:** `demo/insecure/app.py`\n\n<!-- torii-f70-tp-signatures -->\n## Known true-positive signatures (F70 compound memory)\n\nThese patterns were confirmed on labeled benches or prior TP promotions.\nPrefer raising path-evidenced findings that match; do not skip them as noise.\n\n- `sqli-search` theme=sql_injection cwe=CWE-89 hits=3 keywords=[sql injection, sqli, f-string, f\"select, string-formatted, execute(f, cur.execute(f, cwe-89]\n- `pickle-load` theme=insecure_deserialization cwe=CWE-502 hits=3 keywords=[pickle, deserialize, deserialization, unsafe load, cwe-502, pickle.loads]\n- `cmdi-run` theme=command_injection cwe=CWE-78 hits=3 keywords=[command injection, shell=true, os command, rce, subprocess, cwe-78, shell injection]\n- `secret-exposure` theme=secrets_exposure cwe=CWE-200,CWE-798 hits=3 keywords=[secret, api key, api_key, openrouter, credential, exposes, exposure]\n\n\n```python\n\"\"\"Demo insecure snippet for Torii Gate dogfood \u2014 DO NOT deploy.\"\"\"\n\nfrom flask import Flask, request\nimport sqlite3\nimport os\nimport pickle\nimport subprocess\n\napp = Flask(__name__)\n\n\n@app.get(\"/search\")\ndef search():\n    # intentional SQL injection for gate demo\n    q = request.args.get(\"q\", \"\")\n    con = sqlite3.connect(\"app.db\")\n    cur = con.cursor()\n    cur.execute(f\"SELECT * FROM items WHERE name = '{q}'\")\n    return {\"rows\": cur.fetchall()}\n\n\n@app.post(\"/load\")\ndef load():\n    # intentional unsafe deserialize\n    data = request.data\n    return {\"obj\": str(pickle.loads(data))}\n\n\n@app.get(\"/run\")\ndef run_cmd():\n    # intentional command injection\n    cmd = request.args.get(\"cmd\", \"echo hi\")\n    return {\"out\": subprocess.ch",
+      "content_bytes": 2002
+    },
+    {
+      "step": 1,
+      "kind": "assistant_tool_calls",
+      "role": "assistant",
+      "timestamp": 1785579953.693728,
+      "content_preview": "",
+      "content_bytes": 0,
+      "tool_calls": [
+        {
+          "id": "call_163f81106051463da57b93d2",
+          "name": "terminal",
+          "arguments_preview": "{\"command\": \"git branch --show-current && git status --short\", \"workdir\": \"/Users/ashishmishra/Documents/experiments/torii\"}"
+        }
+      ]
+    },
+    {
+      "step": 2,
+      "kind": "tool_result",
+      "role": "tool",
+      "timestamp": 1785579953.843914,
+      "content_preview": "{\"output\": \"main\\n M .torii/scoped-memory.json\\n M agent/skills/proposals/skill-f74-exploit-scenario.md\\n M agent/skills/proposals/skill-f74-prefer-chain-json.md\\n M docs/benchmarks/juice-shop/INDEX.md\\n M docs/benchmarks/traces/EVAL-REPORT.md\\n M docs/benchmarks/traces/eval-report.json\\n M docs/research/loop-engineering-notes.md\\n M memory/evolution/ledger.json\\n M memory/federation/INDEX.md\\n M memory/federation/federated-signals.json\\n M memory/federation/recovery-util-signals.json\\n M memory/federation/scorecard-skill-signals.json\\n M scripts/reprompt_budget.py\\n M scripts/run-hermes-review.sh\\n M scripts/skill_loop_status.py\\n?? .torii/product-scorecard.json\\n?? .torii/skill-attribution.json\\n?? .torii/skill-fitness.json\\n?? agent/skills/proposals/skill-test-gap-blocking.md\\n?? docs/benchmarks/fixtures/second-agent-critic.json\\n?? docs/benchmarks/fixtures/second-agent-critic.md\\n?? docs/benchmarks/traces/f159-reprompt-adaptive-dual/\\n?? docs/research/reprompt-adaptive-dual-pattern.md\\n?? memory/federation/memory-util-signals.json\\n?? memory/federation/scorecard-util-signals.json\\n?? memory/tenants/demo-tenant/\\n?? memory/tenants/e2e-f155/\\n?? memory/tenants/fixture-tenant-a/\\n?? memory/tenants/t-f155/\\n?? memory/tenants/tenant-z/\", \"exit_code\": 0, \"error\": null}",
+      "content_bytes": 1287,
+      "tool_name": "terminal"
+    },
+    {
+      "step": 3,
+      "kind": "assistant_tool_calls",
+      "role": "assistant",
+      "timestamp": 1785579956.114017,
+      "content_preview": "",
+      "content_bytes": 0,
+      "tool_calls": [
+        {
+          "id": "call_71ef7b6ce07f44aea2ec2486",
+          "name": "terminal",
+          "arguments_preview": "{\"command\": \"ls -la demo/insecure/app.py 2>&1 || echo \\\"NOT FOUND\\\"\", \"workdir\": \"/Users/ashishmishra/Documents/experiments/torii\"}"
+        }
+      ]
+    },
+    {
+      "step": 4,
+      "kind": "tool_result",
+      "role": "tool",
+      "timestamp": 1785579956.176097,
+      "content_preview": "{\"output\": \"-rw-r--r--@ 1 ashishmishra  staff  881 Aug  1 05:06 demo/insecure/app.py\", \"exit_code\": 0, \"error\": null}",
+      "content_bytes": 117,
+      "tool_name": "terminal"
+    },
+    {
+      "step": 5,
+      "kind": "assistant_tool_calls",
+      "role": "assistant",
+      "timestamp": 1785579957.892456,
+      "content_preview": "",
+      "content_bytes": 0,
+      "tool_calls": [
+        {
+          "id": "call_786f8e749c514fd88f4c57d7",
+          "name": "terminal",
+          "arguments_preview": "{\"command\": \"cat -n demo/insecure/app.py\", \"workdir\": \"/Users/ashishmishra/Documents/experiments/torii\"}"
+        }
+      ]
+    },
+    {
+      "step": 6,
+      "kind": "tool_result",
+      "role": "tool",
+      "timestamp": 1785579957.9379368,
+      "content_preview": "{\"output\": \"1\\t\\\"\\\"\\\"Demo insecure snippet for Torii Gate dogfood \u2014 DO NOT deploy.\\\"\\\"\\\"\\n     2\\t\\n     3\\tfrom flask import Flask, request\\n     4\\timport sqlite3\\n     5\\timport os\\n     6\\timport pickle\\n     7\\timport subprocess\\n     8\\t\\n     9\\tapp = Flask(__name__)\\n    10\\t\\n    11\\t\\n    12\\t@app.get(\\\"/search\\\")\\n    13\\tdef search():\\n    14\\t    # intentional SQL injection for gate demo\\n    15\\t    q = request.args.get(\\\"q\\\", \\\"\\\")\\n    16\\t    con = sqlite3.connect(\\\"app.db\\\")\\n    17\\t    cur = con.cursor()\\n    18\\t    cur.execute(f\\\"SELECT * FROM items WHERE name = '{q}'\\\")\\n    19\\t    return {\\\"rows\\\": cur.fetchall()}\\n    20\\t\\n    21\\t\\n    22\\t@app.post(\\\"/load\\\")\\n    23\\tdef load():\\n    24\\t    # intentional unsafe deserialize\\n    25\\t    data = request.data\\n    26\\t    return {\\\"obj\\\": str(pickle.loads(data))}\\n    27\\t\\n    28\\t\\n    29\\t@app.get(\\\"/run\\\")\\n    30\\tdef run_cmd():\\n    31\\t    # intentional command injection\\n    32\\t    cmd = request.args.get(\\\"cmd\\\", \\\"echo hi\\\")\\n    33\\t    return {\\\"out\\\": subprocess.check_output(cmd, shell=True).decode()}\\n    34\\t\\n    35\\t\\n    36\\t@app.get(\\\"/secret\\\")\\n    37\\tdef secret():\\n    38\\t    return {\\\"key\\\": os.environ.get(\\\"OPENROUTER_API_KEY\\\", \\\"missing\\\")}\", \"exit_code\": 0, \"error\": null}",
+      "content_bytes": 1299,
+      "tool_name": "terminal"
+    },
+    {
+      "step": 7,
+      "kind": "assistant",
+      "role": "assistant",
+      "timestamp": 1785579975.992445,
+      "content_preview": "**Verdict:** REQUEST CHANGES\n\n**Score:** 0 / 100\n\n**Review effort:** 1 (four trivial, path-evidenced, intentionally planted vulnerabilities \u2014 no deep tracing needed)\n\n---\n\n### Summary\n\nEvery route in this file contains a critical security flaw. The file is marked as a demo/dogfood snippet, but it should never be merged into a deployable codebase. All four findings match known true-positive signatures.\n\n### Blocking\n\nAll four findings below block merge. Each has a concrete trigger via unauthenticated HTTP.\n\n---\n\n### Security audit\n\n**Not clean.** Four high-severity, no-authentication-required vulnerabilities:\n\n| # | CWE | Route | Impact |\n|---|-----|-------|--------|\n| 1 | CWE-89 (SQLi) | `/search` | Data exfiltration, table drop |\n| 2 | CWE-502 (Deserialize) | `/load` | Remote code execution |\n| 3 | CWE-78 (Cmd injection) | `/run` | Remote code execution |\n| 4 | CWE-200 (Secrets) | `/secret` | Credential leakage |\n\n---\n\n### Key findings\n\n1. **SQL Injection \u2014 `demo/insecure/app.py:18`**\n   - **Trigger:** `GET /search?q='; DROP TABLE items; --`\n   - `cur.execute(f\"SELECT * FROM items WHERE name = '{q}'\")` interpolates attacker-controlled `q` directly into SQL via f-string.\n   - No parameterization, no escaping, no input validation.\n\n2. **Insecure deserialization (RCE) \u2014 `demo/insecure/app.py:26`**\n   - **Trigger:** `POST /load` with a crafted pickle payload (e.g. `cos\\nsystem\\n(S'id'\\ntR.`)\n   - `pickle.loads(data)` on raw untrusted request body. Pickle can execute arbitrary code during deserialization.\n   - No signature verification, no safe loader, no allowlist.\n\n3. **Command injection (RCE) \u2014 `demo/insecure/app.py:33`**\n   - **Trigger:** `GET /run?cmd=cat /etc/passwd; rm -rf /`\n   - `subprocess.check_output(cmd, shell=True)` passes attacker-controlled string to a shell. Any shell metacharacter (`;`, `|`, `&&`, backtick, `$()`) enables arbitrary command execution.\n   - No input sanitization, no `shlex.quote`, no argument-list form.\n\n4. **Secret exposure \u2014 `demo/inse",
+      "content_bytes": 2010
+    }
+  ],
+  "messages": [
+    {
+      "id": 33,
+      "session_id": "20260801_155550_c34826",
+      "role": "user",
+      "content": "# Task\nYou are Torii Gate security reviewer. Review the following file for vulnerabilities.\nProduce Markdown with **Verdict:**, **Score:**, ### Summary, ### Blocking,\n### Security audit, ### Key findings, ### Tests & risk, ### What I checked.\nEvery finding MUST cite a path (use `demo/insecure/app.py`). Prefer high-severity issues.\n\n**Repo:** local-bench\n**File under review:** `demo/insecure/app.py`\n\n<!-- torii-f70-tp-signatures -->\n## Known true-positive signatures (F70 compound memory)\n\nThese patterns were confirmed on labeled benches or prior TP promotions.\nPrefer raising path-evidenced findings that match; do not skip them as noise.\n\n- `sqli-search` theme=sql_injection cwe=CWE-89 hits=3 keywords=[sql injection, sqli, f-string, f\"select, string-formatted, execute(f, cur.execute(f, cwe-89]\n- `pickle-load` theme=insecure_deserialization cwe=CWE-502 hits=3 keywords=[pickle, deserialize, deserialization, unsafe load, cwe-502, pickle.loads]\n- `cmdi-run` theme=command_injection cwe=CWE-78 hits=3 keywords=[command injection, shell=true, os command, rce, subprocess, cwe-78, shell injection]\n- `secret-exposure` theme=secrets_exposure cwe=CWE-200,CWE-798 hits=3 keywords=[secret, api key, api_key, openrouter, credential, exposes, exposure]\n\n\n```python\n\"\"\"Demo insecure snippet for Torii Gate dogfood \u2014 DO NOT deploy.\"\"\"\n\nfrom flask import Flask, request\nimport sqlite3\nimport os\nimport pickle\nimport subprocess\n\napp = Flask(__name__)\n\n\n@app.get(\"/search\")\ndef search():\n    # intentional SQL injection for gate demo\n    q = request.args.get(\"q\", \"\")\n    con = sqlite3.connect(\"app.db\")\n    cur = con.cursor()\n    cur.execute(f\"SELECT * FROM items WHERE name = '{q}'\")\n    return {\"rows\": cur.fetchall()}\n\n\n@app.post(\"/load\")\ndef load():\n    # intentional unsafe deserialize\n    data = request.data\n    return {\"obj\": str(pickle.loads(data))}\n\n\n@app.get(\"/run\")\ndef run_cmd():\n    # intentional command injection\n    cmd = request.args.get(\"cmd\", \"echo hi\")\n    return {\"out\": subprocess.check_output(cmd, shell=True).decode()}\n\n\n@app.get(\"/secret\")\ndef secret():\n    return {\"key\": os.environ.get(\"OPENROUTER_API_KEY\", \"missing\")}\n\n```",
+      "timestamp": 1785579950.687396,
+      "tool_name": null,
+      "tool_calls": null,
+      "tool_call_id": null
+    },
+    {
+      "id": 34,
+      "session_id": "20260801_155550_c34826",
+      "role": "assistant",
+      "content": "",
+      "timestamp": 1785579953.693728,
+      "tool_name": null,
+      "tool_calls": [
+        {
+          "id": "call_163f81106051463da57b93d2",
+          "call_id": "call_163f81106051463da57b93d2",
+          "response_item_id": "fc_163f81106051463da57b93d2",
+          "type": "function",
+          "function": {
+            "name": "terminal",
+            "arguments": "{\"command\": \"git branch --show-current && git status --short\", \"workdir\": \"/Users/ashishmishra/Documents/experiments/torii\"}"
+          }
+        }
+      ],
+      "tool_call_id": null
+    },
+    {
+      "id": 35,
+      "session_id": "20260801_155550_c34826",
+      "role": "tool",
+      "content": "{\"output\": \"main\\n M .torii/scoped-memory.json\\n M agent/skills/proposals/skill-f74-exploit-scenario.md\\n M agent/skills/proposals/skill-f74-prefer-chain-json.md\\n M docs/benchmarks/juice-shop/INDEX.md\\n M docs/benchmarks/traces/EVAL-REPORT.md\\n M docs/benchmarks/traces/eval-report.json\\n M docs/research/loop-engineering-notes.md\\n M memory/evolution/ledger.json\\n M memory/federation/INDEX.md\\n M memory/federation/federated-signals.json\\n M memory/federation/recovery-util-signals.json\\n M memory/federation/scorecard-skill-signals.json\\n M scripts/reprompt_budget.py\\n M scripts/run-hermes-review.sh\\n M scripts/skill_loop_status.py\\n?? .torii/product-scorecard.json\\n?? .torii/skill-attribution.json\\n?? .torii/skill-fitness.json\\n?? agent/skills/proposals/skill-test-gap-blocking.md\\n?? docs/benchmarks/fixtures/second-agent-critic.json\\n?? docs/benchmarks/fixtures/second-agent-critic.md\\n?? docs/benchmarks/traces/f159-reprompt-adaptive-dual/\\n?? docs/research/reprompt-adaptive-dual-pattern.md\\n?? memory/federation/memory-util-signals.json\\n?? memory/federation/scorecard-util-signals.json\\n?? memory/tenants/demo-tenant/\\n?? memory/tenants/e2e-f155/\\n?? memory/tenants/fixture-tenant-a/\\n?? memory/tenants/t-f155/\\n?? memory/tenants/tenant-z/\", \"exit_code\": 0, \"error\": null}",
+      "timestamp": 1785579953.843914,
+      "tool_name": "terminal",
+      "tool_calls": null,
+      "tool_call_id": "call_163f81106051463da57b93d2"
+    },
+    {
+      "id": 36,
+      "session_id": "20260801_155550_c34826",
+      "role": "assistant",
+      "content": "",
+      "timestamp": 1785579956.114017,
+      "tool_name": null,
+      "tool_calls": [
+        {
+          "id": "call_71ef7b6ce07f44aea2ec2486",
+          "call_id": "call_71ef7b6ce07f44aea2ec2486",
+          "response_item_id": "fc_71ef7b6ce07f44aea2ec2486",
+          "type": "function",
+          "function": {
+            "name": "terminal",
+            "arguments": "{\"command\": \"ls -la demo/insecure/app.py 2>&1 || echo \\\"NOT FOUND\\\"\", \"workdir\": \"/Users/ashishmishra/Documents/experiments/torii\"}"
+          }
+        }
+      ],
+      "tool_call_id": null
+    },
+    {
+      "id": 37,
+      "session_id": "20260801_155550_c34826",
+      "role": "tool",
+      "content": "{\"output\": \"-rw-r--r--@ 1 ashishmishra  staff  881 Aug  1 05:06 demo/insecure/app.py\", \"exit_code\": 0, \"error\": null}",
+      "timestamp": 1785579956.176097,
+      "tool_name": "terminal",
+      "tool_calls": null,
+      "tool_call_id": "call_71ef7b6ce07f44aea2ec2486"
+    },
+    {
+      "id": 38,
+      "session_id": "20260801_155550_c34826",
+      "role": "assistant",
+      "content": "",
+      "timestamp": 1785579957.892456,
+      "tool_name": null,
+      "tool_calls": [
+        {
+          "id": "call_786f8e749c514fd88f4c57d7",
+          "call_id": "call_786f8e749c514fd88f4c57d7",
+          "response_item_id": "fc_786f8e749c514fd88f4c57d7",
+          "type": "function",
+          "function": {
+            "name": "terminal",
+            "arguments": "{\"command\": \"cat -n demo/insecure/app.py\", \"workdir\": \"/Users/ashishmishra/Documents/experiments/torii\"}"
+          }
+        }
+      ],
+      "tool_call_id": null
+    },
+    {
+      "id": 39,
+      "session_id": "20260801_155550_c34826",
+      "role": "tool",
+      "content": "{\"output\": \"1\\t\\\"\\\"\\\"Demo insecure snippet for Torii Gate dogfood \u2014 DO NOT deploy.\\\"\\\"\\\"\\n     2\\t\\n     3\\tfrom flask import Flask, request\\n     4\\timport sqlite3\\n     5\\timport os\\n     6\\timport pickle\\n     7\\timport subprocess\\n     8\\t\\n     9\\tapp = Flask(__name__)\\n    10\\t\\n    11\\t\\n    12\\t@app.get(\\\"/search\\\")\\n    13\\tdef search():\\n    14\\t    # intentional SQL injection for gate demo\\n    15\\t    q = request.args.get(\\\"q\\\", \\\"\\\")\\n    16\\t    con = sqlite3.connect(\\\"app.db\\\")\\n    17\\t    cur = con.cursor()\\n    18\\t    cur.execute(f\\\"SELECT * FROM items WHERE name = '{q}'\\\")\\n    19\\t    return {\\\"rows\\\": cur.fetchall()}\\n    20\\t\\n    21\\t\\n    22\\t@app.post(\\\"/load\\\")\\n    23\\tdef load():\\n    24\\t    # intentional unsafe deserialize\\n    25\\t    data = request.data\\n    26\\t    return {\\\"obj\\\": str(pickle.loads(data))}\\n    27\\t\\n    28\\t\\n    29\\t@app.get(\\\"/run\\\")\\n    30\\tdef run_cmd():\\n    31\\t    # intentional command injection\\n    32\\t    cmd = request.args.get(\\\"cmd\\\", \\\"echo hi\\\")\\n    33\\t    return {\\\"out\\\": subprocess.check_output(cmd, shell=True).decode()}\\n    34\\t\\n    35\\t\\n    36\\t@app.get(\\\"/secret\\\")\\n    37\\tdef secret():\\n    38\\t    return {\\\"key\\\": os.environ.get(\\\"OPENROUTER_API_KEY\\\", \\\"missing\\\")}\", \"exit_code\": 0, \"error\": null}",
+      "timestamp": 1785579957.9379368,
+      "tool_name": "terminal",
+      "tool_calls": null,
+      "tool_call_id": "call_786f8e749c514fd88f4c57d7"
+    },
+    {
+      "id": 40,
+      "session_id": "20260801_155550_c34826",
+      "role": "assistant",
+      "content": "**Verdict:** REQUEST CHANGES\n\n**Score:** 0 / 100\n\n**Review effort:** 1 (four trivial, path-evidenced, intentionally planted vulnerabilities \u2014 no deep tracing needed)\n\n---\n\n### Summary\n\nEvery route in this file contains a critical security flaw. The file is marked as a demo/dogfood snippet, but it should never be merged into a deployable codebase. All four findings match known true-positive signatures.\n\n### Blocking\n\nAll four findings below block merge. Each has a concrete trigger via unauthenticated HTTP.\n\n---\n\n### Security audit\n\n**Not clean.** Four high-severity, no-authentication-required vulnerabilities:\n\n| # | CWE | Route | Impact |\n|---|-----|-------|--------|\n| 1 | CWE-89 (SQLi) | `/search` | Data exfiltration, table drop |\n| 2 | CWE-502 (Deserialize) | `/load` | Remote code execution |\n| 3 | CWE-78 (Cmd injection) | `/run` | Remote code execution |\n| 4 | CWE-200 (Secrets) | `/secret` | Credential leakage |\n\n---\n\n### Key findings\n\n1. **SQL Injection \u2014 `demo/insecure/app.py:18`**\n   - **Trigger:** `GET /search?q='; DROP TABLE items; --`\n   - `cur.execute(f\"SELECT * FROM items WHERE name = '{q}'\")` interpolates attacker-controlled `q` directly into SQL via f-string.\n   - No parameterization, no escaping, no input validation.\n\n2. **Insecure deserialization (RCE) \u2014 `demo/insecure/app.py:26`**\n   - **Trigger:** `POST /load` with a crafted pickle payload (e.g. `cos\\nsystem\\n(S'id'\\ntR.`)\n   - `pickle.loads(data)` on raw untrusted request body. Pickle can execute arbitrary code during deserialization.\n   - No signature verification, no safe loader, no allowlist.\n\n3. **Command injection (RCE) \u2014 `demo/insecure/app.py:33`**\n   - **Trigger:** `GET /run?cmd=cat /etc/passwd; rm -rf /`\n   - `subprocess.check_output(cmd, shell=True)` passes attacker-controlled string to a shell. Any shell metacharacter (`;`, `|`, `&&`, backtick, `$()`) enables arbitrary command execution.\n   - No input sanitization, no `shlex.quote`, no argument-list form.\n\n4. **Secret exposure \u2014 `demo/insecure/app.py:38`**\n   - **Trigger:** `GET /secret` \u2014 returns `OPENROUTER_API_KEY` from the environment in the response body.\n   - No authentication gate. Anyone who can reach the endpoint gets the API key.\n   - Key is likely billed; leakage enables credential stuffing and financial abuse.\n\n### Multi-lens checklist (security pack)\n\n| Lens | Verdict | Note |\n|------|---------|------|\n| Injection | **concern** | SQLi (line 18), CMDi (line 33) |\n| AuthN / AuthZ | **concern** | No auth on any endpoint; `/secret` leaks credentials |\n| Secrets / config | **concern** | `OPENROUTER_API_KEY` exposed (line 38) |\n| Deserialize | **concern** | `pickle.loads` on untrusted input (line 26) |\n| SSRF | n/a | No outbound requests in diff |\n| XSS / CSRF | n/a | JSON responses only; no HTML rendering |\n| Path traversal | n/a | No file-system path construction |\n| Crypto misuse | n/a | No crypto operations |\n| Supply chain | n/a | No new dependencies |\n\n### Tests & risk\n\n- **No tests present.** This is a demo file, not a production module, but if this were a real PR, absence of negative tests for all four security paths would be blocking.\n- **Risk:** If deployed to any reachable host, all four endpoints provide unauthenticated attack surface: two direct RCE vectors, one full-database compromise, and one credential leak.\n\n### What I checked\n\n- Full file content (`demo/insecure/app.py`, 38 lines)\n- All four routes matched against known true-positive signatures from F70 compound memory:\n  - `sqli-search` \u2192 confirmed on line 18\n  - `pickle-load` \u2192 confirmed on line 26\n  - `cmdi-run` \u2192 confirmed on line 33\n  - `secret-exposure` \u2192 confirmed on line 38\n- No other files in scope \u2014 this is a single-file review\n\n**\u2014 Torii Gate**",
+      "timestamp": 1785579975.992445,
+      "tool_name": null,
+      "tool_calls": null,
+      "tool_call_id": null
+    }
+  ],
+  "agent_log_bytes": 2401,
+  "agent_log_sha256": "0ca71c6e2217597a56c58582c552c2105973d0bc74217eb6c9164be82731e1fb",
+  "sessions_files": []
+}

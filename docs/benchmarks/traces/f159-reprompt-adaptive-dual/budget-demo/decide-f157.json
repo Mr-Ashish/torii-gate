@@ -1,0 +1,14 @@
+{
+  "feature": "F108",
+  "feature_adaptive": "F159",
+  "allow": 1,
+  "enabled": true,
+  "kind": "f157",
+  "max_extra": 2,
+  "base_max_extra": 1,
+  "used": 1,
+  "remaining": 1,
+  "adaptive_expanded": 1,
+  "adaptive_reason": "complementary:f106+need:f157",
+  "reason": "adaptive_within_budget"
+}

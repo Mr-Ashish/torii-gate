@@ -439,6 +439,22 @@ def assess(root: Path | None = None, *, deep: bool = True) -> dict[str, Any]:
         "feature_hub_archival_util_critic": "F156",
         "hub_archival_reprompt_ok": bool(wire.get("hermes_f157_reprompt")),
         "feature_hub_archival_reprompt": "F157",
+        # F159: adaptive F108 dual-recovery slot (f106↔f157)
+        "reprompt_adaptive_ok": "ensure_adaptive_slot" in (
+            (root / "scripts" / "reprompt_budget.py").read_text(
+                encoding="utf-8", errors="replace"
+            )
+            if (root / "scripts" / "reprompt_budget.py").is_file()
+            else ""
+        )
+        and "F159" in (
+            (root / "scripts" / "reprompt_budget.py").read_text(
+                encoding="utf-8", errors="replace"
+            )
+            if (root / "scripts" / "reprompt_budget.py").is_file()
+            else ""
+        ),
+        "feature_reprompt_adaptive": "F159",
         # F158: fitness ledger ingest/demote for hub-archival util
         "hub_archival_fitness_ok": "ingest_hub_archival_util" in (
             (root / "scripts" / "skill_fitness.py").read_text(
@@ -504,6 +520,7 @@ def to_markdown(report: dict[str, Any]) -> str:
             f"- Hub-archival recovery util (F155): **{'ok' if report.get('hub_archival_util_ok') else 'gap'}**",
             f"- Hub-archival util critic/demote-eval (F156): **{'ok' if report.get('hub_archival_util_critic_ok') else 'gap'}**",
             f"- Hub-archival util soft re-prompt (F157): **{'ok' if report.get('hub_archival_reprompt_ok') else 'gap'}**",
+            f"- F108 adaptive dual-recovery slot (F159): **{'ok' if report.get('reprompt_adaptive_ok') else 'gap'}**",
             f"- Hub-archival fitness demote/boost (F158): **{'ok' if report.get('hub_archival_fitness_ok') else 'gap'}**",
             f"- Recovery hub gap critic/demote-eval (F128): **{'ok' if report.get('recovery_hub_gap_ok') else 'gap'}**",
             f"- Recon-warm hub critic/demote-eval (F151): **{'ok' if report.get('recon_warm_hub_ok') else 'gap'}**",
@@ -551,6 +568,8 @@ def cmd_scorecard(args: argparse.Namespace) -> int:
                 "feature_hub_archival_reprompt": report.get(
                     "feature_hub_archival_reprompt"
                 ),
+                "reprompt_adaptive_ok": report.get("reprompt_adaptive_ok"),
+                "feature_reprompt_adaptive": report.get("feature_reprompt_adaptive"),
                 "hub_archival_fitness_ok": report.get("hub_archival_fitness_ok"),
                 "feature_hub_archival_fitness": report.get(
                     "feature_hub_archival_fitness"
@@ -615,6 +634,8 @@ def cmd_fixture(args: argparse.Namespace) -> int:
                 "feature_hub_archival_util_critic": "F156",
                 "hub_archival_reprompt_ok": report.get("hub_archival_reprompt_ok"),
                 "feature_hub_archival_reprompt": "F157",
+                "reprompt_adaptive_ok": report.get("reprompt_adaptive_ok"),
+                "feature_reprompt_adaptive": "F159",
                 "hub_archival_fitness_ok": report.get("hub_archival_fitness_ok"),
                 "feature_hub_archival_fitness": "F158",
                 "wiring_ok": report["wiring_ok"],

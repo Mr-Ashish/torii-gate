@@ -1,0 +1,24 @@
+{
+  "schema": 1,
+  "feature": "F108",
+  "feature_adaptive": "F159",
+  "enabled": true,
+  "max_extra": 2,
+  "base_max_extra": 1,
+  "used": 1,
+  "remaining": 1,
+  "attempts": [
+    {
+      "kind": "f106",
+      "at": "2026-08-01T10:26:59Z",
+      "recovered": true,
+      "note": ""
+    }
+  ],
+  "blocked": [],
+  "adaptive_expanded": true,
+  "updated_at": "2026-08-01T10:26:59Z",
+  "adaptive_feature": "F159",
+  "adaptive_reason": "complementary:f106+need:f157",
+  "adaptive_bonus": 1
+}

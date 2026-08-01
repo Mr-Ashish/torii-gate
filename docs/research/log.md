@@ -2735,3 +2735,31 @@ Longitudinal scorecard: per-run checkers (F156/F157) + durable fitness (F158).
 
 ### SHA
 `9e5ffce6591180db73f62edd3071a97e8c3de43f`
+
+## 2026-08-01 — F159 F108 adaptive dual-recovery re-prompt slot
+
+### Papers / posts
+- Agent cost guides: shared re-prompt caps prevent multi-kind burn.
+- Live F157: F106 memory util consumed max_extra=1 → hub-archival re-prompt never fired.
+- Loop Engineering: budgeted recovery must still cover **independent** quality gaps.
+
+### Insight
+max_extra=1 is correct against runaway stacks, but memory util (f106) and hub-archival util (f157) are complementary recoveries. Highest ROI: grant **one** adaptive bonus slot when a complementary kind already used the base budget.
+
+### Feature shipped (F159)
+- `ensure_adaptive_slot` + complementary_kinds (memory ↔ recovery/hub-archival/recon)
+- decide_allow reason=`adaptive_within_budget`; once-only expand
+- hermes notices F159 when adaptive_expanded
+- fixture f159_ok; skill_loop reprompt_adaptive_ok
+- f49 still does not unlock adaptive
+
+### Loop-engineering
+Budget with selective dual-recovery — not unbounded multi-reprompt.
+
+### Metric
+- Offline fixture f159_ok (f106→f157 allow; adaptive once; off blocks)
+- Live insecure-demo recall=1.0
+- Modal pytorch#191829 BIT3_OK ~98s log_streaming
+
+### SHA
+`pending`

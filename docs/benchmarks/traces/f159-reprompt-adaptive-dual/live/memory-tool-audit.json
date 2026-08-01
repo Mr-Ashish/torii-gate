@@ -1,0 +1,132 @@
+{
+  "feature": "F105",
+  "schema": 1,
+  "score": 1.0,
+  "level": "L3",
+  "hit_count": 21,
+  "tools_used": [
+    "archival_search",
+    "memory_compound",
+    "memory_consolidate",
+    "memory_events",
+    "memory_graph",
+    "memory_loop",
+    "memory_tiers",
+    "scoped_recall",
+    "torii_memory"
+  ],
+  "by_tool": {
+    "torii_memory": 11,
+    "archival_search": 3,
+    "memory_graph": 1,
+    "memory_tiers": 1,
+    "memory_compound": 1,
+    "scoped_recall": 1,
+    "memory_events": 1,
+    "memory_consolidate": 1,
+    "memory_loop": 1
+  },
+  "cli_subcmds": {
+    "help": 3,
+    "search": 5,
+    "graph": 5,
+    "loop": 2,
+    "doctor": 2
+  },
+  "inject_offered": true,
+  "utilization_gap": false,
+  "tool_call_turns": 2,
+  "feedback": [
+    "memory_tools_used=9 hits=21 tools=['archival_search', 'memory_compound', 'memory_consolidate', 'memory_events', 'memory_graph', 'memory_loop', 'memory_tiers', 'scoped_recall', 'torii_memory']"
+  ],
+  "scored_at": "2026-08-01T10:26:47Z",
+  "hits_detail": [
+    {
+      "tool": "torii_memory",
+      "snip": "{\"command\": \"python3 scripts/torii_memory.py help\", \"timeout\": 15, \"workdir\": \"/Users/ashishmishra/Documents/experiments/tor"
+    },
+    {
+      "tool": "torii_memory",
+      "snip": "tiers/loop).\\n\\nUsage: `python3 scripts/torii_memory.py <cmd> [-- <passthrough args>]`\\n\\n| Cmd | Script | Purpose |\\n|-----|--------|-"
+    },
+    {
+      "tool": "torii_memory",
+      "snip": "\\n\\nExamples:\\n```bash\\npython3 scripts/torii_memory.py search -- -q \\\"sql injection\\\"\\npython3 scripts/torii_memory.py graph -- query"
+    },
+    {
+      "tool": "torii_memory",
+      "snip": "- -q \\\"sql injection\\\"\\npython3 scripts/torii_memory.py graph -- query --path app.py --hops 2\\npython3 scripts/torii_memory.py loop --"
+    },
+    {
+      "tool": "torii_memory",
+      "snip": "--path app.py --hops 2\\npython3 scripts/torii_memory.py loop -- scorecard --shallow\\npython3 scripts/torii_memory.py doctor\\n```\", \"exi"
+    },
+    {
+      "tool": "torii_memory",
+      "snip": "-- scorecard --shallow\\npython3 scripts/torii_memory.py doctor\\n```\", \"exit_code\": 0, \"error\": null}"
+    },
+    {
+      "tool": "archival_search",
+      "snip": "----|--------|---------|\\n| `search` | `archival_memory_search.py` | MemGPT-style archival search (F98) |\\n| `search-auto` | `archival_memory_sea"
+    },
+    {
+      "tool": "archival_search",
+      "snip": "ival search (F98) |\\n| `search-auto` | `archival_memory_search.py` | Auto-search from changed paths + optional promote |\\n| `promote` | `archival"
+    },
+    {
+      "tool": "archival_search",
+      "snip": "hs + optional promote |\\n| `promote` | `archival_memory_search.py` | Promote search hits into core inject section |\\n| `graph` | `memory_temporal"
+    },
+    {
+      "tool": "memory_graph",
+      "snip": "nto core inject section |\\n| `graph` | `memory_temporal_graph.py` | Zep-style temporal graph build/query/inject (F100\u2013F102) |\\n| `tiers` | `memo"
+    },
+    {
+      "tool": "memory_tiers",
+      "snip": "uery/inject (F100\u2013F102) |\\n| `tiers` | `memory_tiers.py` | Letta-style core/archival tiers (F97) |\\n| `consolidate` | `memory_consolida"
+    },
+    {
+      "tool": "memory_compound",
+      "snip": "ed signals (F77/F95) |\\n| `compound` | `memory_compound_write.py` | Integrity-gated compound write + F107 privacy federate |\\n| `audit` | `memor"
+    },
+    {
+      "tool": "scoped_recall",
+      "snip": "ONE write policy (F93) |\\n| `recall` | `scoped_memory_recall.py` | Scoped path/effective recall inject (F75/F96) |\\n| `loop` | `memory_loop_sta"
+    },
+    {
+      "tool": "memory_events",
+      "snip": "erge/decay/evict (F94) |\\n| `events` | `memory_event_policy.py` | ADD/UPDATE/DELETE/NONE write policy (F93) |\\n| `recall` | `scoped_memory_rec"
+    },
+    {
+      "tool": "memory_consolidate",
+      "snip": "hival tiers (F97) |\\n| `consolidate` | `memory_consolidate.py` | Importance/merge/decay/evict (F94) |\\n| `events` | `memory_event_policy.py`"
+    },
+    {
+      "tool": "memory_loop",
+      "snip": "recall inject (F75/F96) |\\n| `loop` | `memory_loop_status.py` | Memory compound loop L0\u2013L3 readiness (F96) |\\n| `federate` | `federated_hub_"
+    },
+    {
+      "tool": "torii_memory",
+      "snip": "{\"command\": \"python3 scripts/torii_memory.py search -- -q \\\"auth OR sql OR pickle OR secret\\\"\", \"timeout\": 30, \"workdir\": \"/"
+    },
+    {
+      "tool": "torii_memory",
+      "snip": "{\"command\": \"python3 scripts/torii_memory.py graph -- query --path demo/insecure/app.py --hops 2\", \"timeout\": 30, \"workdir\":"
+    },
+    {
+      "tool": "torii_memory",
+      "snip": "via terminal: ```bash python3 scripts/torii_memory.py help python3 scripts/torii_memory.py search -- -q \"auth OR sql OR pickle OR sec"
+    },
+    {
+      "tool": "torii_memory",
+      "snip": "ts/torii_memory.py help python3 scripts/torii_memory.py search -- -q \"auth OR sql OR pickle OR secret\" python3 scripts/torii_memory.py"
+    },
+    {
+      "tool": "torii_memory",
+      "snip": "ql OR pickle OR secret\" python3 scripts/torii_memory.py graph -- query --path changed/file.py --hops 2 ``` Treat hits as **hints only*"
+    }
+  ],
+  "out_dir": "docs/benchmarks/traces/f159-reprompt-adaptive-dual/live",
+  "loop_path": "docs/benchmarks/traces/f159-reprompt-adaptive-dual/live/agent-loop/agent-loop.json",
+  "enabled": true
+}

@@ -53,3 +53,4 @@ Also mirrored from LOOP.md budget/observability: each fire records metrics (reca
 - F156: hub-archival util gap critic demote APPROVE (partial recovery idle) + LOO floor from federated hub_archival hits (Assay)
 - F157: hub-archival util soft re-prompt under F108 (recover hub_boost before F156 demote-only)
 - F158: hub-archival util fitness demote/boost (chronic inject≠hub_boost compounds into ledger)
+- F159: F108 adaptive dual-recovery slot (f106↔f157) — one bonus when complementary kind used base
