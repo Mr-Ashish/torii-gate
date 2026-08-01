@@ -29,7 +29,7 @@ Self-evolved recovery skills succeed via **terminal**, not review prose. Without
 - pytest 592; Modal pytorch#191813 BIT3_OK ~83s skill always in prompt log_streaming=true
 
 ### SHA
-(pending push)
+`808aeed2b785159a915b0ea0e5633ccd52575567`
 
 ## 2026-08-01 — F113 dual-gate adopt of skill-prefer-memory-cli-early
 
