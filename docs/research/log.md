@@ -1,3 +1,33 @@
+## 2026-08-01 — F185 compound re-prompt fitness ingest
+
+### Papers / posts
+- SkillsBench / Assay: longitudinal fitness for genuine utilization.
+- F158 hub-archival util fitness; F183 compound re-prompt slot without durable counters.
+- Loop Engineering: re-prompt under heat must compound, not evaporate.
+
+### OSS design patterns stolen
+1. `ingest_compound_reprompt` from reprompt-budget.json f157/f122 + compound_expanded.
+2. recover → tool hit shield + hub_priority; miss → gap fuel.
+3. fixture-compound-reprompt hermetic; hermes soft after util cycle.
+4. refine_loop_ok AND F185.
+
+### Insight
+F183 unlocks re-prompt under dual-loop heat but outcomes never entered fitness. Highest ROI: durable counters for recover vs miss.
+
+### Feature shipped (F185)
+- ingest_compound_reprompt + CLI + fixture
+- hermes F185 notice; scorecard compound_reprompt_fitness_ok; PRODUCT F185 line
+
+### Loop-engineering
+Close measure → re-prompt → fitness — dual-loop heat compounds intelligence.
+
+### Metric
+- Offline: fixture_pass miss/recover; refine_loop_ok L3
+- Live Modal: pytorch#191836 BIT3_OK ~46.2s POST_COMMENT=0 log_streaming=true F185 soft wire
+
+### SHA
+`f634f64f82dfd8c825aba1935be3b99c628b25a0`
+
 ## 2026-08-01 — F184 GEPA + hub×GEPA compound full EVAL pack (F165–F183)
 
 ### Papers / posts

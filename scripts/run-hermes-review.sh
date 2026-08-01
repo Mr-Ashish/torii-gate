@@ -1039,6 +1039,9 @@ if [[ -f "$SKILL_ROUTER_HELPER" && $TIMED_OUT -eq 0 && "${HERMES_CLI_ARGV_BROKEN
       # F163: soft fitness cycle after util (chronic hub-archival federate heat)
       if [[ -f "$TORII_ROOT/scripts/skill_fitness.py" ]]; then
         python3 "$TORII_ROOT/scripts/skill_fitness.py" ingest-hub-archival --out-dir "$OUT_DIR" >/dev/null 2>&1 || true
+        # F185: compound re-prompt outcomes → fitness (after budget state written)
+        python3 "$TORII_ROOT/scripts/skill_fitness.py" ingest-compound-reprompt --out-dir "$OUT_DIR" >/dev/null 2>&1 || true
+        notice "F185 compound re-prompt fitness ingest (soft)"
         python3 "$TORII_ROOT/scripts/skill_fitness.py" cycle --out-dir "$OUT_DIR" >/dev/null 2>&1 || true
       fi
       # F165: GEPA-lite skill body refine from util traces (Hermes self-evolution pattern)

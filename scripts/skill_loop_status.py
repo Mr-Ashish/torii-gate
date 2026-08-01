@@ -948,8 +948,19 @@ def assess(root: Path | None = None, *, deep: bool = True) -> dict[str, Any]:
                 if (root / "scripts" / "reprompt_budget.py").is_file()
                 else ""
             )
+            # F185 compound re-prompt fitness ingest
+            and "ingest_compound_reprompt"
+            in (
+                (root / "scripts" / "skill_fitness.py").read_text(
+                    encoding="utf-8", errors="replace"
+                )
+                if (root / "scripts" / "skill_fitness.py").is_file()
+                else ""
+            )
+            and "ingest-compound-reprompt" in hermes_sh
+            and "F185" in hermes_sh
         ),
-        "feature_refine_loop": "F170/F183",
+        "feature_refine_loop": "F170/F185",
         # F171: chronic refine dual_fail always-priority decay
         "refine_dual_decay_ok": "ingest_refine_dual" in (
             (root / "scripts" / "skill_fitness.py").read_text(
@@ -1263,6 +1274,32 @@ def assess(root: Path | None = None, *, deep: bool = True) -> dict[str, Any]:
             else ""
         ),
         "feature_reprompt_compound": "F183",
+        # F185: fitness ingest of compound re-prompt outcomes
+        "compound_reprompt_fitness_ok": "ingest_compound_reprompt"
+        in (
+            (root / "scripts" / "skill_fitness.py").read_text(
+                encoding="utf-8", errors="replace"
+            )
+            if (root / "scripts" / "skill_fitness.py").is_file()
+            else ""
+        )
+        and "FEATURE_COMPOUND_REPROMPT" in (
+            (root / "scripts" / "skill_fitness.py").read_text(
+                encoding="utf-8", errors="replace"
+            )
+            if (root / "scripts" / "skill_fitness.py").is_file()
+            else ""
+        )
+        and "fixture-compound-reprompt" in (
+            (root / "scripts" / "skill_fitness.py").read_text(
+                encoding="utf-8", errors="replace"
+            )
+            if (root / "scripts" / "skill_fitness.py").is_file()
+            else ""
+        )
+        and "ingest-compound-reprompt" in hermes_sh
+        and "F185" in hermes_sh,
+        "feature_compound_reprompt_fitness": "F185",
         # F158: fitness ledger ingest/demote for hub-archival util
         "hub_archival_fitness_ok": "ingest_hub_archival_util" in (
             (root / "scripts" / "skill_fitness.py").read_text(
@@ -1400,6 +1437,7 @@ def to_markdown(report: dict[str, Any]) -> str:
             f"- Hub×GEPA compound prompt inject (F181): **{'ok' if report.get('hub_gepa_compound_inject_ok') else 'gap'}**",
             f"- Hub×GEPA compound always priority (F182): **{'ok' if report.get('hub_gepa_compound_always_ok') else 'gap'}**",
             f"- Hub×GEPA compound re-prompt budget (F183): **{'ok' if report.get('reprompt_compound_ok') else 'gap'}**",
+            f"- Compound re-prompt fitness ingest (F185): **{'ok' if report.get('compound_reprompt_fitness_ok') else 'gap'}**",
             f"- Recovery hub gap critic/demote-eval (F128): **{'ok' if report.get('recovery_hub_gap_ok') else 'gap'}**",
             f"- Recon-warm hub critic/demote-eval (F151): **{'ok' if report.get('recon_warm_hub_ok') else 'gap'}**",
             f"- Wiring (assemble/run/hermes/save-trace): **{'ok' if report.get('wiring_ok') else 'gap'}**",
@@ -1514,6 +1552,11 @@ def cmd_scorecard(args: argparse.Namespace) -> int:
                 "reprompt_compound_ok": report.get("reprompt_compound_ok"),
                 "feature_reprompt_compound": report.get("feature_reprompt_compound")
                 or "F183",
+                "compound_reprompt_fitness_ok": report.get("compound_reprompt_fitness_ok"),
+                "feature_compound_reprompt_fitness": report.get(
+                    "feature_compound_reprompt_fitness"
+                )
+                or "F185",
                 "feature_scorecard_ops": report.get("feature_scorecard_ops"),
                 "scorecard_ops_ok": report.get("scorecard_ops_ok"),
                 "scorecard_active": report.get("scorecard_active"),
@@ -1622,6 +1665,8 @@ def cmd_fixture(args: argparse.Namespace) -> int:
                 "feature_hub_gepa_compound_always": "F182",
                 "reprompt_compound_ok": report.get("reprompt_compound_ok"),
                 "feature_reprompt_compound": "F183",
+                "compound_reprompt_fitness_ok": report.get("compound_reprompt_fitness_ok"),
+                "feature_compound_reprompt_fitness": "F185",
                 "wiring_ok": report["wiring_ok"],
                 "deep_ok": report["deep_ok"],
                 "ready": report["ready"],

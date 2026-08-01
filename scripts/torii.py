@@ -575,7 +575,7 @@ def cmd_doctor(args: argparse.Namespace) -> int:
                 "feature_hub_archival_util": "F155",
                 "feature_hub_archival_util_critic": "F156",
                 "feature_hub_archival_loop": "F163",
-                "feature_refine_loop": "F170/F183",
+                "feature_refine_loop": "F170/F185",
                 "feature_scorecard_ops": "F135",
                 "doctor_pass": all_ok,
                 "recovery_ok": recovery_ok,
@@ -906,6 +906,11 @@ def product_scorecard(
             if skill.get("reprompt_compound_ok") is not None
             else doctor.get("reprompt_compound_ok")
         ),
+        "compound_reprompt_fitness_ok": bool(
+            skill.get("compound_reprompt_fitness_ok")
+            if skill.get("compound_reprompt_fitness_ok") is not None
+            else doctor.get("compound_reprompt_fitness_ok")
+        ),
         "hub_archival_hub_pressure_idle_demoted": demote.get(
             "hub_archival_hub_pressure_demote_ok"
         )
@@ -955,7 +960,7 @@ def product_scorecard(
         "feature_memory_util": "F130",
         "feature_scorecard_ops": "F135",
         "feature_hub_archival_loop": "F163",
-        "feature_refine_loop": "F170/F184",
+        "feature_refine_loop": "F170/F185",
         "schema": SCHEMA,
         "scored_at": _now(),
         "level": level,
@@ -1000,7 +1005,8 @@ def product_scorecard(
                 f"hub×GEPA **{'ok' if metrics.get('hub_gepa_compound_ok') else 'gap'}** · "
                 f"inject **{'ok' if metrics.get('hub_gepa_compound_inject_ok') else 'gap'}** · "
                 f"always **{'ok' if metrics.get('hub_gepa_compound_always_ok') else 'gap'}** · "
-                f"reprompt **{'ok' if metrics.get('reprompt_compound_ok') else 'gap'}** (F175–F183)"
+                f"reprompt **{'ok' if metrics.get('reprompt_compound_ok') else 'gap'}** · "
+                f"fitness **{'ok' if metrics.get('compound_reprompt_fitness_ok') else 'gap'}** (F175–F185)"
             ),
         ],
         "doctor": {
@@ -1140,6 +1146,7 @@ def product_scorecard(
             f"| hub_gepa_compound_inject_ok | {metrics.get('hub_gepa_compound_inject_ok')} |",
             f"| hub_gepa_compound_always_ok | {metrics.get('hub_gepa_compound_always_ok')} |",
             f"| reprompt_compound_ok | {metrics.get('reprompt_compound_ok')} |",
+            f"| compound_reprompt_fitness_ok | {metrics.get('compound_reprompt_fitness_ok')} |",
             "",
             "Source: `python3 scripts/torii.py scorecard` · workflow F131 · demote F128/F151 · util F130 · hub-archival F155–F163 (F164) · GEPA refine F165–F180 (F170/F180).",
             "",

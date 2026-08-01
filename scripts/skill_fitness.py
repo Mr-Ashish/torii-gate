@@ -70,6 +70,7 @@ FEATURE_TOOL = "F116"
 FEATURE_HUB = "F126"
 FEATURE_SCORECARD = "F135"
 FEATURE_HUB_ARCHIVAL = "F158"
+FEATURE_COMPOUND_REPROMPT = "F185"
 SCHEMA = 1
 LEDGER_NAME = "skill-fitness.json"
 SCORECARD_FED_REL = "memory/federation/scorecard-skill-signals.json"
@@ -539,6 +540,297 @@ def ingest_hub_archival_util(
         "privacy_ok": privacy_ok,
         "ledger": str(path) if path else None,
     }
+
+
+
+def compound_reprompt_fitness_enabled() -> bool:
+    """F185: fold hub×GEPA compound re-prompt outcomes into fitness (default on)."""
+    raw = (os.environ.get("TORII_SKILL_FITNESS_COMPOUND_REPROMPT") or "1").strip().lower()
+    return raw not in _FALSEY
+
+
+def ingest_compound_reprompt(
+    budget: dict[str, Any] | None = None,
+    ledger: dict[str, Any] | None = None,
+    *,
+    root: Path | None = None,
+    out_dir: Path | None = None,
+    save: bool = True,
+) -> dict[str, Any]:
+    """F185: fold F183 compound re-prompt attempts into fitness ledger.
+
+    Sources (privacy-safe counters only):
+      - out_dir/reprompt-budget.json (compound_expanded, attempts f157/f122)
+      - optional assess_hub_gepa_compound high as corroboration
+
+    SkillsBench discipline: re-prompt under dual-loop heat must compound —
+    recovered tool hits shield; unrecovered compound attempts raise gap pressure.
+    """
+    root = root or _root()
+    if not compound_reprompt_fitness_enabled():
+        return {
+            "feature": FEATURE_COMPOUND_REPROMPT,
+            "ingested": 0,
+            "reason": "compound_reprompt_fitness_off",
+            "privacy_ok": True,
+        }
+    if budget is None and out_dir is not None:
+        bp = Path(out_dir) / "reprompt-budget.json"
+        if bp.is_file():
+            try:
+                budget = json.loads(bp.read_text(encoding="utf-8"))
+            except (OSError, json.JSONDecodeError):
+                budget = None
+    if not isinstance(budget, dict):
+        return {
+            "feature": FEATURE_COMPOUND_REPROMPT,
+            "ingested": 0,
+            "reason": "no_budget",
+            "privacy_ok": True,
+        }
+
+    compound = bool(budget.get("compound_expanded"))
+    attempts = [a for a in (budget.get("attempts") or []) if isinstance(a, dict)]
+    rec_kinds = {"f157", "f122"}
+    compound_attempts = [
+        a
+        for a in attempts
+        if str(a.get("kind") or "").lower() in rec_kinds
+        and (
+            compound
+            or "compound" in str(a.get("note") or "").lower()
+            or str(budget.get("compound_reason") or "")
+        )
+    ]
+    # if compound expanded, all f157/f122 attempts count as compound-path
+    if compound:
+        compound_attempts = [
+            a for a in attempts if str(a.get("kind") or "").lower() in rec_kinds
+        ]
+
+    # corroborate with assess (soft)
+    compound_high = compound
+    try:
+        sys.path.insert(0, str(Path(__file__).resolve().parent))
+        from skill_router import assess_hub_gepa_compound  # type: ignore
+
+        rep = assess_hub_gepa_compound(root=root, out_dir=out_dir)
+        compound_high = compound_high or bool(rep.get("high"))
+    except Exception:
+        pass
+
+    if not compound_attempts and not (compound and compound_high):
+        return {
+            "feature": FEATURE_COMPOUND_REPROMPT,
+            "ingested": 0,
+            "reason": "no_compound_reprompt",
+            "compound_expanded": int(compound),
+            "privacy_ok": True,
+        }
+
+    ledger = ledger if ledger is not None else load_ledger(ledger_path(root))
+    sid = HUB_ARCHIVAL_SKILL_ID
+    ent = _skill_entry(ledger, sid)
+    n_att = max(1, len(compound_attempts)) if compound_attempts else 1
+    recovered_n = sum(
+        1 for a in compound_attempts if a.get("recovered")
+    )
+    # if expanded but no attempts yet, still stamp once as pending pressure
+    if not compound_attempts and compound:
+        n_att = 1
+        recovered_n = 0
+
+    ent["compound_reprompt_n"] = int(ent.get("compound_reprompt_n") or 0) + n_att
+    ent["compound_reprompt_recovered_n"] = (
+        int(ent.get("compound_reprompt_recovered_n") or 0) + recovered_n
+    )
+    if recovered_n >= 1:
+        ent["hit_n"] = int(ent.get("hit_n") or 0) + recovered_n
+        ent["tool_hit_n"] = int(ent.get("tool_hit_n") or 0) + recovered_n
+        ent["hub_archival_hit_n"] = int(ent.get("hub_archival_hit_n") or 0) + recovered_n
+        ent["demoted"] = False
+        ent["hub_priority_delta"] = max(int(ent.get("hub_priority_delta") or 0), 12)
+    else:
+        # unrecovered compound re-prompt: soft gap fuel
+        ent["compound_reprompt_miss_n"] = (
+            int(ent.get("compound_reprompt_miss_n") or 0) + n_att
+        )
+        ent["hub_archival_gap_n"] = int(ent.get("hub_archival_gap_n") or 0) + n_att
+    ent["selected_n"] = int(ent.get("selected_n") or 0) + n_att
+    ent["hub_archival_selected_n"] = int(ent.get("hub_archival_selected_n") or 0) + n_att
+    ent["last_compound_reprompt_at"] = _now()
+    ent["last_seen"] = _now()
+    ent["compound_reprompt_ops"] = True
+    ent["last_compound_reprompt_recovered"] = bool(recovered_n >= 1)
+    # rates
+    cr_n = int(ent.get("compound_reprompt_n") or 0)
+    cr_r = int(ent.get("compound_reprompt_recovered_n") or 0)
+    ent["compound_reprompt_recover_rate"] = (
+        round(cr_r / cr_n, 4) if cr_n else 0.0
+    )
+    sel = int(ent.get("selected_n") or 0)
+    ent["hit_rate"] = round(int(ent.get("hit_n") or 0) / sel, 4) if sel else 0.0
+    ent["tool_hit_rate"] = (
+        round(int(ent.get("tool_hit_n") or 0) / sel, 4) if sel else 0.0
+    )
+
+    hist = ledger.setdefault("history", [])
+    hist.append(
+        {
+            "at": _now(),
+            "run_id": "compound_reprompt",
+            "feature": FEATURE_COMPOUND_REPROMPT,
+            "skill_id": sid,
+            "attempts": n_att,
+            "recovered": recovered_n,
+            "compound_expanded": int(compound),
+            "kinds": sorted(
+                {
+                    str(a.get("kind") or "")
+                    for a in compound_attempts
+                    if a.get("kind")
+                }
+            )[:4],
+        }
+    )
+    ledger["history"] = hist[-100:]
+    ledger["last_compound_reprompt_ingest"] = {
+        "at": _now(),
+        "feature": FEATURE_COMPOUND_REPROMPT,
+        "skill_id": sid,
+        "attempts": n_att,
+        "recovered": recovered_n,
+        "compound_expanded": int(compound),
+        "recover_rate": ent.get("compound_reprompt_recover_rate"),
+        "compound_reason": str(budget.get("compound_reason") or "")[:80],
+    }
+
+    path = None
+    if save:
+        path = save_ledger(ledger, ledger_path(root))
+
+    blob = json.dumps(ledger.get("last_compound_reprompt_ingest") or {})
+    privacy_ok = "/Users/" not in blob and "/home/" not in blob
+
+    return {
+        "feature": FEATURE_COMPOUND_REPROMPT,
+        "ingested": 1,
+        "skill_id": sid,
+        "attempts": n_att,
+        "recovered": recovered_n,
+        "compound_expanded": int(compound),
+        "compound_high": int(compound_high),
+        "recover_rate": ent.get("compound_reprompt_recover_rate"),
+        "privacy_ok": privacy_ok,
+        "ledger": str(path) if path else None,
+    }
+
+
+def cmd_ingest_compound_reprompt(args: argparse.Namespace) -> int:
+    """F185: CLI compound re-prompt budget → fitness ledger."""
+    root = _root()
+    out_dir = Path(args.out_dir) if args.out_dir else None
+    budget = None
+    if getattr(args, "budget", None):
+        bp = Path(args.budget)
+        if bp.is_file():
+            try:
+                budget = json.loads(bp.read_text(encoding="utf-8"))
+            except (OSError, json.JSONDecodeError) as exc:
+                print(
+                    json.dumps(
+                        {
+                            "feature": FEATURE_COMPOUND_REPROMPT,
+                            "error": str(exc)[:120],
+                        }
+                    )
+                )
+                return 1
+    report = ingest_compound_reprompt(
+        budget, root=root, out_dir=out_dir, save=True
+    )
+    ledger = apply_demotions(load_ledger(ledger_path(root)))
+    save_ledger(ledger, ledger_path(root))
+    report["demoted"] = list(ledger.get("demoted") or [])
+    report["boost"] = fitness_boosts(ledger).get(HUB_ARCHIVAL_SKILL_ID)
+    print(json.dumps(report, indent=2))
+    return 0 if report.get("privacy_ok", True) else 1
+
+
+def cmd_fixture_compound_reprompt(args: argparse.Namespace) -> int:
+    """F185 hermetic: compound re-prompt miss then recover → fitness counters."""
+    del args
+    root = _root()
+    os.environ["TORII_SKILL_FITNESS_COMPOUND_REPROMPT"] = "1"
+    sid = HUB_ARCHIVAL_SKILL_ID
+    # clean ledger entry
+    ledger = load_ledger(ledger_path(root))
+    skills = ledger.setdefault("skills", {})
+    skills[sid] = {
+        "id": sid,
+        "selected_n": 0,
+        "hit_n": 0,
+        "tool_hit_n": 0,
+        "compound_reprompt_n": 0,
+        "compound_reprompt_recovered_n": 0,
+    }
+    save_ledger(ledger, ledger_path(root))
+
+    # miss under compound
+    budget_miss = {
+        "compound_expanded": True,
+        "compound_reason": "hub_gepa_compound_high",
+        "attempts": [
+            {"kind": "f157", "recovered": False, "note": "compound_attempt"}
+        ],
+    }
+    r1 = ingest_compound_reprompt(budget_miss, root=root, save=True)
+    ent1 = (load_ledger(ledger_path(root)).get("skills") or {}).get(sid) or {}
+    miss_ok = (
+        int(r1.get("ingested") or 0) == 1
+        and int(ent1.get("compound_reprompt_n") or 0) >= 1
+        and int(ent1.get("compound_reprompt_recovered_n") or 0) == 0
+        and int(ent1.get("compound_reprompt_miss_n") or 0) >= 1
+        and bool(r1.get("privacy_ok"))
+    )
+
+    # recover under compound
+    budget_ok = {
+        "compound_expanded": True,
+        "compound_reason": "hub_gepa_compound_high",
+        "attempts": [
+            {"kind": "f157", "recovered": True, "note": "compound_recovered"}
+        ],
+    }
+    r2 = ingest_compound_reprompt(budget_ok, root=root, save=True)
+    ent2 = (load_ledger(ledger_path(root)).get("skills") or {}).get(sid) or {}
+    recover_ok = (
+        int(r2.get("recovered") or 0) >= 1
+        and int(ent2.get("compound_reprompt_recovered_n") or 0) >= 1
+        and int(ent2.get("tool_hit_n") or 0) >= 1
+        and not ent2.get("demoted")
+        and float(ent2.get("compound_reprompt_recover_rate") or 0) > 0
+    )
+
+    # no compound / empty → not ingested
+    r0 = ingest_compound_reprompt(
+        {"compound_expanded": False, "attempts": []}, root=root, save=False
+    )
+    empty_ok = int(r0.get("ingested") or 0) == 0
+
+    f185_ok = bool(miss_ok and recover_ok and empty_ok and r1.get("privacy_ok"))
+    out = {
+        "feature": FEATURE_COMPOUND_REPROMPT,
+        "fixture_pass": f185_ok,
+        "miss_ok": miss_ok,
+        "recover_ok": recover_ok,
+        "empty_ok": empty_ok,
+        "compound_reprompt_n": ent2.get("compound_reprompt_n"),
+        "recover_rate": ent2.get("compound_reprompt_recover_rate"),
+        "privacy_ok": bool(r1.get("privacy_ok") and r2.get("privacy_ok")),
+    }
+    print(json.dumps(out, indent=2))
+    return 0 if f185_ok else 1
 
 
 def ingest_refine(
@@ -2754,6 +3046,21 @@ def main(argv: list[str] | None = None) -> int:
         help="Optional path to recovery-skill-util.json",
     )
     pha.set_defaults(func=cmd_ingest_hub_archival)
+
+    pcr = sub.add_parser(
+        "ingest-compound-reprompt",
+        help="F185 fold hub×GEPA compound re-prompt outcomes into fitness",
+    )
+    pcr.add_argument("--out-dir", default="", help="dir with reprompt-budget.json")
+    pcr.add_argument("--budget", default="", help="optional path to reprompt-budget.json")
+    pcr.set_defaults(func=cmd_ingest_compound_reprompt)
+
+    pcrf = sub.add_parser(
+        "fixture-compound-reprompt",
+        help="F185 hermetic: compound re-prompt miss/recover fitness counters",
+    )
+    pcrf.set_defaults(func=cmd_fixture_compound_reprompt)
+
 
     args = p.parse_args(argv)
     return int(args.func(args))

@@ -291,6 +291,7 @@ util gap → GEPA refine → dual-gate LOO → dual_pp → federate promote
        → hub×GEPA compound prompt inject (F181)
        → hub×GEPA compound always priority (F182)
        → hub×GEPA compound re-prompt budget (F183)
+       → compound re-prompt fitness ingest (F185)
 ```
 
 | Stage | Feature | Customer-facing meaning |
@@ -312,6 +313,7 @@ util gap → GEPA refine → dual-gate LOO → dual_pp → federate promote
 | **Hub×GEPA inject** | F181 | Maker sees dual-loop compound heat in prompt before demote |
 | **Hub×GEPA always** | F182 | Compound heat boosts hub-archival into always budget |
 | **Hub×GEPA re-prompt** | F183 | Compound heat unlocks one f157/f122 re-prompt slot |
+| **Compound re-prompt fitness** | F185 | Re-prompt under dual-loop heat compounds into fitness ledger |
 
 **One-liner (eng):** *Skills that fail tool util get refined, measured, and multi-tenant promoted — or they stay out of always budget; recovery is measured too.*
 
@@ -344,6 +346,8 @@ util gap → GEPA refine → dual-gate LOO → dual_pp → federate promote
 **Hub×GEPA compound always priority (F182):** `select_skills` folds `assess_hub_gepa_compound` priority_deltas into always budget + residual score so dual-loop heat keeps hub-archival recovery skills selected. `refine_loop_ok` ANDs F165–F182.
 
 **Hub×GEPA compound re-prompt budget (F183):** when dual-loop compound is high, `reprompt_budget.ensure_compound_slot` expands max_extra once for f157/f122 after base exhaustion (independent of F159 complementary kinds). Paper fixture: f183_ok. `refine_loop_ok` ANDs F165–F183.
+
+**Compound re-prompt fitness (F185):** `ingest_compound_reprompt` folds `reprompt-budget.json` f157/f122 attempts under `compound_expanded` into hub-archival fitness (recover → tool hit shield; miss → gap fuel). Hermetic: `fixture-compound-reprompt`. `refine_loop_ok` ANDs F165–F185.
 
 ---
 
