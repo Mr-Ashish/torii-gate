@@ -75,7 +75,7 @@ route → hit → fitness → dual → attr → inject
 
 ---
 
-## Mental model C — Memory compound loop (F93–F105)
+## Mental model C — Memory compound loop (F93–F108)
 
 Torii does not dump every past finding into the next prompt. Memory is **written with integrity, events, consolidated, strength-ranked, tiered, and paged on demand**:
 

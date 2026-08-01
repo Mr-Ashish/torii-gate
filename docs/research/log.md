@@ -1,6 +1,34 @@
 # Torii research → product log
 
 
+## 2026-08-01 — F109 brand packaging: integrity + budgeted memory story
+
+### Papers / posts
+- DevSecOps 2026: scanners generate findings; platforms/gates close risk.
+- AppSec fatigue: AI multiplies PR volume — need stricter-and-quieter gates, not more bots.
+- Torii F103–F108 product capabilities needed ICP-facing packaging (overdue since F99).
+
+### OSS / eng patterns
+1. Landing + brand lock one-liners for memory CLI, integrity compound, budgeted recovery.
+2. Install tips: `torii_memory doctor` + `TORII_REPROMPT_MAX_EXTRA=1`.
+3. README/PRODUCT memory diagram through F108 compound → search + budget.
+
+### Insight
+Intelligence without packaging loses adoption clarity. Highest ROI this fire: align brand with shipped gate capabilities (integrity, federate, utilization, re-prompt budget) without empty polish.
+
+### Feature shipped (F109)
+- `docs/brand/landing.html` + `TORII.md` one-liners + memory pipeline
+- README + PRODUCT mental model C (F93–F108)
+- install-torii.sh post-install memory doctor + budget tips
+- research note brand-integrity-budget-packaging-pattern
+
+### Metric
+- pytest: 581 passed (no brand regressions)
+- Live Modal pytorch#191813 deepseek-v4-pro: BIT3_OK ~196s log_streaming=true POST_COMMENT=0
+
+### SHA
+_pending_
+
 ## 2026-08-01 — F108 shared soft-re-prompt budget (F49+F106)
 
 ### Papers / posts

@@ -21,11 +21,14 @@ Most AI PR bots optimize for *code quality comments*. Torii optimizes for **secu
 
 ```text
 Skills:  route → hit → fitness → dual → attr → inject
-Memory:  write → consolidate → effective_critic → federate → recall → tiers → archival_search
+Memory:  compound → write → consolidate → effective → federate → recall → tiers → search
+           │  integrity gate · utilization audit · budgeted soft recovery · torii_memory CLI
 ```
 
 - Skills that do not contribute do not ship in the next prompt.  
 - Stale memory does not confirm findings or crowd the inject budget.  
+- Only path-evidenced findings compound; soft re-prompts share a paid-attempt budget.  
+- Scanners generate findings; Torii is the **merge authority** that compounds.  
 
 See [`PRODUCT.md`](PRODUCT.md) (ICP + mental models A/B/C) and [`docs/brand/`](docs/brand/).
 ## Trigger

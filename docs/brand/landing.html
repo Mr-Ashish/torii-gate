@@ -4,7 +4,7 @@
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
 <title>Torii — Security gate for every pull request</title>
-<meta name="description" content="Torii is the PR/CI security merge authority for AI-written code. Maker/checker critics, dual compound loops: skills (route→hit→fitness→dual→attr→inject) and memory (write→consolidate→tiers→archival search). The gate gets stricter and quieter — not noisier." />
+<meta name="description" content="Torii is the PR/CI security merge authority for AI-written code. Maker/checker critics, dual compound loops (skills + integrity-gated memory), one memory CLI for agents, budgeted soft recovery. The gate gets stricter and quieter — not noisier." />
 <link rel="preconnect" href="https://fonts.googleapis.com" />
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
 <link href="https://fonts.googleapis.com/css2?family=Albert+Sans:wght@400;500;600&family=Alumni+Sans:wght@100;300;400&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet" />
@@ -115,7 +115,7 @@ tr:last-child td{border-bottom:0}
     <div class="card" style="border-color:var(--hair-g)">
       <span class="pill">Ship now · Hub71 lock</span>
       <h3>Torii Gate</h3>
-      <p>GitHub PR comments + required checks. Security pack (injection, authz, secrets, SSRF, unsafe crypto). Tool-backed findings. Labels that block merge on high severity. Compound memory (write events, decay, core/archival tiers, just-in-time archival search) so false positives die twice and true positives stay sharp.</p>
+      <p>GitHub PR comments + required checks. Security pack (injection, authz, secrets, SSRF, unsafe crypto). Tool-backed findings. Labels that block merge on high severity. Integrity-gated compound memory (path-evidenced only, privacy-safe federate, core/archival tiers, just-in-time search) so false positives die twice and true positives stay sharp — without doubling LLM spend on recovery.</p>
     </div>
     <div class="card">
       <div class="num">ICP</div>
@@ -165,6 +165,7 @@ tr:last-child td{border-bottom:0}
   <p class="note" style="margin:0 0 16px">Progressive skills → measure hits → demote zombies → dual contribution → LOO free-riders out → next PR injects winners only. <strong style="color:var(--muted)">Skills that do not contribute do not ship in the next prompt.</strong></p>
   <p class="ey" style="margin:8px 0 12px">Memory compound loop (why noise dies twice)</p>
   <div class="pipeline">
+    <span class="pipe on">Compound</span>
     <span class="pipe on">Write</span>
     <span class="pipe on">Consolidate</span>
     <span class="pipe on">Effective</span>
@@ -173,15 +174,16 @@ tr:last-child td{border-bottom:0}
     <span class="pipe on">Tiers</span>
     <span class="pipe on">Search</span>
   </div>
-  <p class="note" style="margin:0 0 24px">Events on write → decay/merge/evict → confirm only above effective floor → privacy-safe federate → path/effective inject → core vs archival → just-in-time archival search. <strong style="color:var(--muted)">Stale memory does not confirm findings or crowd the inject budget.</strong></p>
+  <p class="note" style="margin:0 0 16px">Integrity-gated compound (path only) → events on write → decay/merge/evict → confirm above effective floor → privacy-safe multi-tenant federate → path inject → core vs archival → just-in-time search. Mid-review utilization is <strong style="color:var(--muted)">measured</strong>; soft recovery is <strong style="color:var(--muted)">budgeted</strong>. One CLI: <code style="color:var(--gold)">torii_memory</code>.</p>
+  <p class="note" style="margin:0 0 24px"><strong style="color:var(--muted)">Stale memory does not confirm findings or crowd the inject budget.</strong> Scanners generate findings — Torii is the merge authority that compounds.</p>
   <div class="grid2">
     <div class="card"><div class="num">Surfaces</div><h3>Where the gate sits</h3><p>Pull requests · required status checks · optional bot comments · security labels · branch protection. Later: SARIF ingest from Semgrep / CodeQL / peers.</p></div>
-    <div class="card"><div class="num">Honesty</div><h3>Evidence over slogans</h3><p>No “zero false positives.” No “95% ATT&amp;CK autonomous exploit.” We measure confirmed findings, FP rate, skill contribution, memory-loop L0–L3, time-to-signal, gated PRs.</p></div>
+    <div class="card"><div class="num">Honesty</div><h3>Evidence over slogans</h3><p>No “zero false positives.” No “95% ATT&amp;CK autonomous exploit.” We measure confirmed findings, FP rate, skill contribution, memory-loop L0–L3, utilization, time-to-signal, gated PRs.</p></div>
   </div>
   <div class="grid3" style="margin-top:8px">
-    <div class="card"><div class="num">Maker</div><h3>Hermes agent</h3><p>Tools on the diff. Path:line evidence. Security pack by default.</p></div>
-    <div class="card"><div class="num">Checker</div><h3>Deterministic panel</h3><p>Re-score without burning another model. Demote weak APPROVE.</p></div>
-    <div class="card"><div class="num">Compound</div><h3>Two loops</h3><p>Skills that measure in. Memory that pages in. Quieter noise, sharper blocks.</p></div>
+    <div class="card"><div class="num">Maker</div><h3>Hermes agent</h3><p>Tools on the diff. Path:line evidence. Security pack by default. Memory tools discoverable via one CLI.</p></div>
+    <div class="card"><div class="num">Checker</div><h3>Deterministic panel</h3><p>Re-score without burning another model. Demote weak APPROVE. Cap paid soft re-prompts.</p></div>
+    <div class="card"><div class="num">Compound</div><h3>Two loops</h3><p>Skills that measure in. Memory that pages in — integrity-gated, federated, budgeted.</p></div>
   </div>
 </div></section>
 

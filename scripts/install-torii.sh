@@ -406,5 +406,7 @@ log "  4. Optional vars: TORII_MODEL / TORII_HERMES_COMMIT / TORII_COOLDOWN_SECO
 log "  5. Branch protection: require status check context torii/gate (security-aware merge signal)."
 log "  6. On a PR, comment: @torii review this pr"
 log "  Tip: offline smoke after install: bash scripts/smoke-torii-gate.sh (pack mode)."
+log "  Tip: memory stack doctor: python3 scripts/torii_memory.py help && python3 scripts/torii_memory.py doctor"
+log "  Tip: shared re-prompt budget default TORII_REPROMPT_MAX_EXTRA=1 (F108 — one paid recovery)."
 log "  Tip: for hub-managed installs (no local scripts), re-run with --caller."
 log "Done."

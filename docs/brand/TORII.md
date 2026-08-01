@@ -44,7 +44,11 @@ A **torii** is the gate at a threshold — ordinary ground on one side, what mat
 | **Skills** | Skills that do not contribute do not ship in the next prompt. |
 | **Memory** | Stale memory does not confirm findings or crowd the inject budget. |
 | **Memory (AppSec)** | False positives die twice — and true positives stay sharp. |
+| **Memory CLI** | One front door for memory tools — agents call `torii_memory`, not tribal scripts. |
+| **Integrity** | Only path-evidenced findings compound; weak narrative never poisons the store. |
+| **Cost control** | Soft re-prompts recover quality within a shared paid-attempt budget. |
 | **Dual loops** | Skills that measure in; memory that pages in — both compound. |
+| **vs SAST** | Scanners generate findings; Torii is the merge authority that compounds. |
 | **Tagline** | Nothing ships without crossing the gate. |
 
 ---
@@ -69,15 +73,21 @@ Customer-facing diagram (same as PRODUCT mental model B):
 
 This is the differentiator vs static “agent skills.md” dumps: Torii **measures contribution**, demotes free-riders, and only full-injects skills that fire.
 
-## Memory compound loop (product story, F93–F98)
+## Memory compound loop (product story, F93–F108)
 
 Customer-facing diagram (PRODUCT mental model C):
 
-`write → consolidate → effective_critic → federate → scoped_recall → tiers → archival_search`
+```text
+compound → write → consolidate → effective → federate → recall → tiers → search
+   │                                                                    │
+   ├─ integrity gate (path only)          front door: torii_memory CLI ─┤
+   ├─ utilization audit mid-review        soft re-prompt (budgeted) ────┤
+   └─ privacy-safe multi-tenant export    shared max paid retries ──────┘
+```
 
-Differentator vs “dump MEMORY.md forever”: Torii **events on write**, **decays and evicts**, **strength-ranks** TP confirms, **tiers** core vs archival, and **pages cold memory** only when PR paths match.
+Differentiator vs “dump MEMORY.md forever”: Torii **events on write**, **integrity-gates compound**, **decays and evicts**, **strength-ranks** TP confirms, **tiers** core vs archival, **pages cold memory** on demand, **measures** whether the agent actually used memory tools, and **caps** paid re-prompts so recovery cannot double-spend by default.
 
-Ops readiness: `memory_loop_status` L0–L3 (smoke + CI summary) — same discipline as the skill loop.
+Ops readiness: `python3 scripts/torii_memory.py doctor` + `memory_loop_status` L0–L3 — same discipline as the skill loop.
 
 ---
 
