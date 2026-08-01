@@ -1,4 +1,39 @@
 
+## 2026-08-01 — QUIETER: own-repo required-check + quieter-over-time chart
+
+### Papers / posts
+- AppSec fatigue 2026: AI multiplies PR volume — buyers want gates that get **stricter and quieter**, not more bots.
+- Loop Engineering: measure the customer loop (required check → signal → noise drop), not only internal F-stack depth.
+- Post-queue after GATE_CERT_WIRE: own-repo path + dogfood trajectory (tools-as-code).
+
+### Decide / copy / skip
+- **Copy:** branch protection requires `torii/gate` as the measured own-repo habit.
+- **Copy:** vault early/late quiet_score (path evidence + tool use + cert rate − weak APPROVE).
+- **Copy:** tool_use_quality panel (tools-as-code, not SOUL prose).
+- **Skip:** F185+ GEPA/reprompt compound layers (worsens simplicity #12).
+
+### Feature shipped (QUIETER)
+- `scripts/quieter_over_time.py` report|fixture|status
+- `docs/QUIETER.md` buyer path · `torii.py quieter` CLI
+- metrics: `docs/benchmarks/quieter-over-time.md` + json
+- GOLDEN-PATH / GATE / PRODUCT links · tests hermetic
+
+### Metric
+- Offline: pytest 6 · fixture_pass · own_repo 10/10 · quiet_score delta late−early ≥0
+- Live Modal: pytorch#191840 BIT3_OK ~140.8s POST_COMMENT=0 tools=7 · cert gc-8284cb3b1acf87c9 path_evidence=1.0
+- Traces: docs/benchmarks/traces/20260801-1511-pytorch-pytorch-PR191840-modal-quieter/
+- golden-path cost/PR n refreshed (hermes-usage dogfood)
+
+### scorecard_target
+JTBD (#3) + simplicity (#12)
+
+### dim_lift
+own-repo required check + measured quieter-over-time (not research harness)
+
+### SHA
+`a39cf7e21e5609255520ea487f8d736812bbcbf2`
+
+
 ## 2026-08-01 — GATE_CERT_WIRE: save-trace + workflow + ops last certificate
 
 ### Papers / posts

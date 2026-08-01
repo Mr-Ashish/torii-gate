@@ -168,6 +168,15 @@ GROUPS: dict[str, dict[str, Any]] = {
             "certificate -- report",
         ],
     },
+    "quieter": {
+        "script": "quieter_over_time.py",
+        "help": "Own-repo required check + quieter-over-time dogfood chart (JTBD)",
+        "examples": [
+            "quieter -- fixture",
+            "quieter -- status",
+            "quieter -- report",
+        ],
+    },
 }
 
 

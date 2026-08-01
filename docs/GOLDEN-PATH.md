@@ -119,7 +119,8 @@ python3 scripts/torii.py gate -- --review path/to/review.md
 
 ## Next commercial lifts
 
-1. This golden path (install + `torii/gate` + metrics) — **this doc**.
-2. Buyer narrative collapse (one diagram) — queue #2.
-3. Public labeled eval (+2 OSS repos) — queue #3.
-4. Install UX polish / reliability / enterprise light — queue #4–6.
+1. This golden path (install + `torii/gate` + metrics) — **this doc** · shipped.
+2. Buyer narrative collapse (one diagram) — queue #2 · shipped.
+3. Public labeled eval (+2 OSS repos) — queue #3 · shipped.
+4. Install UX / ops / enterprise light — queue #4–6 · shipped.
+5. **Own-repo quieter-over-time** — required check habit + dogfood chart → [`QUIETER.md`](QUIETER.md) · `python3 scripts/torii.py quieter -- status`.

@@ -1,0 +1,26 @@
+{
+  "feature": "QUIETER",
+  "schema_version": 1,
+  "repo": "pytorch/pytorch",
+  "pr": "191840",
+  "model": "deepseek/deepseek-v4-pro",
+  "host": "modal",
+  "bit3": true,
+  "elapsed_s": 140.8,
+  "log_streaming": true,
+  "tool_call_turns": 7,
+  "post_comment": 0,
+  "verdict": "APPROVE",
+  "block": false,
+  "certificate_id": "gc-8284cb3b1acf87c9",
+  "reason_codes": [
+    "verdict_approve_open",
+    "strong_path_evidence",
+    "blocking_with_paths"
+  ],
+  "path_evidence_score": 1.0,
+  "notes": "QUIETER fire: own-repo required-check + quieter-over-time chart; live Modal BIT3",
+  "scored_at": "2026-08-01T15:15:06Z",
+  "modal_run": "https://modal.com/apps/mr-ashish/main/ap-G9mgEESMyd4luSqYg4SVOL",
+  "cost_usd": 0.013640527
+}
