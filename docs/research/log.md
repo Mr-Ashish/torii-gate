@@ -27,7 +27,7 @@ simplicity (#12) · JTBD (#3)
 GitHub front door maps every buyer surface to one CLI
 
 ### SHA
-_pending_
+`a787c4b62ba0211d04497226daa38d9832f6c152`
 
 
 ## 2026-08-01 — MEMORY: buyer compound-memory surface (FP die twice)
