@@ -317,7 +317,7 @@ util gap → GEPA refine → dual-gate LOO → dual_pp → federate promote
 
 **One-liner (AppSec):** *Idle recovery skills cannot silently APPROVE after GEPA refine inject.*
 
-**Brand pack (F170/F174/F178):** PRODUCT + landing + scorecard-metrics surface `refine_loop_ok` (F165–F177) plus `refine_dual_revive_ok` / `free_rider_revive_ok` / `revive_pp_gate_ok` and demote paper rows; paper EVAL pack rolls F165–F177 live Modal proofs (`f178-gepa-refine-full-eval-pack/`, supersedes F174 scope).
+**Brand pack (F170/F174/F178/F184):** PRODUCT + landing + scorecard-metrics surface `refine_loop_ok` (F165–F177) plus `refine_dual_revive_ok` / `free_rider_revive_ok` / `revive_pp_gate_ok` and demote paper rows; paper EVAL pack rolls F165–F177 live Modal proofs (`f178-gepa-refine-full-eval-pack/`, supersedes F174 scope).
 
 **Ops:** `python3 scripts/torii.py doctor` / `scorecard` → `refine_loop_ok` next to `hub_archival_loop_ok`.
 

@@ -955,7 +955,7 @@ def product_scorecard(
         "feature_memory_util": "F130",
         "feature_scorecard_ops": "F135",
         "feature_hub_archival_loop": "F163",
-        "feature_refine_loop": "F170",
+        "feature_refine_loop": "F170/F184",
         "schema": SCHEMA,
         "scored_at": _now(),
         "level": level,
@@ -987,10 +987,10 @@ def product_scorecard(
                 f"Hub-archival loop: **{'ok' if metrics.get('hub_archival_loop_ok') else 'gap'}** "
                 f"(util→critic→reprompt→fitness→hub inject · F155–F163)"
             ),
-            # F170/F174/F178: GEPA refine compound loop (F165–F177)
+            # F170/F184: GEPA + hub×GEPA compound loop (F165–F183)
             (
                 f"GEPA refine loop: **{'ok' if metrics.get('refine_loop_ok') else 'gap'}** "
-                f"(refine→dual→promote→decay→revive→free-rider→pp-floor · F165–F177)"
+                f"(refine→dual→promote→decay→revive→compound · F165–F183 / F184)"
             ),
             (
                 f"Dual_pass revive gates: revive **{'ok' if metrics.get('refine_dual_revive_ok') else 'gap'}** · "
@@ -1083,7 +1083,7 @@ def product_scorecard(
     brand_md = root / "docs" / "brand" / "scorecard-metrics.md"
     try:
         lines = [
-            "# Torii Gate — measured scorecard (F129/F130/F164/F170/F178)",
+            "# Torii Gate — measured scorecard (F129/F130/F164/F170/F184)",
             "",
             f"_Generated: `{report['scored_at']}` · level **{level}** · brand_ready={brand_ready}_",
             "",

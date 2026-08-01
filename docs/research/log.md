@@ -1,3 +1,34 @@
+## 2026-08-01 — F184 GEPA + hub×GEPA compound full EVAL pack (F165–F183)
+
+### Papers / posts
+- Loop Engineering: design the loop, get a score — package full compound loops.
+- F178 pack stopped at F177; F179–F183 LOO + dual-loop compound were paper-orphan.
+- Mem0 discipline: measure what you ship on operator/paper surfaces.
+
+### OSS design patterns stolen
+1. f184 EVAL pack rolls F165–F183 live Modal proofs + demote/budget paper rows.
+2. SEE-F184 pointer from F178/F174 historical packs.
+3. scorecard feature tags F170/F184; brand_lines through reprompt_compound_ok.
+4. PRODUCT brand pack note superseding F178 scope.
+
+### Insight
+Partial EVAL packs become script archaeology when the loop extends through dual-loop compound. Highest ROI: one F165–F183 paper pack operators actually read.
+
+### Feature shipped (F184)
+- f184-gepa-compound-full-eval-pack/
+- PRODUCT/landing/TORII brand pack refresh
+- scorecard brand_lines F165–F183 pipeline
+
+### Loop-engineering
+Package the full measured loop — revive gates + hub×GEPA compound + re-prompt budget.
+
+### Metric
+- Offline: scorecard L3 brand_ready; refine_loop_ok; hub_gepa_* + reprompt_compound_ok; pack 19 fires
+- Live Modal: pytorch#191836 BIT3_OK ~39.7s POST_COMMENT=0 log_streaming=true
+
+### SHA
+`b4a9343d3e4d1886aeff31bbcbb10643780943a1`
+
 ## 2026-08-01 — F183 hub×GEPA compound re-prompt budget
 
 ### Papers / posts
