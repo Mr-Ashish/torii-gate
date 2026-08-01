@@ -28,7 +28,7 @@ Reconsolidation without tier promotion leaves warm TPs archival. Highest ROI: F1
 **Warm store → hot context** — retrieval write-back compounds into OS hierarchy inject.
 
 ### SHA
-`PENDING`
+`57c87b4f32b1f6154c936b68813a16f9f7d2f8b4`
 
 
 ## 2026-08-01 — F146 archival reconsolidation on promote
