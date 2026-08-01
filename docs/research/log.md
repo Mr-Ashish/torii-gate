@@ -27,7 +27,7 @@ JTBD (#3) · simplicity (#12) · install (#7)
 compound memory discoverable as buyer surface not Advanced F-table
 
 ### SHA
-_pending_
+`bd8f605e5501e9ea63271ca93a01790a2607b6f2`
 
 
 ## 2026-08-01 — SELF_EVOLVE: day-2 buyer surface (dual-gated skills)
