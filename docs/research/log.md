@@ -26,7 +26,7 @@ Budgeted dual-recovery under measured dual-loop heat — not free re-prompt.
 - Live Modal: pytorch#191836 BIT3_OK ~143.7s POST_COMMENT=0 log_streaming=true F183 soft wire
 
 ### SHA
-`003eebaa10ad91b98e7035792bc6c5f40e43577e`
+`ad4cdf23f0c48c44583529ba7e298566f1349cb9`
 
 ## 2026-08-01 — F182 hub×GEPA compound always priority
 
