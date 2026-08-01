@@ -54,3 +54,12 @@ Source: `skill_router.py reprompt-decide` / Hermes F122 path.
 | gap_pressure | Federated scorecard util gap fraction |
 
 Source: `python3 scripts/skill_router.py scorecard-hub-score`.
+
+## F139 scorecard hub gap critic
+
+| Metric | Meaning |
+|--------|---------|
+| scorecard_hub_gap_demote_ok | APPROVE demoted when hub gap + local idle |
+| gap_pressure | Federated scorecard util gap fraction |
+
+Source: `second_agent_critic.py` panel / `demote-eval`.

@@ -28,6 +28,8 @@ Env:
   TORII_LLM_CRITIC              0 (default) | 1 — enable F81 LLM checker
   TORII_HUB_GAP_CRITIC          1 (default) | 0 — F127 hub gap_pressure checker
   TORII_HUB_GAP_PRESSURE_THR    default 0.34 — same thr as F126 re-prompt bias
+  TORII_SCORECARD_HUB_GAP_CRITIC 1 (default) | 0 — F139 scorecard hub gap checker
+  TORII_SCORECARD_HUB_GAP_THR   default 0.34 — scorecard util gap_pressure thr
 """
 
 from __future__ import annotations
@@ -44,6 +46,7 @@ from typing import Any
 
 FEATURE = "F78"
 FEATURE_HUB_GAP = "F127"
+FEATURE_SCORECARD_HUB_GAP = "F139"
 SCHEMA = 1
 MARKER = "<!-- torii-f78-second-agent-critic -->"
 
@@ -554,6 +557,127 @@ def run_f127_hub_gap_recovery(
         )
 
 
+def scorecard_hub_gap_critic_enabled() -> bool:
+    """F139: multi-tenant scorecard hub gap_pressure participates in critic panel."""
+    raw = (os.environ.get("TORII_SCORECARD_HUB_GAP_CRITIC") or "1").strip().lower()
+    return raw not in _FALSEY
+
+
+def scorecard_hub_gap_pressure_thr() -> float:
+    raw = (os.environ.get("TORII_SCORECARD_HUB_GAP_THR") or "0.34").strip()
+    try:
+        return max(0.0, min(1.0, float(raw)))
+    except ValueError:
+        return 0.34
+
+
+def run_f139_scorecard_hub_gap(
+    out_dir: Path | None,
+    root: Path | None = None,
+) -> CheckerResult:
+    """F139: scorecard hub gap_pressure + local scorecard idle → demote signal.
+
+    Mirrors F127 for scorecard-gap ops skills (F136 util + F138 hub post-score).
+    High multi-tenant scorecard util gap + local idle doctor/scorecard CLIs
+    means APPROVE without ops tools is systemic risk.
+    Soft-skip when scorecard hub compound off or no signals (score 0.5).
+    """
+    if not scorecard_hub_gap_critic_enabled():
+        return CheckerResult(
+            id="f139_scorecard_hub_gap",
+            name="Scorecard hub gap pressure (F139)",
+            ok=True,
+            score=0.5,
+            detail={"soft_skip": True, "reason": "scorecard_hub_gap_critic_off"},
+        )
+    _ensure_path()
+    root = root or _root()
+    thr = scorecard_hub_gap_pressure_thr()
+    try:
+        from skill_router import (  # type: ignore
+            post_score_scorecard_hub,
+            score_scorecard_util,
+            scorecard_hub_enabled,
+        )
+
+        if not scorecard_hub_enabled():
+            return CheckerResult(
+                id="f139_scorecard_hub_gap",
+                name="Scorecard hub gap pressure (F139)",
+                ok=True,
+                score=0.5,
+                detail={"soft_skip": True, "reason": "scorecard_hub_off"},
+            )
+        hub = post_score_scorecard_hub(root=root)
+        gap_pressure = float(hub.get("gap_pressure") or 0.0)
+        util: dict[str, Any] = {}
+        if out_dir is not None:
+            util = score_scorecard_util(Path(out_dir), root=root)
+        idle = list(util.get("idle_ids") or [])
+        util_rate = float(util.get("util_rate") if util else 1.0)
+        if util and util.get("scorecard_injected_n") is not None:
+            util_rate = float(util.get("util_rate") or 0.0)
+        n_inj = int(util.get("scorecard_injected_n") or 0)
+        local_gap = bool(util.get("utilization_gap"))
+        high = gap_pressure >= thr
+        # pressure without scorecard inject is informational only
+        if n_inj < 1 and out_dir is not None:
+            return CheckerResult(
+                id="f139_scorecard_hub_gap",
+                name="Scorecard hub gap pressure (F139)",
+                ok=True,
+                score=1.0 if not high else 0.7,
+                detail={
+                    "gap_pressure": gap_pressure,
+                    "thr": thr,
+                    "high": high,
+                    "reason": "no_scorecard_injected",
+                    "privacy_ok": hub.get("privacy_ok"),
+                    "hub_skill_n": hub.get("skill_n"),
+                },
+            )
+        if not high:
+            score = 1.0 if (not idle and not local_gap) else max(0.6, util_rate)
+            ok = True
+            reason = "scorecard_hub_gap_below_thr"
+        elif local_gap or (idle and util_rate < 0.99):
+            score = round(max(0.0, 1.0 - gap_pressure) * max(0.15, util_rate), 4)
+            ok = False
+            reason = "scorecard_hub_gap_high_local_idle"
+        else:
+            score = 0.85
+            ok = True
+            reason = "scorecard_hub_gap_high_local_util_ok"
+        return CheckerResult(
+            id="f139_scorecard_hub_gap",
+            name="Scorecard hub gap pressure (F139)",
+            ok=ok,
+            score=round(score, 4),
+            detail={
+                "feature": FEATURE_SCORECARD_HUB_GAP,
+                "gap_pressure": gap_pressure,
+                "thr": thr,
+                "high": high,
+                "util_rate": util_rate,
+                "idle_ids": idle,
+                "local_gap": local_gap,
+                "scorecard_injected_n": n_inj,
+                "hub_skill_n": hub.get("skill_n"),
+                "privacy_ok": hub.get("privacy_ok"),
+                "reason": reason,
+            },
+        )
+    except Exception as e:
+        return CheckerResult(
+            id="f139_scorecard_hub_gap",
+            name="Scorecard hub gap pressure (F139)",
+            ok=True,
+            score=0.5,
+            error=str(e)[:200],
+            detail={"soft_fail": True},
+        )
+
+
 def run_verdict_structure(review: str) -> CheckerResult:
     v = parse_verdict(review)
     has_summary = bool(re.search(r"(?m)^###?\s+Summary\b", review, re.I))
@@ -618,6 +742,7 @@ def composite_panel(checkers: list[CheckerResult]) -> dict[str, Any]:
         "f121_recovery_util": 0.08,
         "f136_scorecard_util": 0.06,  # F136 scorecard-gap ops util
         "f127_hub_gap": 0.08,  # F127 multi-tenant recovery gap pressure
+        "f139_scorecard_hub_gap": 0.07,  # F139 multi-tenant scorecard util gap
         "structure": 0.12,
         "f70_dual_critic": 0.20,
         "f72_chain": 0.16,
@@ -715,6 +840,19 @@ def decide_verdict(
                 reasons.append(
                     f"hub_gap_pressure_idle ({detail.get('gap_pressure')}>={detail.get('thr')})"
                 )
+        # F139: multi-tenant scorecard hub gap + local idle scorecard ops → demote
+        sch = next((c for c in checkers if c.id == "f139_scorecard_hub_gap"), None)
+        if sch and not sch.ok:
+            detail = sch.detail or {}
+            if detail.get("high") and (
+                detail.get("local_gap") or detail.get("idle_ids")
+            ):
+                recommended = "COMMENT"
+                demoted = True
+                reasons.append(
+                    "scorecard_hub_gap_pressure_idle "
+                    f"({detail.get('gap_pressure')}>={detail.get('thr')})"
+                )
     elif maker == "UNKNOWN":
         recommended = "COMMENT"
         demoted = True
@@ -749,6 +887,7 @@ def run_panel(
         run_f121_recovery_util(out_dir),
         run_f136_scorecard_util(out_dir),
         run_f127_hub_gap_recovery(out_dir, root),
+        run_f139_scorecard_hub_gap(out_dir, root),
     ]
     # F81: optional LLM checker after deterministic panel draft
     panel_draft = {
@@ -846,10 +985,13 @@ def render_inject() -> str:
             "5. **F75 memory** — scoped TP/FP conflicts",
             "6. **F121 recovery util** — always recovery skills must fire tool CLIs",
             "7. **F127 hub gap** — multi-tenant recovery gap_pressure + local idle → demote APPROVE",
+            "8. **F136 scorecard util** — scorecard-gap ops skills must fire doctor/scorecard CLIs",
+            "9. **F139 scorecard hub gap** — multi-tenant scorecard util gap + local idle → demote APPROVE",
             "",
             "**Default stance:** weak APPROVE without path evidence will be **demoted**.",
             "Prefer REQUEST CHANGES with path:line over narrative-only APPROVE.",
             "Call recovery CLIs (memory/doctor/critic) when hub gap pressure is elevated.",
+            "Call scorecard ops CLIs (doctor/scorecard/demote-eval) when scorecard hub gap is elevated.",
             "",
             "<!-- /torii-f78-second-agent-critic -->",
             "",
@@ -967,7 +1109,7 @@ def cmd_fixture(args: argparse.Namespace) -> int:
         prompt.write_text("# p\n", encoding="utf-8")
         inj = inject_into_prompt(prompt)
         body = prompt.read_text(encoding="utf-8")
-        inject_ok = inj and MARKER in body and "F127" in body
+        inject_ok = inj and MARKER in body and "F127" in body and "F139" in body
 
     # F127: hub gap high + local idle + APPROVE → demote
     f127_ok = False
@@ -1046,18 +1188,160 @@ def cmd_fixture(args: argparse.Namespace) -> int:
     except Exception:
         f127_ok = False
 
+    # F139: scorecard hub gap high + local idle scorecard + APPROVE → demote
+    f139_ok = False
+    try:
+        with tempfile.TemporaryDirectory() as td3:
+            root_sc = Path(td3)
+            od = root_sc / "out"
+            od.mkdir()
+            fed = root_sc / "memory" / "federation"
+            fed.mkdir(parents=True)
+            sc_sid = "skill-prefer-product-scorecard"
+            (fed / "scorecard-util-signals.json").write_text(
+                json.dumps(
+                    {
+                        "signals": [
+                            {
+                                "id": "scorecard-util-gap",
+                                "theme": "scorecard-util-gap",
+                                "tags": [
+                                    "scorecard_util",
+                                    "utilization_gap",
+                                    "f136",
+                                ],
+                                "hits": 8,
+                                "tenants": 3,
+                                "util_rate_bin": "gap",
+                                "source": "scorecard_skill_util",
+                            },
+                            {
+                                "id": "scorecard-util-ok",
+                                "theme": "scorecard-util-ok",
+                                "tags": ["scorecard_util", "util_ok"],
+                                "hits": 1,
+                                "util_rate_bin": "full",
+                                "source": "scorecard_skill_util",
+                            },
+                        ]
+                    }
+                )
+                + "\n",
+                encoding="utf-8",
+            )
+            (od / "skill-router.json").write_text(
+                json.dumps(
+                    {
+                        "selected": [sc_sid],
+                        "always_selected": [],
+                        "inject_chars": 500,
+                    }
+                ),
+                encoding="utf-8",
+            )
+            (od / "skill-hits.json").write_text(
+                json.dumps(
+                    {
+                        "hits": [
+                            {
+                                "id": sc_sid,
+                                "tool_hit": False,
+                                "hit": False,
+                            }
+                        ],
+                        "tool_hit_n": 0,
+                    }
+                ),
+                encoding="utf-8",
+            )
+            os.environ["TORII_SCORECARD_HUB_GAP_CRITIC"] = "1"
+            os.environ["TORII_SCORECARD_HUB_GAP_THR"] = "0.05"
+            os.environ["TORII_SCORECARD_HUB_COMPOUND"] = "1"
+            prev_root = os.environ.get("TORII_ROOT")
+            os.environ["TORII_ROOT"] = str(root_sc)
+            try:
+                chk_sc = run_f139_scorecard_hub_gap(od, root=root_sc)
+                fake_panel = {"composite": 0.8, "level": "L2"}
+                dec_sc = decide_verdict(
+                    "APPROVE",
+                    fake_panel,
+                    [
+                        CheckerResult(
+                            id="structure",
+                            name="s",
+                            ok=True,
+                            score=1.0,
+                            detail={"path_mentions": 5},
+                        ),
+                        CheckerResult(
+                            id="f73_fitness",
+                            name="f",
+                            ok=True,
+                            score=1.0,
+                            detail={"path_evidence": 0.9},
+                        ),
+                        chk_sc,
+                    ],
+                )
+                if chk_sc.detail and chk_sc.detail.get("soft_skip"):
+                    f139_ok = True
+                else:
+                    f139_ok = (
+                        (
+                            not chk_sc.ok
+                            and "scorecard_hub_gap" in str(
+                                chk_sc.detail.get("reason") or ""
+                            )
+                        )
+                        or (
+                            dec_sc.get("demoted")
+                            and any(
+                                "scorecard_hub_gap" in str(r)
+                                for r in (dec_sc.get("reasons") or [])
+                            )
+                        )
+                        or (
+                            chk_sc.ok
+                            and float(chk_sc.detail.get("gap_pressure") or 0) < 0.05
+                        )
+                    )
+            finally:
+                if prev_root is None:
+                    os.environ.pop("TORII_ROOT", None)
+                else:
+                    os.environ["TORII_ROOT"] = prev_root
+                os.environ["TORII_SCORECARD_HUB_GAP_THR"] = "0.34"
+    except Exception:
+        f139_ok = False
+
     # checker present in good panel
     has_f127 = any(
         c.get("id") == "f127_hub_gap" for c in (g.get("checkers") or [])
     )
+    has_f139 = any(
+        c.get("id") == "f139_scorecard_hub_gap" for c in (g.get("checkers") or [])
+    )
 
-    fixture_pass = good_ok and weak_ok and delta >= 0.1 and inject_ok and f127_ok and has_f127
+    fixture_pass = (
+        good_ok
+        and weak_ok
+        and delta >= 0.1
+        and inject_ok
+        and f127_ok
+        and has_f127
+        and f139_ok
+        and has_f139
+    )
     print(
         json.dumps(
             {
                 "feature": FEATURE,
                 "feature_hub_gap": FEATURE_HUB_GAP,
+                "feature_scorecard_hub_gap": FEATURE_SCORECARD_HUB_GAP,
+                "feature_scorecard_hub_gap": FEATURE_SCORECARD_HUB_GAP,
                 "fixture_pass": fixture_pass,
+                "f139_ok": f139_ok,
+                "has_f139": has_f139,
                 "good_composite": g_comp,
                 "weak_composite": w_comp,
                 "delta": round(delta, 4),
@@ -1109,7 +1393,13 @@ def demote_eval(
     good = root / "docs/benchmarks/fixtures/insecure-demo-good-review.md"
     weak = root / "docs/benchmarks/fixtures/insecure-demo-weak-review.md"
 
-    def _case(name: str, review: Path, od: Path | None = None) -> dict[str, Any]:
+    def _case(
+        name: str,
+        review: Path,
+        od: Path | None = None,
+        *,
+        case_root: Path | None = None,
+    ) -> dict[str, Any]:
         if not review.is_file():
             return {
                 "name": name,
@@ -1117,11 +1407,19 @@ def demote_eval(
                 "demoted": False,
                 "maker": "UNKNOWN",
             }
-        rep = run_panel(review, out_dir=od, root=root)
+        rep = run_panel(review, out_dir=od, root=case_root or root)
         dec = rep.get("decision") or {}
         panel = rep.get("panel") or {}
         hubc = next(
             (c for c in (rep.get("checkers") or []) if c.get("id") == "f127_hub_gap"),
+            None,
+        )
+        sch = next(
+            (
+                c
+                for c in (rep.get("checkers") or [])
+                if c.get("id") == "f139_scorecard_hub_gap"
+            ),
             None,
         )
         return {
@@ -1136,6 +1434,11 @@ def demote_eval(
             "f127_score": None if hubc is None else hubc.get("score"),
             "hub_gap_reason": (hubc or {}).get("detail", {}).get("reason")
             if isinstance((hubc or {}).get("detail"), dict)
+            else None,
+            "f139_ok": None if sch is None else bool(sch.get("ok")),
+            "f139_score": None if sch is None else sch.get("score"),
+            "scorecard_hub_gap_reason": (sch or {}).get("detail", {}).get("reason")
+            if isinstance((sch or {}).get("detail"), dict)
             else None,
         }
 
@@ -1191,6 +1494,97 @@ def demote_eval(
                 os.environ["TORII_HUB_GAP_PRESSURE_THR"] = prev_thr
             os.environ.pop("TORII_SECOND_CRITIC_MIN_PATH", None)
 
+    # F139: scorecard hub gap + idle scorecard ops + APPROVE
+    with tempfile.TemporaryDirectory() as td_sc:
+        od = Path(td_sc)
+        fed = od / "memory" / "federation"
+        fed.mkdir(parents=True)
+        sc_sid = "skill-prefer-product-scorecard"
+        (fed / "scorecard-util-signals.json").write_text(
+            json.dumps(
+                {
+                    "signals": [
+                        {
+                            "id": "scorecard-util-gap",
+                            "theme": "scorecard-util-gap",
+                            "tags": ["scorecard_util", "utilization_gap", "f136"],
+                            "hits": 8,
+                            "tenants": 3,
+                            "util_rate_bin": "gap",
+                            "source": "scorecard_skill_util",
+                        },
+                        {
+                            "id": "scorecard-util-ok",
+                            "theme": "scorecard-util-ok",
+                            "tags": ["scorecard_util", "util_ok"],
+                            "hits": 1,
+                            "util_rate_bin": "full",
+                            "source": "scorecard_skill_util",
+                        },
+                    ]
+                }
+            )
+            + "\n",
+            encoding="utf-8",
+        )
+        (od / "skill-router.json").write_text(
+            json.dumps(
+                {
+                    "selected": [sc_sid],
+                    "always_selected": [],
+                    "inject_chars": 600,
+                }
+            ),
+            encoding="utf-8",
+        )
+        (od / "skill-hits.json").write_text(
+            json.dumps(
+                {
+                    "hits": [
+                        {
+                            "id": sc_sid,
+                            "tool_hit": False,
+                            "hit": False,
+                        }
+                    ]
+                }
+            ),
+            encoding="utf-8",
+        )
+        sc_review = od / "approve-sc-idle.md"
+        sc_review.write_text(
+            "## Review\n**Verdict:** APPROVE\n\n### Summary\nok\n\n"
+            "### Blocking\nnone\n\n### What I checked\n`app.py:1` path ok\n",
+            encoding="utf-8",
+        )
+        prev_sc_thr = os.environ.get("TORII_SCORECARD_HUB_GAP_THR")
+        prev_root = os.environ.get("TORII_ROOT")
+        os.environ["TORII_SCORECARD_HUB_GAP_CRITIC"] = "1"
+        os.environ["TORII_SCORECARD_HUB_GAP_THR"] = "0.05"
+        os.environ["TORII_SCORECARD_HUB_COMPOUND"] = "1"
+        os.environ["TORII_ROOT"] = str(od)
+        os.environ["TORII_SECOND_CRITIC_MIN_PATH"] = "0.1"
+        try:
+            # federation under TORII_ROOT=od so post_score_scorecard_hub finds it
+            cases.append(
+                _case(
+                    "scorecard_hub_gap_idle_approve",
+                    sc_review,
+                    od,
+                    case_root=od,
+                )
+            )
+        finally:
+            if prev_sc_thr is None:
+                os.environ.pop("TORII_SCORECARD_HUB_GAP_THR", None)
+            else:
+                os.environ["TORII_SCORECARD_HUB_GAP_THR"] = prev_sc_thr
+            if prev_root is None:
+                os.environ.pop("TORII_ROOT", None)
+            else:
+                os.environ["TORII_ROOT"] = prev_root
+            os.environ.pop("TORII_SECOND_CRITIC_MIN_PATH", None)
+
     # metrics
     approve_cases = [c for c in cases if c.get("maker") == "APPROVE"]
     demoted_n = sum(1 for c in approve_cases if c.get("demoted"))
@@ -1198,11 +1592,17 @@ def demote_eval(
     demote_rate = round(demoted_n / approve_n, 4)
     weak = next((c for c in cases if c["name"] == "weak_approve"), {})
     hubc = next((c for c in cases if c["name"] == "hub_gap_idle_approve"), {})
+    schc = next(
+        (c for c in cases if c["name"] == "scorecard_hub_gap_idle_approve"), {}
+    )
     goodc = next((c for c in cases if c["name"] == "good_insecure"), {})
     weak_demote_ok = bool(weak.get("demoted") or weak.get("recommended") != "APPROVE")
     hub_demote_ok = bool(hubc.get("demoted")) or (
         # soft: if f127 skipped (no hub signals), still count weak path
         hubc.get("f127_ok") is True and float(hubc.get("f127_score") or 0) >= 0.5
+    )
+    sc_hub_demote_ok = bool(schc.get("demoted")) or (
+        schc.get("f139_ok") is True and float(schc.get("f139_score") or 0) >= 0.5
     )
     # good should not be demoted from REQUEST_CHANGES to worse without reason;
     # typically maker is REQUEST_CHANGES already
@@ -1212,6 +1612,7 @@ def demote_eval(
         "feature": "F128",
         "feature_panel": FEATURE,
         "feature_hub_gap": FEATURE_HUB_GAP,
+        "feature_scorecard_hub_gap": FEATURE_SCORECARD_HUB_GAP,
         "scored_at": _now(),
         "cases": cases,
         "approve_n": len(approve_cases),
@@ -1220,17 +1621,21 @@ def demote_eval(
         "weak_demote_ok": weak_demote_ok,
         "hub_gap_demote_ok": bool(hubc.get("demoted")),
         "hub_gap_soft_ok": hub_demote_ok,
+        "scorecard_hub_gap_demote_ok": bool(schc.get("demoted")),
+        "scorecard_hub_gap_soft_ok": sc_hub_demote_ok,
         "good_stable": good_stable,
         "paper": {
             "metric": "critic_approve_demote_rate",
             "value": demote_rate,
             "weak_approve_demoted": weak_demote_ok,
             "hub_gap_idle_demoted": bool(hubc.get("demoted")),
+            "scorecard_hub_gap_idle_demoted": bool(schc.get("demoted")),
             "notes": "demote_rate = demoted APPROVE / APPROVE cases in offline pack",
         },
-        "eval_pass": weak_demote_ok and good_stable and (
-            bool(hubc.get("demoted")) or hub_demote_ok
-        ),
+        "eval_pass": weak_demote_ok
+        and good_stable
+        and (bool(hubc.get("demoted")) or hub_demote_ok)
+        and (bool(schc.get("demoted")) or sc_hub_demote_ok),
     }
     if out_dir:
         try:
@@ -1269,6 +1674,7 @@ def cmd_status(args: argparse.Namespace) -> int:
             {
                 "feature": FEATURE,
                 "feature_hub_gap": FEATURE_HUB_GAP,
+                "feature_scorecard_hub_gap": FEATURE_SCORECARD_HUB_GAP,
                 "enabled": enabled(),
                 "demote": demote_enabled(),
                 "hub_gap_critic": hub_gap_critic_enabled(),

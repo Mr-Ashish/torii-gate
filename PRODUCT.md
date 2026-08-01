@@ -194,6 +194,8 @@ budget always → compact body → score tool_hit → util gap? → budgeted re-
 
 **Scorecard hub compound (F138):** multi-tenant scorecard-util themes post-score into select priority deltas + prompt inject (`scorecard-hub-score`), with soft fitness ledger ingest — same F125 recovery-hub pattern for ops skills so tool-effective scorecard themes win residual inject slots.
 
+**Scorecard hub gap critic (F139):** second-agent panel checker `f139_scorecard_hub_gap` demotes APPROVE when multi-tenant scorecard util gap_pressure is high and local scorecard-gap ops skills are idle (F127 recovery-hub-gap mirror for ops readiness).
+
 **Ops:** `python3 scripts/memory_loop_status.py scorecard` → L0–L3. Smoke requires L3 on the hub tree. CI job summary annotates readiness; optional advisory `torii/memory-loop` via `TORII_MEMORY_LOOP_STATUS_COMMIT=1`.
 
 ---

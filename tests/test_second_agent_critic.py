@@ -93,6 +93,7 @@ class SecondAgentCriticTests(unittest.TestCase):
         self.assertEqual(data["feature"], "F78")
         self.assertTrue(data["enabled"])
         self.assertEqual(data.get("feature_hub_gap"), "F127")
+        self.assertEqual(data.get("feature_scorecard_hub_gap"), "F139")
 
     def test_f128_demote_eval(self):
         """F128: paper demote-rate pack demotes weak + hub-gap APPROVE."""
@@ -104,6 +105,11 @@ class SecondAgentCriticTests(unittest.TestCase):
             self.assertTrue(data.get("eval_pass"), data)
             self.assertTrue(data.get("weak_demote_ok"), data)
             self.assertGreaterEqual(float(data.get("demote_rate") or 0), 0.5)
+            self.assertTrue(
+                data.get("scorecard_hub_gap_demote_ok")
+                or data.get("scorecard_hub_gap_soft_ok"),
+                data,
+            )
             paper = data.get("paper") or {}
             self.assertEqual(paper.get("metric"), "critic_approve_demote_rate")
             art = Path(td) / "critic-demote-eval.json"
@@ -199,6 +205,103 @@ class SecondAgentCriticTests(unittest.TestCase):
             )
             reasons = " ".join(data["decision"].get("reasons") or [])
             self.assertIn("hub_gap", reasons)
+
+    def test_f139_scorecard_hub_gap_demotes_approve(self):
+        """F139: high scorecard hub gap + idle scorecard ops demotes APPROVE."""
+        with tempfile.TemporaryDirectory() as td:
+            root = Path(td)
+            fed = root / "memory" / "federation"
+            fed.mkdir(parents=True)
+            sc_sid = "skill-prefer-product-scorecard"
+            (fed / "scorecard-util-signals.json").write_text(
+                json.dumps(
+                    {
+                        "signals": [
+                            {
+                                "id": "scorecard-util-gap",
+                                "theme": "scorecard-util-gap",
+                                "tags": [
+                                    "scorecard_util",
+                                    "utilization_gap",
+                                    "f136",
+                                ],
+                                "hits": 8,
+                                "tenants": 3,
+                                "util_rate_bin": "gap",
+                                "source": "scorecard_skill_util",
+                            },
+                            {
+                                "id": "scorecard-util-ok",
+                                "theme": "scorecard-util-ok",
+                                "tags": ["scorecard_util", "util_ok"],
+                                "hits": 1,
+                                "util_rate_bin": "full",
+                                "source": "scorecard_skill_util",
+                            },
+                        ]
+                    }
+                )
+                + "\n",
+                encoding="utf-8",
+            )
+            od = root / "out"
+            od.mkdir()
+            (od / "skill-router.json").write_text(
+                json.dumps(
+                    {
+                        "selected": [sc_sid],
+                        "always_selected": [],
+                        "inject_chars": 600,
+                    }
+                ),
+                encoding="utf-8",
+            )
+            (od / "skill-hits.json").write_text(
+                json.dumps(
+                    {
+                        "hits": [
+                            {
+                                "id": sc_sid,
+                                "tool_hit": False,
+                                "hit": False,
+                            }
+                        ]
+                    }
+                ),
+                encoding="utf-8",
+            )
+            review = root / "approve.md"
+            review.write_text(
+                "## Review\n**Verdict:** APPROVE\n\n### Summary\nok\n\n"
+                "### Blocking\nnone\n\n### What I checked\n`app.py:1` ok\n",
+                encoding="utf-8",
+            )
+            env = {
+                "TORII_ROOT": str(root),
+                "TORII_SCORECARD_HUB_GAP_CRITIC": "1",
+                "TORII_SCORECARD_HUB_GAP_THR": "0.2",
+                "TORII_SCORECARD_HUB_COMPOUND": "1",
+                "TORII_SECOND_CRITIC_MIN_PATH": "0.1",
+            }
+            r = _run(
+                ["run", "--review", str(review), "--out-dir", str(od), "--force"],
+                env=env,
+            )
+            self.assertEqual(r.returncode, 0, r.stderr + r.stdout)
+            data = json.loads(r.stdout)
+            ids = [c["id"] for c in data.get("checkers") or []]
+            self.assertIn("f139_scorecard_hub_gap", ids)
+            sch = next(
+                c for c in data["checkers"] if c["id"] == "f139_scorecard_hub_gap"
+            )
+            self.assertFalse(sch["ok"], sch)
+            self.assertTrue(
+                data["decision"]["demoted"]
+                or data["decision"]["recommended_verdict"] != "APPROVE",
+                data["decision"],
+            )
+            reasons = " ".join(data["decision"].get("reasons") or [])
+            self.assertIn("scorecard_hub_gap", reasons)
 
 
 if __name__ == "__main__":

@@ -314,6 +314,13 @@ def assess(root: Path | None = None, *, deep: bool = True) -> dict[str, Any]:
             if (root / "scripts" / "second_agent_critic.py").is_file()
             else ""
         ),
+        "critic_scorecard_hub_gap": "f139_scorecard_hub_gap" in (
+            (root / "scripts" / "second_agent_critic.py").read_text(
+                encoding="utf-8", errors="replace"
+            )
+            if (root / "scripts" / "second_agent_critic.py").is_file()
+            else ""
+        ),
     }
     wire_ok = all(wire.values())
 

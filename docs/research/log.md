@@ -1,5 +1,37 @@
 # Torii research → product log
 
+## 2026-08-01 — F139 scorecard hub gap critic
+
+### Papers / posts
+- F127 recovery hub gap critic: multi-tenant gap_pressure + local idle → demote APPROVE.
+- Loop-eng maker/checker: independent validation demote rate is the ship gate.
+- F136/F138 scorecard util + hub without panel demote left systemic idle unactioned.
+
+### OSS design patterns stolen
+1. run_f139_scorecard_hub_gap checker (weight 0.07) + decide_verdict demote.
+2. demote-eval scorecard_hub_gap_idle_approve case; fixture f139_ok.
+3. inject policy brief F139; skill_loop critic_scorecard_hub_gap wire.
+4. PRODUCT packaging; traces f139-scorecard-hub-gap-critic/.
+
+### Insight
+Hub post-score without critic demote is dashboard. Highest ROI: F127-style panel demote when multi-tenant scorecard util gap meets local idle ops skills.
+
+### Feature shipped (F139)
+- second_agent_critic f139_scorecard_hub_gap + demote-eval/fixture
+- PRODUCT/research/brand; skill_loop wire
+- Modal e2e POST_COMMENT=0
+
+### Metric
+- Offline: fixture f139_ok; demote-eval scorecard_hub_gap_demote_ok; pytest
+- Live: Modal pytorch e2e POST_COMMENT=0
+
+### Loop-engineering / Hermes practice used
+**Maker/checker demote on multi-tenant gap** — scorecard ops mirror recovery F127.
+
+### SHA
+`PENDING`
+
+
 ## 2026-08-01 — F138 scorecard hub post-score compound
 
 ### Papers / posts

@@ -1,0 +1,7 @@
+{
+  "eval_pass": true,
+  "demote_rate": 1.0,
+  "scorecard_hub_gap_demote_ok": true,
+  "hub_gap_demote_ok": true,
+  "feature_scorecard_hub_gap": "F139"
+}
