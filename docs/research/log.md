@@ -27,7 +27,7 @@ technical trust (#5) · GTM (#11)
 Buyers see seed/model/scored_at age — not a stale pack list
 
 ### SHA
-(pending)
+`b90e724e58e34cf0d4f7f6f515c91318fd088f2d`
 
 ## 2026-08-01 — ENT_ISOLATION_PROOF: hermetic cross-tenant inject (Phase B #4)
 

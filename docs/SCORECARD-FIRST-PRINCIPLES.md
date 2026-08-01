@@ -26,7 +26,7 @@ _Scored: `2026-08-01T18:43:55Z` · baseline **6.6** · commercial **8.5** · buy
 | Rank | Gap | Status |
 |-----:|-----|--------|
 | 1–4 | help collapse · pricing · own-repo quieter · isolation | **shipped** |
-| 5 | Public eval freshness badge | **this fire** |
+| 5 | Public eval freshness badge | **shipped** `b90e724` |
 | 6 | Required-check onboarding in GH Actions summary | next |
 | 7 | Deployed landing | later |
 | 8 | Paid pilot | later |
