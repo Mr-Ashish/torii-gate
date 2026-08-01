@@ -32,7 +32,7 @@ Shipping more maker intelligence without an independent checker lets weak APPROV
 - pytest: 481 passed
 
 ### SHA
-`(pending push)`
+`bc847f97e6696b0084abd1ca547a6999c8467c66`
 
 ## 2026-08-01 — F77 cross-tenant hub federated signal ingest
 
