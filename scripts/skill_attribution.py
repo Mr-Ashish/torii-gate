@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""F88/F115/F127/F140: Per-skill contribution attribution (LOO + hub floors).
+"""F88/F115/F127/F140/F166: Per-skill contribution attribution (LOO + hub/refine floors).
 
 Research drivers (2026):
   - "Not All Skills Help" / Assay (arXiv 2606.15390): per-task skill masking
@@ -13,18 +13,20 @@ Research drivers (2026):
     zombie-demotes the skill F113 just dual-gate adopted.
   - F138/F139: scorecard hub post-score + critic without attribution floor lets
     LOO free-rider-demote multi-tenant tool-effective ops skills.
+  - F165 GEPA-lite refine: constraint-passed body mutations must not free-rider
+    demote before the next tool hit (Hermes dual-gate / GEPA constraint invest).
 
 Product thesis:
   F87 gates on pack-level contribution_pp>0 still allows free-riding skills to
   ride bulk adopt. Highest ROI: **leave-one-out + unique keyword + tool-outcome
   attribution** so only skills with solo prose hit, unique coverage, measured
-  tool invocation, or **hub scorecard/recovery evidence** adopt or rank high.
+  tool invocation, or **hub scorecard/recovery/refine evidence** adopt or rank high.
 
 Commands:
-  attribute — LOO + unique keyword + F114 tool-outcome + hub floors
+  attribute — LOO + unique keyword + F114 tool-outcome + hub/refine floors
   rank      — sort skills by contribution score
   filter    — list skill ids with contribution > threshold
-  fixture   — hermetic: contributing > free-rider; tool-only; scorecard hub floor
+  fixture   — hermetic: contributing > free-rider; tool-only; scorecard/refine floor
   status    — summary
 
 Env:
@@ -34,6 +36,7 @@ Env:
   TORII_SKILL_ATTR_TOOL       1 (default) | 0 — F115 tool-outcome LOO credit
   TORII_SKILL_ATTR_HUB        1 (default) | 0 — F127 floor for hub_ingested fitness skills
   TORII_SKILL_ATTR_SCORECARD  1 (default) | 0 — F140 floor for scorecard hub ops skills
+  TORII_SKILL_ATTR_REFINE     1 (default) | 0 — F166 floor for GEPA-lite refined skills
 """
 
 from __future__ import annotations
@@ -53,7 +56,9 @@ FEATURE_TOOL = "F115"
 FEATURE_HUB = "F127"
 FEATURE_SCORECARD = "F140"
 FEATURE_HUB_ARCHIVAL = "F156"
+FEATURE_REFINE = "F166"
 HUB_ARCHIVAL_SKILL_ID = "skill-prefer-hub-archival-early"
+REFINE_MARKER = "<!-- torii-f165-gepa-refine -->"
 SCHEMA = 1
 LEDGER_NAME = "skill-attribution.json"
 
@@ -205,6 +210,122 @@ def scorecard_attr_enabled() -> bool:
     """F140: floor contribution for scorecard hub / scorecard_ops fitness skills."""
     raw = (os.environ.get("TORII_SKILL_ATTR_SCORECARD") or "1").strip().lower()
     return raw not in _FALSEY
+
+
+def refine_attr_enabled() -> bool:
+    """F166: LOO floor for F165 GEPA-lite refined skills (constraint-passed)."""
+    raw = (os.environ.get("TORII_SKILL_ATTR_REFINE") or "1").strip().lower()
+    return raw not in _FALSEY
+
+
+def _load_refined_skills(
+    root: Path,
+    *,
+    out_dir: Path | None = None,
+) -> dict[str, dict[str, Any]]:
+    """F166: skills refined by F165 with constraint_ok dual-gate evidence.
+
+    Sources (privacy-safe skill ids only):
+      - out_dir/skill-refine.json refined[] with constraint.ok
+      - memory/evolution/ledger.json last_refine / refines
+      - agent/skills/active/* containing F165 refine marker or dual_gate: constraint_ok
+    Floors LOO so free-rider demote does not kill a just-refined recovery skill
+    before the next PR's tool hit compounds contribution_pp.
+    """
+    out: dict[str, dict[str, Any]] = {}
+    if not refine_attr_enabled():
+        return out
+
+    def _add(sid: str, *, reasons: list[str] | None = None, constraint_ok: bool = True) -> None:
+        if not sid or "/" in sid or ".." in sid:
+            return
+        if not constraint_ok:
+            return
+        prev = out.get(sid) or {}
+        rs = list(prev.get("reasons") or [])
+        for r in reasons or []:
+            if r not in rs:
+                rs.append(r)
+        out[sid] = {
+            "refined_n": int(prev.get("refined_n") or 0) + 1,
+            "constraint_ok": True,
+            "kind": "gepa_refine",
+            "reasons": rs,
+            "hub_priority_delta": max(int(prev.get("hub_priority_delta") or 0), 12),
+            "tool_hit_n": int(prev.get("tool_hit_n") or 0),
+        }
+
+    paths: list[Path] = []
+    if out_dir is not None:
+        paths.append(Path(out_dir) / "skill-refine.json")
+    od = (os.environ.get("OUT_DIR") or "").strip()
+    if od:
+        paths.append(Path(od) / "skill-refine.json")
+    paths.append(root / "memory" / "evolution" / "ledger.json")
+
+    for p in paths:
+        if not p.is_file():
+            continue
+        try:
+            data = json.loads(p.read_text(encoding="utf-8"))
+        except (OSError, json.JSONDecodeError):
+            continue
+        if not isinstance(data, dict):
+            continue
+        # skill-refine.json shape
+        for ent in data.get("refined") or []:
+            if not isinstance(ent, dict):
+                continue
+            sid = str(ent.get("skill_id") or ent.get("id") or "")
+            c = ent.get("constraint") if isinstance(ent.get("constraint"), dict) else {}
+            ok = bool(c.get("ok") if c else ent.get("constraint_ok", True))
+            _add(sid, reasons=list(ent.get("reasons") or ["refine"]), constraint_ok=ok)
+        # evolution ledger
+        last = data.get("last_refine") if isinstance(data.get("last_refine"), dict) else None
+        if last:
+            for sid in last.get("skill_ids") or []:
+                _add(str(sid), reasons=["ledger_last_refine"])
+        for ev in data.get("refines") or []:
+            if not isinstance(ev, dict):
+                continue
+            for sid in ev.get("skill_ids") or []:
+                _add(str(sid), reasons=["ledger_refine"])
+
+    # active skill bodies with F165 marker / dual_gate stamp
+    active = root / "agent" / "skills" / "active"
+    if active.is_dir():
+        for md in active.glob("skill-*.md"):
+            try:
+                body = md.read_text(encoding="utf-8", errors="replace")
+            except OSError:
+                continue
+            sid = md.stem
+            if REFINE_MARKER in body or "dual_gate: constraint_ok" in body or "dual_gate_feature: F166" in body:
+                _add(sid, reasons=["active_marker"])
+
+    # federated refine themes (privacy-safe)
+    fed = root / "memory" / "federation" / "skill-refine-signals.json"
+    if fed.is_file():
+        try:
+            data = json.loads(fed.read_text(encoding="utf-8"))
+            sigs = data.get("signals") if isinstance(data, dict) else data
+            if isinstance(sigs, list):
+                for s in sigs:
+                    if not isinstance(s, dict):
+                        continue
+                    theme = str(s.get("theme") or s.get("id") or "")
+                    tags = [str(t).lower() for t in (s.get("tags") or [])]
+                    if "refine" not in tags and "f165" not in tags and "f166" not in tags:
+                        if "gepa" not in theme.lower() and "refine" not in theme.lower():
+                            continue
+                    # theme may be skill id stem
+                    sid = theme if theme.startswith("skill-") else str(s.get("skill_id") or "")
+                    if sid.startswith("skill-"):
+                        _add(sid, reasons=["federate_refine"])
+        except (OSError, json.JSONDecodeError):
+            pass
+
+    return out
 
 
 def _load_hub_archival_util_skills(root: Path) -> dict[str, dict[str, Any]]:
@@ -400,7 +521,7 @@ def attribute(
     log_path: Path | None = None,
     out_dir: Path | None = None,
 ) -> dict[str, Any]:
-    """Leave-one-out + unique keyword + tool-outcome + F127/F140/F156 hub floors."""
+    """Leave-one-out + unique keyword + tool-outcome + F127/F140/F156/F166 floors."""
     root = root or _root()
     sr = _import_mod("skill_router")
     paths = paths or list(DEMO_PATHS)
@@ -409,6 +530,7 @@ def attribute(
     hub_skills = _load_hub_ingested_skills(root)
     sc_hub_skills = _load_scorecard_hub_skills(root)
     ha_skills = _load_hub_archival_util_skills(root)
+    refine_skills = _load_refined_skills(root, out_dir=out_dir)
 
     if selected is None:
         sel = sr.select_skills(cards, paths)
@@ -525,6 +647,18 @@ def attribute(
             if score < floor_sc:
                 score = floor_sc
                 scorecard_floored.append(sid)
+        # F166: GEPA-lite refined skills (constraint_ok dual-gate) get LOO floor
+        rf_ent = refine_skills.get(sid)
+        rf_floor = False
+        if rf_ent and refine_attr_enabled():
+            rf_floor = True
+            floor_rf = 0.8 + min(
+                0.4, float(rf_ent.get("hub_priority_delta") or 0) / 80.0
+            )
+            # refined recovery bodies are dual-gate investments — floor hard
+            floor_rf = max(floor_rf, 0.85)
+            if score < floor_rf:
+                score = floor_rf
         # free-rider: selected but no prose/tool solo and no unique and not hub-floored
         free_rider = (
             (not solo_hit)
@@ -534,6 +668,7 @@ def attribute(
             and not hub_floor
             and not ha_floor
             and not sc_floor
+            and not rf_floor
         )
         rows.append(
             {
@@ -557,6 +692,8 @@ def attribute(
                 "hub_archival_floor": ha_floor and sid in hub_floored,
                 "scorecard_hub": bool(sc_ent),
                 "scorecard_floor": sc_floor and sid in scorecard_floored,
+                "refine_floor": rf_floor,
+                "gepa_refined": bool(rf_ent),
             }
         )
 
@@ -569,6 +706,9 @@ def attribute(
     scorecard_contributors = [
         r["id"] for r in rows if r.get("scorecard_hub") and not r["free_rider"]
     ]
+    refine_contributors = [
+        r["id"] for r in rows if r.get("gepa_refined") and not r["free_rider"]
+    ]
 
     return {
         "feature": FEATURE,
@@ -577,6 +717,7 @@ def attribute(
         "feature_hub_archival": FEATURE_HUB_ARCHIVAL
         if hub_archival_attr_enabled()
         else None,
+        "feature_refine": FEATURE_REFINE if refine_attr_enabled() else None,
         "feature_scorecard": FEATURE_SCORECARD if scorecard_attr_enabled() else None,
         "schema": SCHEMA,
         "scored_at": _now(),
@@ -591,6 +732,9 @@ def attribute(
         "hub_floored": hub_floored,
         "scorecard_contributors": scorecard_contributors,
         "scorecard_floored": scorecard_floored,
+        "refine_contributors": refine_contributors,
+        "refine_floored": [r["id"] for r in rows if r.get("refine_floor")],
+        "n_refine_floored": sum(1 for r in rows if r.get("refine_floor")),
         "skills": rows,
         "contributing": contributing,
         "free_riders": free_riders,
@@ -1054,6 +1198,31 @@ def cmd_cycle(args: argparse.Namespace) -> int:
     return 0
 
 
+def cmd_refine_floor(args: argparse.Namespace) -> int:
+    """F166: report refined skills that receive LOO floor (privacy-safe ids)."""
+    root = _root()
+    od_s = (getattr(args, "out_dir", "") or "").strip()
+    od = Path(od_s) if od_s else None
+    loaded = _load_refined_skills(root, out_dir=od)
+    report = {
+        "feature": FEATURE_REFINE,
+        "scored_at": _now(),
+        "enabled": refine_attr_enabled(),
+        "refine_floored_ids": sorted(loaded.keys()),
+        "n": len(loaded),
+        "skills": loaded,
+        "ok": True,
+    }
+    if getattr(args, "write", False) and od is not None:
+        od.mkdir(parents=True, exist_ok=True)
+        (od / "skill-refine-attr.json").write_text(
+            json.dumps(report, indent=2) + "\n", encoding="utf-8"
+        )
+        report["path"] = str(od / "skill-refine-attr.json")
+    print(json.dumps(report, indent=2))
+    return 0
+
+
 def cmd_fixture(args: argparse.Namespace) -> int:
     """Hermetic: real skill contributes; free-rider ledger skips; F115 tool LOO."""
     root = _root()
@@ -1338,6 +1507,129 @@ Call torii doctor and scorecard early.
             else:
                 os.environ["TORII_SKILL_ATTR_SCORECARD"] = prev_sc
 
+    # F166: GEPA-lite refine LOO floor — silent review + refined skill not free-rider
+    rf_id = "skill-prefer-memory-cli-early"
+    f166_ok = False
+    rf_row = None
+    with tempfile.TemporaryDirectory() as td3:
+        td3_path = Path(td3)
+        prev_root = os.environ.get("TORII_ROOT")
+        prev_rf = os.environ.get("TORII_SKILL_ATTR_REFINE")
+        try:
+            os.environ["TORII_ROOT"] = str(td3_path)
+            os.environ["TORII_SKILL_ATTR_REFINE"] = "1"
+            # plant active skill WITHOUT always flag so LOO free-rides without floor
+            active = td3_path / "agent" / "skills" / "active"
+            active.mkdir(parents=True)
+            (active / f"{rf_id}.md").write_text(
+                f"""---
+id: {rf_id}
+title: Memory CLI early
+themes: memory
+always: false
+dual_gate: constraint_ok
+dual_gate_feature: F166
+refined_feature: F165
+---
+
+## Skill: memory-cli (refined)
+
+Prefer memory tools mid-review.
+<!-- torii-f165-gepa-refine -->
+## F165 GEPA-lite refine
+Call torii.py memory and archival_memory_search.
+<!-- /torii-f165-gepa-refine -->
+""",
+                encoding="utf-8",
+            )
+            # skill-refine.json constraint-passed refine event
+            outd = td3_path / "out"
+            outd.mkdir(parents=True)
+            (outd / "skill-refine.json").write_text(
+                json.dumps(
+                    {
+                        "feature": "F165",
+                        "ok": True,
+                        "refined_n": 1,
+                        "refined": [
+                            {
+                                "skill_id": rf_id,
+                                "reasons": ["chronic_tool_miss"],
+                                "constraint": {
+                                    "ok": True,
+                                    "skill_id": rf_id,
+                                    "size": 400,
+                                    "max_bytes": 15360,
+                                    "errors": [],
+                                },
+                                "applied": True,
+                            }
+                        ],
+                    }
+                )
+                + "\n",
+                encoding="utf-8",
+            )
+            silent_rf = (
+                "## Review\n\nGeneric note only.\n"
+                "Verdict: COMMENT\n"
+                "Finding: nothing of substance in this fixture body.\n"
+            )
+            rf_attr = attribute(
+                silent_rf,
+                root=td3_path,
+                paths=["src/auth.py"],
+                selected=[rf_id],
+                tool_blob="",
+                out_dir=outd,
+            )
+            rf_row = next(
+                (r for r in (rf_attr.get("skills") or []) if r["id"] == rf_id),
+                None,
+            )
+            f166_ok = bool(
+                rf_row
+                and rf_row.get("gepa_refined") is True
+                and rf_row.get("refine_floor") is True
+                and rf_row.get("free_rider") is False
+                and float(rf_row.get("contribution") or 0) >= 0.85
+                and rf_id in (rf_attr.get("refine_floored") or [])
+                and rf_id in (rf_attr.get("refine_contributors") or [])
+                and rf_id not in (rf_attr.get("free_riders") or [])
+            )
+            # adversarial: refine attr off → free-rider or low contribution
+            os.environ["TORII_SKILL_ATTR_REFINE"] = "0"
+            rf_off = attribute(
+                silent_rf,
+                root=td3_path,
+                paths=["src/auth.py"],
+                selected=[rf_id],
+                tool_blob="",
+                out_dir=outd,
+            )
+            rf_off_row = next(
+                (r for r in (rf_off.get("skills") or []) if r["id"] == rf_id),
+                None,
+            )
+            f166_off_ok = bool(
+                rf_off_row
+                and (
+                    rf_off_row.get("free_rider") is True
+                    or float(rf_off_row.get("contribution") or 0) < 0.85
+                    or rf_off_row.get("refine_floor") is not True
+                )
+            )
+            f166_ok = f166_ok and f166_off_ok
+        finally:
+            if prev_root is None:
+                os.environ.pop("TORII_ROOT", None)
+            else:
+                os.environ["TORII_ROOT"] = prev_root
+            if prev_rf is None:
+                os.environ.pop("TORII_SKILL_ATTR_REFINE", None)
+            else:
+                os.environ["TORII_SKILL_ATTR_REFINE"] = prev_rf
+
     fixture_pass = all(
         [
             has_contrib,
@@ -1353,6 +1645,7 @@ Call torii doctor and scorecard early.
             mem_not_fr,
             mem_tool_hits,
             f140_ok,
+            f166_ok,
         ]
     )
     print(
@@ -1361,9 +1654,11 @@ Call torii doctor and scorecard early.
                 "feature": FEATURE,
                 "feature_tool": FEATURE_TOOL,
                 "feature_scorecard": FEATURE_SCORECARD,
+                "feature_refine": FEATURE_REFINE,
                 "f89": True,
                 "f115": True,
                 "f140": True,
+                "f166": True,
                 "fixture_pass": fixture_pass,
                 "n_contributing": attr["n_contributing"],
                 "contributing": attr["contributing"],
@@ -1383,6 +1678,8 @@ Call torii doctor and scorecard early.
                 "no_tool_row": no_row,
                 "f140_ok": f140_ok,
                 "f140_sc_row": sc_row,
+                "f166_ok": f166_ok,
+                "f166_rf_row": rf_row,
                 "ledger": str(lp),
             },
             indent=2,
@@ -1436,6 +1733,14 @@ def main(argv: list[str] | None = None) -> int:
 
     sub.add_parser("status").set_defaults(func=cmd_status)
     sub.add_parser("fixture").set_defaults(func=cmd_fixture)
+
+    prf = sub.add_parser(
+        "refine-floor",
+        help="F166 list refined skills eligible for LOO floor (skill-refine.json)",
+    )
+    prf.add_argument("--out-dir", default="", help="dir with skill-refine.json")
+    prf.add_argument("--write", action="store_true", help="write skill-refine-attr.json")
+    prf.set_defaults(func=cmd_refine_floor)
 
     args = p.parse_args(argv)
     return int(args.func(args))

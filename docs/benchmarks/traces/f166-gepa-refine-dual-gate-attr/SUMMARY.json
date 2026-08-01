@@ -1,0 +1,33 @@
+{
+  "feature": "F166",
+  "title": "GEPA refine dual-gate LOO floor + fitness shield",
+  "scored_at": "2026-08-01T11:42:28Z",
+  "pattern": "mutate \u2192 constraint gate \u2192 dual-gate stamp \u2192 LOO floor \u2192 fitness shield",
+  "offline": {
+    "f166_ok": true,
+    "skill_refine_attr_ok": true
+  },
+  "live_local": {
+    "recall": 1.0,
+    "tp": 4,
+    "fn": 0,
+    "verdict": "REQUEST_CHANGES",
+    "passed": true,
+    "util_rate": 1.0,
+    "recovery_injected_n": 3,
+    "refine_ok": true,
+    "refine_floored_n": 1,
+    "refine_floored_ids": [
+      "skill-prefer-memory-cli-early"
+    ],
+    "model": "deepseek/deepseek-v4-pro"
+  },
+  "modal": {
+    "repo": "pytorch/pytorch",
+    "pr": 191829,
+    "outcome": "BIT3_OK",
+    "elapsed_s": 84.1,
+    "log_streaming": true,
+    "post_comment": 0
+  }
+}

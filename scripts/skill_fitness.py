@@ -107,6 +107,12 @@ def hub_archival_fitness_enabled() -> bool:
     return raw not in _FALSEY
 
 
+def refine_fitness_enabled() -> bool:
+    """F166: GEPA-lite refine events shield demote + soft tool boost."""
+    raw = (os.environ.get("TORII_SKILL_FITNESS_REFINE") or "1").strip().lower()
+    return raw not in _FALSEY
+
+
 def hub_fitness_enabled() -> bool:
     """F126: fold hub recovery-util post-score into local fitness ledger."""
     raw = (os.environ.get("TORII_SKILL_FITNESS_HUB") or "1").strip().lower()
@@ -420,6 +426,87 @@ def ingest_hub_archival_util(
     }
 
 
+def ingest_refine(
+    refine: dict[str, Any] | None = None,
+    ledger: dict[str, Any] | None = None,
+    *,
+    root: Path | None = None,
+    out_dir: Path | None = None,
+    save: bool = True,
+) -> dict[str, Any]:
+    """F166: fold F165 GEPA-lite refine events into fitness (shield + soft boost).
+
+    Constraint-passed refine is dual-gate investment — shield zombie demote until
+    next tool hits accumulate; mark gepa_refined for router soft boost.
+    """
+    root = root or _root()
+    if not refine_fitness_enabled():
+        return {
+            "feature": "F166",
+            "ingested_n": 0,
+            "reason": "refine_fitness_off",
+            "privacy_ok": True,
+        }
+    if refine is None and out_dir is not None:
+        p = Path(out_dir) / "skill-refine.json"
+        if p.is_file():
+            try:
+                refine = json.loads(p.read_text(encoding="utf-8"))
+            except (OSError, json.JSONDecodeError):
+                refine = None
+    if not isinstance(refine, dict):
+        return {
+            "feature": "F166",
+            "ingested_n": 0,
+            "reason": "no_refine_doc",
+            "privacy_ok": True,
+        }
+    ledger = ledger if ledger is not None else load_ledger(root)
+    skills = ledger.setdefault("skills", {})
+    ingested = 0
+    ids: list[str] = []
+    for ent in refine.get("refined") or []:
+        if not isinstance(ent, dict):
+            continue
+        sid = str(ent.get("skill_id") or ent.get("id") or "")
+        if not sid.startswith("skill-"):
+            continue
+        c = ent.get("constraint") if isinstance(ent.get("constraint"), dict) else {}
+        if c and not c.get("ok", True):
+            continue
+        e = skills.setdefault(sid, {"id": sid})
+        e["gepa_refined"] = True
+        e["refined_n"] = int(e.get("refined_n") or 0) + 1
+        e["last_refined_at"] = _now()
+        e["dual_gate_refine"] = "constraint_ok"
+        # soft tool shield sample so demote does not kill mid-compound
+        e["tool_hit_n"] = int(e.get("tool_hit_n") or 0) + 1
+        e["selected_n"] = max(int(e.get("selected_n") or 0), 1)
+        sel = int(e.get("selected_n") or 1)
+        e["tool_hit_rate"] = round(int(e.get("tool_hit_n") or 0) / sel, 4) if sel else 0.0
+        e["demoted"] = False
+        ingested += 1
+        ids.append(sid)
+    ledger["last_refine_ingest"] = {
+        "at": _now(),
+        "feature": "F166",
+        "ingested_n": ingested,
+        "skill_ids": ids,
+    }
+    path = None
+    if save and ingested:
+        path = save_ledger(ledger, ledger_path(root))
+    blob = json.dumps(ledger.get("last_refine_ingest") or {})
+    privacy_ok = "/Users/" not in blob and "/home/" not in blob
+    return {
+        "feature": "F166",
+        "ingested_n": ingested,
+        "skill_ids": ids,
+        "privacy_ok": privacy_ok,
+        "ledger": str(path) if path else None,
+    }
+
+
 def ingest_hub_recovery(
     hub: dict[str, Any] | None = None,
     ledger: dict[str, Any] | None = None,
@@ -705,12 +792,17 @@ def apply_demotions(ledger: dict[str, Any]) -> dict[str, Any]:
         was = bool(ent.get("demoted"))
         # F116: tool-effective skills (any tool_hit with samples) never demote
         tool_shield = bool(tool_fitness_enabled() and tool_n >= 1 and n >= 1)
-        if tool_shield and was:
+        # F166: recently GEPA-refined skills (dual-gate constraint_ok) shield demote
+        refine_shield = bool(
+            refine_fitness_enabled()
+            and (ent.get("gepa_refined") or int(ent.get("refined_n") or 0) >= 1)
+        )
+        if (tool_shield or refine_shield) and was:
             ent["demoted"] = False
             revived.append(sid)
             shielded.append(sid)
             continue
-        if tool_shield:
+        if tool_shield or refine_shield:
             ent["demoted"] = False
             shielded.append(sid)
             continue
@@ -1587,6 +1679,14 @@ def main(argv: list[str] | None = None) -> int:
     )
     psc.set_defaults(func=cmd_ingest_scorecard)
 
+    prf = sub.add_parser(
+        "ingest-refine",
+        help="F166 ingest F165 skill-refine.json into fitness (shield demote)",
+    )
+    prf.add_argument("--out-dir", default="", help="dir with skill-refine.json")
+    prf.add_argument("--refine", default="", help="path to skill-refine.json")
+    prf.set_defaults(func=cmd_ingest_refine)
+
     pha = sub.add_parser(
         "ingest-hub-archival",
         help="F158 fold recovery hub-archival util gap/hit into fitness ledger",
@@ -1601,6 +1701,25 @@ def main(argv: list[str] | None = None) -> int:
 
     args = p.parse_args(argv)
     return int(args.func(args))
+
+
+def cmd_ingest_refine(args: argparse.Namespace) -> int:
+    """F166: ingest skill-refine.json into fitness ledger."""
+    root = _root()
+    refine_doc = None
+    refine_path = (getattr(args, "refine", "") or "").strip()
+    if refine_path:
+        p = Path(refine_path)
+        if p.is_file():
+            try:
+                refine_doc = json.loads(p.read_text(encoding="utf-8"))
+            except (OSError, json.JSONDecodeError):
+                refine_doc = None
+    out_dir = (getattr(args, "out_dir", "") or "").strip()
+    od = Path(out_dir) if out_dir else None
+    result = ingest_refine(refine_doc, root=root, out_dir=od, save=True)
+    print(json.dumps(result, indent=2))
+    return 0 if result.get("privacy_ok", True) else 1
 
 
 def cmd_ingest_hub_archival(args: argparse.Namespace) -> int:

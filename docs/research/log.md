@@ -1,5 +1,41 @@
 # Torii research → product log
 
+## 2026-08-01 — F166 GEPA refine dual-gate LOO floor + fitness shield
+
+### Papers / posts
+- **GEPA** (ICLR 2026 Oral): constraint-gated mutants only — dual-gate after refine.
+- **Assay** (arXiv 2606.15390): free-rider demote is correct for inert skills, not for constraint-passed evolution investments.
+- Hermes self-evolution: size/test gates before adopt; body edit without stamp is not dual-gate.
+- F165 refine without LOO floor/fitness shield re-exposed refined recovery skills to free-rider demote.
+
+### OSS design patterns stolen
+1. stamp_dual_gate_refine frontmatter (constraint_ok + F166) on apply.
+2. federate_refine_skills privacy-safe skill-refine-signals.json.
+3. skill_fitness ingest_refine soft tool_hit + demote shield.
+4. skill_attribution refine LOO floor from skill-refine.json / markers / ledger.
+5. hermes soft ingest-refine + refine-floor --write after F165.
+
+### Insight
+F165 mutates skill text; without dual-gate stamp + LOO floor, free-rider demote kills the investment before next tool hit compounds contribution_pp. Highest ROI: close refine→attribute→fitness.
+
+### Feature shipped (F166)
+- refine LOO floor + fixture f166_ok
+- fitness ingest-refine + demote shield
+- dual-gate stamp + federate refine themes
+- hermes soft wire; skill_loop skill_refine_attr_ok
+
+### Metric
+- Offline: skill_attribution fixture f166_ok; pytest attr+self_evolve 14 passed
+- Live local: recall=1.0 tp=4 util_rate=1.0 F165+F166 hermes notices; passed=1 REQUEST_CHANGES
+- Modal pytorch#191829 BIT3_OK ~84.1s POST_COMMENT=0 log_streaming=true
+
+### Loop-engineering / Hermes practice used
+**Mutate → gate → floor → shield** — GEPA dual-gate compounds into attribution/fitness.
+
+### SHA
+`(pending)`
+
+
 ## 2026-08-01 — F165 GEPA-lite skill refine-from-util
 
 ### Papers / posts

@@ -111,3 +111,8 @@ Generated: `2026-08-01T09:45:56Z`
 - Offline fixture-refine f165_ok (weak body → constraint pass after refine)
 - Live local: recall=1.0 util_rate=1.0 refined_n≥0–1 (chronic tool miss)
 - Modal pytorch#191831 BIT3_OK ~89.6s log_streaming POST_COMMENT=0
+
+## F166 GEPA refine dual-gate LOO floor + fitness shield
+- Offline f166_ok refine floor / adversarial off
+- Live local recall=1.0 F165+F166 soft wires
+- Modal pytorch#191829 BIT3_OK ~84s POST_COMMENT=0

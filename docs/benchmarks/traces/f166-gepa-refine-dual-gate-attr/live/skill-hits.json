@@ -1,0 +1,99 @@
+{
+  "feature": "F84",
+  "schema": 1,
+  "f114": true,
+  "tool_outcome": true,
+  "scored_at": "2026-08-01T11:41:16Z",
+  "selected_n": 4,
+  "hit_n": 4,
+  "hit_rate": 1.0,
+  "prose_hit_n": 4,
+  "tool_hit_n": 3,
+  "tool_hit_rate": 0.75,
+  "hits": [
+    {
+      "id": "skill-prefer-memory-cli-early",
+      "hit": true,
+      "matched": [
+        "pickle",
+        "torii.py memory",
+        "memory search",
+        "memory"
+      ],
+      "n_matched": 4,
+      "prose_hit": true,
+      "tool_hit": true,
+      "tool_matched": [
+        "torii.py memory",
+        "torii_memory.py",
+        "archival_memory_search.py",
+        "memory_temporal_graph.py"
+      ]
+    },
+    {
+      "id": "skill-prefer-hub-archival-early",
+      "hit": true,
+      "matched": [
+        "not",
+        "archival_memory_search",
+        "archival"
+      ],
+      "n_matched": 3,
+      "prose_hit": true,
+      "tool_hit": true,
+      "tool_matched": [
+        "hub_boost",
+        "TORII_RECON_WARM_HUB_QUERY",
+        "recon_warm_hub",
+        "hub-aware archival paging:\\n   `python3 scripts/archival_memory_search",
+        "recon_warm_hub"
+      ]
+    },
+    {
+      "id": "skill-prefer-product-cli",
+      "hit": true,
+      "matched": [
+        "torii.py doctor",
+        "doctor",
+        "product"
+      ],
+      "n_matched": 3,
+      "prose_hit": true,
+      "tool_hit": true,
+      "tool_matched": [
+        "torii.py doctor",
+        "torii.py status",
+        "torii.py budget"
+      ]
+    },
+    {
+      "id": "skill-f74-exploit-scenario",
+      "hit": true,
+      "matched": [
+        "attacker",
+        "exploit",
+        "severity",
+        "pickle",
+        "trigger",
+        "request changes",
+        "scenario"
+      ],
+      "n_matched": 7,
+      "prose_hit": true,
+      "tool_hit": false,
+      "tool_matched": []
+    }
+  ],
+  "review": "docs/benchmarks/traces/f166-gepa-refine-dual-gate-attr/live/review-bench-f70.raw.md",
+  "federated_skill_themes": [
+    "skill-prefer-memory-cli-early",
+    "skill-prefer-hub-archival-early",
+    "skill-prefer-product-cli",
+    "skill-f74-exploit-scenario"
+  ],
+  "tool_outcome_skills": [
+    "skill-prefer-memory-cli-early",
+    "skill-prefer-hub-archival-early",
+    "skill-prefer-product-cli"
+  ]
+}

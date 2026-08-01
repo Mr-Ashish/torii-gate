@@ -441,8 +441,13 @@ def refine_from_util(
             report["skipped"].append({**entry, "reason": "already_refined"})
             continue
         if apply:
-            path.write_text(after if after.endswith("\n") else after + "\n", encoding="utf-8")
+            stamped = stamp_dual_gate_refine(after, sid, reasons=list(t.get("reasons") or []))
+            path.write_text(
+                stamped if stamped.endswith("\n") else stamped + "\n", encoding="utf-8"
+            )
             entry["applied"] = True
+            entry["dual_gate"] = "constraint_ok"
+            entry["dual_gate_feature"] = "F166"
         else:
             entry["applied"] = False
             entry["dry_run_bytes"] = len(after.encode("utf-8"))
@@ -458,6 +463,7 @@ def refine_from_util(
             {
                 "at": _now(),
                 "feature": FEATURE_REFINE,
+                "dual_gate_feature": "F166",
                 "out_dir": str(out_dir),
                 "refined_n": report["refined_n"],
                 "target_n": report["target_n"],
@@ -470,8 +476,124 @@ def refine_from_util(
     except OSError:
         pass
 
+    # F166: privacy-safe federate of refined skill themes
+    if apply and report["refined"]:
+        try:
+            federate_refine_skills(
+                root,
+                [r["skill_id"] for r in report["refined"]],
+                reasons_by_id={
+                    r["skill_id"]: list(r.get("reasons") or []) for r in report["refined"]
+                },
+            )
+            report["federated"] = True
+        except OSError:
+            report["federated"] = False
+
     _write_refine_report(out_dir, report)
     return report
+
+
+def stamp_dual_gate_refine(
+    text: str,
+    skill_id: str,
+    *,
+    reasons: list[str] | None = None,
+) -> str:
+    """F166: stamp dual-gate constraint_ok on refined skill frontmatter.
+
+    Hermes self-evolution / dual-gate: constraint-passed refine is an adopt event,
+    not a silent body edit — frontmatter records F165 refine + F166 dual_gate.
+    """
+    raw = text if text.endswith("\n") else text + "\n"
+    # inject/update keys in first frontmatter block
+    def _ensure_keys(fm: str) -> str:
+        lines = fm.splitlines()
+        keys = {
+            "dual_gate": "constraint_ok",
+            "dual_gate_feature": "F166",
+            "refined_feature": "F165",
+            "refined_at": _now(),
+        }
+        if reasons:
+            keys["refine_reasons"] = "|".join(reasons)[:120]
+        present = set()
+        out_lines: list[str] = []
+        for line in lines:
+            m = re.match(r"^([A-Za-z0-9_]+):\s*(.*)$", line)
+            if m and m.group(1) in keys:
+                out_lines.append(f"{m.group(1)}: {keys[m.group(1)]}")
+                present.add(m.group(1))
+            else:
+                out_lines.append(line)
+        for k, v in keys.items():
+            if k not in present:
+                out_lines.append(f"{k}: {v}")
+        return "\n".join(out_lines)
+
+    if raw.lstrip().startswith("---"):
+        parts = raw.split("---", 2)
+        # parts[0] may be empty or leading whitespace; parts[1]=fm; parts[2]=body
+        if len(parts) >= 3:
+            fm = _ensure_keys(parts[1].strip("\n"))
+            body = parts[2]
+            return f"---\n{fm}\n---{body}" if body.startswith("\n") else f"---\n{fm}\n---\n{body}"
+    # no frontmatter — prepend
+    header = (
+        f"---\nid: {skill_id}\ndual_gate: constraint_ok\n"
+        f"dual_gate_feature: F166\nrefined_feature: F165\nrefined_at: {_now()}\n---\n"
+    )
+    return header + raw
+
+
+def federate_refine_skills(
+    root: Path,
+    skill_ids: list[str],
+    *,
+    reasons_by_id: dict[str, list[str]] | None = None,
+) -> Path:
+    """F166: privacy-safe multi-tenant refine themes (skill id + bins only)."""
+    reasons_by_id = reasons_by_id or {}
+    dest = root / "memory" / "federation" / "skill-refine-signals.json"
+    dest.parent.mkdir(parents=True, exist_ok=True)
+    existing: dict[str, Any] = {"schema_version": 1, "feature": "F166", "signals": []}
+    if dest.is_file():
+        try:
+            data = json.loads(dest.read_text(encoding="utf-8"))
+            if isinstance(data, dict):
+                existing = data
+                existing.setdefault("signals", [])
+        except (OSError, json.JSONDecodeError):
+            pass
+    sigs = list(existing.get("signals") or [])
+    by_theme = {
+        str(s.get("theme") or s.get("id") or ""): s
+        for s in sigs
+        if isinstance(s, dict)
+    }
+    for sid in skill_ids:
+        if not sid.startswith("skill-"):
+            continue
+        prev = by_theme.get(sid) if isinstance(by_theme.get(sid), dict) else {}
+        hits = int(prev.get("hits") or 0) + 1
+        entry = {
+            "id": f"refine-{sid}"[:64],
+            "theme": sid,
+            "skill_id": sid,
+            "tags": ["refine", "f165", "f166", "gepa", "constraint_ok"],
+            "hits": hits,
+            "util_rate_bin": "refined",
+            "reasons": list(reasons_by_id.get(sid) or prev.get("reasons") or [])[:6],
+            "tenants": int(prev.get("tenants") or 1),
+            "updated_at": _now(),
+            "feature": "F166",
+        }
+        by_theme[sid] = entry
+    existing["signals"] = list(by_theme.values())[-100:]
+    existing["feature"] = "F166"
+    existing["updated_at"] = _now()
+    dest.write_text(json.dumps(existing, indent=2) + "\n", encoding="utf-8")
+    return dest
 
 
 def _write_refine_report(out_dir: Path, report: dict[str, Any]) -> Path | None:

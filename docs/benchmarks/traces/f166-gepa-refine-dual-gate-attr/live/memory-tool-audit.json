@@ -1,0 +1,79 @@
+{
+  "feature": "F105",
+  "schema": 1,
+  "score": 1.0,
+  "level": "L3",
+  "hit_count": 11,
+  "tools_used": [
+    "archival_search",
+    "memory_graph",
+    "torii_memory",
+    "torii_product_memory"
+  ],
+  "by_tool": {
+    "torii_memory": 2,
+    "archival_search": 3,
+    "torii_product_memory": 4,
+    "memory_graph": 2
+  },
+  "cli_subcmds": {
+    "search": 4,
+    "graph": 2
+  },
+  "inject_offered": true,
+  "utilization_gap": false,
+  "tool_call_turns": 3,
+  "feedback": [
+    "memory_tools_used=4 hits=11 tools=['archival_search', 'memory_graph', 'torii_memory', 'torii_product_memory']"
+  ],
+  "scored_at": "2026-08-01T11:41:16Z",
+  "hits_detail": [
+    {
+      "tool": "torii_memory",
+      "snip": "nts/torii -name \\\"torii.py\\\" -o -name \\\"torii_memory.py\\\" -o -name \\\"archival_memory_search.py\\\" 2>/dev/null | head -20\", \"timeout\": 15"
+    },
+    {
+      "tool": "archival_search",
+      "snip": "-o -name \\\"torii_memory.py\\\" -o -name \\\"archival_memory_search.py\\\" 2>/dev/null | head -20\", \"timeout\": 15}"
+    },
+    {
+      "tool": "torii_product_memory",
+      "snip": "hra/Documents/experiments/torii/scripts/torii.py memory -- search -- -q \\\"sql OR pickle OR secret OR injection\\\" 2>&1 || echo \\\"MEMORY_"
+    },
+    {
+      "tool": "torii_memory",
+      "snip": "hra/Documents/experiments/torii/scripts/torii_memory.py\", \"exit_code\": 0, \"error\": null}"
+    },
+    {
+      "tool": "archival_search",
+      "snip": "hra/Documents/experiments/torii/scripts/archival_memory_search.py\\n/Users/ashishmishra/Documents/experiments/torii/scripts/torii_memory.py\", \"exi"
+    },
+    {
+      "tool": "archival_search",
+      "snip": "hra/Documents/experiments/torii/scripts/archival_memory_search.py auto --files demo/insecure/app.py 2>&1 || echo \\\"ARCHIVAL_SEARCH_FAILED\\\"\", \"ti"
+    },
+    {
+      "tool": "torii_product_memory",
+      "snip": "hra/Documents/experiments/torii/scripts/torii.py memory -- graph -- --seed demo/insecure/app.py 2>&1 | head -60\", \"timeout\": 30}"
+    },
+    {
+      "tool": "memory_graph",
+      "snip": "{\"output\": \"usage: memory_temporal_graph.py [-h] {build,query,inject,fixture,status} ...\\nmemory_temporal_graph.py: error:"
+    },
+    {
+      "tool": "memory_graph",
+      "snip": "build,query,inject,fixture,status} ...\\nmemory_temporal_graph.py: error: argument cmd: invalid choice: 'demo/insecure/app.py' (choose from build"
+    },
+    {
+      "tool": "torii_product_memory",
+      "snip": "ing findings, call: `python3 scripts/torii.py memory -- search -- -q \"auth OR sql OR pickle OR secret\"` or `python3 scripts/torii"
+    },
+    {
+      "tool": "torii_product_memory",
+      "snip": "pp.py`, 38 lines). - Memory search via `torii.py memory search` \u2014 all four TP signatures hit with scores 0.94\u20130.98. - Hub"
+    }
+  ],
+  "out_dir": "docs/benchmarks/traces/f166-gepa-refine-dual-gate-attr/live",
+  "loop_path": "docs/benchmarks/traces/f166-gepa-refine-dual-gate-attr/live/agent-loop/agent-loop.json",
+  "enabled": true
+}

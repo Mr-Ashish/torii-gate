@@ -1049,6 +1049,15 @@ if [[ -f "$SKILL_ROUTER_HELPER" && $TIMED_OUT -eq 0 && "${HERMES_CLI_ARGV_BROKEN
           *)
             python3 "$TORII_ROOT/scripts/self_evolve.py" refine-from-util --out-dir "$OUT_DIR" --apply >/dev/null 2>&1 || true
             notice "F165 GEPA-lite refine-from-util (soft) · skill-refine.json"
+            # F166: dual-gate stamp already in refine; fitness shield + attr floor fuel
+            if [[ -f "$TORII_ROOT/scripts/skill_fitness.py" ]]; then
+              python3 "$TORII_ROOT/scripts/skill_fitness.py" ingest-refine --out-dir "$OUT_DIR" >/dev/null 2>&1 || true
+              notice "F166 refine fitness shield (soft) · ingest-refine"
+            fi
+            if [[ -f "$TORII_ROOT/scripts/skill_attribution.py" ]]; then
+              python3 "$TORII_ROOT/scripts/skill_attribution.py" refine-floor --out-dir "$OUT_DIR" --write >/dev/null 2>&1 || true
+              notice "F166 refine LOO floor hint · skill-refine-attr.json"
+            fi
             ;;
         esac
       fi
