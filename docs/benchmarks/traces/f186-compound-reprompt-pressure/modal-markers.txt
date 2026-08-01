@@ -1,0 +1,16 @@
+2199:[orch:err] ::notice::F186 compound re-prompt chronic miss pressure (soft; fitness+router+critic)
+2200:[orch:err] F186 compound re-prompt chronic miss pressure (soft; fitness+router+critic)
+2826:[orch:out]       "name": "Compound re-prompt chronic miss (F186)",
+2831:[orch:out]         "feature": "F186",
+3206:[orch:out]   "feature_compound_reprompt_pressure": "F186",
+3224:[orch:out]     "notes": "demote_rate = demoted APPROVE / APPROVE cases; F173\u2013F179 revive gates; F180 hub\u00d7GEPA; F186 compound re-prompt pressure"
+3237:[orch:out]   "feature_refine_loop": "F170/F186",
+3319:[orch:out]     "Dual_pass revive gates: revive **ok** \u00b7 free-rider MT **ok** \u00b7 pp-floor **ok** \u00b7 LOO **ok** \u00b7 hub\u00d7GEPA **ok** \u00b7 inject **ok** \u00b7 always **ok** \u00b7 reprompt **ok** \u00b7 fitness **ok** \u00b7 pressure **ok** (F175\u2013F186)"
+3399:[orch:out]     "feature_refine_loop": "F170/F186",
+3423:[orch:out]     "feature_compound_reprompt_pressure": "F186",
+3468:[orch:out]       "notes": "demote_rate = demoted APPROVE / APPROVE cases; F173\u2013F179 revive gates; F180 hub\u00d7GEPA; F186 compound re-prompt pressure"
+3950:  "orch_rc": 0,
+4094:  "elapsed_s": 48.3,
+4098:  "log_streaming": true,
+4126:BIT3_OK
+4159:[torii/done] ok=True orch_rc=0 elapsed_s=48.3 review=True

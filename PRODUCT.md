@@ -292,6 +292,7 @@ util gap → GEPA refine → dual-gate LOO → dual_pp → federate promote
        → hub×GEPA compound always priority (F182)
        → hub×GEPA compound re-prompt budget (F183)
        → compound re-prompt fitness ingest (F185)
+       → compound re-prompt chronic miss pressure (F186)
 ```
 
 | Stage | Feature | Customer-facing meaning |
@@ -347,7 +348,9 @@ util gap → GEPA refine → dual-gate LOO → dual_pp → federate promote
 
 **Hub×GEPA compound re-prompt budget (F183):** when dual-loop compound is high, `reprompt_budget.ensure_compound_slot` expands max_extra once for f157/f122 after base exhaustion (independent of F159 complementary kinds). Paper fixture: f183_ok. `refine_loop_ok` ANDs F165–F183.
 
-**Compound re-prompt fitness (F185):** `ingest_compound_reprompt` folds `reprompt-budget.json` f157/f122 attempts under `compound_expanded` into hub-archival fitness (recover → tool hit shield; miss → gap fuel). Hermetic: `fixture-compound-reprompt`. `refine_loop_ok` ANDs F165–F185.
+**Compound re-prompt fitness (F185):** `ingest_compound_reprompt` folds `reprompt-budget.json` f157/f122 attempts under `compound_expanded` into hub-archival fitness (recover → tool hit shield; miss → gap fuel). Hermetic: `fixture-compound-reprompt`. `refine_loop_ok` ANDs F165–F186.
+
+**Compound re-prompt chronic miss pressure (F186):** longitudinal F185 counters mark `compound_reprompt_chronic_miss` → always-priority boost + residual score + critic demote idle APPROVE (`f186_compound_reprompt_pressure`). Hermetic: `fixture-compound-reprompt-pressure`; paper: `compound_reprompt_chronic_idle_demoted`. `refine_loop_ok` ANDs F165–F186.
 
 ---
 

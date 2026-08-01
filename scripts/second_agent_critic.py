@@ -394,6 +394,13 @@ def hub_gepa_compound_critic_enabled() -> bool:
     return raw not in _FALSEY
 
 
+
+def compound_reprompt_pressure_critic_enabled() -> bool:
+    """F186: demote APPROVE when chronic compound re-prompt miss + hub-archival idle."""
+    raw = (os.environ.get("TORII_COMPOUND_REPROMPT_PRESSURE_CRITIC") or "1").strip().lower()
+    return raw not in ("0", "false", "no", "off")
+
+
 def run_f121_recovery_util(out_dir: Path | None) -> CheckerResult:
     """F121: recovery always skills must fire tool CLIs (inject ≠ utilization)."""
     if out_dir is None:
@@ -1084,6 +1091,131 @@ def run_f180_hub_gepa_compound(
             "reason": "hub_archival_x_gepa_compound",
         },
     )
+
+
+
+def run_f186_compound_reprompt_pressure(
+    out_dir: Path | None,
+    root: Path | None = None,
+) -> CheckerResult:
+    """F186: chronic compound re-prompt miss + idle hub-archival → demote APPROVE.
+
+    F185 counters without action are theater. Longitudinal miss under dual-loop
+    heat means recovery tools failed after re-prompt fuel — weak APPROVE is free-rider.
+    """
+    if not compound_reprompt_pressure_critic_enabled():
+        return CheckerResult(
+            id="f186_compound_reprompt_pressure",
+            name="Compound re-prompt chronic miss (F186)",
+            ok=True,
+            score=1.0,
+            detail={"enabled": False, "feature": "F186"},
+        )
+    root = root or _root()
+    chronic = False
+    miss_n = 0
+    rate = 1.0
+    reasons: list[str] = []
+    try:
+        import skill_fitness as _sf  # type: ignore
+
+        rep = _sf.assess_compound_reprompt_pressure(root=root)
+        chronic = bool(rep.get("high") or rep.get("chronic_miss"))
+        miss_n = int(rep.get("miss_n") or 0)
+        rate = float(rep.get("recover_rate") or 0.0)
+        if chronic:
+            reasons.append(str(rep.get("reason") or "compound_reprompt_chronic_miss"))
+    except Exception:
+        # fallback: read ledger directly
+        try:
+            fit_path = root / ".torii" / "skill-fitness.json"
+            envf = (os.environ.get("TORII_SKILL_FITNESS_FILE") or "").strip()
+            if envf:
+                fit_path = Path(envf)
+            if fit_path.is_file():
+                fit = json.loads(fit_path.read_text(encoding="utf-8"))
+                for sid, ent in (fit.get("skills") or {}).items():
+                    if not isinstance(ent, dict):
+                        continue
+                    if "hub-archival" not in str(sid) and "hub_archival" not in str(sid):
+                        continue
+                    if ent.get("compound_reprompt_chronic_miss"):
+                        chronic = True
+                        miss_n = int(ent.get("compound_reprompt_miss_n") or 0)
+                        rate = float(ent.get("compound_reprompt_recover_rate") or 0.0)
+                        reasons.append("fitness_compound_reprompt_chronic_miss")
+        except (OSError, json.JSONDecodeError, TypeError, ValueError):
+            pass
+
+    idle = False
+    try:
+        if out_dir is not None:
+            util_p = Path(out_dir) / "recovery-skill-util.json"
+            if util_p.is_file():
+                util = json.loads(util_p.read_text(encoding="utf-8"))
+                if util.get("hub_archival_util_gap") or util.get("hub_archival_idle"):
+                    idle = True
+                    reasons.append("recovery_util_gap")
+            hits_p = Path(out_dir) / "skill-hits.json"
+            router_p = Path(out_dir) / "skill-router.json"
+            if hits_p.is_file() and router_p.is_file():
+                hits = json.loads(hits_p.read_text(encoding="utf-8"))
+                router = json.loads(router_p.read_text(encoding="utf-8"))
+                always = [
+                    str(x)
+                    for x in (
+                        router.get("always_selected") or router.get("selected") or []
+                    )
+                    if "hub-archival" in str(x) or "hub_archival" in str(x)
+                ]
+                hit_map = {
+                    str(h.get("id") or ""): h
+                    for h in (hits.get("hits") or [])
+                    if isinstance(h, dict)
+                }
+                for sid in always:
+                    h = hit_map.get(sid) or {}
+                    if not h.get("tool_hit"):
+                        idle = True
+                        reasons.append("always_hub_archival_idle")
+    except (OSError, json.JSONDecodeError, TypeError, ValueError):
+        pass
+
+    # high when chronic miss; idle strengthens demote. chronic alone still soft-demotes.
+    high = bool(chronic and (idle or miss_n >= 2))
+    if not high:
+        return CheckerResult(
+            id="f186_compound_reprompt_pressure",
+            name="Compound re-prompt chronic miss (F186)",
+            ok=True,
+            score=0.9 if chronic else 1.0,
+            detail={
+                "feature": "F186",
+                "reason": "no_chronic_pressure",
+                "chronic": chronic,
+                "idle": idle,
+                "miss_n": miss_n,
+                "recover_rate": rate,
+                "reasons": reasons[:6],
+            },
+        )
+    return CheckerResult(
+        id="f186_compound_reprompt_pressure",
+        name="Compound re-prompt chronic miss (F186)",
+        ok=False,
+        score=0.2,
+        detail={
+            "feature": "F186",
+            "high": True,
+            "chronic": True,
+            "idle": idle,
+            "miss_n": miss_n,
+            "recover_rate": rate,
+            "reasons": reasons[:6],
+            "reason": "compound_reprompt_chronic_miss",
+        },
+    )
+
 
 
 def run_f169_refine_dual_fail(
@@ -2298,6 +2430,21 @@ def decide_verdict(
                     f"(ha={','.join((detail.get('ha_reasons') or [])[:2])};"
                     f"gepa={','.join((detail.get('gepa_reasons') or [])[:2])})"
                 )
+        # F186: chronic compound re-prompt miss pressure
+        crp = next(
+            (c for c in checkers if c.id == "f186_compound_reprompt_pressure"), None
+        )
+        if crp and not crp.ok:
+            detail = crp.detail or {}
+            if detail.get("high") or detail.get("reason") == "compound_reprompt_chronic_miss":
+                recommended = "COMMENT"
+                demoted = True
+                reasons.append(
+                    "compound_reprompt_chronic_miss "
+                    f"(miss_n={detail.get('miss_n')};"
+                    f"rate={detail.get('recover_rate')};"
+                    f"idle={detail.get('idle')})"
+                )
     elif maker == "UNKNOWN":
         recommended = "COMMENT"
         demoted = True
@@ -2343,6 +2490,7 @@ def run_panel(
         run_f177_revive_pp_gate(out_dir, root),
         run_f179_revive_loo_gate(out_dir, root),
         run_f180_hub_gepa_compound(out_dir, root),
+        run_f186_compound_reprompt_pressure(out_dir, root),
     ]
     # F81: optional LLM checker after deterministic panel draft
     panel_draft = {
@@ -4153,6 +4301,102 @@ def demote_eval(
                 os.environ["TORII_ROOT"] = prev_root_hgc
             os.environ.pop("TORII_SECOND_CRITIC_MIN_PATH", None)
 
+# F186: chronic compound re-prompt miss + idle hub-archival APPROVE
+    with tempfile.TemporaryDirectory() as td_crp:
+        od = Path(td_crp)
+        ha_sid = "skill-prefer-hub-archival-early"
+        torii = od / ".torii"
+        torii.mkdir(parents=True)
+        (torii / "skill-fitness.json").write_text(
+            json.dumps(
+                {
+                    "schema_version": 1,
+                    "skills": {
+                        ha_sid: {
+                            "id": ha_sid,
+                            "compound_reprompt_n": 4,
+                            "compound_reprompt_recovered_n": 0,
+                            "compound_reprompt_miss_n": 4,
+                            "compound_reprompt_recover_rate": 0.0,
+                            "compound_reprompt_chronic_miss": True,
+                            "hub_priority_delta": 20,
+                        }
+                    },
+                }
+            )
+            + "\n",
+            encoding="utf-8",
+        )
+        (od / "skill-router.json").write_text(
+            json.dumps(
+                {
+                    "selected": [ha_sid],
+                    "always_selected": [ha_sid],
+                    "inject_chars": 400,
+                }
+            ),
+            encoding="utf-8",
+        )
+        (od / "skill-hits.json").write_text(
+            json.dumps(
+                {
+                    "hits": [
+                        {
+                            "id": ha_sid,
+                            "tool_hit": False,
+                            "hit": True,
+                            "prose_hit": True,
+                        }
+                    ],
+                    "tool_hit_n": 0,
+                }
+            )
+            + "\n",
+            encoding="utf-8",
+        )
+        (od / "recovery-skill-util.json").write_text(
+            json.dumps(
+                {
+                    "hub_archival_util_gap": True,
+                    "hub_archival_idle": True,
+                    "util_rate": 0.0,
+                }
+            ),
+            encoding="utf-8",
+        )
+        crp_review = od / "approve-compound-reprompt-chronic.md"
+        crp_review.write_text(
+            "## Review\n**Verdict:** APPROVE\n\n### Summary\nok\n\n"
+            "### Blocking\nnone\n\n### What I checked\n`app.py:1` path ok\n",
+            encoding="utf-8",
+        )
+        prev_root_crp = os.environ.get("TORII_ROOT")
+        prev_fit = os.environ.get("TORII_SKILL_FITNESS_FILE")
+        os.environ["TORII_ROOT"] = str(od)
+        os.environ["TORII_SKILL_FITNESS_FILE"] = str(torii / "skill-fitness.json")
+        os.environ["TORII_COMPOUND_REPROMPT_PRESSURE_CRITIC"] = "1"
+        os.environ["TORII_SKILL_FITNESS_COMPOUND_REPROMPT_PRESSURE"] = "1"
+        os.environ["TORII_SECOND_CRITIC_MIN_PATH"] = "0.1"
+        try:
+            cases.append(
+                _case(
+                    "compound_reprompt_chronic_idle_approve",
+                    crp_review,
+                    od,
+                    case_root=od,
+                )
+            )
+        finally:
+            if prev_root_crp is None:
+                os.environ.pop("TORII_ROOT", None)
+            else:
+                os.environ["TORII_ROOT"] = prev_root_crp
+            if prev_fit is None:
+                os.environ.pop("TORII_SKILL_FITNESS_FILE", None)
+            else:
+                os.environ["TORII_SKILL_FITNESS_FILE"] = prev_fit
+            os.environ.pop("TORII_SECOND_CRITIC_MIN_PATH", None)
+
 # F162: multi-tenant hub-archival hub pressure + local util gap APPROVE
     with tempfile.TemporaryDirectory() as td_ha_hub:
         od = Path(td_ha_hub)
@@ -4326,6 +4570,13 @@ def demote_eval(
     hub_gepa_demote_ok = bool(hgcc.get("demoted")) or any(
         "hub_archival_x_gepa" in str(r) for r in (hgcc.get("reasons") or [])
     )
+    crpc = next(
+        (c for c in cases if c["name"] == "compound_reprompt_chronic_idle_approve"),
+        {},
+    )
+    compound_reprompt_pressure_demote_ok = bool(crpc.get("demoted")) or any(
+        "compound_reprompt_chronic" in str(r) for r in (crpc.get("reasons") or [])
+    )
     # good should not be demoted from REQUEST_CHANGES to worse without reason;
     # typically maker is REQUEST_CHANGES already
     good_stable = goodc.get("maker") in ("REQUEST_CHANGES", "COMMENT", "APPROVE")
@@ -4374,6 +4625,9 @@ def demote_eval(
         "revive_loo_gate_soft_ok": revive_loo_demote_ok,
         "hub_gepa_compound_demote_ok": bool(hgcc.get("demoted")),
         "hub_gepa_compound_soft_ok": hub_gepa_demote_ok,
+        "compound_reprompt_pressure_demote_ok": bool(crpc.get("demoted")),
+        "compound_reprompt_pressure_soft_ok": compound_reprompt_pressure_demote_ok,
+        "feature_compound_reprompt_pressure": "F186",
         "good_stable": good_stable,
         "paper": {
             "metric": "critic_approve_demote_rate",
@@ -4390,9 +4644,10 @@ def demote_eval(
             "low_pp_revive_idle_demoted": bool(ppgc.get("demoted")),
             "loo_revive_idle_demoted": bool(looc.get("demoted")),
             "hub_gepa_compound_idle_demoted": bool(hgcc.get("demoted")),
+            "compound_reprompt_chronic_idle_demoted": bool(crpc.get("demoted")),
             "notes": (
                 "demote_rate = demoted APPROVE / APPROVE cases; "
-                "F173–F179 revive gates; F180 hub-archival×GEPA compound"
+                "F173–F179 revive gates; F180 hub×GEPA; F186 compound re-prompt pressure"
             ),
         },
         "eval_pass": weak_demote_ok
@@ -4407,7 +4662,8 @@ def demote_eval(
         and (bool(frvc.get("demoted")) or free_rider_demote_ok)
         and (bool(ppgc.get("demoted")) or revive_pp_demote_ok)
         and (bool(looc.get("demoted")) or revive_loo_demote_ok)
-        and (bool(hgcc.get("demoted")) or hub_gepa_demote_ok),
+        and (bool(hgcc.get("demoted")) or hub_gepa_demote_ok)
+        and (bool(crpc.get("demoted")) or compound_reprompt_pressure_demote_ok),
     }
     if out_dir:
         try:

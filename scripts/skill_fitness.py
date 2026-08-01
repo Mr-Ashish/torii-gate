@@ -71,6 +71,7 @@ FEATURE_HUB = "F126"
 FEATURE_SCORECARD = "F135"
 FEATURE_HUB_ARCHIVAL = "F158"
 FEATURE_COMPOUND_REPROMPT = "F185"
+FEATURE_COMPOUND_REPROMPT_PRESSURE = "F186"
 SCHEMA = 1
 LEDGER_NAME = "skill-fitness.json"
 SCORECARD_FED_REL = "memory/federation/scorecard-skill-signals.json"
@@ -712,6 +713,16 @@ def ingest_compound_reprompt(
     blob = json.dumps(ledger.get("last_compound_reprompt_ingest") or {})
     privacy_ok = "/Users/" not in blob and "/home/" not in blob
 
+    # F186: longitudinal miss/recover → chronic flag + always priority
+    pressure = {}
+    try:
+        if compound_reprompt_pressure_enabled():
+            pressure = apply_compound_reprompt_pressure(ledger, root=root, save=save)
+            if save:
+                path = ledger_path(root)
+    except Exception:
+        pressure = {}
+
     return {
         "feature": FEATURE_COMPOUND_REPROMPT,
         "ingested": 1,
@@ -721,8 +732,17 @@ def ingest_compound_reprompt(
         "compound_expanded": int(compound),
         "compound_high": int(compound_high),
         "recover_rate": ent.get("compound_reprompt_recover_rate"),
+        "chronic_miss": bool((pressure or {}).get("chronic_miss")),
+        "hub_priority_delta": int(ent.get("hub_priority_delta") or 0),
         "privacy_ok": privacy_ok,
         "ledger": str(path) if path else None,
+        "pressure": {
+            "feature": FEATURE_COMPOUND_REPROMPT_PRESSURE,
+            "high": bool((pressure or {}).get("high")),
+            "reason": (pressure or {}).get("reason"),
+        }
+        if pressure
+        else None,
     }
 
 
@@ -831,6 +851,283 @@ def cmd_fixture_compound_reprompt(args: argparse.Namespace) -> int:
     }
     print(json.dumps(out, indent=2))
     return 0 if f185_ok else 1
+
+
+def compound_reprompt_pressure_enabled() -> bool:
+    """F186: chronic compound re-prompt miss → always priority + critic pressure."""
+    raw = (os.environ.get("TORII_SKILL_FITNESS_COMPOUND_REPROMPT_PRESSURE") or "1").strip().lower()
+    return raw not in _FALSEY
+
+
+def compound_reprompt_miss_thr() -> int:
+    """F186: miss_n ≥ thr marks chronic (default 2)."""
+    try:
+        return max(1, int(os.environ.get("TORII_COMPOUND_REPROMPT_MISS_THR") or "2"))
+    except (TypeError, ValueError):
+        return 2
+
+
+def compound_reprompt_min_n() -> int:
+    """F186: min compound attempts before recover_rate thr applies."""
+    try:
+        return max(1, int(os.environ.get("TORII_COMPOUND_REPROMPT_MIN_N") or "2"))
+    except (TypeError, ValueError):
+        return 2
+
+
+def compound_reprompt_recover_rate_thr() -> float:
+    """F186: recover_rate below thr (with min_n) marks chronic (default 0.5)."""
+    try:
+        return float(os.environ.get("TORII_COMPOUND_REPROMPT_RECOVER_THR") or "0.5")
+    except (TypeError, ValueError):
+        return 0.5
+
+
+def apply_compound_reprompt_pressure(
+    ledger: dict[str, Any] | None = None,
+    *,
+    root: Path | None = None,
+    save: bool = False,
+) -> dict[str, Any]:
+    """F186: fold F185 counters into chronic_miss flag + hub_priority_delta.
+
+    SkillsBench discipline: longitudinal re-prompt under dual-loop heat must
+    *act* — chronic miss boosts always priority for hub-archival recovery;
+    sustained recover clears chronic and soft-shields.
+    """
+    root = root or _root()
+    if not compound_reprompt_pressure_enabled():
+        return {
+            "feature": FEATURE_COMPOUND_REPROMPT_PRESSURE,
+            "enabled": False,
+            "high": False,
+            "privacy_ok": True,
+        }
+    ledger = ledger if ledger is not None else load_ledger(ledger_path(root))
+    sid = HUB_ARCHIVAL_SKILL_ID
+    ent = _skill_entry(ledger, sid)
+    miss_n = int(ent.get("compound_reprompt_miss_n") or 0)
+    n = int(ent.get("compound_reprompt_n") or 0)
+    rec_n = int(ent.get("compound_reprompt_recovered_n") or 0)
+    rate = float(ent.get("compound_reprompt_recover_rate") or 0.0)
+    if n > 0 and rec_n >= 0:
+        rate = round(rec_n / n, 4)
+        ent["compound_reprompt_recover_rate"] = rate
+
+    thr_miss = compound_reprompt_miss_thr()
+    thr_rate = compound_reprompt_recover_rate_thr()
+    min_n = compound_reprompt_min_n()
+    chronic = bool(
+        miss_n >= thr_miss
+        or (n >= min_n and rate < thr_rate and rec_n < n)
+    )
+    # sustained recover clears chronic (rate-dominant, SkillsBench longitudinal)
+    last_rec = bool(ent.get("last_compound_reprompt_recovered"))
+    if n >= min_n and rate >= thr_rate and rec_n >= 1 and (
+        miss_n < thr_miss or (last_rec and rate >= thr_rate and rec_n >= miss_n)
+    ):
+        chronic = False
+
+    prev = bool(ent.get("compound_reprompt_chronic_miss"))
+    ent["compound_reprompt_chronic_miss"] = chronic
+    ent["compound_reprompt_pressure_ops"] = True
+    boost = 0
+    if chronic:
+        boost = 20
+        ent["hub_priority_delta"] = max(int(ent.get("hub_priority_delta") or 0), boost)
+        ent["last_compound_reprompt_pressure_at"] = _now()
+    elif rec_n >= 1 and n >= 1:
+        # recovered path: soft positive priority, clear chronic
+        ent["hub_priority_delta"] = max(int(ent.get("hub_priority_delta") or 0), 12)
+        if prev:
+            ent["compound_reprompt_chronic_cleared_n"] = (
+                int(ent.get("compound_reprompt_chronic_cleared_n") or 0) + 1
+            )
+
+    ledger["last_compound_reprompt_pressure"] = {
+        "at": _now(),
+        "feature": FEATURE_COMPOUND_REPROMPT_PRESSURE,
+        "skill_id": sid,
+        "chronic_miss": chronic,
+        "miss_n": miss_n,
+        "n": n,
+        "recovered_n": rec_n,
+        "recover_rate": rate,
+        "hub_priority_delta": int(ent.get("hub_priority_delta") or 0),
+        "thr_miss": thr_miss,
+        "thr_rate": thr_rate,
+        "min_n": min_n,
+    }
+    path = None
+    if save:
+        path = save_ledger(ledger, ledger_path(root))
+    blob = json.dumps(ledger.get("last_compound_reprompt_pressure") or {})
+    privacy_ok = "/Users/" not in blob and "/home/" not in blob
+    return {
+        "feature": FEATURE_COMPOUND_REPROMPT_PRESSURE,
+        "enabled": True,
+        "high": chronic,
+        "chronic_miss": chronic,
+        "skill_id": sid,
+        "miss_n": miss_n,
+        "n": n,
+        "recovered_n": rec_n,
+        "recover_rate": rate,
+        "hub_priority_delta": int(ent.get("hub_priority_delta") or 0),
+        "priority_deltas": {sid: int(ent.get("hub_priority_delta") or 0)} if chronic or rec_n else {},
+        "privacy_ok": privacy_ok,
+        "ledger": str(path) if path else None,
+        "reason": "compound_reprompt_chronic_miss" if chronic else "no_chronic_miss",
+    }
+
+
+def assess_compound_reprompt_pressure(
+    root: Path | None = None,
+    ledger: dict[str, Any] | None = None,
+) -> dict[str, Any]:
+    """F186: privacy-safe always-priority + critic report from fitness ledger."""
+    root = root or _root()
+    if not compound_reprompt_pressure_enabled():
+        return {
+            "feature": FEATURE_COMPOUND_REPROMPT_PRESSURE,
+            "enabled": False,
+            "high": False,
+            "priority_deltas": {},
+            "privacy_ok": True,
+            "reason": "pressure_off",
+        }
+    # recompute without forcing save
+    report = apply_compound_reprompt_pressure(ledger, root=root, save=False)
+    sid = HUB_ARCHIVAL_SKILL_ID
+    high = bool(report.get("high"))
+    deltas: dict[str, int] = {}
+    if high:
+        deltas[sid] = max(20, int(report.get("hub_priority_delta") or 20))
+    elif int(report.get("recovered_n") or 0) >= 1:
+        deltas[sid] = max(12, int(report.get("hub_priority_delta") or 12))
+    return {
+        "feature": FEATURE_COMPOUND_REPROMPT_PRESSURE,
+        "enabled": True,
+        "high": high,
+        "chronic_miss": high,
+        "miss_n": report.get("miss_n"),
+        "n": report.get("n"),
+        "recovered_n": report.get("recovered_n"),
+        "recover_rate": report.get("recover_rate"),
+        "priority_deltas": deltas,
+        "privacy_ok": bool(report.get("privacy_ok", True)),
+        "reason": report.get("reason"),
+    }
+
+
+def cmd_fixture_compound_reprompt_pressure(args: argparse.Namespace) -> int:
+    """F186 hermetic: chronic miss → priority; recover clears chronic."""
+    del args
+    root = _root()
+    os.environ["TORII_SKILL_FITNESS_COMPOUND_REPROMPT"] = "1"
+    os.environ["TORII_SKILL_FITNESS_COMPOUND_REPROMPT_PRESSURE"] = "1"
+    os.environ["TORII_COMPOUND_REPROMPT_MISS_THR"] = "2"
+    os.environ["TORII_COMPOUND_REPROMPT_MIN_N"] = "2"
+    os.environ["TORII_COMPOUND_REPROMPT_RECOVER_THR"] = "0.5"
+    sid = HUB_ARCHIVAL_SKILL_ID
+    ledger = load_ledger(ledger_path(root))
+    skills = ledger.setdefault("skills", {})
+    skills[sid] = {
+        "id": sid,
+        "selected_n": 0,
+        "hit_n": 0,
+        "tool_hit_n": 0,
+        "compound_reprompt_n": 0,
+        "compound_reprompt_recovered_n": 0,
+        "compound_reprompt_miss_n": 0,
+        "hub_priority_delta": 0,
+    }
+    save_ledger(ledger, ledger_path(root))
+
+    # two misses → chronic
+    for _ in range(2):
+        ingest_compound_reprompt(
+            {
+                "compound_expanded": True,
+                "compound_reason": "hub_gepa_compound_high",
+                "attempts": [
+                    {"kind": "f157", "recovered": False, "note": "compound_miss"}
+                ],
+            },
+            root=root,
+            save=True,
+        )
+    # apply pressure (ingest already applies; re-assess)
+    r_high = assess_compound_reprompt_pressure(root=root)
+    ent_high = (load_ledger(ledger_path(root)).get("skills") or {}).get(sid) or {}
+    chronic_ok = (
+        bool(r_high.get("high"))
+        and bool(ent_high.get("compound_reprompt_chronic_miss"))
+        and int(ent_high.get("hub_priority_delta") or 0) >= 20
+        and int(r_high.get("priority_deltas", {}).get(sid) or 0) >= 20
+        and bool(r_high.get("privacy_ok"))
+    )
+
+    # recover twice → clear chronic (rate 2/4=0.5 with thr 0.5 and miss still 2:
+    # need recover enough that miss < thr after... actually miss_n stays cumulative.
+    # Clear path: rate >= thr AND rec >=1 AND miss_n < thr_miss.
+    # With cumulative miss_n=2 == thr, chronic stays. Reset miss via recovers:
+    # Design: clear when last recovered AND rate >= thr with n>=min.
+    # Adjust clear rule in apply: if last_compound_reprompt_recovered and rate >= thr: clear
+    # For fixture: inject recovers and force rate high by more recovers.
+    for _ in range(4):
+        ingest_compound_reprompt(
+            {
+                "compound_expanded": True,
+                "compound_reason": "hub_gepa_compound_high",
+                "attempts": [
+                    {"kind": "f157", "recovered": True, "note": "compound_ok"}
+                ],
+            },
+            root=root,
+            save=True,
+        )
+    r_clear = assess_compound_reprompt_pressure(root=root)
+    ent_clear = (load_ledger(ledger_path(root)).get("skills") or {}).get(sid) or {}
+    # after 4 recovers + 2 miss: rate=4/6≈0.67 >= 0.5; miss_n still 2
+    # clear rule must allow rate-based clear even if miss_n >= thr when recent recover dominates
+    clear_ok = (
+        not bool(ent_clear.get("compound_reprompt_chronic_miss"))
+        or (
+            float(ent_clear.get("compound_reprompt_recover_rate") or 0) >= 0.5
+            and int(ent_clear.get("compound_reprompt_recovered_n") or 0) >= 4
+        )
+    )
+    # Prefer strict clear_ok from assess
+    clear_ok = (not bool(r_clear.get("high"))) and bool(r_clear.get("privacy_ok"))
+
+    os.environ["TORII_SKILL_FITNESS_COMPOUND_REPROMPT_PRESSURE"] = "0"
+    r_off = assess_compound_reprompt_pressure(root=root)
+    off_ok = r_off.get("enabled") is False
+    os.environ["TORII_SKILL_FITNESS_COMPOUND_REPROMPT_PRESSURE"] = "1"
+
+    f186_ok = bool(chronic_ok and clear_ok and off_ok)
+    out = {
+        "feature": FEATURE_COMPOUND_REPROMPT_PRESSURE,
+        "fixture_pass": f186_ok,
+        "chronic_ok": chronic_ok,
+        "clear_ok": clear_ok,
+        "off_ok": off_ok,
+        "high_report": {
+            "high": r_high.get("high"),
+            "miss_n": r_high.get("miss_n"),
+            "priority_deltas": r_high.get("priority_deltas"),
+        },
+        "clear_report": {
+            "high": r_clear.get("high"),
+            "recover_rate": r_clear.get("recover_rate"),
+            "recovered_n": r_clear.get("recovered_n"),
+        },
+        "privacy_ok": bool(r_high.get("privacy_ok") and r_clear.get("privacy_ok")),
+    }
+    print(json.dumps(out, indent=2))
+    return 0 if f186_ok else 1
+
 
 
 def ingest_refine(
@@ -2173,6 +2470,19 @@ def fitness_boosts(ledger: dict[str, Any] | None = None) -> dict[str, float]:
             ha_gap = float(ent.get("hub_archival_gap_rate") or 0.0)
             score += ha_rate * max_boost * 0.6 * conf
             score -= ha_gap * max_boost * 0.8 * conf
+        # F186: chronic compound re-prompt miss → rank hub-archival recovery higher
+        if (
+            compound_reprompt_pressure_enabled()
+            and sid == HUB_ARCHIVAL_SKILL_ID
+            and ent.get("compound_reprompt_chronic_miss")
+        ):
+            score += max_boost * 0.75 * conf
+        elif (
+            compound_reprompt_pressure_enabled()
+            and sid == HUB_ARCHIVAL_SKILL_ID
+            and int(ent.get("compound_reprompt_recovered_n") or 0) >= 1
+        ):
+            score += max_boost * 0.25 * conf
         out[sid] = round(score, 3)
     return out
 
@@ -3061,6 +3371,11 @@ def main(argv: list[str] | None = None) -> int:
     )
     pcrf.set_defaults(func=cmd_fixture_compound_reprompt)
 
+    pcrp = sub.add_parser(
+        "fixture-compound-reprompt-pressure",
+        help="F186 hermetic: chronic compound re-prompt miss → always priority",
+    )
+    pcrp.set_defaults(func=cmd_fixture_compound_reprompt_pressure)
 
     args = p.parse_args(argv)
     return int(args.func(args))

@@ -2661,6 +2661,33 @@ def select_skills(
                 "high": False,
             }
 
+    # F186: chronic compound re-prompt miss → always priority from fitness ledger
+    crp_report: dict[str, Any] = {
+        "enabled": False,
+        "priority_deltas": {},
+        "high": False,
+    }
+    try:
+        import skill_fitness as _sf_crp  # type: ignore
+
+        if getattr(_sf_crp, "compound_reprompt_pressure_enabled", lambda: False)():
+            crp = _sf_crp.assess_compound_reprompt_pressure(root=root or _root())
+            crp_report = {
+                "enabled": True,
+                "priority_deltas": dict(crp.get("priority_deltas") or {}),
+                "high": bool(crp.get("high")),
+                "miss_n": crp.get("miss_n"),
+                "recover_rate": crp.get("recover_rate"),
+                "reason": crp.get("reason"),
+                "feature": "F186",
+            }
+    except Exception:
+        crp_report = {
+            "enabled": False,
+            "priority_deltas": {},
+            "high": False,
+        }
+
     def _effective_always_prio(c: SkillCard) -> int:
         return (
             int(c.always_priority or 0)
@@ -2670,6 +2697,7 @@ def select_skills(
             + hub_priority_delta(c.id, ha_hub_report)
             + hub_priority_delta(c.id, rd_hub_report)
             + hub_priority_delta(c.id, hgc_report)
+            + hub_priority_delta(c.id, crp_report)
         )
 
     # F119: always-on budget — rank always candidates by always_priority (+ F125 hub), take top N
@@ -2724,6 +2752,14 @@ def select_skills(
                 s += min(10.0, float(hd_hgc) / 4.0)
             if hgc_report.get("high"):
                 s += 4.0  # hard keep when dual compound free-rider risk
+        # F186: chronic compound re-prompt miss keeps hub-archival recovery selected
+        hd_crp = hub_priority_delta(c.id, crp_report)
+        if hd_crp:
+            s += min(14.0, float(hd_crp) / 3.5)
+            if c.id in always_deferred_set:
+                s += min(10.0, float(hd_crp) / 4.0)
+            if crp_report.get("high"):
+                s += 5.0  # longitudinal free-rider heat
         ranked.append((s, c))
     ranked.sort(key=lambda x: (-x[0], x[1].id))
 
@@ -2831,6 +2867,12 @@ def select_skills(
         "feature_hub_gepa_compound_always": "F182"
         if hub_gepa_compound_always_enabled()
         else None,
+        "compound_reprompt_pressure_priority_deltas": {
+            k: v
+            for k, v in (crp_report.get("priority_deltas") or {}).items()
+        },
+        "compound_reprompt_pressure_high": bool(crp_report.get("high")),
+        "feature_compound_reprompt_pressure": "F186",
         "hub_archival_hub_priority_deltas": {
             k: v
             for k, v in (ha_hub_report.get("priority_deltas") or {}).items()

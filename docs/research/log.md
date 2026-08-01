@@ -1,3 +1,36 @@
+## 2026-08-01 — F186 compound re-prompt chronic miss pressure
+
+### Papers / posts
+- SkillsBench / Assay: longitudinal fitness must drive selection/demote, not only counters.
+- F185 compound re-prompt fitness without always-priority or critic action.
+- Loop Engineering: close measure → re-prompt → fitness → priority under dual-loop heat.
+
+### OSS design patterns stolen
+1. `apply_compound_reprompt_pressure` marks chronic_miss from miss_n/recover_rate.
+2. `assess_compound_reprompt_pressure` → router always priority + residual score.
+3. critic f186 demotes idle APPROVE under chronic miss; demote-eval paper row.
+4. refine_loop_ok AND F186; hermes soft notice after F185 ingest.
+
+### Insight
+F185 counters sat idle in the ledger. Highest ROI: chronic unrecovered compound re-prompt
+raises hub-archival always budget and demotes free-rider APPROVE.
+
+### Feature shipped (F186)
+- apply/assess compound re-prompt pressure + fitness_boosts
+- skill_router crp_report always/residual; critic f186 + demote-eval
+- hermes F186 notice; scorecard/PRODUCT compound_reprompt_pressure_ok
+- fixture-compound-reprompt-pressure
+
+### Loop-engineering
+Fitness without priority/demote is theater — compound re-prompt outcomes must steer the next loop.
+
+### Metric
+- Offline: fixture_pass chronic→clear; demote-eval compound_reprompt_chronic_idle_demoted; refine_loop_ok L3
+- Live Modal: pytorch#191836 BIT3_OK ~48.3s POST_COMMENT=0 log_streaming=true F186 soft wire
+
+### SHA
+`PENDING`
+
 ## 2026-08-01 — F185 compound re-prompt fitness ingest
 
 ### Papers / posts

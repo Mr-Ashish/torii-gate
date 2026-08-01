@@ -130,3 +130,5 @@ Paper/eval-safe slim traces (redacted). Large raw logs may be gitignored; always
 | F184 | GEPA+compound full EVAL pack F165–F183 | `f184-gepa-compound-full-eval-pack/` | brand+scorecard dual-loop compound |
 
 | F185 | compound re-prompt fitness ingest | `f185-compound-reprompt-fitness/` | Modal pytorch#191836 BIT3_OK ~46s |
+
+- [F186 compound re-prompt pressure](f186-compound-reprompt-pressure/SUMMARY.md) — chronic miss → always + demote; Modal pytorch#191836 BIT3_OK

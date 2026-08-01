@@ -959,8 +959,48 @@ def assess(root: Path | None = None, *, deep: bool = True) -> dict[str, Any]:
             )
             and "ingest-compound-reprompt" in hermes_sh
             and "F185" in hermes_sh
+            # F186 chronic compound re-prompt miss → always priority + critic
+            and "apply_compound_reprompt_pressure"
+            in (
+                (root / "scripts" / "skill_fitness.py").read_text(
+                    encoding="utf-8", errors="replace"
+                )
+                if (root / "scripts" / "skill_fitness.py").is_file()
+                else ""
+            )
+            and "assess_compound_reprompt_pressure"
+            in (
+                (root / "scripts" / "skill_fitness.py").read_text(
+                    encoding="utf-8", errors="replace"
+                )
+                if (root / "scripts" / "skill_fitness.py").is_file()
+                else ""
+            )
+            and "run_f186_compound_reprompt_pressure"
+            in (
+                (root / "scripts" / "second_agent_critic.py").read_text(
+                    encoding="utf-8", errors="replace"
+                )
+                if (root / "scripts" / "second_agent_critic.py").is_file()
+                else ""
+            )
+            and "compound_reprompt_chronic_idle_approve" in (
+                (root / "scripts" / "second_agent_critic.py").read_text(
+                    encoding="utf-8", errors="replace"
+                )
+                if (root / "scripts" / "second_agent_critic.py").is_file()
+                else ""
+            )
+            and "crp_report" in (
+                (root / "scripts" / "skill_router.py").read_text(
+                    encoding="utf-8", errors="replace"
+                )
+                if (root / "scripts" / "skill_router.py").is_file()
+                else ""
+            )
+            and "F186" in hermes_sh
         ),
-        "feature_refine_loop": "F170/F185",
+        "feature_refine_loop": "F170/F186",
         # F171: chronic refine dual_fail always-priority decay
         "refine_dual_decay_ok": "ingest_refine_dual" in (
             (root / "scripts" / "skill_fitness.py").read_text(
@@ -1300,6 +1340,57 @@ def assess(root: Path | None = None, *, deep: bool = True) -> dict[str, Any]:
         and "ingest-compound-reprompt" in hermes_sh
         and "F185" in hermes_sh,
         "feature_compound_reprompt_fitness": "F185",
+        # F186: chronic compound re-prompt miss → always priority + critic demote
+        "compound_reprompt_pressure_ok": "apply_compound_reprompt_pressure"
+        in (
+            (root / "scripts" / "skill_fitness.py").read_text(
+                encoding="utf-8", errors="replace"
+            )
+            if (root / "scripts" / "skill_fitness.py").is_file()
+            else ""
+        )
+        and "assess_compound_reprompt_pressure"
+        in (
+            (root / "scripts" / "skill_fitness.py").read_text(
+                encoding="utf-8", errors="replace"
+            )
+            if (root / "scripts" / "skill_fitness.py").is_file()
+            else ""
+        )
+        and "fixture-compound-reprompt-pressure"
+        in (
+            (root / "scripts" / "skill_fitness.py").read_text(
+                encoding="utf-8", errors="replace"
+            )
+            if (root / "scripts" / "skill_fitness.py").is_file()
+            else ""
+        )
+        and "run_f186_compound_reprompt_pressure"
+        in (
+            (root / "scripts" / "second_agent_critic.py").read_text(
+                encoding="utf-8", errors="replace"
+            )
+            if (root / "scripts" / "second_agent_critic.py").is_file()
+            else ""
+        )
+        and "compound_reprompt_chronic_idle_approve"
+        in (
+            (root / "scripts" / "second_agent_critic.py").read_text(
+                encoding="utf-8", errors="replace"
+            )
+            if (root / "scripts" / "second_agent_critic.py").is_file()
+            else ""
+        )
+        and "crp_report"
+        in (
+            (root / "scripts" / "skill_router.py").read_text(
+                encoding="utf-8", errors="replace"
+            )
+            if (root / "scripts" / "skill_router.py").is_file()
+            else ""
+        )
+        and "F186" in hermes_sh,
+        "feature_compound_reprompt_pressure": "F186",
         # F158: fitness ledger ingest/demote for hub-archival util
         "hub_archival_fitness_ok": "ingest_hub_archival_util" in (
             (root / "scripts" / "skill_fitness.py").read_text(
@@ -1438,6 +1529,7 @@ def to_markdown(report: dict[str, Any]) -> str:
             f"- Hub×GEPA compound always priority (F182): **{'ok' if report.get('hub_gepa_compound_always_ok') else 'gap'}**",
             f"- Hub×GEPA compound re-prompt budget (F183): **{'ok' if report.get('reprompt_compound_ok') else 'gap'}**",
             f"- Compound re-prompt fitness ingest (F185): **{'ok' if report.get('compound_reprompt_fitness_ok') else 'gap'}**",
+            f"- Compound re-prompt chronic miss pressure (F186): **{'ok' if report.get('compound_reprompt_pressure_ok') else 'gap'}**",
             f"- Recovery hub gap critic/demote-eval (F128): **{'ok' if report.get('recovery_hub_gap_ok') else 'gap'}**",
             f"- Recon-warm hub critic/demote-eval (F151): **{'ok' if report.get('recon_warm_hub_ok') else 'gap'}**",
             f"- Wiring (assemble/run/hermes/save-trace): **{'ok' if report.get('wiring_ok') else 'gap'}**",
@@ -1557,6 +1649,13 @@ def cmd_scorecard(args: argparse.Namespace) -> int:
                     "feature_compound_reprompt_fitness"
                 )
                 or "F185",
+                "compound_reprompt_pressure_ok": report.get(
+                    "compound_reprompt_pressure_ok"
+                ),
+                "feature_compound_reprompt_pressure": report.get(
+                    "feature_compound_reprompt_pressure"
+                )
+                or "F186",
                 "feature_scorecard_ops": report.get("feature_scorecard_ops"),
                 "scorecard_ops_ok": report.get("scorecard_ops_ok"),
                 "scorecard_active": report.get("scorecard_active"),
@@ -1667,6 +1766,10 @@ def cmd_fixture(args: argparse.Namespace) -> int:
                 "feature_reprompt_compound": "F183",
                 "compound_reprompt_fitness_ok": report.get("compound_reprompt_fitness_ok"),
                 "feature_compound_reprompt_fitness": "F185",
+                "compound_reprompt_pressure_ok": report.get(
+                    "compound_reprompt_pressure_ok"
+                ),
+                "feature_compound_reprompt_pressure": "F186",
                 "wiring_ok": report["wiring_ok"],
                 "deep_ok": report["deep_ok"],
                 "ready": report["ready"],

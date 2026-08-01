@@ -1042,6 +1042,8 @@ if [[ -f "$SKILL_ROUTER_HELPER" && $TIMED_OUT -eq 0 && "${HERMES_CLI_ARGV_BROKEN
         # F185: compound re-prompt outcomes → fitness (after budget state written)
         python3 "$TORII_ROOT/scripts/skill_fitness.py" ingest-compound-reprompt --out-dir "$OUT_DIR" >/dev/null 2>&1 || true
         notice "F185 compound re-prompt fitness ingest (soft)"
+        # F186: chronic compound re-prompt miss → always priority (applied in ingest) + critic
+        notice "F186 compound re-prompt chronic miss pressure (soft; fitness+router+critic)"
         python3 "$TORII_ROOT/scripts/skill_fitness.py" cycle --out-dir "$OUT_DIR" >/dev/null 2>&1 || true
       fi
       # F165: GEPA-lite skill body refine from util traces (Hermes self-evolution pattern)
