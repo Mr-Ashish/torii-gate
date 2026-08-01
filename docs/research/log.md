@@ -32,7 +32,7 @@ Measuring tool hits without acting on them is theater. Highest ROI: compound too
 **Verifier fitness gate on trajectories** — demote default REJECT unless tool or prose evidence compounds.
 
 ### SHA
-`a8e134fa16b8eeb2c4e7b520bbf1bd03901756d3`
+`de692b82f0ae22a59963186ea103e992cbdd06fb`
 ## 2026-08-01 — F115 tool-outcome LOO attribution + dual tool contribution
 
 ### Papers / posts
