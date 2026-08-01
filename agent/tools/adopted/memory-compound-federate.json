@@ -1,0 +1,6 @@
+{
+  "id": "memory-compound-federate",
+  "feature": "F107",
+  "status": "adopted",
+  "one_liner": "Privacy-safe hub federate of integrity-gated compound TPs"
+}

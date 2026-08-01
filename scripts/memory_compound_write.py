@@ -21,14 +21,17 @@ Commands:
   plan      — extract + integrity-filter candidates (no write)
   apply     — plan + F93 promote into tp-signatures.json
   compound  — apply from a review path (primary post-run entry)
+  federate  — F107: privacy-safe hub export of integrity-gated candidates
   fixture   — hermetic: good writes ≥1 TP; weak writes 0; poison rejected
   status    — summarize last ledger / store
 
 Env:
   TORII_ROOT
-  TORII_MEMORY_COMPOUND     1 (default) | 0
-  TORII_TP_SIGNATURES_FILE  override durable TP path
-  TORII_FP_RULES_FILE       optional FP demote on plan
+  TORII_MEMORY_COMPOUND            1 (default) | 0
+  TORII_MEMORY_COMPOUND_FEDERATE   1 (default) | 0  — F107 auto after compound
+  TORII_TP_SIGNATURES_FILE         override durable TP path
+  TORII_FP_RULES_FILE              optional FP demote on plan
+  TORII_MEMORY_TENANT              optional tenant id for hub hash
 """
 
 from __future__ import annotations
@@ -45,6 +48,7 @@ from pathlib import Path
 from typing import Any
 
 FEATURE = "F104"
+FEATURE_FED = "F107"
 SCHEMA = 1
 MARKER = "<!-- torii-f104-memory-compound -->"
 LEDGER_NAME = "memory-compound-ledger.json"
@@ -124,6 +128,11 @@ def _now() -> str:
 
 def enabled() -> bool:
     raw = (os.environ.get("TORII_MEMORY_COMPOUND") or "1").strip().lower()
+    return raw not in _FALSEY
+
+
+def federate_enabled() -> bool:
+    raw = (os.environ.get("TORII_MEMORY_COMPOUND_FEDERATE") or "1").strip().lower()
     return raw not in _FALSEY
 
 
@@ -547,6 +556,158 @@ def _tp_count(dest: Path) -> int:
     return 0
 
 
+def export_integrity_signals(
+    candidates: list[dict[str, Any]],
+    *,
+    tenant: str = "",
+    repo: str = "",
+    pr: str = "",
+) -> list[dict[str, Any]]:
+    """F107: privacy-safe hub signals from integrity-gated compound candidates.
+
+    Only theme / cwe / keywords / basenames / hits — never snippets, absolute paths,
+    or raw tenant strings (F77 sanitize hashes tenant).
+    """
+    out: list[dict[str, Any]] = []
+    for c in candidates:
+        if not isinstance(c, dict):
+            continue
+        prov = c.get("provenance") if isinstance(c.get("provenance"), dict) else {}
+        # only integrity-ok candidates (or legacy without provenance if path_globs set)
+        if prov and prov.get("integrity") not in (None, "ok"):
+            continue
+        theme = str(c.get("theme") or "").strip().lower()
+        if not theme or theme == "generic_finding":
+            # still allow generic if has keywords
+            if not (c.get("keywords") or []):
+                continue
+        bases: list[str] = []
+        for p in c.get("path_globs") or []:
+            name = Path(str(p)).name
+            if name and "/" not in name and "\\" not in name:
+                bases.append(name[:64])
+            elif name:
+                bases.append(Path(name).name[:64])
+        bases = list(dict.fromkeys(b for b in bases if b))[:6]
+        kws = []
+        for k in c.get("keywords") or []:
+            ks = str(k).strip()
+            if not ks or len(ks) > 48:
+                continue
+            if "/Users/" in ks or "/home/" in ks:
+                continue
+            if re.search(r"sk-[a-z0-9]{10,}", ks, re.I):
+                continue
+            kws.append(ks[:48])
+        kws = list(dict.fromkeys(kws))[:12]
+        cwe = c.get("cwe") or []
+        if isinstance(cwe, str):
+            cwe = [cwe]
+        sid = re.sub(r"[^a-z0-9._-]+", "-", str(c.get("id") or theme).lower())[:64]
+        sig: dict[str, Any] = {
+            "id": sid or f"tp-{len(out)}",
+            "theme": theme or sid,
+            "cwe": [str(x) for x in cwe if x][:8],
+            "keywords": kws,
+            "path_basenames": bases,
+            "hits": max(1, int(c.get("hits") or 1)),
+            "source": "f104_integrity_compound",
+            "tags": ["integrity_gated", "f107", "compound"],
+            "integrity": "ok",
+        }
+        if tenant:
+            sig["tenant"] = tenant  # stripped → tenant_hash by F77 sanitize
+        if repo:
+            # only org/name style, no local paths
+            r = str(repo).replace("\\", "/").strip()
+            if r and not r.startswith("/") and ".." not in r:
+                sig["tags"] = list(dict.fromkeys(list(sig["tags"]) + [f"repo:{r[:48]}"]))[:12]
+        if pr:
+            sig["tags"] = list(dict.fromkeys(list(sig["tags"]) + [f"pr:{str(pr)[:16]}"]))[:12]
+        out.append(sig)
+    return out
+
+
+def federate_candidates(
+    candidates: list[dict[str, Any]],
+    *,
+    root: Path | None = None,
+    tenant: str = "",
+    repo: str = "",
+    pr: str = "",
+    hub_root: Path | None = None,
+    dry_run: bool = False,
+) -> dict[str, Any]:
+    """Export integrity-gated candidates and soft-ingest into F77 hub."""
+    root = root or _root()
+    signals = export_integrity_signals(
+        candidates, tenant=tenant, repo=repo, pr=pr
+    )
+    result: dict[str, Any] = {
+        "feature": FEATURE_FED,
+        "source_feature": FEATURE,
+        "signal_count": len(signals),
+        "signals": signals,
+        "dry_run": bool(dry_run),
+        "scored_at": _now(),
+    }
+    if dry_run or not signals:
+        result["skipped"] = not signals
+        return result
+    if not federate_enabled():
+        result["enabled"] = False
+        result["skipped"] = True
+        return result
+    try:
+        import importlib.util
+
+        fed_path = Path(__file__).resolve().parent / "federated_hub_ingest.py"
+        if not fed_path.is_file():
+            result["error"] = "federated_hub_ingest missing"
+            return result
+        spec = importlib.util.spec_from_file_location("federated_hub_ingest", fed_path)
+        if not spec or not spec.loader:
+            result["error"] = "import_failed"
+            return result
+        mod = importlib.util.module_from_spec(spec)
+        sys.modules["federated_hub_ingest"] = mod
+        spec.loader.exec_module(mod)
+        if not mod.enabled():
+            result["hub_enabled"] = False
+            result["skipped"] = True
+            return result
+        hroot = Path(hub_root).resolve() if hub_root else root
+        ten = tenant or os.environ.get("TORII_MEMORY_TENANT") or ""
+        ing = mod.ingest(
+            hroot,
+            signals,
+            tenant=ten,
+            source_repo=repo or "",
+            write_tenant=bool(ten),
+        )
+        # assert on *sanitized* signals (raw tenant is hashed by sanitize_signal)
+        cleaned = []
+        for s in signals:
+            c = mod.sanitize_signal(s, tenant=ten)
+            if c:
+                cleaned.append(c)
+        issues = mod.assert_privacy(cleaned)
+        result["ingest"] = {
+            "global_count": ing.get("global_count"),
+            "privacy_ok": ing.get("privacy_ok"),
+            "global_path": ing.get("global_path"),
+            "top_themes": ing.get("top_themes"),
+        }
+        result["sanitized_count"] = len(cleaned)
+        result["privacy_ok"] = bool(ing.get("privacy_ok")) and len(issues) == 0
+        result["privacy_issues"] = issues
+        result["enabled"] = True
+    except Exception as exc:
+        result["error"] = str(exc)[:200]
+        result["privacy_ok"] = False
+    return result
+
+
 def compound_review(
     review_path: Path,
     *,
@@ -557,6 +718,8 @@ def compound_review(
     pr: str = "",
     dry_run: bool = False,
     source: str = "agent_review",
+    federate: bool | None = None,
+    tenant: str = "",
 ) -> dict[str, Any]:
     root = root or _root()
     text = review_path.read_text(encoding="utf-8", errors="replace")
@@ -567,6 +730,16 @@ def compound_review(
         "apply": result,
         "review": str(review_path),
     }
+    do_fed = federate if federate is not None else federate_enabled()
+    if do_fed and not dry_run:
+        fed = federate_candidates(
+            list(plan.get("candidates") or []),
+            root=root,
+            tenant=tenant or os.environ.get("TORII_MEMORY_TENANT") or "",
+            repo=repo,
+            pr=pr,
+        )
+        report["federate"] = fed
     if out_dir:
         out_dir = Path(out_dir)
         out_dir.mkdir(parents=True, exist_ok=True)
@@ -581,6 +754,13 @@ def compound_review(
                     src.read_text(encoding="utf-8"), encoding="utf-8"
                 )
             except Exception:
+                pass
+        if report.get("federate"):
+            try:
+                (out_dir / "memory-compound-federate.json").write_text(
+                    json.dumps(report["federate"], indent=2) + "\n", encoding="utf-8"
+                )
+            except OSError:
                 pass
     return report
 
@@ -625,6 +805,11 @@ def cmd_compound(args: argparse.Namespace) -> int:
         return 2
     dest = Path(args.tp_out) if args.tp_out else default_tp_path()
     out_dir = Path(args.out_dir) if args.out_dir else None
+    do_fed: bool | None = None
+    if getattr(args, "no_federate", False):
+        do_fed = False
+    elif getattr(args, "federate", False):
+        do_fed = True
     report = compound_review(
         review,
         dest=dest,
@@ -633,9 +818,12 @@ def cmd_compound(args: argparse.Namespace) -> int:
         pr=args.pr or "",
         dry_run=bool(args.dry_run),
         source=args.source or "agent_review",
+        federate=do_fed,
+        tenant=getattr(args, "tenant", "") or "",
     )
     # concise stdout for stage logs
     apply = report.get("apply") or {}
+    fed = report.get("federate") or {}
     print(
         json.dumps(
             {
@@ -648,10 +836,61 @@ def cmd_compound(args: argparse.Namespace) -> int:
                 "applied": apply.get("applied"),
                 "dest": apply.get("dest"),
                 "dry_run": apply.get("dry_run", False),
+                "federate_signals": fed.get("signal_count"),
+                "federate_privacy_ok": fed.get("privacy_ok"),
             },
             indent=2,
         )
     )
+    return 0
+
+
+def cmd_federate(args: argparse.Namespace) -> int:
+    """F107: federate integrity-gated candidates from review or plan JSON."""
+    if not federate_enabled() and not args.force:
+        print(json.dumps({"feature": FEATURE_FED, "enabled": False, "skipped": True}))
+        return 0
+    candidates: list[dict[str, Any]] = []
+    if args.plan and Path(args.plan).is_file():
+        plan = json.loads(Path(args.plan).read_text(encoding="utf-8"))
+        candidates = [c for c in (plan.get("candidates") or []) if isinstance(c, dict)]
+    elif args.review and Path(args.review).is_file():
+        plan = plan_compound(
+            Path(args.review).read_text(encoding="utf-8", errors="replace"),
+            root=_root(),
+            repo=args.repo or "",
+            pr=args.pr or "",
+        )
+        candidates = [c for c in (plan.get("candidates") or []) if isinstance(c, dict)]
+    elif args.candidates and Path(args.candidates).is_file():
+        raw = json.loads(Path(args.candidates).read_text(encoding="utf-8"))
+        if isinstance(raw, list):
+            candidates = [c for c in raw if isinstance(c, dict)]
+        elif isinstance(raw, dict):
+            candidates = [
+                c for c in (raw.get("candidates") or raw.get("signatures") or []) if isinstance(c, dict)
+            ]
+    else:
+        print(
+            json.dumps({"error": "need --review, --plan, or --candidates"}),
+            file=sys.stderr,
+        )
+        return 2
+    result = federate_candidates(
+        candidates,
+        tenant=args.tenant or "",
+        repo=args.repo or "",
+        pr=args.pr or "",
+        hub_root=Path(args.hub_root) if args.hub_root else None,
+        dry_run=bool(args.dry_run),
+    )
+    if args.out:
+        Path(args.out).write_text(json.dumps(result, indent=2) + "\n", encoding="utf-8")
+    print(json.dumps(result, indent=2))
+    if result.get("error"):
+        return 1
+    if result.get("privacy_ok") is False:
+        return 1
     return 0
 
 
@@ -683,7 +922,7 @@ def cmd_status(args: argparse.Namespace) -> int:
 
 
 def cmd_fixture(args: argparse.Namespace) -> int:
-    """Hermetic: good review compounds; weak does not; poison rejected."""
+    """Hermetic: good review compounds; weak does not; poison rejected; F107 federate."""
     root = _root()
     good_path = root / "docs/benchmarks/fixtures/insecure-demo-good-review.md"
     weak_path = root / "docs/benchmarks/fixtures/insecure-demo-weak-review.md"
@@ -697,21 +936,44 @@ def cmd_fixture(args: argparse.Namespace) -> int:
         weak_dest = td_path / "weak" / "tp-signatures.json"
         good_dest.parent.mkdir(parents=True)
         weak_dest.parent.mkdir(parents=True)
+        hub = td_path / "hub"
+        hub.mkdir()
 
-        good_report = compound_review(
-            good_path,
-            root=root,
-            dest=good_dest,
-            out_dir=td_path / "good-out",
-            source="fixture_good",
-        )
-        weak_report = compound_review(
-            weak_path,
-            root=root,
-            dest=weak_dest,
-            out_dir=td_path / "weak-out",
-            source="fixture_weak",
-        )
+        # isolate hub under tmp
+        env_bak = os.environ.get("TORII_ROOT")
+        os.environ["TORII_ROOT"] = str(hub)
+        try:
+            good_report = compound_review(
+                good_path,
+                root=root,
+                dest=good_dest,
+                out_dir=td_path / "good-out",
+                source="fixture_good",
+                federate=True,
+                tenant="fixture-tenant-a",
+                repo="demo/insecure",
+            )
+            # re-federate into isolated hub root
+            fed = federate_candidates(
+                list(good_report.get("candidates") or []),
+                root=hub,
+                tenant="fixture-tenant-a",
+                repo="demo/insecure",
+                hub_root=hub,
+            )
+            weak_report = compound_review(
+                weak_path,
+                root=root,
+                dest=weak_dest,
+                out_dir=td_path / "weak-out",
+                source="fixture_weak",
+                federate=False,
+            )
+        finally:
+            if env_bak is None:
+                os.environ.pop("TORII_ROOT", None)
+            else:
+                os.environ["TORII_ROOT"] = env_bak
 
         good_n = int((good_report.get("apply") or {}).get("promoted") or 0)
         weak_n = int((weak_report.get("apply") or {}).get("promoted") or 0)
@@ -755,17 +1017,47 @@ def cmd_fixture(args: argparse.Namespace) -> int:
                 store_clean = False
 
         good_ok = good_n >= 1 and good_total >= 1
-        # weak may still extract path_evidenced if the weak fixture names files —
-        # integrity still requires path; prefer good >> weak
-        weak_ok = weak_n <= good_n  # soft: weak must not out-promote good
-        # stricter: if weak has zero path findings that's ideal
+        weak_ok = weak_n <= good_n
         weak_strict = weak_n == 0 or weak_n < good_n
 
+        # F107 federate checks
+        sigs = export_integrity_signals(
+            list(good_report.get("candidates") or []),
+            tenant="fixture-tenant-a",
+            repo="demo/insecure",
+        )
+        fed_count_ok = len(sigs) >= 1
+        fed_privacy = True
+        blob = json.dumps(sigs)
+        if "/Users/" in blob or "sk-abcdefghijklmnopqrstuvwxyz" in blob:
+            fed_privacy = False
+        # tags
+        tags_ok = all("integrity_gated" in (s.get("tags") or []) for s in sigs)
+        # ingest privacy
+        ingest_ok = bool(fed.get("privacy_ok", True)) and not fed.get("error")
+        # basenames only
+        bases_ok = all(
+            "/" not in str(b) for s in sigs for b in (s.get("path_basenames") or [])
+        )
+
         fixture_pass = all(
-            [good_ok, weak_strict, poison_ok, status_gate_ok, prov_ok, store_clean]
+            [
+                good_ok,
+                weak_strict,
+                poison_ok,
+                status_gate_ok,
+                prov_ok,
+                store_clean,
+                fed_count_ok,
+                fed_privacy,
+                tags_ok,
+                ingest_ok,
+                bases_ok,
+            ]
         )
         out = {
             "feature": FEATURE,
+            "federate_feature": FEATURE_FED,
             "fixture_pass": fixture_pass,
             "good_promoted": good_n,
             "good_total": good_total,
@@ -778,6 +1070,13 @@ def cmd_fixture(args: argparse.Namespace) -> int:
             "status_gate_ok": status_gate_ok,
             "prov_ok": prov_ok,
             "store_clean": store_clean,
+            "fed_count": len(sigs),
+            "fed_count_ok": fed_count_ok,
+            "fed_privacy": fed_privacy,
+            "tags_ok": tags_ok,
+            "ingest_ok": ingest_ok,
+            "bases_ok": bases_ok,
+            "federate_signals": fed.get("signal_count"),
             "good_reject_reasons": good_report.get("reject_reasons"),
             "weak_reject_reasons": weak_report.get("reject_reasons"),
             "scored_at": _now(),
@@ -787,7 +1086,7 @@ def cmd_fixture(args: argparse.Namespace) -> int:
 
 
 def main(argv: list[str] | None = None) -> int:
-    p = argparse.ArgumentParser(description="F104 integrity-gated memory compound write")
+    p = argparse.ArgumentParser(description="F104/F107 integrity-gated memory compound + federate")
     sub = p.add_subparsers(dest="cmd", required=True)
 
     pl = sub.add_parser("plan", help="extract + integrity filter (no write)")
@@ -813,14 +1112,30 @@ def main(argv: list[str] | None = None) -> int:
     pc.add_argument("--repo", default="")
     pc.add_argument("--pr", default="")
     pc.add_argument("--source", default="agent_review")
+    pc.add_argument("--tenant", default="")
     pc.add_argument("--dry-run", action="store_true")
+    pc.add_argument("--federate", action="store_true", help="force F107 federate")
+    pc.add_argument("--no-federate", action="store_true", help="skip F107 federate")
     pc.add_argument("--force", action="store_true")
     pc.set_defaults(func=cmd_compound)
+
+    pfed = sub.add_parser("federate", help="F107 privacy-safe hub export of integrity candidates")
+    pfed.add_argument("--review", default="")
+    pfed.add_argument("--plan", default="")
+    pfed.add_argument("--candidates", default="")
+    pfed.add_argument("--tenant", default="")
+    pfed.add_argument("--repo", default="")
+    pfed.add_argument("--pr", default="")
+    pfed.add_argument("--hub-root", default="")
+    pfed.add_argument("--out", default="")
+    pfed.add_argument("--dry-run", action="store_true")
+    pfed.add_argument("--force", action="store_true")
+    pfed.set_defaults(func=cmd_federate)
 
     ps = sub.add_parser("status", help="tp store + last ledger")
     ps.set_defaults(func=cmd_status)
 
-    pf = sub.add_parser("fixture", help="hermetic good/weak/poison e2e")
+    pf = sub.add_parser("fixture", help="hermetic good/weak/poison/federate e2e")
     pf.set_defaults(func=cmd_fixture)
 
     args = p.parse_args(argv)

@@ -1,9 +1,21 @@
 {
   "schema_version": 1,
-  "feature": "F106",
+  "feature": "F107",
   "description": "Torii agent tool catalog \u2014 research \u2192 eval \u2192 adopt pipeline",
-  "updated_at": "2026-08-01T04:03:22Z",
+  "updated_at": "2026-08-01T04:13:15Z",
   "tools": [
+    {
+      "id": "memory-compound-federate",
+      "name": "Integrity compound federate",
+      "status": "adopted",
+      "source": "shipped",
+      "kind": "workflow_tool",
+      "toolset": "terminal",
+      "rationale": "F107: export path-evidenced compound TPs as privacy-safe hub signals",
+      "safety": "theme/CWE/keywords/basenames only; tenant hashed",
+      "adopted_at": "2026-08-01T04:13:15Z",
+      "feature": "F107"
+    },
     {
       "id": "memory-tool-reprompt",
       "name": "Memory utilization soft re-prompt",

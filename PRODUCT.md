@@ -116,6 +116,8 @@ compound → write → consolidate → effective_critic → federate → scoped_
 
 **Memory soft re-prompt (F106):** when tools ran but memory CLI was never called despite inject, Hermes gets **one** soft re-prompt (F49-style) to call `torii_memory search|graph` before finalizing — zero-tool recovery stays F49.
 
+**Integrity federate (F107):** path-evidenced compound TPs export as **privacy-safe hub signals** (theme/CWE/keywords/basenames + tenant hash only) so multi-tenant learning compounds without snippets or home paths.
+
 **Ops:** `python3 scripts/memory_loop_status.py scorecard` → L0–L3. Smoke requires L3 on the hub tree. CI job summary annotates readiness; optional advisory `torii/memory-loop` via `TORII_MEMORY_LOOP_STATUS_COMMIT=1`.
 
 ---

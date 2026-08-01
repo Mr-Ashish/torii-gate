@@ -1,0 +1,23 @@
+{
+  "feature": "F107",
+  "repo": "pytorch/pytorch",
+  "pr": 191813,
+  "model": "deepseek/deepseek-v4-pro",
+  "host": "modal",
+  "bit3": "OK",
+  "elapsed_s": 147.0,
+  "log_streaming": true,
+  "tool_call_turns": 7,
+  "post_comment": 0,
+  "verdict": "REQUEST_CHANGES",
+  "f106": {
+    "recovered_hits": "0\u21921"
+  },
+  "memory_compound": {
+    "candidate_count": 0,
+    "federate_signals": 0,
+    "note": "non-security PR \u2014 integrity correctly promoted/federated 0"
+  },
+  "scored_at": "2026-08-01T04:16:24Z",
+  "modal_app": "https://modal.com/apps/mr-ashish/main/ap-yotiaBWFEpr850AgFpJfdP"
+}

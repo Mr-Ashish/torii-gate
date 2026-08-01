@@ -1,6 +1,35 @@
 # Torii research → product log
 
 
+## 2026-08-01 — F107 privacy-safe federate of integrity-gated compound TPs
+
+### Papers / posts
+- Multi-tenant agent FL privacy (IETF-style): aggregate themes without raw tenant data.
+- F77 hub + F95 effective-score federate already existed; F104 compound did not export immediately.
+- Loop-eng: tools-as-code write → federate stage with privacy assert.
+
+### OSS design patterns stolen
+1. **Integrity-only export** — only candidates with integrity=ok become hub signals.
+2. **Basenames / theme / CWE / keywords** — never snippets or `/Users` paths.
+3. **Assert on sanitized** signals (tenant → hash) before privacy_ok.
+
+### Insight
+Local compound without hub export keeps multi-tenant learning cold. Highest ROI close: F104 candidates → F77 ingest tagged `integrity_gated`/`f107` so promote min_tenants can share proven themes.
+
+### Feature shipped (F107)
+- `memory_compound_write.py federate` + auto `--federate` on compound
+- Toggle `TORII_MEMORY_COMPOUND_FEDERATE`
+- Soft stage in `run-torii-review` memory_compound
+- PRODUCT integrity federate one-liner
+
+### Metric
+- Offline fixture: fed_count≥1 privacy_ok tags_ok bases_ok fixture_pass=1
+- Live Modal pytorch#191813: BIT3_OK ~147s; F106 hits 0→1; F104/F107 federate_signals=0 (non-security PR correct); log_streaming=true
+- pytest: 577 passed
+
+### SHA
+_pending_
+
 ## 2026-08-01 — F106 soft re-prompt on memory utilization gap
 
 ### Papers / posts

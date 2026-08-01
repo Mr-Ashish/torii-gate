@@ -344,13 +344,24 @@ if [[ -f "$SCRIPTS/memory_compound_write.py" ]]; then
         _f104_review="$(ls -1 "$OUT_DIR"/review*.md 2>/dev/null | grep -v '\.raw\.md$' | head -1 || true)"
       fi
       if [[ -n "$_f104_review" ]]; then
+        _f104_args=(
+          compound
+          --review "$_f104_review"
+          --out-dir "$OUT_DIR"
+          --repo "${REPO:-${GITHUB_REPOSITORY:-}}"
+          --pr "${PR_NUMBER:-}"
+          --source agent_review
+        )
+        # F107: privacy-safe federate of integrity-gated candidates (default on)
+        case "${TORII_MEMORY_COMPOUND_FEDERATE:-1}" in
+          0|false|no|off) _f104_args+=(--no-federate) ;;
+          *)
+            _f104_args+=(--federate)
+            [[ -n "${TORII_MEMORY_TENANT:-}" ]] && _f104_args+=(--tenant "${TORII_MEMORY_TENANT}")
+            ;;
+        esac
         stage memory_compound \
-          python3 "$SCRIPTS/memory_compound_write.py" compound \
-            --review "$_f104_review" \
-            --out-dir "$OUT_DIR" \
-            --repo "${REPO:-${GITHUB_REPOSITORY:-}}" \
-            --pr "${PR_NUMBER:-}" \
-            --source agent_review || true
+          python3 "$SCRIPTS/memory_compound_write.py" "${_f104_args[@]}" || true
       fi
       ;;
   esac

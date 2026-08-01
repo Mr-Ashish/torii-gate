@@ -107,10 +107,10 @@ LOOP_STAGES: list[dict[str, Any]] = [
     },
     {
         "id": "compound_write",
-        "feature": "F104",
+        "feature": "F104/F107",
         "script": "memory_compound_write.py",
         "fixture_cmd": ["fixture"],
-        "one_liner": "Integrity-gated post-review TP compound write",
+        "one_liner": "Integrity-gated compound write + privacy federate",
     },
     {
         "id": "memory_tool_audit",

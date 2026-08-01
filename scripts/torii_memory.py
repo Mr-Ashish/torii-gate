@@ -118,9 +118,10 @@ COMMANDS: dict[str, dict[str, Any]] = {
     "compound": {
         "script": "memory_compound_write.py",
         "default_args": [],
-        "help": "Integrity-gated post-review TP compound write (F104)",
+        "help": "Integrity-gated compound write + F107 privacy federate",
         "examples": [
             "compound -- compound --review review.md --out-dir .torii-out",
+            "compound -- federate --review review.md --dry-run",
             "compound -- fixture",
             "compound -- status",
         ],

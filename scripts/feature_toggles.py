@@ -634,6 +634,15 @@ REGISTRY: list[ToggleSpec] = [
         "F104",
     ),
     ToggleSpec(
+        "memory_compound_federate",
+        "TORII_MEMORY_COMPOUND_FEDERATE",
+        "bool",
+        True,
+        "product",
+        "F107 privacy-safe hub federate of integrity-gated compound TPs",
+        "F107",
+    ),
+    ToggleSpec(
         "memory_tool_audit",
         "TORII_MEMORY_TOOL_AUDIT",
         "bool",

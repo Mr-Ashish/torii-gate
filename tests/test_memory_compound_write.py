@@ -92,6 +92,24 @@ class MemoryCompoundWriteTests(unittest.TestCase):
         self.assertEqual(r.returncode, 0, r.stderr + r.stdout)
         self.assertEqual(json.loads(r.stdout)["feature"], "F104")
 
+    def test_federate_dry_run(self):
+        r = _run(
+            [
+                "federate",
+                "--review",
+                str(GOOD),
+                "--dry-run",
+                "--tenant",
+                "test-tenant",
+            ]
+        )
+        self.assertEqual(r.returncode, 0, r.stderr + r.stdout)
+        data = json.loads(r.stdout)
+        self.assertEqual(data["feature"], "F107")
+        self.assertGreaterEqual(data["signal_count"], 1)
+        blob = json.dumps(data)
+        self.assertNotIn("/Users/", blob)
+
     def test_install_ships(self):
         with tempfile.TemporaryDirectory() as td:
             dest = Path(td) / "t"
