@@ -29,7 +29,7 @@ Federated ops themes that never enter the fitness ledger still demote as zombies
 **Measure → federate → fitness → doctor surface** — scorecard ops mirror recovery F124/F126.
 
 ### SHA
-`PENDING`
+`98fe7010cace3cf0edff0e609671d7e8401f8106`
 
 
 ## 2026-08-01 — F134 federate scorecard skills + trajectory fitness blend
