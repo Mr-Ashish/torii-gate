@@ -28,7 +28,7 @@ Attribution that never ranks inject is half a loop. Highest ROI: **feed LOO ledg
 - Live: **Modal** pytorch#191813 deepseek/deepseek-v4-pro BIT3_OK ~92s; log_streaming=true; POST_COMMENT=0
 
 ### SHA
-_PENDING_
+3d803c91e9cf81f726d3df47c1a879adf97071f2
 
 ## 2026-08-01 — F88 per-skill LOO attribution (reject free-riders)
 
