@@ -1,0 +1,6 @@
+{
+  "id": "memory-compound-write",
+  "feature": "F104",
+  "status": "adopted",
+  "one_liner": "Integrity-gated post-review TP compound write (path evidence required)"
+}

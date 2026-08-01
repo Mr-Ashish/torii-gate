@@ -17,7 +17,9 @@ When the PR touches paths that may match **prior FP/TP or MEMORY.md history**:
    `python3 scripts/torii_memory.py search -- -q "theme keywords"`
    `python3 scripts/torii_memory.py search-auto -- --files path1,path2`
    `python3 scripts/torii_memory.py graph -- query --path path1 --hops 2`
+   `python3 scripts/torii_memory.py compound -- status`  # F104 post-run integrity write
 3. Treat promoted hits as **hints for this PR only** — still require path:line evidence to block.
+   Path-evidenced findings compound into durable TP only via F104 integrity gate (not free-form).
 4. Do **not** re-raise archival FP themes without new path evidence.
 5. Prefer **core** tier items over archival noise for blocking severity.
 

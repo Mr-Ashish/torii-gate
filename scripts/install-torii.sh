@@ -169,6 +169,7 @@ RUNTIME_SCRIPTS=(
   skill_attribution.py
   skill_loop_status.py
   memory_event_policy.py
+  memory_compound_write.py
   memory_consolidate.py
   memory_loop_status.py
   memory_tiers.py

@@ -106,6 +106,13 @@ LOOP_STAGES: list[dict[str, Any]] = [
         "one_liner": "Unified memory CLI front door for agents",
     },
     {
+        "id": "compound_write",
+        "feature": "F104",
+        "script": "memory_compound_write.py",
+        "fixture_cmd": ["fixture"],
+        "one_liner": "Integrity-gated post-review TP compound write",
+    },
+    {
         "id": "tp_store",
         "feature": "F70",
         "script": "bench_security_gate.py",
@@ -284,7 +291,7 @@ def assess(root: Path | None = None, *, deep: bool = True) -> dict[str, Any]:
     return {
         "feature": FEATURE,
         "schema": SCHEMA,
-        "loop": "write → consolidate → effective_critic → federate → scoped_recall → tiers → archival_search → temporal_graph → memory_cli → tp_store",
+        "loop": "write → consolidate → effective_critic → federate → scoped_recall → tiers → archival_search → temporal_graph → memory_cli → compound_write → tp_store",
         "scored_at": _now(),
         "level": level,
         "pct": pct,

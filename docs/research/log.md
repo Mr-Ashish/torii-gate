@@ -1,6 +1,39 @@
 # Torii research → product log
 
 
+## 2026-08-01 — F104 integrity-gated post-review memory compound write
+
+### Papers / posts
+- **AgenticCyOps** (arXiv 2603.09134): multi-agent attack surfaces collapse to tool orchestration + **memory management**.
+- **LASM** layered agent security (arXiv 2604.23338): Memory Integrity Controls — write restrictions + consistency validation before durable store.
+- Letta/MemGPT memory hierarchy + filesystem tools: agents need discoverable write paths, not only recall.
+- Loop-eng: tools-as-code + Loop Ready stages over SOUL prose.
+
+### OSS design patterns stolen
+1. **Memory integrity gate** before durable write (status ∈ path_evidenced|confirmed_tp; reject absolute-home, secret-like blobs, pathless narrative).
+2. **Provenance-only store** — theme/keywords/path_globs + source; never raw finding snippets (privacy).
+3. **F93 event policy** as the sole apply path (ADD/UPDATE/NONE) so compound does not bypass supersession.
+
+### Insight
+F103 unified the **read/search** front door; live reviews still only distilled narrative MEMORY.md. Durable `tp-signatures.json` did not compound from path-evidenced agent findings automatically — and had no poison gate. Highest ROI close of the memory loop: post-review extract → integrity filter → F93 write → consolidate/graph.
+
+### Feature shipped (F104)
+- `scripts/memory_compound_write.py` — `plan` / `apply` / `compound` / `fixture` / `status`
+- Integrity policy: path-evidenced only; reject `/Users|/home`, secret-like tokens, weak_evidence
+- Soft stage in `run-torii-review.sh` **before** consolidate + temporal graph
+- `torii_memory.py compound` dispatch + doctor fixture
+- `memory_loop_status` stage `compound_write` (L3 11/11)
+- Toggle `TORII_MEMORY_COMPOUND`; adopted tool `memory-compound-write`
+- PRODUCT mental model C extended F93–F104
+
+### Metric
+- Offline fixture: good_promoted≥1, weak=0, poison_ok, store_clean, fixture_pass=1
+- Live Modal pytorch#191813: BIT3_OK ~48s, tool_call_turns=4, log_streaming=true; F104 stage promoted=0 (correct — non-security PR)
+- pytest: 569 passed
+
+### SHA
+_pending_
+
 ## 2026-08-01 — F103 unified torii_memory CLI for Hermes
 
 ### Papers / posts / OSS

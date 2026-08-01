@@ -75,23 +75,25 @@ route → hit → fitness → dual → attr → inject
 
 ---
 
-## Mental model C — Memory compound loop (F93–F98)
+## Mental model C — Memory compound loop (F93–F104)
 
-Torii does not dump every past finding into the next prompt. Memory is **written with events, consolidated, strength-ranked, tiered, and paged on demand**:
+Torii does not dump every past finding into the next prompt. Memory is **written with integrity, events, consolidated, strength-ranked, tiered, and paged on demand**:
 
 ```text
-write → consolidate → effective_critic → federate → scoped_recall → tiers → archival_search
-  │         │               │              │            │            │           └─ cold hits → core for this PR
-  │         │               │              │            │            └─ core (hot) vs archival (cold)
-  │         │               │              │            └─ path/scope/effective inject budget
-  │         │               │              └─ privacy-safe multi-tenant strength signals
-  │         │               └─ confirm TP only above effective floor (stale ≠ precision)
-  │         └─ importance × half-life; merge near-dups; evict dead noise
-  └─ ADD/UPDATE/DELETE/NONE; path FP supersedes overlapping TP
+compound → write → consolidate → effective_critic → federate → scoped_recall → tiers → archival_search
+  │          │         │               │              │            │            │           └─ cold hits → core
+  │          │         │               │              │            │            └─ core (hot) vs archival (cold)
+  │          │         │               │              │            └─ path/scope/effective inject budget
+  │          │         │               │              └─ privacy-safe multi-tenant strength signals
+  │          │         │               └─ confirm TP only above effective floor (stale ≠ precision)
+  │          │         └─ importance × half-life; merge near-dups; evict dead noise
+  │          └─ ADD/UPDATE/DELETE/NONE; path FP supersedes overlapping TP
+  └─ post-review path-evidenced findings only; reject poison / pathless
 ```
 
 | Stage | What ships | Customer-facing meaning |
 |-------|------------|-------------------------|
+| **Compound** | memory_compound_write (F104) | Live reviews grow TP store safely |
 | **Write** | memory_event_policy | Same FP does not resurrect after resolve |
 | **Consolidate** | memory_consolidate | Store stays lean (merge/decay/evict) |
 | **Effective critic** | dual_pass + floor | Stale TP cannot inflate “confirmed” |
@@ -106,7 +108,9 @@ write → consolidate → effective_critic → federate → scoped_recall → ti
 
 **Temporal graph (F100–F102).** Zep-style edges (`supersedes`, `same_theme`, `co_path`) with `valid_from` / `valid_until`. Dual-pass critic **demotes findings that match actively superseded TPs**, with **multi-hop** path kinship (co_path/same_theme) so sibling files inherit resolve caution.
 
-**Agent front door (F103):** `python3 scripts/torii_memory.py help|search|graph|loop|doctor` — one CLI for Hermes/terminal over the whole memory stack.
+**Agent front door (F103):** `python3 scripts/torii_memory.py help|search|graph|loop|compound|doctor` — one CLI for Hermes/terminal over the whole memory stack.
+
+**Integrity compound (F104):** after each review, only path-evidenced findings become durable TP signatures (provenance + no absolute-home/secret blobs); weak narrative never poisons the store.
 
 **Ops:** `python3 scripts/memory_loop_status.py scorecard` → L0–L3. Smoke requires L3 on the hub tree. CI job summary annotates readiness; optional advisory `torii/memory-loop` via `TORII_MEMORY_LOOP_STATUS_COMMIT=1`.
 

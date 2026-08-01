@@ -1,9 +1,21 @@
 {
   "schema_version": 1,
-  "feature": "F103",
+  "feature": "F104",
   "description": "Torii agent tool catalog \u2014 research \u2192 eval \u2192 adopt pipeline",
-  "updated_at": "2026-08-01T03:41:38Z",
+  "updated_at": "2026-08-01T03:49:19Z",
   "tools": [
+    {
+      "id": "memory-compound-write",
+      "name": "Integrity-gated memory compound write",
+      "status": "adopted",
+      "source": "shipped",
+      "kind": "workflow_tool",
+      "toolset": "terminal",
+      "rationale": "F104: post-review path-evidenced findings \u2192 durable TP via integrity gate + F93 events",
+      "safety": "rejects absolute-home paths, secret-like blobs, weak_evidence; no raw snippets in store",
+      "adopted_at": "2026-08-01T03:49:19Z",
+      "feature": "F104"
+    },
     {
       "id": "terminal",
       "name": "Hermes terminal toolset",

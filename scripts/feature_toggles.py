@@ -625,6 +625,15 @@ REGISTRY: list[ToggleSpec] = [
         "F103",
     ),
     ToggleSpec(
+        "memory_compound",
+        "TORII_MEMORY_COMPOUND",
+        "bool",
+        True,
+        "product",
+        "F104 integrity-gated post-review TP compound write",
+        "F104",
+    ),
+    ToggleSpec(
         "trace_vault",
         "TORII_TRACE_VAULT",
         "bool",

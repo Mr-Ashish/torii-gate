@@ -311,6 +311,33 @@ if [[ -f "$SCRIPTS/federated_hub_ingest.py" ]]; then
   esac
 fi
 
+# F104: integrity-gated compound write of path-evidenced TP signatures (soft)
+# Runs before consolidate/graph so new TPs enter decay + temporal edges.
+if [[ -f "$SCRIPTS/memory_compound_write.py" ]]; then
+  case "${TORII_MEMORY_COMPOUND:-1}" in
+    0|false|no|off) ;;
+    *)
+      _f104_review=""
+      if [[ -n "${REVIEW_FILE:-}" && -f "${REVIEW_FILE}" ]]; then
+        _f104_review="$REVIEW_FILE"
+      elif [[ -f "$OUT_DIR/review-${PR_NUMBER:-}.md" ]]; then
+        _f104_review="$OUT_DIR/review-${PR_NUMBER}.md"
+      elif compgen -G "$OUT_DIR/review*.md" > /dev/null; then
+        _f104_review="$(ls -1 "$OUT_DIR"/review*.md 2>/dev/null | grep -v '\.raw\.md$' | head -1 || true)"
+      fi
+      if [[ -n "$_f104_review" ]]; then
+        stage memory_compound \
+          python3 "$SCRIPTS/memory_compound_write.py" compound \
+            --review "$_f104_review" \
+            --out-dir "$OUT_DIR" \
+            --repo "${REPO:-${GITHUB_REPOSITORY:-}}" \
+            --pr "${PR_NUMBER:-}" \
+            --source agent_review || true
+      fi
+      ;;
+  esac
+fi
+
 # F94: memory consolidation — importance · merge · decay · eviction (soft)
 if [[ -f "$SCRIPTS/memory_consolidate.py" ]]; then
   case "${TORII_MEMORY_CONSOLIDATE:-1}" in

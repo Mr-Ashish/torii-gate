@@ -115,6 +115,16 @@ COMMANDS: dict[str, dict[str, Any]] = {
         "help": "Privacy-safe federated signals (F77/F95)",
         "examples": ["federate -- fixture", "federate -- status"],
     },
+    "compound": {
+        "script": "memory_compound_write.py",
+        "default_args": [],
+        "help": "Integrity-gated post-review TP compound write (F104)",
+        "examples": [
+            "compound -- compound --review review.md --out-dir .torii-out",
+            "compound -- fixture",
+            "compound -- status",
+        ],
+    },
 }
 
 
@@ -202,9 +212,11 @@ def render_inject_hint() -> str:
         "python3 scripts/torii_memory.py search-auto -- --files path1,path2\n"
         "python3 scripts/torii_memory.py graph -- query --path <file> --hops 2\n"
         "python3 scripts/torii_memory.py loop -- scorecard --shallow\n"
+        "python3 scripts/torii_memory.py compound -- status\n"
         "```\n\n"
         "Prefer **search / graph** before re-raising themes that may be FP-resolved. "
-        "Still require path:line evidence to block.\n"
+        "Still require path:line evidence to block. "
+        "Post-run **compound** (F104) only persists path-evidenced TPs.\n"
         "<!-- /torii-f103-memory-cli -->\n"
     )
 
@@ -287,6 +299,7 @@ def cmd_doctor(args: argparse.Namespace) -> int:
         ("recall", ["fixture"]),
         ("loop", ["scorecard", "--shallow"]),
         ("federate", ["fixture"]),
+        ("compound", ["fixture"]),
     ]
     results = []
     all_ok = True
@@ -374,9 +387,9 @@ def cmd_inject_hint(args: argparse.Namespace) -> int:
 def cmd_fixture(args: argparse.Namespace) -> int:
     """Hermetic: help lists cmds; status; doctor; inject-hint."""
     h = help_payload()
-    help_ok = len(h.get("commands") or []) >= 8 and "search" in {
+    help_ok = len(h.get("commands") or []) >= 9 and "search" in {
         c["cmd"] for c in h["commands"]
-    }
+    } and "compound" in {c["cmd"] for c in h["commands"]}
     # status
     st = subprocess.run(
         [sys.executable, str(Path(__file__).resolve()), "status"],
