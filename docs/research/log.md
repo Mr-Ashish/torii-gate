@@ -27,7 +27,7 @@ Graph without critic is inject-only. Highest ROI: **demote confirmed TP on activ
 - Live: **Modal** pytorch#191813 deepseek/deepseek-v4-pro BIT3_OK ~83s; log_streaming=true; POST_COMMENT=0
 
 ### SHA
-PENDING
+24c69c118b09e092cf0f56ccad5314732d02689d
 
 ## 2026-08-01 — F100 Zep-style temporal memory graph edges
 
