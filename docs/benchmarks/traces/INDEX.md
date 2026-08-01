@@ -33,3 +33,4 @@ Paper/eval-safe slim traces (redacted). Large raw logs may be gitignored; always
 | 2026-08-01T03:15:00Z | pytorch/pytorch | 191813 | deepseek/deepseek-v4-pro | modal+f98 | — | `20260801-0315-pytorch-pytorch-PR191813-modal-f98` |
 | 2026-08-01T03:20:00Z | pytorch/pytorch | 191813 | deepseek/deepseek-v4-pro | modal+f99 | — | `20260801-0320-pytorch-pytorch-PR191813-modal-f99` |
 | 2026-08-01T03:30:00Z | pytorch/pytorch | 191813 | deepseek/deepseek-v4-pro | modal+f100 | — | `20260801-0330-pytorch-pytorch-PR191813-modal-f100` |
+| 2026-08-01T03:35:00Z | pytorch/pytorch | 191813 | deepseek/deepseek-v4-pro | modal+f101 | — | `20260801-0335-pytorch-pytorch-PR191813-modal-f101` |

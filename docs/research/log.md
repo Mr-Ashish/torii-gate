@@ -1,6 +1,34 @@
 # Torii research → product log
 
 
+## 2026-08-01 — F101 graph supersede demote in dual-pass critic
+
+### Papers / posts / OSS
+- F100 temporal supersedes edges; F70/F95 dual_pass ignored graph.
+- Loop-eng checker must recompute offline — supersession is a structural signal.
+
+### OSS / eng patterns
+1. `superseded_index` from active supersedes edges (target ids + themes).
+2. dual_pass: filter TP hits; if none remain → `superseded_tp` (not confirmed).
+3. F78 panel surfaces counts; toggle `TORII_GRAPH_SUPERSEDE`.
+
+### Insight
+Graph without critic is inject-only. Highest ROI: **demote confirmed TP on active supersedes**.
+
+### Feature shipped (F101)
+- dual_pass graph_supersede demote; superseded_index API
+- second_agent detail; tests; PRODUCT
+
+### Loop-engineering practice used
+**Checker uses the same graph the writer builds** — tools-as-code, no LLM.
+
+### Metric
+- Offline: supersede demote + cmdi still confirm; 555 pytest; smoke PASS
+- Live: **Modal** pytorch#191813 deepseek/deepseek-v4-pro BIT3_OK ~83s; log_streaming=true; POST_COMMENT=0
+
+### SHA
+PENDING
+
 ## 2026-08-01 — F100 Zep-style temporal memory graph edges
 
 ### Papers / posts / OSS

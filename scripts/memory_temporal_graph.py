@@ -299,6 +299,60 @@ def edge_active(edge: dict[str, Any], *, as_of: str | None = None) -> bool:
     return str(until) > str(as_of)  # string ISO compare works for Zulu timestamps
 
 
+def superseded_index(graph: dict[str, Any] | None, *, as_of: str | None = None) -> dict[str, Any]:
+    """F101: ids/themes that are targets of active supersedes edges (do not confirm TP).
+
+    Edge direction (F100): source = superseding item (often FP), target = dead TP.
+    """
+    ids: set[str] = set()
+    themes: set[str] = set()
+    edges_out: list[dict[str, Any]] = []
+    if not isinstance(graph, dict):
+        return {"ids": ids, "themes": themes, "edges": edges_out, "count": 0}
+    nodes = {n.get("id"): n for n in (graph.get("nodes") or []) if isinstance(n, dict)}
+    for e in graph.get("edges") or []:
+        if not isinstance(e, dict) or e.get("type") != "supersedes":
+            continue
+        if not edge_active(e, as_of=as_of):
+            continue
+        target = str(e.get("target") or "")
+        source = str(e.get("source") or "")
+        if not target:
+            continue
+        ids.add(target)
+        if ":" in target:
+            ids.add(target.split(":", 1)[-1])
+        tn = nodes.get(target) or {}
+        if tn.get("theme"):
+            themes.add(_norm(str(tn["theme"])))
+        if tn.get("raw_id"):
+            ids.add(str(tn["raw_id"]))
+        edges_out.append(
+            {
+                "source": source,
+                "target": target,
+                "valid_from": e.get("valid_from"),
+                "valid_until": e.get("valid_until"),
+            }
+        )
+    return {
+        "ids": ids,
+        "themes": themes,
+        "edges": edges_out,
+        "count": len(edges_out),
+    }
+
+
+def load_or_build_graph(root: Path | None = None) -> dict[str, Any]:
+    """Load .torii/memory-graph.json or rebuild from TP/FP stores."""
+    root = root or _root()
+    gpath = default_graph_path(root)
+    data = _load_json(gpath)
+    if isinstance(data, dict) and data.get("nodes"):
+        return data
+    return build_from_disk(root)
+
+
 def query_graph(
     graph: dict[str, Any],
     *,

@@ -129,27 +129,34 @@ def run_f70_critic(review: str, root: Path, out_dir: Path | None) -> CheckerResu
         if out_dir and (out_dir / "fp-rules.json").is_file():
             fp_path = out_dir / "fp-rules.json"
         fp = load_fp_rules_dicts(fp_path) if fp_path.is_file() else []
-        result = dual_pass_critic(review, fp_rules=fp, tp_signatures=tp)
+        result = dual_pass_critic(review, fp_rules=fp, tp_signatures=tp, root=root)
         precision = float(result.get("precision_proxy") or 0)
         eff_prec = float(result.get("effective_precision") or precision)
         weak = int(result.get("weak_evidence") or 0)
         chunks = int(result.get("chunk_count") or 0)
+        super_n = int(result.get("superseded_tp") or 0)
         # Prefer F95 effective_precision when present; ok if not mostly weak
         score = max(precision, eff_prec * 0.95)
+        # F101: graph supersede demotions improve hygiene (small bonus, cap 1.0)
+        if super_n > 0:
+            score = min(1.0, score + min(0.08, 0.02 * super_n))
         ok = score >= 0.35 or chunks == 0 or weak == 0
         return CheckerResult(
             id="f70_dual_critic",
-            name="Dual-pass path/FP/TP critic (F70+F95 effective)",
+            name="Dual-pass path/FP/TP critic (F70+F95+F101 graph)",
             ok=ok,
             score=score,
             detail={
                 "precision_proxy": precision,
                 "effective_precision": eff_prec,
                 "effective_aware": result.get("effective_aware"),
+                "graph_supersede_aware": result.get("graph_supersede_aware"),
+                "graph_supersede_edges": result.get("graph_supersede_edges"),
                 "effective_floor": result.get("effective_floor"),
                 "weak_evidence": weak,
                 "confirmed_tp": result.get("confirmed_tp"),
                 "stale_tp_match": result.get("stale_tp_match"),
+                "superseded_tp": super_n,
                 "likely_fp": result.get("likely_fp"),
                 "chunk_count": chunks,
             },

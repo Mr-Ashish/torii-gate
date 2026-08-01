@@ -1,0 +1,6 @@
+{
+  "id": "graph-supersede-critic",
+  "feature": "F101",
+  "status": "adopted",
+  "one_liner": "Demote findings matching F100 active supersedes edges"
+}

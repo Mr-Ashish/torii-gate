@@ -1,8 +1,8 @@
 {
   "schema_version": 1,
-  "feature": "F100",
+  "feature": "F101",
   "description": "Torii agent tool catalog \u2014 research \u2192 eval \u2192 adopt pipeline",
-  "updated_at": "2026-08-01T03:21:17Z",
+  "updated_at": "2026-08-01T03:27:59Z",
   "tools": [
     {
       "id": "terminal",
@@ -385,6 +385,15 @@
       "status": "adopted",
       "script": "scripts/memory_temporal_graph.py",
       "feature": "F100",
+      "source": "memory_oss",
+      "adopted_at": "2026-08-01"
+    },
+    {
+      "id": "graph-supersede-critic",
+      "name": "Graph supersede demote in dual-pass (F101)",
+      "status": "adopted",
+      "script": "scripts/bench_security_gate.py",
+      "feature": "F101",
       "source": "memory_oss",
       "adopted_at": "2026-08-01"
     }

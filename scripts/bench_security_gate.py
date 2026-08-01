@@ -258,11 +258,54 @@ def _effective_confirm_floor() -> float:
         return 0.25
 
 
+def _load_supersede_index(
+    memory_graph: dict[str, Any] | None = None,
+    *,
+    root: Path | None = None,
+) -> dict[str, Any]:
+    """F101: active supersedes targets from F100 graph (soft if missing)."""
+    empty: dict[str, Any] = {"ids": set(), "themes": set(), "edges": [], "count": 0}
+    try:
+        import importlib.util
+
+        pol = Path(__file__).resolve().parent / "memory_temporal_graph.py"
+        if not pol.is_file():
+            return empty
+        if (os.environ.get("TORII_GRAPH_SUPERSEDE") or "1").strip().lower() in (
+            "0",
+            "false",
+            "off",
+            "no",
+        ):
+            return empty
+        spec = importlib.util.spec_from_file_location("memory_temporal_graph", pol)
+        if not spec or not spec.loader:
+            return empty
+        mod = importlib.util.module_from_spec(spec)
+        sys.modules["memory_temporal_graph"] = mod
+        spec.loader.exec_module(mod)
+        g = memory_graph
+        if g is None:
+            g = mod.load_or_build_graph(root or _root())
+        idx = mod.superseded_index(g)
+        # normalize sets
+        return {
+            "ids": set(idx.get("ids") or set()),
+            "themes": set(idx.get("themes") or set()),
+            "edges": list(idx.get("edges") or []),
+            "count": int(idx.get("count") or 0),
+        }
+    except Exception:
+        return empty
+
+
 def dual_pass_critic(
     review_text: str,
     *,
     fp_rules: list[dict[str, Any]] | None = None,
     tp_signatures: list[dict[str, Any]] | None = None,
+    memory_graph: dict[str, Any] | None = None,
+    root: Path | None = None,
 ) -> dict[str, Any]:
     """Pass-1 extract chunks; Pass-2 validate path evidence + FP demote + TP boost.
 
@@ -271,6 +314,10 @@ def dual_pass_critic(
     F95: TP boost is **effective-aware** — signatures with F94 `effective_score` below
     ``TORII_TP_EFFECTIVE_FLOOR`` (default 0.25) match as ``stale_tp_match`` (not confirmed),
     so decayed/low-importance memory cannot inflate precision.
+
+    F101: **graph supersede demote** — if chunk matches a TP id/theme that is the target
+    of an active F100 ``supersedes`` edge, status becomes ``superseded_tp`` (counts as FP),
+    so resolved noise cannot re-confirm.
     """
     chunks = extract_finding_chunks(review_text)
     fp_rules = fp_rules or []
@@ -280,8 +327,12 @@ def dual_pass_critic(
     confirmed_tp = 0
     weak_evidence = 0
     stale_tp = 0
+    superseded_n = 0
     floor = _effective_confirm_floor()
     weighted_tp = 0.0
+    super_idx = _load_supersede_index(memory_graph, root=root)
+    super_ids = super_idx.get("ids") or set()
+    super_themes = super_idx.get("themes") or set()
 
     for i, ch in enumerate(chunks):
         low = _norm(ch)
@@ -299,6 +350,7 @@ def dual_pass_critic(
         # TP boost: keyword signature match, weighted by F94 effective_score
         tp_hits: list[str] = []
         tp_effs: list[float] = []
+        tp_themes: list[str] = []
         best_eff = 0.0
         for sig in tp_signatures:
             if not isinstance(sig, dict):
@@ -311,16 +363,55 @@ def dual_pass_critic(
                 eff = _tp_effective(sig)
                 tp_hits.append(sid)
                 tp_effs.append(eff)
+                th = _norm(str(sig.get("theme") or ""))
+                if th:
+                    tp_themes.append(th)
                 best_eff = max(best_eff, eff)
+        # F101: filter TP hits that are graph-superseded; demote only if none remain
+        graph_hit = ""
+        live_hits: list[str] = []
+        live_effs: list[float] = []
+        if super_ids or super_themes:
+            for j, sid in enumerate(tp_hits):
+                th = tp_themes[j] if j < len(tp_themes) else ""
+                sid_super = sid in super_ids or f"tp:{sid}" in super_ids
+                th_super = bool(th and th in super_themes)
+                if sid_super or th_super:
+                    if not graph_hit:
+                        graph_hit = sid if sid_super else f"theme:{th}"
+                    continue
+                live_hits.append(sid)
+                if j < len(tp_effs):
+                    live_effs.append(tp_effs[j])
+            # Theme-only demote when no TP signature hits but text is pure superseded theme
+            if not tp_hits and not demoted:
+                for th in super_themes:
+                    needle = th.replace("_", " ")
+                    if th and (needle in low or th in low):
+                        graph_hit = f"theme:{th}"
+                        break
+        else:
+            live_hits = list(tp_hits)
+            live_effs = list(tp_effs)
+
+        best_live = max(live_effs) if live_effs else 0.0
+        if graph_hit and not live_hits and not demoted:
+            demoted = True
+            demote_reason = f"graph_supersedes:{graph_hit}"
+
         status = "candidate"
-        if demoted:
+        if demoted and demote_reason.startswith("graph_supersedes:"):
+            status = "superseded_tp"
+            superseded_n += 1
+            likely_fp += 1  # precision: treat as non-TP
+        elif demoted:
             status = "likely_fp"
             likely_fp += 1
-        elif tp_hits and has_path and best_eff >= floor:
+        elif live_hits and has_path and best_live >= floor:
             status = "confirmed_tp"
             confirmed_tp += 1
-            weighted_tp += best_eff
-        elif tp_hits and has_path and best_eff < floor:
+            weighted_tp += best_live
+        elif live_hits and has_path and best_live < floor:
             # Stale / low-importance memory — path only, do not confirm
             status = "stale_tp_match"
             stale_tp += 1
@@ -336,10 +427,11 @@ def dual_pass_critic(
                 "status": status,
                 "has_path": has_path,
                 "paths": paths[:5],
-                "tp_signature_hits": tp_hits,
-                "tp_effective_max": round(best_eff, 4) if tp_hits else None,
-                "tp_effective_scores": [round(e, 4) for e in tp_effs] if tp_effs else [],
+                "tp_signature_hits": live_hits or tp_hits,
+                "tp_effective_max": round(best_live or best_eff, 4) if (live_hits or tp_hits) else None,
+                "tp_effective_scores": [round(e, 4) for e in (live_effs or tp_effs)] if (live_effs or tp_effs) else [],
                 "demote_reason": demote_reason,
+                "graph_filtered": graph_hit or None,
                 "preview": ch[:180].replace("\n", " "),
             }
         )
@@ -364,11 +456,14 @@ def dual_pass_critic(
         "feature": FEATURE,
         "pass": "dual_offline",
         "effective_aware": True,
+        "graph_supersede_aware": True,
+        "graph_supersede_edges": int(super_idx.get("count") or 0),
         "effective_floor": floor,
         "chunk_count": len(chunks),
         "likely_fp": likely_fp,
         "confirmed_tp": confirmed_tp,
         "stale_tp_match": stale_tp,
+        "superseded_tp": superseded_n,
         "weak_evidence": weak_evidence,
         "precision_proxy": precision_proxy,
         "effective_precision": eff_precision,

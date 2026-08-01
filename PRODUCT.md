@@ -104,7 +104,7 @@ write → consolidate → effective_critic → federate → scoped_recall → ti
 
 **One-liner (AppSec):** *False positives die twice — and true positives stay sharp.*
 
-**Temporal graph (F100).** Zep-style edges (`supersedes`, `same_theme`, `co_path`) with `valid_from` / `valid_until` so superseded TPs stay visibly dead in prompt context.
+**Temporal graph (F100–F101).** Zep-style edges (`supersedes`, `same_theme`, `co_path`) with `valid_from` / `valid_until`. Dual-pass critic **demotes findings that match actively superseded TPs** so resolved noise cannot re-confirm.
 
 **Ops:** `python3 scripts/memory_loop_status.py scorecard` → L0–L3. Smoke requires L3 on the hub tree. CI job summary annotates readiness; optional advisory `torii/memory-loop` via `TORII_MEMORY_LOOP_STATUS_COMMIT=1`.
 

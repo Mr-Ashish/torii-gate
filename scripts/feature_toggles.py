@@ -598,6 +598,15 @@ REGISTRY: list[ToggleSpec] = [
         "F100",
     ),
     ToggleSpec(
+        "graph_supersede",
+        "TORII_GRAPH_SUPERSEDE",
+        "bool",
+        True,
+        "product",
+        "F101 dual-pass demotes findings matching active supersedes edges",
+        "F101",
+    ),
+    ToggleSpec(
         "trace_vault",
         "TORII_TRACE_VAULT",
         "bool",
