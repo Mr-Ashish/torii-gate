@@ -28,7 +28,7 @@ Panel demote without paper metric leaves EVAL vault blind. Highest ROI: F151 dem
 **Measured demote rate** — paper metric next to critic panel.
 
 ### SHA
-`PENDING`
+`1b97f0e8d3c7c41fd8ba0508659808bfa9b07a6e`
 
 
 ## 2026-08-01 — F150 recon-warm hub critic demote
