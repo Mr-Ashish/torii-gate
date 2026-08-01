@@ -1,5 +1,36 @@
 # Torii research → product log
 
+## 2026-08-01 — F132 self-evolve from scorecard gap themes
+
+### Papers / posts
+- Survey of Self-Evolving Agents (arXiv 2507.21046): inter-test-time feedback → skill evolution.
+- Agent Skill Evaluation & Evolution (arXiv 2606.11435): measure gaps then propose skills.
+- F129–F131 scorecard without evolution leaves readiness gaps static.
+
+### OSS design patterns stolen
+1. propose-scorecard maps brand metrics → skill proposals (privacy-safe themes).
+2. Templates for hub-gap, demote-eval, memory util, workflow, dual-compound ops.
+3. Install guide dual-compound day-2 + propose-scorecard close-the-loop.
+4. run-torii-review soft stage after product_scorecard.
+
+### Insight
+Scorecard without self-evolution is a dashboard. Highest ROI: gap themes become durable skill proposals for the next PR.
+
+### Feature shipped (F132)
+- self_evolve propose-scorecard + templates
+- workflow install-guide dual compound block
+- PRODUCT + research; traces f132-scorecard-self-evolve/
+
+### Metric
+- Offline: force-gap creates ≥2 proposals; guide_ok; pytest
+- Live: Modal pytorch e2e POST_COMMENT=0
+
+### Loop-engineering / Hermes practice used
+**Measure → propose → adopt** — scorecard gaps feed the skill library.
+
+### SHA
+`PENDING`
+
 ## 2026-08-01 — F131 workflow scorecard + dual compound brand panel
 
 ### Papers / posts

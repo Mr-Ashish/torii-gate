@@ -15,9 +15,14 @@ F117: mine allowlisted tool-outcome probes from live skill-hits + agent-loop
 into durable `.torii/tool-outcome-probes.json` (merged by skill_router F114),
 and propose skills for novel tool families (product doctor/status, critic, …).
 
+F132: product scorecard gap themes (F129–F131 brand_ready metrics) → skill
+proposals so self-evolution closes install/ops readiness gaps, not only
+trajectory thrash.
+
 Usage:
   python3 scripts/self_evolve.py ingest --out-dir DIR [--pr N] [--repo R]
   python3 scripts/self_evolve.py propose [--limit N]
+  python3 scripts/self_evolve.py propose-scorecard [--scorecard PATH] [--limit N]
   python3 scripts/self_evolve.py mine-probes --out-dir DIR [--propose]
   python3 scripts/self_evolve.py eval [--proposal ID|all]
   python3 scripts/self_evolve.py adopt PROPOSAL_ID [--force]
@@ -633,6 +638,261 @@ def _signals_from_loop(data: dict[str, Any], out_dir: Path) -> list[str]:
     return out
 
 
+# F132: scorecard metric → skill proposal templates (privacy-safe themes only)
+SCORECARD_GAP_TEMPLATES: dict[str, dict[str, str]] = {
+    "recovery_ok": {
+        "id": "skill-prefer-recovery-skills-active",
+        "title": "Keep recovery skills active (memory/product/critic)",
+        "body": (
+            "## Skill: prefer-recovery-skills-active (F132)\n\n"
+            "When product doctor or scorecard shows recovery_ok gap:\n"
+            "1. Ensure active skills include memory/product/critic recovery skills.\n"
+            "2. Call `python3 scripts/torii.py doctor` and "
+            "`python3 scripts/skill_loop_status.py scorecard --shallow`.\n"
+            "3. Prefer recovery CLIs mid-review; do not APPROVE with idle recovery.\n"
+        ),
+    },
+    "recovery_hub_gap_ok": {
+        "id": "skill-prefer-hub-gap-critic",
+        "title": "Wire hub gap critic before soft APPROVE",
+        "body": (
+            "## Skill: prefer-hub-gap-critic (F132)\n\n"
+            "When recovery_hub_gap_ok is false:\n"
+            "1. Run `python3 scripts/second_agent_critic.py demote-eval`.\n"
+            "2. Ensure f127_hub_gap checker is in the panel path.\n"
+            "3. Demote APPROVE when multi-tenant hub gap_pressure is high and "
+            "recovery tools are idle.\n"
+        ),
+    },
+    "demote_eval_pass": {
+        "id": "skill-prefer-demote-eval-check",
+        "title": "Run critic demote-eval pack before claiming readiness",
+        "body": (
+            "## Skill: prefer-demote-eval-check (F132)\n\n"
+            "Ops/install readiness requires measured demote rate:\n"
+            "1. `python3 scripts/second_agent_critic.py demote-eval`\n"
+            "2. Confirm weak APPROVE demotes; hub-gap idle APPROVE demotes.\n"
+            "3. Surface critic_approve_demote_rate in product scorecard.\n"
+        ),
+    },
+    "memory_util_eval_pass": {
+        "id": "skill-prefer-memory-util-eval",
+        "title": "Prove memory tools fire (util-eval delta)",
+        "body": (
+            "## Skill: prefer-memory-util-eval (F132)\n\n"
+            "Mem0/Letta: memory only helps if tools are called.\n"
+            "1. `python3 scripts/memory_tool_audit.py util-eval`\n"
+            "2. Require memory_tool_util_delta ≥ 0.4 (good vs inject-unused weak).\n"
+            "3. Mid-review call `python3 scripts/torii.py memory -- search` once.\n"
+        ),
+    },
+    "workflow_ok": {
+        "id": "skill-prefer-workflow-scorecard",
+        "title": "Validate workflows-as-code graph readiness",
+        "body": (
+            "## Skill: prefer-workflow-scorecard (F132)\n\n"
+            "When workflow_ok is false:\n"
+            "1. `python3 scripts/torii.py workflow -- scorecard`\n"
+            "2. `python3 scripts/workflow_as_code.py validate`\n"
+            "3. Fix missing stage scripts before claiming install readiness.\n"
+        ),
+    },
+    "dual_compound_triple_ready": {
+        "id": "skill-prefer-dual-compound-ops",
+        "title": "Close dual compound triple (skill+memory+workflow L3)",
+        "body": (
+            "## Skill: prefer-dual-compound-ops (F132)\n\n"
+            "Brand readiness needs skill L3 + memory L3 + workflow L3:\n"
+            "1. `python3 scripts/torii.py scorecard`\n"
+            "2. Read dual_compound.triple_ready; fix the failing loop first.\n"
+            "3. Prefer scorecard over vibe-based “we’re ready” claims.\n"
+        ),
+    },
+    "brand_ready": {
+        "id": "skill-prefer-product-scorecard",
+        "title": "Run product scorecard as day-2 habit",
+        "body": (
+            "## Skill: prefer-product-scorecard (F132)\n\n"
+            "Install/ops day-2 habit:\n"
+            "1. `python3 scripts/torii.py doctor`\n"
+            "2. `python3 scripts/torii.py scorecard`\n"
+            "3. Treat brand_ready=false as blocking for Hub71 demos / ship claims.\n"
+        ),
+    },
+}
+
+
+def scorecard_gaps(metrics: dict[str, Any], *, brand_ready: bool | None = None) -> list[str]:
+    """Return metric keys that are gaps (privacy-safe bool/level fields only)."""
+    gaps: list[str] = []
+    bool_keys = (
+        "recovery_ok",
+        "recovery_hub_gap_ok",
+        "demote_eval_pass",
+        "memory_util_eval_pass",
+        "workflow_ok",
+        "dual_compound_triple_ready",
+    )
+    for k in bool_keys:
+        if k not in metrics:
+            continue
+        v = metrics.get(k)
+        if v is False or v is None:
+            gaps.append(k)
+    if brand_ready is False and "brand_ready" not in gaps:
+        gaps.append("brand_ready")
+    # level gaps
+    for lk, need in (
+        ("skill_loop_level", ("L2", "L3")),
+        ("memory_loop_level", ("L2", "L3")),
+        ("workflow_level", ("L2", "L3")),
+    ):
+        lv = metrics.get(lk)
+        if lv is not None and lv not in need:
+            if lk == "workflow_level" and "workflow_ok" not in gaps:
+                gaps.append("workflow_ok")
+            elif lk == "skill_loop_level" and "recovery_ok" not in gaps:
+                gaps.append("recovery_ok")
+            elif lk == "memory_loop_level" and "memory_util_eval_pass" not in gaps:
+                gaps.append("memory_util_eval_pass")
+    return gaps
+
+
+def propose_from_scorecard(
+    root: Path,
+    scorecard: dict[str, Any] | None = None,
+    *,
+    limit: int = 5,
+    write: bool = True,
+) -> dict[str, Any]:
+    """F132: scorecard gap themes → skill proposals (self-evolution inter-test-time)."""
+    root = root or _root()
+    if scorecard is None:
+        # load last product scorecard or run shallow via torii if available
+        for cand in (
+            root / ".torii" / "product-scorecard.json",
+            root / "docs" / "brand" / "scorecard-metrics.md",
+        ):
+            if cand.suffix == ".json" and cand.is_file():
+                try:
+                    scorecard = json.loads(cand.read_text(encoding="utf-8"))
+                    break
+                except (OSError, json.JSONDecodeError):
+                    continue
+    if scorecard is None:
+        scorecard = {"metrics": {}, "brand_ready": None}
+
+    metrics = dict(scorecard.get("metrics") or {})
+    # dual_compound triple into metrics if nested
+    dc = scorecard.get("dual_compound") or {}
+    if "dual_compound_triple_ready" not in metrics and "triple_ready" in dc:
+        metrics["dual_compound_triple_ready"] = bool(dc.get("triple_ready"))
+    gaps = scorecard_gaps(metrics, brand_ready=scorecard.get("brand_ready"))
+    # always propose product-scorecard habit if no gaps (maintenance signal)
+    if not gaps:
+        gaps = ["brand_ready"]  # maintenance proposal only when fully green
+
+    proposals_dir = root / "agent" / "skills" / "proposals"
+    if write:
+        proposals_dir.mkdir(parents=True, exist_ok=True)
+    ledger = _load_ledger(root)
+    existing = {p.get("id") for p in ledger.get("proposals") or []}
+    for p in proposals_dir.glob("*.md") if proposals_dir.is_dir() else []:
+        existing.add(p.stem)
+    active = {
+        p.stem
+        for p in (root / "agent" / "skills" / "active").glob("*.md")
+        if (root / "agent" / "skills" / "active").is_dir()
+    }
+
+    created: list[dict[str, Any]] = []
+    for gap in gaps:
+        if len(created) >= limit:
+            break
+        tmpl = SCORECARD_GAP_TEMPLATES.get(gap)
+        if not tmpl:
+            continue
+        sid = tmpl["id"]
+        if sid in existing or sid in active:
+            continue
+        body = (
+            f"---\nid: {sid}\ntitle: {tmpl['title']}\n"
+            f"themes: scorecard,ops,readiness,f132\n"
+            f"always: false\n---\n\n{tmpl['body']}"
+        )
+        entry = {
+            "id": sid,
+            "title": tmpl["title"],
+            "status": "proposed",
+            "source": "scorecard_gap",
+            "gap": gap,
+            "feature": "F132",
+            "created_at": _now(),
+        }
+        if write:
+            path = proposals_dir / f"{sid}.md"
+            path.write_text(body if body.endswith("\n") else body + "\n", encoding="utf-8")
+            try:
+                entry["path"] = str(path.resolve().relative_to(root.resolve()))
+            except ValueError:
+                entry["path"] = path.name
+            ledger["proposals"] = [
+                p for p in ledger.get("proposals") or [] if p.get("id") != sid
+            ]
+            ledger["proposals"].append(entry)
+        created.append(entry)
+        existing.add(sid)
+
+    if write and created:
+        hist = ledger.setdefault("history", [])
+        hist.append(
+            {
+                "at": _now(),
+                "event": "propose_scorecard",
+                "feature": "F132",
+                "gaps": gaps[:12],
+                "created": [c["id"] for c in created],
+            }
+        )
+        ledger["history"] = hist[-100:]
+        _save_ledger(root, ledger)
+
+    return {
+        "feature": "F132",
+        "gaps": gaps,
+        "created_n": len(created),
+        "created": created,
+        "brand_ready": scorecard.get("brand_ready"),
+        "metrics_keys": sorted(metrics.keys())[:24],
+        "scored_at": _now(),
+    }
+
+
+def cmd_propose_scorecard(args: argparse.Namespace) -> int:
+    """F132: propose skills from product scorecard gap themes."""
+    root = _root()
+    sc = None
+    if getattr(args, "scorecard", None) and args.scorecard:
+        p = Path(args.scorecard)
+        if p.is_file():
+            sc = json.loads(p.read_text(encoding="utf-8"))
+    # optional: force synthetic gaps for fixture via env
+    force_gaps = (os.environ.get("TORII_SCORECARD_FORCE_GAPS") or "").strip()
+    if force_gaps and sc is None:
+        sc = {
+            "brand_ready": False,
+            "metrics": {k: False for k in force_gaps.split(",") if k.strip()},
+        }
+    report = propose_from_scorecard(
+        root,
+        sc,
+        limit=int(getattr(args, "limit", 5) or 5),
+        write=not bool(getattr(args, "dry_run", False)),
+    )
+    print(json.dumps(report, indent=2))
+    return 0 if report.get("created_n", 0) >= 0 else 1
+
+
 def cmd_propose(args: argparse.Namespace) -> int:
     """Turn trajectory signals into skill proposals (H3 skill-file evolution lite)."""
     root = _root()
@@ -1209,6 +1469,15 @@ def main(argv: list[str] | None = None) -> int:
     pp = sub.add_parser("propose", help="Create skill proposals from trajectories")
     pp.add_argument("--limit", type=int, default=5)
     pp.set_defaults(func=cmd_propose)
+
+    psc = sub.add_parser(
+        "propose-scorecard",
+        help="F132 propose skills from product scorecard gap themes",
+    )
+    psc.add_argument("--scorecard", default="", help="path to product-scorecard.json")
+    psc.add_argument("--limit", type=int, default=5)
+    psc.add_argument("--dry-run", action="store_true")
+    psc.set_defaults(func=cmd_propose_scorecard)
 
     pm = sub.add_parser("mine-probes", help="F117 mine allowlisted tool probes from run")
     pm.add_argument("--out-dir", required=True)

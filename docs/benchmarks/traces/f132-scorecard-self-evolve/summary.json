@@ -1,0 +1,29 @@
+{
+  "feature": "F132",
+  "scored_at": "2026-08-01T07:25:18Z",
+  "gaps": [
+    "demote_eval_pass",
+    "memory_util_eval_pass",
+    "workflow_ok",
+    "brand_ready"
+  ],
+  "created_n": 4,
+  "created_ids": [
+    "skill-prefer-demote-eval-check",
+    "skill-prefer-memory-util-eval",
+    "skill-prefer-workflow-scorecard",
+    "skill-prefer-product-scorecard"
+  ],
+  "model": "deepseek/deepseek-v4-pro",
+  "e2e": {
+    "repo": "pytorch/pytorch",
+    "pr": 191813,
+    "modal": true,
+    "bit3": "BIT3_OK",
+    "elapsed_s": 88.0,
+    "log_streaming": true,
+    "verdict": "REQUEST_CHANGES",
+    "post_comment": 0,
+    "modal_app": "https://modal.com/apps/mr-ashish/main/ap-Ac9QGYWdESyyO4AHiilPR6"
+  }
+}

@@ -180,6 +180,8 @@ budget always → compact body → score tool_hit → util gap? → budgeted re-
 
 **Workflow + dual compound (F131):** workflows-as-code scorecard folds into `torii.py scorecard` / `torii.py workflow -- scorecard`; brand panel requires skill L3 + memory L3 + workflow L3 (`dual_compound.triple_ready`) so the pipeline graph is as visible as the two intelligence loops.
 
+**Scorecard self-evolution (F132):** `self_evolve.py propose-scorecard` turns brand_ready metric gaps into skill proposals (hub-gap critic, demote-eval, memory util, workflow graph, dual-compound ops). Install guide documents the dual-compound day-2 habit and the propose-scorecard close-the-loop command.
+
 **Ops:** `python3 scripts/memory_loop_status.py scorecard` → L0–L3. Smoke requires L3 on the hub tree. CI job summary annotates readiness; optional advisory `torii/memory-loop` via `TORII_MEMORY_LOOP_STATUS_COMMIT=1`.
 
 ---

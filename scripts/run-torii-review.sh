@@ -217,6 +217,18 @@ if [[ -f "$SCRIPTS/second_agent_critic.py" ]]; then
       # F129: product brand/ops scorecard (doctor + demote metrics into OUT_DIR)
       stage product_scorecard \
         python3 "$SCRIPTS/torii.py" scorecard --out-dir "$OUT_DIR" || true
+      # F132: self-evolve skill proposals from scorecard gap themes (soft)
+      if [[ -f "$SCRIPTS/self_evolve.py" ]]; then
+        case "${TORII_SELF_EVOLVE_SCORECARD:-1}" in
+          0|false|no|off) ;;
+          *)
+            stage self_evolve_scorecard \
+              python3 "$SCRIPTS/self_evolve.py" propose-scorecard \
+                --scorecard "$OUT_DIR/product-scorecard.json" \
+                --limit 3 || true
+            ;;
+        esac
+      fi
       ;;
   esac
 fi

@@ -4,6 +4,7 @@ Paper/eval-safe slim traces (redacted). Large raw logs may be gitignored; always
 
 | Date (UTC) | Repo | PR | Model | Fitness | Level | Path |
 |------------|------|----|-------|---------|-------|------|
+| 2026-08-01T07:22:52Z | local | — | deepseek/deepseek-v4-pro | scorecard-evolve | — | `f132-scorecard-self-evolve` |
 | 2026-08-01T07:17:37Z | local | — | deepseek/deepseek-v4-pro | dual-compound | — | `f131-workflow-dual-compound` |
 | 2026-08-01T07:10:59Z | local | — | deepseek/deepseek-v4-pro | memory-util | — | `f130-memory-util-scorecard` |
 | 2026-08-01T07:05:06Z | local | — | deepseek/deepseek-v4-pro | product-scorecard | — | `f129-product-scorecard-brand` |

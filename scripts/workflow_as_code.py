@@ -442,7 +442,25 @@ def install_guide(root: Path, wf: dict[str, Any], report: dict[str, Any]) -> str
         "- **Checker** — F78 multi-checker panel (path/chain/fitness/memory) demotes weak APPROVE.",
         "- **Skill loop** — `route → hit → fitness → dual → attr → inject` (skills that do not contribute do not re-inflate prompts).",
         "- **Memory loop** — `write → consolidate → effective_critic → federate → recall → tiers → archival_search` (stale memory does not confirm or crowd inject).",
+        "- **Workflow graph** — stages as code (F79/F131); validate before ship claims.",
         "- **Gate** — `torii/gate` commit status is the merge signal.",
+        "",
+        "## Dual compound readiness (F131)",
+        "",
+        "Install day-2 habit — same numbers as brand scorecard:",
+        "",
+        "```bash",
+        "python3 scripts/torii.py doctor",
+        "python3 scripts/torii.py scorecard",
+        "python3 scripts/torii.py workflow -- scorecard",
+        "```",
+        "",
+        "Expect **skill L3 + memory L3 + workflow L3** (`dual_compound.triple_ready`).",
+        "If brand_ready is false, close scorecard gaps with self-evolution:",
+        "",
+        "```bash",
+        "python3 scripts/self_evolve.py propose-scorecard",
+        "```",
         "",
     ]
     # F91: skill compound loop readiness block
@@ -500,6 +518,8 @@ def install_guide(root: Path, wf: dict[str, Any], report: dict[str, Any]) -> str
         "python3 scripts/second_agent_critic.py fixture",
         "python3 scripts/skill_loop_status.py scorecard",
         "python3 scripts/memory_loop_status.py scorecard",
+        "python3 scripts/torii.py scorecard --shallow",
+        "python3 scripts/workflow_as_code.py scorecard",
         "```",
         "",
     ]
@@ -579,6 +599,8 @@ def cmd_fixture(args: argparse.Namespace) -> int:
         and "Maker" in guide
         and "F78" in guide
         and ("Skill compound" in guide or "skill loop" in guide.lower() or "F91" in guide)
+        and ("Dual compound" in guide or "triple_ready" in guide or "F131" in guide)
+        and "propose-scorecard" in guide
     )
     fixture_pass = report["valid"] and phase_ok and guide_ok and report["pct"] >= 90
     print(
