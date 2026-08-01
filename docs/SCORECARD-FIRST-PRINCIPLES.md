@@ -51,7 +51,7 @@ Commercial fixture **8.5** measures surface completeness; this sheet measures **
 
 | Rank | Gap | Lifts | Effort | ROI | Status |
 |-----:|-----|-------|--------|-----|--------|
-| 1 | **CLI cognitive-load collapse** — tier Day-1 / Day-2 / Advanced help; strip F-IDs from primary help | #12 · #3 · #7 | S | 🔥 | **this fire** |
+| 1 | **CLI cognitive-load collapse** — tier Day-1 / Day-2 / Advanced help; strip F-IDs from primary help | #12 · #3 · #7 | S | 🔥 | **shipped**  |
 | 2 | **Pricing / packaging product surface** — public Starter/Team/Business (or “open core + support”) without Hub71 archaeology | #10 · #11 · #2 | S | 🔥 | next |
 | 3 | **Own-repo quieter path after pack install** — customer vault quieter without hub dogfood archaeology | #3 · #7 | M | 🔥 | next |
 | 4 | **Enterprise isolation hermetic proof** — fixture: tenant A memory never injects into tenant B prompt | #9 | S | med | next |
