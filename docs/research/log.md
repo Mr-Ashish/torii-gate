@@ -30,7 +30,7 @@ simplicity (#12) · install (#7) · JTBD day-2
 operators get commercial · cost · cert · quieter without Modal archaeology
 
 ### SHA
-_pending_
+d2fb4e4f1d88c7476ceab8fbc91d119ce0fb67dd
 
 
 ## 2026-08-01 — CERT_VAULT_DOGFOOD: gate-certificate vault cert × cost
