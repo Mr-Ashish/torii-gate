@@ -77,6 +77,13 @@ LOOP_STAGES: list[dict[str, Any]] = [
         "one_liner": "Budgeted inject ranked by path + effective",
     },
     {
+        "id": "tiers",
+        "feature": "F97",
+        "script": "memory_tiers.py",
+        "fixture_cmd": ["fixture"],
+        "one_liner": "Letta-style core vs archival inject budgets",
+    },
+    {
         "id": "tp_store",
         "feature": "F70",
         "script": "bench_security_gate.py",
@@ -192,6 +199,13 @@ def assess(root: Path | None = None, *, deep: bool = True) -> dict[str, Any]:
             if (root / "scripts" / "scoped_memory_recall.py").is_file()
             else ""
         ),
+        "scoped_memory_tiers": "memory_tiers" in (
+            (root / "scripts" / "scoped_memory_recall.py").read_text(
+                encoding="utf-8", errors="replace"
+            )
+            if (root / "scripts" / "scoped_memory_recall.py").is_file()
+            else ""
+        ),
     }
     wire_ok = all(wire.values())
 
@@ -227,7 +241,7 @@ def assess(root: Path | None = None, *, deep: bool = True) -> dict[str, Any]:
     return {
         "feature": FEATURE,
         "schema": SCHEMA,
-        "loop": "write → consolidate → effective_critic → federate → scoped_recall → tp_store",
+        "loop": "write → consolidate → effective_critic → federate → scoped_recall → tiers → tp_store",
         "scored_at": _now(),
         "level": level,
         "pct": pct,

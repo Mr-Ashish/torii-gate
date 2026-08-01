@@ -793,6 +793,56 @@ jobs:
             fi
           fi
 
+          # F97: memory compound loop readiness annotation (job summary; optional commit status)
+          # Default: summary only. Set TORII_MEMORY_LOOP_STATUS_COMMIT=1 for advisory torii/memory-loop.
+          if [[ -f "$TORII_ROOT/scripts/memory_loop_status.py" ]]; then
+            set +e
+            ML_JSON="$(python3 "$TORII_ROOT/scripts/memory_loop_status.py" scorecard --shallow 2>/dev/null)"
+            ML_RC=$?
+            set -e
+            if [[ -n "${ML_JSON:-}" ]]; then
+              ML_LEVEL="$(python3 -c 'import json,sys; print(json.load(sys.stdin).get("level",""))' <<<"$ML_JSON" 2>/dev/null || true)"
+              ML_READY="$(python3 -c 'import json,sys; print("true" if json.load(sys.stdin).get("ready") else "false")' <<<"$ML_JSON" 2>/dev/null || echo false)"
+              ML_STAGES="$(python3 -c 'import json,sys; print(json.load(sys.stdin).get("stages_ok",""))' <<<"$ML_JSON" 2>/dev/null || true)"
+              ML_WIRE="$(python3 -c 'import json,sys; print(json.load(sys.stdin).get("wiring_ok",""))' <<<"$ML_JSON" 2>/dev/null || true)"
+              if [[ -n "${GITHUB_STEP_SUMMARY:-}" ]]; then
+                {
+                  echo "### Memory compound loop (\`write→consolidate→critic→federate→recall→tiers\`)"
+                  echo "- **Level:** \`$ML_LEVEL\` · **Ready:** \`$ML_READY\`"
+                  echo "- **Stages:** \`$ML_STAGES\` · **Wiring:** \`$ML_WIRE\`"
+                  echo "- **Ops:** \`python3 scripts/memory_loop_status.py scorecard\` · tiers: \`memory_tiers.py fixture\`"
+                  echo
+                } >> "$GITHUB_STEP_SUMMARY"
+              fi
+              echo "memory_loop level=$ML_LEVEL ready=$ML_READY stages=$ML_STAGES wiring=$ML_WIRE rc=$ML_RC"
+              case "${TORII_MEMORY_LOOP_STATUS_COMMIT:-0}" in
+                1|true|TRUE|on|ON|yes|YES)
+                  if [[ "$STATUS_ON" == "1" && -n "$REPO" && -n "${PR_NUMBER:-}" ]]; then
+                    HEAD_SHA_ML="$(
+                      gh pr view "$PR_NUMBER" --repo "$REPO" --json headRefOid --jq '.headRefOid' 2>/dev/null || true
+                    )"
+                    if [[ -n "${HEAD_SHA_ML:-}" ]]; then
+                      ML_STATE="success"
+                      [[ "$ML_READY" == "true" ]] || ML_STATE="neutral"
+                      TARGET_ML="${GITHUB_SERVER_URL:-https://github.com}/${REPO}/actions/runs/${GITHUB_RUN_ID:-}"
+                      DESC_ML="memory-loop ${ML_LEVEL} stages=${ML_STAGES}"
+                      DESC_ML="${DESC_ML:0:140}"
+                      gh api --method POST \
+                        -H "Accept: application/vnd.github+json" \
+                        "/repos/${REPO}/statuses/${HEAD_SHA_ML}" \
+                        -f state="$ML_STATE" \
+                        -f context="torii/memory-loop" \
+                        -f description="$DESC_ML" \
+                        -f target_url="$TARGET_ML" >/dev/null 2>&1 \
+                        && echo "Posted $ML_STATE status on ${HEAD_SHA_ML:0:12} (torii/memory-loop)" \
+                        || echo "warn: torii/memory-loop status post failed"
+                    fi
+                  fi
+                  ;;
+              esac
+            fi
+          fi
+
           # Optional hard fail for required-check workflows (default soft)
           STRICT="${TORII_GATE_STRICT:-0}"
           case "${STRICT}" in

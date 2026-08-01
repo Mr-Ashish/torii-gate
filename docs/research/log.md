@@ -1,6 +1,36 @@
 # Torii research → product log
 
 
+## 2026-08-01 — F97 Letta-style core/archival memory tiers + CI memory-loop summary
+
+### Papers / posts / OSS
+- **MemGPT/Letta:** OS hierarchy — core (always-in-context) vs archival (cold) vs recall.
+- Torii F75 flat top-N inject equalized path-matched and stale theme noise once selected.
+- F92 skill-loop CI job summary pattern → memory_loop mirror.
+
+### OSS / eng patterns
+1. Deterministic tier: path_match>0 OR effective≥floor OR path-FP → **core**; else archival.
+2. Separate CORE_MAX / ARCHIVAL_MAX budgets; render core first in prompt.
+3. CI job summary + optional `torii/memory-loop` commit status; memory_loop stage `tiers`.
+
+### Insight
+Effective scores without tiering still waste context on cold noise. Highest ROI: **Letta-style inject tiers**.
+
+### Feature shipped (F97)
+- `scripts/memory_tiers.py` classify/inject/fixture
+- scoped_memory_recall soft-apply tiers + render
+- reusable workflow memory_loop job summary; pack + PRODUCT
+
+### Loop-engineering practice used
+**Context budget as a measured resource** — core/archival split is tools-as-code, not SOUL prose.
+
+### Metric
+- Offline: tiers fixture; memory_loop L3 (7 stages); 547 pytest; smoke PASS
+- Live: **Modal** pytorch#191813 deepseek/deepseek-v4-pro BIT3_OK ~159s; log_streaming=true; POST_COMMENT=0
+
+### SHA
+PENDING
+
 ## 2026-08-01 — F96 memory loop readiness + promoted effective inject rank
 
 ### Papers / posts / OSS

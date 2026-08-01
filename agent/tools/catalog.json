@@ -1,8 +1,8 @@
 {
   "schema_version": 1,
-  "feature": "F96",
+  "feature": "F97",
   "description": "Torii agent tool catalog \u2014 research \u2192 eval \u2192 adopt pipeline",
-  "updated_at": "2026-08-01T02:54:59Z",
+  "updated_at": "2026-08-01T03:01:30Z",
   "tools": [
     {
       "id": "terminal",
@@ -358,6 +358,15 @@
       "script": "scripts/memory_loop_status.py",
       "feature": "F96",
       "source": "loop_engineering",
+      "adopted_at": "2026-08-01"
+    },
+    {
+      "id": "memory-tiers",
+      "name": "Letta-style core/archival memory tiers (F97)",
+      "status": "adopted",
+      "script": "scripts/memory_tiers.py",
+      "feature": "F97",
+      "source": "memory_oss",
       "adopted_at": "2026-08-01"
     }
   ],

@@ -171,6 +171,7 @@ RUNTIME_SCRIPTS=(
   memory_event_policy.py
   memory_consolidate.py
   memory_loop_status.py
+  memory_tiers.py
 )
 
 copy_file() {

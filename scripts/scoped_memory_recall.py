@@ -752,7 +752,7 @@ def recall(
     feds = [(s, i) for s, i in scored if i.kind == "federated"][:fed_max]
 
     path_matched_tp = sum(1 for s, i in tps if path_match(i, changed_paths) > 0)
-    return {
+    result: dict[str, Any] = {
         "feature": FEATURE,
         "changed_paths": changed_paths,
         "tp": [
@@ -778,6 +778,23 @@ def recall(
             "suppress_count": len(suppress),
         },
     }
+    # F97: Letta-style core/archival tiers (soft)
+    try:
+        if (os.environ.get("TORII_MEMORY_TIERS") or "1").strip().lower() not in _FALSEY:
+            import importlib.util
+
+            tier_path = Path(__file__).resolve().parent / "memory_tiers.py"
+            if tier_path.is_file():
+                spec = importlib.util.spec_from_file_location("memory_tiers", tier_path)
+                if spec and spec.loader:
+                    mod = importlib.util.module_from_spec(spec)
+                    sys.modules["memory_tiers"] = mod
+                    spec.loader.exec_module(mod)
+                    if mod.enabled():
+                        result = mod.apply_to_recall_result(result)
+    except Exception:
+        pass
+    return result
 
 
 def render_section(result: dict[str, Any]) -> str:
@@ -791,16 +808,39 @@ def render_section(result: dict[str, Any]) -> str:
         "Do **not** re-raise FP-suppressed themes without **new** path evidence.",
         "",
     ]
+    # F97: surface tiers first when present
+    tiers = result.get("tiers") if isinstance(result.get("tiers"), dict) else None
+    if tiers and result.get("tiers_enabled"):
+        try:
+            import importlib.util
+
+            tier_path = Path(__file__).resolve().parent / "memory_tiers.py"
+            if tier_path.is_file():
+                spec = importlib.util.spec_from_file_location("memory_tiers_render", tier_path)
+                if spec and spec.loader:
+                    mod = importlib.util.module_from_spec(spec)
+                    spec.loader.exec_module(mod)
+                    tier_md = mod.render_tiers_section(result)
+                    # embed without outer double blank
+                    for ln in tier_md.strip().splitlines():
+                        if ln.startswith("<!--"):
+                            continue
+                        lines.append(ln)
+                    lines.append("")
+        except Exception:
+            pass
     tps = result.get("tp") or []
     if tps:
         lines.append("### True-positive signatures (scoped)")
         for s in tps:
             kws = ", ".join((s.get("keywords") or [])[:6])
             cwe = ",".join(s.get("cwe") or []) or "n/a"
+            tier = s.get("tier") or ""
+            tier_s = f" tier={tier}" if tier else ""
             lines.append(
                 f"- `{s.get('raw_id') or s.get('id')}` scope={s.get('scope')} "
                 f"theme={s.get('theme')} cwe={cwe} hits={s.get('hits')} "
-                f"path_match={s.get('path_match', 0)} keywords=[{kws}]"
+                f"path_match={s.get('path_match', 0)}{tier_s} keywords=[{kws}]"
             )
         lines.append("")
     fps = result.get("fp") or []
@@ -808,8 +848,10 @@ def render_section(result: dict[str, Any]) -> str:
         lines.append("### False-positive / resolved (scoped)")
         for s in fps:
             path = s.get("path") or "(unanchored)"
+            tier = s.get("tier") or ""
+            tier_s = f" tier={tier}" if tier else ""
             lines.append(
-                f"- scope={s.get('scope')} path=`{path}` "
+                f"- scope={s.get('scope')} path=`{path}`{tier_s} "
                 f"kind/theme={s.get('theme')} — { (s.get('reason') or '')[:80] }"
             )
         lines.append("")
@@ -827,8 +869,10 @@ def render_section(result: dict[str, Any]) -> str:
         lines.append("### Federated themes (global, path-free)")
         for s in feds[:6]:
             kws = ", ".join((s.get("keywords") or [])[:5])
+            tier = s.get("tier") or ""
+            tier_s = f" tier={tier}" if tier else ""
             lines.append(
-                f"- `{s.get('theme')}` hits={s.get('hits')} keywords=[{kws}]"
+                f"- `{s.get('theme')}` hits={s.get('hits')}{tier_s} keywords=[{kws}]"
             )
         lines.append("")
     lines.append("<!-- /torii-f75-scoped-memory -->")

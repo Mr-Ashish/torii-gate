@@ -571,6 +571,15 @@ REGISTRY: list[ToggleSpec] = [
         "F95",
     ),
     ToggleSpec(
+        "memory_tiers",
+        "TORII_MEMORY_TIERS",
+        "bool",
+        True,
+        "product",
+        "F97 Letta-style core/archival tiers on scoped memory inject",
+        "F97",
+    ),
+    ToggleSpec(
         "trace_vault",
         "TORII_TRACE_VAULT",
         "bool",
