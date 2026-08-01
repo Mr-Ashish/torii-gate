@@ -29,7 +29,7 @@ simplicity (#12) · install (#7) · JTBD (#3)
 Day-1 help is 3 groups + builtins — not a research catalog
 
 ### SHA
-
+`2325be7a78bbdd6793c858a09ecacd34c49f0235`
 
 
 ## 2026-08-01 — GOLDEN_PATH_ENT_EVAL: golden --tenant + public-eval cost vault
