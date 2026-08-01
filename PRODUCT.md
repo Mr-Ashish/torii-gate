@@ -42,8 +42,6 @@ Torii Gate is a PR/CI **security merge authority**: agent review with tools, pat
 
 **Checker.** A deterministic second-agent panel (path evidence, chain revalidation, trajectory fitness, scoped memory, optional LLM critic) re-scores every run and demotes weak APPROVE without path evidence — default path is free (no extra LLM).
 
-**Compound memory (F93–F98).** Write-path Mem0-style events (ADD/UPDATE/DELETE/NONE): path-anchored FP can supersede overlapping TP so deleted noise does not resurface. Maintenance pass consolidates with **importance × half-life decay**, merges near-dup themes, and evicts stale low-value items. Dual-pass critic **confirms TP only above effective floor**; privacy-safe **effective_score** themes federate and **rank inject**. **Letta-style tiers:** core (path/high-eff) always injects; archival stays cold until **MemGPT-style archival search** promotes hits for the current PR. Ops: `memory_loop_status` L0–L3 + CI job summary.
-
 **Measured gate.** Multi-corpus labeled benches score recall before shipping harness changes.
 
 ---
@@ -74,6 +72,39 @@ route → hit → fitness → dual → attr → inject
 **One-liner (eng):** *Skills that do not contribute do not ship in the next prompt.*
 
 **One-liner (AppSec):** *The gate gets stricter and quieter over time — not noisier.*
+
+---
+
+## Mental model C — Memory compound loop (F93–F98)
+
+Torii does not dump every past finding into the next prompt. Memory is **written with events, consolidated, strength-ranked, tiered, and paged on demand**:
+
+```text
+write → consolidate → effective_critic → federate → scoped_recall → tiers → archival_search
+  │         │               │              │            │            │           └─ cold hits → core for this PR
+  │         │               │              │            │            └─ core (hot) vs archival (cold)
+  │         │               │              │            └─ path/scope/effective inject budget
+  │         │               │              └─ privacy-safe multi-tenant strength signals
+  │         │               └─ confirm TP only above effective floor (stale ≠ precision)
+  │         └─ importance × half-life; merge near-dups; evict dead noise
+  └─ ADD/UPDATE/DELETE/NONE; path FP supersedes overlapping TP
+```
+
+| Stage | What ships | Customer-facing meaning |
+|-------|------------|-------------------------|
+| **Write** | memory_event_policy | Same FP does not resurrect after resolve |
+| **Consolidate** | memory_consolidate | Store stays lean (merge/decay/evict) |
+| **Effective critic** | dual_pass + floor | Stale TP cannot inflate “confirmed” |
+| **Federate** | hub signals | Orgs share themes without paths/snippets |
+| **Scoped recall** | path + effective rank | Prompt budget prefers this PR’s files |
+| **Tiers** | core / archival | Hot always in; cold stays cold |
+| **Archival search** | just-in-time promote | Cold knowledge pages in when paths match |
+
+**One-liner (eng):** *Stale memory does not confirm findings or crowd the inject budget.*
+
+**One-liner (AppSec):** *False positives die twice — and true positives stay sharp.*
+
+**Ops:** `python3 scripts/memory_loop_status.py scorecard` → L0–L3. Smoke requires L3 on the hub tree. CI job summary annotates readiness; optional advisory `torii/memory-loop` via `TORII_MEMORY_LOOP_STATUS_COMMIT=1`.
 
 ---
 

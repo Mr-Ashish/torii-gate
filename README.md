@@ -3,7 +3,7 @@
 **The security gate for every pull request.**  
 *Nothing ships without crossing the gate.*
 
-Agent-powered PR/CI **security merge authority**: path-evidenced findings, maker/checker critics, compound memory, measured skill loop. Built for AI-written and human code.
+Agent-powered PR/CI **security merge authority**: path-evidenced findings, maker/checker critics, **two compound loops** (skills + memory). Built for AI-written and human code.
 
 [![Torii Gate](https://img.shields.io/static/v1?label=trigger&message=%40torii+review+this+pr&color=C9A227&style=for-the-badge)](#trigger)
 [![pack](https://img.shields.io/static/v1?label=default+pack&message=security&color=0B0F19&style=for-the-badge)](agent/packs/security.json)
@@ -17,14 +17,17 @@ Most AI PR bots optimize for *code quality comments*. Torii optimizes for **secu
 - Evidence from workspace tools (not invented vulns)  
 - Durable `.torii/` memory so false positives die twice  
 - Labels + optional required checks as the **gate**  
-- **Skill compound loop** so the gate gets *stricter and quieter* over time — not noisier  
+- **Two compound loops** so the gate gets *stricter and quieter* over time — not noisier  
 
 ```text
-route → hit → fitness → dual → attr → inject
+Skills:  route → hit → fitness → dual → attr → inject
+Memory:  write → consolidate → effective_critic → federate → recall → tiers → archival_search
 ```
 
-Skills that do not contribute do not ship in the next prompt. See [`PRODUCT.md`](PRODUCT.md) (ICP + mental models) and [`docs/brand/`](docs/brand/).
+- Skills that do not contribute do not ship in the next prompt.  
+- Stale memory does not confirm findings or crowd the inject budget.  
 
+See [`PRODUCT.md`](PRODUCT.md) (ICP + mental models A/B/C) and [`docs/brand/`](docs/brand/).
 ## Trigger
 
 ```text

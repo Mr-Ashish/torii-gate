@@ -4,7 +4,7 @@
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
 <title>Torii — Security gate for every pull request</title>
-<meta name="description" content="Torii is the PR/CI security merge authority for AI-written code. Maker/checker critics, compound memory, measured skill loop (route→hit→fitness→dual→attr→inject). The gate gets stricter and quieter — not noisier." />
+<meta name="description" content="Torii is the PR/CI security merge authority for AI-written code. Maker/checker critics, dual compound loops: skills (route→hit→fitness→dual→attr→inject) and memory (write→consolidate→tiers→archival search). The gate gets stricter and quieter — not noisier." />
 <link rel="preconnect" href="https://fonts.googleapis.com" />
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
 <link href="https://fonts.googleapis.com/css2?family=Albert+Sans:wght@400;500;600&family=Alumni+Sans:wght@100;300;400&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet" />
@@ -100,9 +100,9 @@ tr:last-child td{border-bottom:0}
   <div class="stats">
     <div class="stat"><b>Gate</b><span>Every PR · every CI</span></div>
     <div class="stat"><b>Evidence</b><span>Path · line · tool</span></div>
-    <div class="stat"><b>Compounds</b><span>Memory + skills</span></div>
+    <div class="stat"><b>Compounds</b><span>Skills + memory loops</span></div>
   </div>
-  <p class="note">Torii = the threshold gate. Product you install first: <strong style="color:var(--muted)">Torii Gate</strong>. One-liner for AppSec fatigue: <strong style="color:var(--muted)">the gate gets stricter and quieter over time — not noisier.</strong></p>
+  <p class="note">Torii = the threshold gate. Product you install first: <strong style="color:var(--muted)">Torii Gate</strong>. AppSec fatigue: <strong style="color:var(--muted)">stricter and quieter</strong>. Memory: <strong style="color:var(--muted)">false positives die twice — true positives stay sharp.</strong></p>
 </div></header>
 
 <section class="sec" id="product"><div class="wrap">
@@ -115,7 +115,7 @@ tr:last-child td{border-bottom:0}
     <div class="card" style="border-color:var(--hair-g)">
       <span class="pill">Ship now · Hub71 lock</span>
       <h3>Torii Gate</h3>
-      <p>GitHub PR comments + required checks. Security pack (injection, authz, secrets, SSRF, unsafe crypto). Tool-backed findings. Labels that block merge on high severity. Org memory of false positives so the same noise dies twice.</p>
+      <p>GitHub PR comments + required checks. Security pack (injection, authz, secrets, SSRF, unsafe crypto). Tool-backed findings. Labels that block merge on high severity. Compound memory (write events, decay, core/archival tiers, just-in-time archival search) so false positives die twice and true positives stay sharp.</p>
     </div>
     <div class="card">
       <div class="num">ICP</div>
@@ -162,15 +162,26 @@ tr:last-child td{border-bottom:0}
     <span class="pipe on">Attr</span>
     <span class="pipe on">Inject</span>
   </div>
-  <p class="note" style="margin:0 0 24px">Progressive skills → measure hits → demote zombies → dual-rollout contribution → LOO free-riders out → next PR injects winners only. <strong style="color:var(--muted)">Skills that do not contribute do not ship in the next prompt.</strong></p>
+  <p class="note" style="margin:0 0 16px">Progressive skills → measure hits → demote zombies → dual contribution → LOO free-riders out → next PR injects winners only. <strong style="color:var(--muted)">Skills that do not contribute do not ship in the next prompt.</strong></p>
+  <p class="ey" style="margin:8px 0 12px">Memory compound loop (why noise dies twice)</p>
+  <div class="pipeline">
+    <span class="pipe on">Write</span>
+    <span class="pipe on">Consolidate</span>
+    <span class="pipe on">Effective</span>
+    <span class="pipe on">Federate</span>
+    <span class="pipe on">Recall</span>
+    <span class="pipe on">Tiers</span>
+    <span class="pipe on">Search</span>
+  </div>
+  <p class="note" style="margin:0 0 24px">Events on write → decay/merge/evict → confirm only above effective floor → privacy-safe federate → path/effective inject → core vs archival → just-in-time archival search. <strong style="color:var(--muted)">Stale memory does not confirm findings or crowd the inject budget.</strong></p>
   <div class="grid2">
     <div class="card"><div class="num">Surfaces</div><h3>Where the gate sits</h3><p>Pull requests · required status checks · optional bot comments · security labels · branch protection. Later: SARIF ingest from Semgrep / CodeQL / peers.</p></div>
-    <div class="card"><div class="num">Honesty</div><h3>Evidence over slogans</h3><p>No “zero false positives.” No “95% ATT&amp;CK autonomous exploit.” We measure confirmed findings, FP rate, skill contribution, time-to-signal, gated PRs — and improve memory every run.</p></div>
+    <div class="card"><div class="num">Honesty</div><h3>Evidence over slogans</h3><p>No “zero false positives.” No “95% ATT&amp;CK autonomous exploit.” We measure confirmed findings, FP rate, skill contribution, memory-loop L0–L3, time-to-signal, gated PRs.</p></div>
   </div>
   <div class="grid3" style="margin-top:8px">
     <div class="card"><div class="num">Maker</div><h3>Hermes agent</h3><p>Tools on the diff. Path:line evidence. Security pack by default.</p></div>
     <div class="card"><div class="num">Checker</div><h3>Deterministic panel</h3><p>Re-score without burning another model. Demote weak APPROVE.</p></div>
-    <div class="card"><div class="num">Compound</div><h3>Memory + skills</h3><p>FP/TP memory and measured skills rank the next review — quieter noise, sharper blocks.</p></div>
+    <div class="card"><div class="num">Compound</div><h3>Two loops</h3><p>Skills that measure in. Memory that pages in. Quieter noise, sharper blocks.</p></div>
   </div>
 </div></section>
 

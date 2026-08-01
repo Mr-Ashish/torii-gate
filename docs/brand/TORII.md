@@ -42,6 +42,9 @@ A **torii** is the gate at a threshold — ordinary ground on one side, what mat
 | **AppSec fatigue** | The gate gets stricter and quieter over time — not noisier. |
 | **Eng** | Maker agent + checker panel + skill loop: route → hit → fitness → dual → attr → inject. |
 | **Skills** | Skills that do not contribute do not ship in the next prompt. |
+| **Memory** | Stale memory does not confirm findings or crowd the inject budget. |
+| **Memory (AppSec)** | False positives die twice — and true positives stay sharp. |
+| **Dual loops** | Skills that measure in; memory that pages in — both compound. |
 | **Tagline** | Nothing ships without crossing the gate. |
 
 ---
@@ -66,11 +69,21 @@ Customer-facing diagram (same as PRODUCT mental model B):
 
 This is the differentiator vs static “agent skills.md” dumps: Torii **measures contribution**, demotes free-riders, and only full-injects skills that fire.
 
+## Memory compound loop (product story, F93–F98)
+
+Customer-facing diagram (PRODUCT mental model C):
+
+`write → consolidate → effective_critic → federate → scoped_recall → tiers → archival_search`
+
+Differentator vs “dump MEMORY.md forever”: Torii **events on write**, **decays and evicts**, **strength-ranks** TP confirms, **tiers** core vs archival, and **pages cold memory** only when PR paths match.
+
+Ops readiness: `memory_loop_status` L0–L3 (smoke + CI summary) — same discipline as the skill loop.
+
 ---
 
 ## Differentiator (2026 market)
 
-Not another style/comment bot. Torii is a **security merge authority**: maker agent + deterministic checker panel + compound memory **and** a measured skill loop — runnable live on **Modal** with streamed Hermes logs. Competitors optimize for PR chatter; Torii optimizes for **path-evidenced block/approve** that gets quieter as memory and skills compound.
+Not another style/comment bot. Torii is a **security merge authority**: maker agent + deterministic checker panel + **two compound loops** (skills + memory) — runnable live on **Modal** with streamed Hermes logs. Competitors optimize for PR chatter; Torii optimizes for **path-evidenced block/approve** that gets quieter as skills measure in and memory pages in.
 
 ## What Torii Gate does (v1 scope)
 
@@ -78,8 +91,9 @@ Not another style/comment bot. Torii is a **security merge authority**: maker ag
 2. Security-focused agent review (injection, authz, secrets, SSRF, unsafe crypto, …)  
 3. Tool-backed path/line evidence  
 4. Comment + optional merge block on high severity  
-5. Org memory of FP / true positives (`.torii/` or service-side)  
-6. Audit traces for enterprise later  
+5. Org memory of FP / true positives with write events, tiers, archival search (`.torii/` or service-side)  
+6. Measured skill loop (contribution before inject)  
+7. Audit traces for enterprise later  
 
 **Out of v1:** full ASPM dashboard, autonomous red team, auto-patch merge without human.
 

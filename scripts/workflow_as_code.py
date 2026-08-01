@@ -440,8 +440,8 @@ def install_guide(root: Path, wf: dict[str, Any], report: dict[str, Any]) -> str
         "",
         "- **Maker** — Hermes agent writes the security review.",
         "- **Checker** — F78 multi-checker panel (path/chain/fitness/memory) demotes weak APPROVE.",
-        "- **Memory** — FP rules, TP signatures, scoped recall, federated hub themes compound.",
         "- **Skill loop** — `route → hit → fitness → dual → attr → inject` (skills that do not contribute do not re-inflate prompts).",
+        "- **Memory loop** — `write → consolidate → effective_critic → federate → recall → tiers → archival_search` (stale memory does not confirm or crowd inject).",
         "- **Gate** — `torii/gate` commit status is the merge signal.",
         "",
     ]
@@ -468,6 +468,29 @@ def install_guide(root: Path, wf: dict[str, Any], report: dict[str, Any]) -> str
             "## Skill compound loop readiness (F91)\n\n"
             "_skill_loop_status.py not available — re-install pack._\n"
         )
+    # F96/F99: memory compound loop readiness
+    try:
+        import importlib.util
+
+        mlp = root / "scripts" / "memory_loop_status.py"
+        if mlp.is_file():
+            spec = importlib.util.spec_from_file_location("memory_loop_status", mlp)
+            if spec and spec.loader:
+                mod = importlib.util.module_from_spec(spec)
+                sys.modules["memory_loop_status"] = mod
+                spec.loader.exec_module(mod)
+                ml_report = mod.assess(root, deep=False)
+                lines.append(mod.to_markdown(ml_report).rstrip())
+                lines.append("")
+                lines.append(
+                    "Deep memory-loop proof: `python3 scripts/memory_loop_status.py fixture`"
+                )
+                lines.append("")
+    except Exception:
+        lines.append(
+            "## Memory compound loop readiness (F96)\n\n"
+            "_memory_loop_status.py not available — re-install pack._\n"
+        )
     lines += [
         "## Offline proof (no API key)",
         "",
@@ -476,6 +499,7 @@ def install_guide(root: Path, wf: dict[str, Any], report: dict[str, Any]) -> str
         "python3 scripts/bench_corpus.py all",
         "python3 scripts/second_agent_critic.py fixture",
         "python3 scripts/skill_loop_status.py scorecard",
+        "python3 scripts/memory_loop_status.py scorecard",
         "```",
         "",
     ]

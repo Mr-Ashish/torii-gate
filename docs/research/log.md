@@ -1,6 +1,35 @@
 # Torii research → product log
 
 
+## 2026-08-01 — F99 brand dual compound loops (skills + memory)
+
+### Papers / posts / OSS
+- 2026 DevSecOps: AI multiplies PR volume; buyers want workflow-native gates that get **quieter**, not scanner theater.
+- Torii shipped F84–F98 intelligence; brand only packaged the skill loop clearly (F90).
+
+### OSS / eng patterns
+1. PRODUCT mental model C — memory loop table + diagram (parity with skills).
+2. Landing dual pipelines; one-liners: measure-in skills / page-in memory.
+3. Install-guide embeds both readiness scorecards; archival-search skill card.
+
+### Insight
+Intelligence without a dual-loop story under-sells the moat. Highest ROI: **package skills + memory as equal compound loops**.
+
+### Feature shipped (F99)
+- PRODUCT / brand TORII.md / landing / README dual-loop story
+- workflow_as_code install-guide memory block
+- skill-archival-memory-search active skill card
+
+### Loop-engineering practice used
+**Ship what you measure** — brand describes L0–L3 loops already in smoke/CI.
+
+### Metric
+- Offline: 550 pytest; smoke PASS; install-guide shows memory L3
+- Live: **Modal** pytorch#191813 deepseek/deepseek-v4-pro BIT3_OK ~110s; log_streaming=true; POST_COMMENT=0
+
+### SHA
+PENDING
+
 ## 2026-08-01 — F98 MemGPT-style archival search + promote-to-core
 
 ### Papers / posts / OSS
