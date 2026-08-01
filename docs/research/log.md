@@ -27,7 +27,7 @@ Agents cannot invent the right script. Highest ROI: **one memory front door**.
 - Live: **Modal** pytorch#191813 deepseek/deepseek-v4-pro BIT3_OK ~92s; log_streaming=true; POST_COMMENT=0
 
 ### SHA
-PENDING
+e6844640fcd688cd74d55db3db69b6dda6b21b39
 
 ## 2026-08-01 — F102 multi-hop co_path → supersede demote
 
