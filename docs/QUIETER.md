@@ -78,6 +78,7 @@ It is: **required check + path-evidenced signal + measured noise drop over time.
 python3 scripts/torii.py quieter -- fixture
 python3 scripts/torii.py quieter -- status
 python3 scripts/torii.py quieter -- report
+python3 scripts/torii.py tool-use -- status
 python3 scripts/torii.py golden-path -- status
 python3 scripts/torii.py certificate -- fixture
 ```

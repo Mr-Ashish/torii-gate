@@ -1,4 +1,38 @@
 
+## 2026-08-01 — TOOL_USE: agent tool-use quality chart (tools-as-code)
+
+### Papers / posts
+- Loop Engineering: measure tool use as a verifier signal, not SOUL prose.
+- Hermes trajectory fitness: tool_use dim (0.20) already in-loop; buyers lacked a vault chart.
+- Post-queue after QUIETER: agent tool-use quality — tools-as-code not new F-stack.
+
+### Decide / copy / skip
+- **Copy:** vault aggregate of tool_call_turns + quality bands (deep/solid/minimal/zero).
+- **Copy:** readiness = tool_turns_gate default-on + trajectory_fitness + catalog.
+- **Copy:** torii.py tool-use buyer CLI + docs/TOOL-USE.md.
+- **Skip:** F185+ compound loops / new self-evolve skill stack.
+
+### Feature shipped (TOOL_USE)
+- scripts/tool_use_quality.py report|fixture|status
+- docs/TOOL-USE.md · docs/benchmarks/tool-use-quality.md
+- torii.py tool-use · PRODUCT/GOLDEN-PATH/QUIETER links · tests
+
+### Metric
+- Offline: pytest 6 · fixture_pass · readiness 8/8 · quality_score ~0.74 tool_use_rate ~0.82
+- Live Modal: pytorch#191840 BIT3_OK ~150.4s POST_COMMENT=0 tools=6 · cert gc-c32714dc2a1f620e
+- Traces: docs/benchmarks/traces/20260801-1519-pytorch-pytorch-PR191840-modal-tool-use/
+- golden-path cost/PR n=11 refreshed
+
+### scorecard_target
+simplicity (#12) + JTBD (#3)
+
+### dim_lift
+merge-authority agent tool discipline measured tools-as-code
+
+### SHA
+_pending_
+
+
 ## 2026-08-01 — QUIETER: own-repo required-check + quieter-over-time chart
 
 ### Papers / posts

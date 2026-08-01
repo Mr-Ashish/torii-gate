@@ -63,6 +63,8 @@ Install path: [`docs/GOLDEN-PATH.md`](docs/GOLDEN-PATH.md) · metrics: [`docs/be
 
 **Quieter over time (own repo):** require **`torii/gate`** → measure path evidence + tool use + weak APPROVE trajectory → [`docs/QUIETER.md`](docs/QUIETER.md) · `python3 scripts/torii.py quieter -- status`.
 
+**Agent tool-use quality:** vault chart + fail-closed tool turns (tools-as-code) → [`docs/TOOL-USE.md`](docs/TOOL-USE.md) · `python3 scripts/torii.py tool-use -- status`.
+
 **Gate certificate:** every open/close of **`torii/gate`** ships reason codes + path evidence (tools-as-code, not chat) → [`docs/GATE.md`](docs/GATE.md) · `python3 scripts/torii.py certificate -- fixture`.
 
 **Enterprise light:** multi-tenant org isolation + federation privacy (themes only — no paths/snippets) → [`docs/enterprise/`](docs/enterprise/).

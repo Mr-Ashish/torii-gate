@@ -177,6 +177,15 @@ GROUPS: dict[str, dict[str, Any]] = {
             "quieter -- report",
         ],
     },
+    "tool-use": {
+        "script": "tool_use_quality.py",
+        "help": "Agent tool-use quality chart (tools-as-code, not SOUL prose)",
+        "examples": [
+            "tool-use -- fixture",
+            "tool-use -- status",
+            "tool-use -- report",
+        ],
+    },
 }
 
 

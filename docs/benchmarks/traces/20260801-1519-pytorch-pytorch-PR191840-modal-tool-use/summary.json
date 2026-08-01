@@ -1,0 +1,26 @@
+{
+  "feature": "TOOL_USE",
+  "schema_version": 1,
+  "repo": "pytorch/pytorch",
+  "pr": "191840",
+  "model": "deepseek/deepseek-v4-pro",
+  "host": "modal",
+  "bit3": true,
+  "elapsed_s": 150.4,
+  "log_streaming": true,
+  "tool_call_turns": 6,
+  "post_comment": 0,
+  "verdict": "REQUEST_CHANGES",
+  "block": true,
+  "certificate_id": "gc-c32714dc2a1f620e",
+  "reason_codes": [
+    "verdict_request_changes",
+    "strong_path_evidence",
+    "blocking_with_paths"
+  ],
+  "path_evidence_score": null,
+  "notes": "TOOL_USE fire: agent tool-use quality chart tools-as-code; live Modal BIT3",
+  "scored_at": "2026-08-01T15:23:09Z",
+  "modal_run": "https://modal.com/apps/mr-ashish/main/ap-EF2R4LuUWw97TZHxlnVQAA",
+  "cost_usd": 0.011048217
+}

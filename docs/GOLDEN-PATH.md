@@ -124,3 +124,4 @@ python3 scripts/torii.py gate -- --review path/to/review.md
 3. Public labeled eval (+2 OSS repos) — queue #3 · shipped.
 4. Install UX / ops / enterprise light — queue #4–6 · shipped.
 5. **Own-repo quieter-over-time** — required check habit + dogfood chart → [`QUIETER.md`](QUIETER.md) · `python3 scripts/torii.py quieter -- status`.
+6. **Agent tool-use quality** — tools-as-code chart + fail-closed tool turns → [`TOOL-USE.md`](TOOL-USE.md) · `python3 scripts/torii.py tool-use -- status`.
