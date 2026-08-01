@@ -30,7 +30,7 @@ JTBD (#3) · technical trust · install day-2
 day-2 surfaces all point at measured cost before optional self-evolve
 
 ### SHA
-`(pending push)`
+`a810244e7e0e2a613326b63d72251f66b1e2742e`
 
 
 ## 2026-08-01 — INSTALL_COST_TIP: day-2 cost/PR from install + pack + workflows
