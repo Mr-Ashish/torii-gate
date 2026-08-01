@@ -1,0 +1,5 @@
+3822:  "orch_rc": 0,
+3966:  "elapsed_s": 44.2,
+3970:  "log_streaming": true,
+3998:BIT3_OK
+4032:[torii/done] ok=True orch_rc=0 elapsed_s=44.2 review=True

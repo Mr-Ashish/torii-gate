@@ -848,8 +848,47 @@ def assess(root: Path | None = None, *, deep: bool = True) -> dict[str, Any]:
                 if (root / "scripts" / "skill_fitness.py").is_file()
                 else ""
             )
+            # F179 LOO free-rider gate on dual_pass revive
+            and "refine_dual_revive_loo_gate_enabled"
+            in (
+                (root / "scripts" / "skill_fitness.py").read_text(
+                    encoding="utf-8", errors="replace"
+                )
+                if (root / "scripts" / "skill_fitness.py").is_file()
+                else ""
+            )
+            and "revive_loo_blocked"
+            in (
+                (root / "scripts" / "skill_fitness.py").read_text(
+                    encoding="utf-8", errors="replace"
+                )
+                if (root / "scripts" / "skill_fitness.py").is_file()
+                else ""
+            )
+            and "f179_revive_loo_gate" in (
+                (root / "scripts" / "second_agent_critic.py").read_text(
+                    encoding="utf-8", errors="replace"
+                )
+                if (root / "scripts" / "second_agent_critic.py").is_file()
+                else ""
+            )
+            and "loo_revive_idle_approve" in (
+                (root / "scripts" / "second_agent_critic.py").read_text(
+                    encoding="utf-8", errors="replace"
+                )
+                if (root / "scripts" / "second_agent_critic.py").is_file()
+                else ""
+            )
+            and "F179" in hermes_sh
+            and "fixture-refine-revive-loo" in (
+                (root / "scripts" / "skill_fitness.py").read_text(
+                    encoding="utf-8", errors="replace"
+                )
+                if (root / "scripts" / "skill_fitness.py").is_file()
+                else ""
+            )
         ),
-        "feature_refine_loop": "F170/F177",
+        "feature_refine_loop": "F170/F179",
         # F171: chronic refine dual_fail always-priority decay
         "refine_dual_decay_ok": "ingest_refine_dual" in (
             (root / "scripts" / "skill_fitness.py").read_text(
@@ -996,6 +1035,45 @@ def assess(root: Path | None = None, *, deep: bool = True) -> dict[str, Any]:
             else ""
         ),
         "feature_revive_pp_gate": "F177",
+        # F179: LOO free-rider / avg_contribution floor for dual_pass revive
+        "revive_loo_gate_ok": "refine_dual_revive_loo_gate_enabled"
+        in (
+            (root / "scripts" / "skill_fitness.py").read_text(
+                encoding="utf-8", errors="replace"
+            )
+            if (root / "scripts" / "skill_fitness.py").is_file()
+            else ""
+        )
+        and "revive_loo_blocked" in (
+            (root / "scripts" / "skill_fitness.py").read_text(
+                encoding="utf-8", errors="replace"
+            )
+            if (root / "scripts" / "skill_fitness.py").is_file()
+            else ""
+        )
+        and "f179_revive_loo_gate" in (
+            (root / "scripts" / "second_agent_critic.py").read_text(
+                encoding="utf-8", errors="replace"
+            )
+            if (root / "scripts" / "second_agent_critic.py").is_file()
+            else ""
+        )
+        and "loo_revive_idle_approve" in (
+            (root / "scripts" / "second_agent_critic.py").read_text(
+                encoding="utf-8", errors="replace"
+            )
+            if (root / "scripts" / "second_agent_critic.py").is_file()
+            else ""
+        )
+        and "F179" in hermes_sh
+        and "fixture-refine-revive-loo" in (
+            (root / "scripts" / "skill_fitness.py").read_text(
+                encoding="utf-8", errors="replace"
+            )
+            if (root / "scripts" / "skill_fitness.py").is_file()
+            else ""
+        ),
+        "feature_revive_loo_gate": "F179",
         # F158: fitness ledger ingest/demote for hub-archival util
         "hub_archival_fitness_ok": "ingest_hub_archival_util" in (
             (root / "scripts" / "skill_fitness.py").read_text(
@@ -1128,6 +1206,7 @@ def to_markdown(report: dict[str, Any]) -> str:
             f"- Dual_pass revive + multi-tenant re-boost (F175): **{'ok' if report.get('refine_dual_revive_ok') else 'gap'}**",
             f"- Free-rider multi-tenant revive gate (F176): **{'ok' if report.get('free_rider_revive_ok') else 'gap'}**",
             f"- Revive contribution_pp floor (F177): **{'ok' if report.get('revive_pp_gate_ok') else 'gap'}**",
+            f"- Revive LOO attribution floor (F179): **{'ok' if report.get('revive_loo_gate_ok') else 'gap'}**",
             f"- Recovery hub gap critic/demote-eval (F128): **{'ok' if report.get('recovery_hub_gap_ok') else 'gap'}**",
             f"- Recon-warm hub critic/demote-eval (F151): **{'ok' if report.get('recon_warm_hub_ok') else 'gap'}**",
             f"- Wiring (assemble/run/hermes/save-trace): **{'ok' if report.get('wiring_ok') else 'gap'}**",
@@ -1223,6 +1302,9 @@ def cmd_scorecard(args: argparse.Namespace) -> int:
                 "revive_pp_gate_ok": report.get("revive_pp_gate_ok"),
                 "feature_revive_pp_gate": report.get("feature_revive_pp_gate")
                 or "F177",
+                "revive_loo_gate_ok": report.get("revive_loo_gate_ok"),
+                "feature_revive_loo_gate": report.get("feature_revive_loo_gate")
+                or "F179",
                 "feature_scorecard_ops": report.get("feature_scorecard_ops"),
                 "scorecard_ops_ok": report.get("scorecard_ops_ok"),
                 "scorecard_active": report.get("scorecard_active"),
@@ -1321,6 +1403,8 @@ def cmd_fixture(args: argparse.Namespace) -> int:
                 "feature_free_rider_revive": "F176",
                 "revive_pp_gate_ok": report.get("revive_pp_gate_ok"),
                 "feature_revive_pp_gate": "F177",
+                "revive_loo_gate_ok": report.get("revive_loo_gate_ok"),
+                "feature_revive_loo_gate": "F179",
                 "wiring_ok": report["wiring_ok"],
                 "deep_ok": report["deep_ok"],
                 "ready": report["ready"],

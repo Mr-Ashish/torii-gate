@@ -116,3 +116,5 @@ Paper/eval-safe slim traces (redacted). Large raw logs may be gitignored; always
 | F177 | revive contribution_pp floor (SkillOpt) | `f177-revive-pp-floor/` | Modal pytorch#191836 BIT3_OK ~50s |
 
 | F178 | GEPA refine full EVAL pack F165–F177 | `f178-gepa-refine-full-eval-pack/` | brand+scorecard revive gates |
+
+| F179 | revive LOO attribution floor | `f179-revive-loo-floor/` | Modal pytorch#191836 BIT3_OK ~44s |

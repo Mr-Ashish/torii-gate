@@ -145,6 +145,81 @@ def refine_dual_revive_min_pp() -> float:
         return 10.0
 
 
+def refine_dual_revive_loo_gate_enabled() -> bool:
+    """F179: LOO attribution free-rider / avg_contribution floor for dual_pass revive."""
+    raw = (os.environ.get("TORII_SKILL_FITNESS_REVIVE_LOO_GATE") or "1").strip().lower()
+    return raw not in _FALSEY
+
+
+def refine_dual_revive_min_loo() -> float:
+    """F179: min skill-attribution avg_contribution to revive (default 0.5)."""
+    try:
+        return float(os.environ.get("TORII_REFINE_REVIVE_MIN_LOO") or "0.5")
+    except (TypeError, ValueError):
+        return 0.5
+
+
+def refine_dual_revive_loo_min_n() -> int:
+    """F179: min attribution samples before LOO free-rider gate applies."""
+    try:
+        return int(os.environ.get("TORII_REFINE_REVIVE_LOO_MIN_N") or "2")
+    except (TypeError, ValueError):
+        return 2
+
+
+def _load_attr_skill(root: Path, sid: str) -> dict[str, Any]:
+    """Load privacy-safe skill-attribution ledger entry for sid (F89/F166/F179)."""
+    paths = [
+        root / ".torii" / "skill-attribution.json",
+        root / "memory" / "evolution" / "skill-attribution.json",
+    ]
+    envp = (os.environ.get("TORII_SKILL_ATTR_FILE") or "").strip()
+    if envp:
+        paths.insert(0, Path(envp))
+    od = (os.environ.get("OUT_DIR") or "").strip()
+    if od:
+        paths.insert(0, Path(od) / "skill-attribution.json")
+    for path in paths:
+        if not path.is_file():
+            continue
+        try:
+            data = json.loads(path.read_text(encoding="utf-8"))
+        except (OSError, json.JSONDecodeError):
+            continue
+        if not isinstance(data, dict):
+            continue
+        frs = set(str(x) for x in (data.get("free_riders") or []) if x)
+        skills = data.get("skills") or {}
+        ent: dict[str, Any] | None = None
+        if isinstance(skills, dict):
+            raw = skills.get(sid)
+            if isinstance(raw, dict):
+                ent = raw
+        elif isinstance(skills, list):
+            for row in skills:
+                if isinstance(row, dict) and str(row.get("id") or row.get("skill_id") or "") == sid:
+                    ent = row
+                    break
+        if ent is None and sid in frs:
+            return {
+                "free_rider": True,
+                "avg_contribution": 0.0,
+                "n": 1,
+                "source": str(path.name),
+            }
+        if ent is None:
+            continue
+        return {
+            "free_rider": bool(ent.get("free_rider") or sid in frs),
+            "avg_contribution": float(
+                ent.get("avg_contribution") or ent.get("contribution") or 0
+            ),
+            "n": int(ent.get("n") or ent.get("selected_n") or 1),
+            "source": str(path.name),
+        }
+    return {}
+
+
 def refine_dual_fail_thr() -> float:
     """F171: dual_fail_rate ≥ thr after min samples → decay (default 0.67)."""
     try:
@@ -655,40 +730,70 @@ def ingest_refine_dual(
                     e["feature_revive_pp_gate"] = "F177"
                     # keep decay/sticky state; do not re-enter always budget
                 else:
-                    boost = 12 + min(12, int(max(0.0, tool_pp) / 10))
-                    mt_sticky = bool(
-                        e.get("multi_tenant_decay")
-                        or int(e.get("multi_tenant_decay_tenants") or 0) >= 2
-                    )
-                    e["refine_dual_revived"] = True
-                    e["last_refine_revive_at"] = _now()
-                    e["last_refine_decayed"] = False
-                    e["refine_priority_decay"] = 0
-                    e["demoted"] = False
-                    e["gepa_refined"] = True  # restore F166 refine shield eligibility
-                    e["revive_pp_blocked"] = False
-                    e["last_revive_tool_pp"] = float(tool_pp)
-                    e["feature_revive_pp_gate"] = "F177"
-                    if mt_sticky and refine_dual_revive_mt_gate_enabled():
-                        # F176: local dual_pass proves recovery fuel but cannot free-ride clear
-                        # multi-tenant decay / full always re-boost until FederatedSkill promote
-                        e["local_revive_pending_mt"] = True
-                        e["multi_tenant_decay"] = True  # sticky until promote_refine_dual_revive
-                        # soft local signal only (half boost, floor +4) — not full always re-entry
-                        soft = max(4, boost // 2)
-                        e["hub_priority_delta"] = max(
-                            min(int(e.get("hub_priority_delta") or 0), soft), soft
+                    # F179: LOO attribution free-rider / avg_contribution floor
+                    loo_block = False
+                    attr_ent: dict[str, Any] = {}
+                    if refine_dual_revive_loo_gate_enabled():
+                        attr_ent = _load_attr_skill(root, sid)
+                        min_loo = refine_dual_revive_min_loo()
+                        min_n_loo = refine_dual_revive_loo_min_n()
+                        if attr_ent:
+                            avg_c = float(attr_ent.get("avg_contribution") or 0)
+                            n_attr = int(attr_ent.get("n") or 0)
+                            is_fr = bool(attr_ent.get("free_rider"))
+                            # cold-start: n < min_n and not free_rider → allow
+                            if is_fr or (
+                                n_attr >= min_n_loo and avg_c < float(min_loo)
+                            ):
+                                loo_block = True
+                                e["revive_loo_blocked"] = True
+                                e["last_revive_loo_avg"] = avg_c
+                                e["last_revive_loo_floor"] = float(min_loo)
+                                e["last_revive_loo_free_rider"] = is_fr
+                                e["feature_revive_loo_gate"] = "F179"
+                    if not loo_block:
+                        boost = 12 + min(12, int(max(0.0, tool_pp) / 10))
+                        if attr_ent and float(attr_ent.get("avg_contribution") or 0) >= 1.0:
+                            boost += min(
+                                8, int(float(attr_ent.get("avg_contribution") or 0))
+                            )
+                        mt_sticky = bool(
+                            e.get("multi_tenant_decay")
+                            or int(e.get("multi_tenant_decay_tenants") or 0) >= 2
                         )
-                        e["free_rider_revive_blocked"] = True
-                        e["feature_revive_gate"] = "F176"
-                    else:
-                        e["multi_tenant_decay"] = False
-                        e["local_revive_pending_mt"] = False
-                        e["free_rider_revive_blocked"] = False
-                        e["hub_priority_delta"] = max(
-                            int(e.get("hub_priority_delta") or 0), boost
-                        )
-                    revived.append(sid)
+                        e["refine_dual_revived"] = True
+                        e["last_refine_revive_at"] = _now()
+                        e["last_refine_decayed"] = False
+                        e["refine_priority_decay"] = 0
+                        e["demoted"] = False
+                        e["gepa_refined"] = True
+                        e["revive_pp_blocked"] = False
+                        e["revive_loo_blocked"] = False
+                        e["last_revive_tool_pp"] = float(tool_pp)
+                        if attr_ent:
+                            e["last_revive_loo_avg"] = float(
+                                attr_ent.get("avg_contribution") or 0
+                            )
+                        e["feature_revive_pp_gate"] = "F177"
+                        e["feature_revive_loo_gate"] = "F179"
+                        if mt_sticky and refine_dual_revive_mt_gate_enabled():
+                            # F176 sticky multi_tenant_decay until FederatedSkill promote
+                            e["local_revive_pending_mt"] = True
+                            e["multi_tenant_decay"] = True
+                            soft = max(4, boost // 2)
+                            e["hub_priority_delta"] = max(
+                                min(int(e.get("hub_priority_delta") or 0), soft), soft
+                            )
+                            e["free_rider_revive_blocked"] = True
+                            e["feature_revive_gate"] = "F176"
+                        else:
+                            e["multi_tenant_decay"] = False
+                            e["local_revive_pending_mt"] = False
+                            e["free_rider_revive_blocked"] = False
+                            e["hub_priority_delta"] = max(
+                                int(e.get("hub_priority_delta") or 0), boost
+                            )
+                        revived.append(sid)
         ingested += 1
     ledger["last_refine_dual_ingest"] = {
         "at": _now(),
@@ -2632,6 +2737,12 @@ def main(argv: list[str] | None = None) -> int:
     )
     pfrpp.set_defaults(func=cmd_fixture_refine_revive_pp)
 
+    pfrloo = sub.add_parser(
+        "fixture-refine-revive-loo",
+        help="F179 hermetic: LOO free-rider blocks dual_pass revive; positive LOO allows",
+    )
+    pfrloo.set_defaults(func=cmd_fixture_refine_revive_loo)
+
     pha = sub.add_parser(
         "ingest-hub-archival",
         help="F158 fold recovery hub-archival util gap/hit into fitness ledger",
@@ -3094,6 +3205,151 @@ def cmd_fixture_refine_revive_pp(args: argparse.Namespace) -> int:
     }
     print(json.dumps(out, indent=2))
     return 0 if f177_ok else 1
+
+
+
+def cmd_fixture_refine_revive_loo(args: argparse.Namespace) -> int:
+    """F179 hermetic: free-rider LOO blocks revive; positive avg_contribution allows."""
+    del args
+    root = _root()
+    sid = "skill-prefer-hub-archival-early"
+    os.environ["TORII_SKILL_FITNESS_REFINE_DUAL_DECAY"] = "1"
+    os.environ["TORII_SKILL_FITNESS_REFINE_DUAL_REVIVE"] = "1"
+    os.environ["TORII_SKILL_FITNESS_REVIVE_PP_GATE"] = "1"
+    os.environ["TORII_SKILL_FITNESS_REVIVE_LOO_GATE"] = "1"
+    os.environ["TORII_REFINE_REVIVE_MIN_PP"] = "10"
+    os.environ["TORII_REFINE_REVIVE_MIN_LOO"] = "0.5"
+    os.environ["TORII_REFINE_REVIVE_LOO_MIN_N"] = "2"
+    os.environ["TORII_SKILL_FITNESS_MIN_N"] = "3"
+    os.environ["TORII_SKILL_FITNESS_REFINE_DUAL_FAIL_THR"] = "0.67"
+
+    def _plant_decayed() -> None:
+        ledger = load_ledger(ledger_path(root))
+        skills = ledger.setdefault("skills", {})
+        skills[sid] = {
+            "id": sid,
+            "refine_dual_selected_n": 3,
+            "refine_dual_fail_n": 3,
+            "refine_dual_pass_n": 0,
+            "refine_dual_fail_rate": 1.0,
+            "refine_dual_pass_rate": 0.0,
+            "refine_dual_chronic_fail": True,
+            "last_refine_decayed": True,
+            "multi_tenant_decay": False,
+            "multi_tenant_decay_tenants": 0,
+            "refine_priority_decay": -25,
+            "hub_priority_delta": -20,
+            "demoted": True,
+            "gepa_refined": True,
+            "selected_n": 3,
+            "refine_dual_revived": False,
+            "revive_loo_blocked": False,
+        }
+        save_ledger(ledger, ledger_path(root))
+
+    attr_path = root / ".torii" / "skill-attribution.json"
+    attr_path.parent.mkdir(parents=True, exist_ok=True)
+
+    # 1) free-rider LOO — should block revive despite high tool_pp
+    _plant_decayed()
+    attr_path.write_text(
+        json.dumps(
+            {
+                "schema_version": 1,
+                "feature": "F89",
+                "free_riders": [sid],
+                "skills": {
+                    sid: {
+                        "id": sid,
+                        "n": 4,
+                        "avg_contribution": 0.1,
+                        "free_rider": True,
+                        "free_rider_n": 4,
+                        "contribution_sum": 0.4,
+                    }
+                },
+            },
+            indent=2,
+        )
+        + "\n",
+        encoding="utf-8",
+    )
+    for _ in range(4):
+        ingest_refine_dual(
+            {
+                "refine_dual_pass": True,
+                "refine_tool_contribution_pp": 50.0,
+                "refine_probe_delta": 1,
+                "refined_skill_ids": [sid],
+                "selected": [sid],
+            },
+            root=root,
+            save=True,
+        )
+    ent_fr = (load_ledger(ledger_path(root)).get("skills") or {}).get(sid) or {}
+    free_rider_blocked = bool(
+        ent_fr.get("revive_loo_blocked")
+        and not ent_fr.get("refine_dual_revived")
+        and int(ent_fr.get("hub_priority_delta") or 0) <= 0
+    )
+
+    # 2) positive LOO — should revive
+    _plant_decayed()
+    attr_path.write_text(
+        json.dumps(
+            {
+                "schema_version": 1,
+                "feature": "F89",
+                "free_riders": [],
+                "skills": {
+                    sid: {
+                        "id": sid,
+                        "n": 4,
+                        "avg_contribution": 3.5,
+                        "free_rider": False,
+                        "free_rider_n": 0,
+                        "contribution_sum": 14.0,
+                        "tool_hits": 3,
+                    }
+                },
+            },
+            indent=2,
+        )
+        + "\n",
+        encoding="utf-8",
+    )
+    for _ in range(4):
+        ingest_refine_dual(
+            {
+                "refine_dual_pass": True,
+                "refine_tool_contribution_pp": 50.0,
+                "refine_probe_delta": 1,
+                "refined_skill_ids": [sid],
+                "selected": [sid],
+            },
+            root=root,
+            save=True,
+        )
+    ent_ok = (load_ledger(ledger_path(root)).get("skills") or {}).get(sid) or {}
+    loo_revive_ok = bool(
+        ent_ok.get("refine_dual_revived")
+        and not ent_ok.get("revive_loo_blocked")
+        and int(ent_ok.get("hub_priority_delta") or 0) > 0
+        and float(ent_ok.get("last_revive_loo_avg") or 0) >= 0.5
+    )
+
+    f179_ok = bool(free_rider_blocked and loo_revive_ok)
+    out = {
+        "feature": "F179",
+        "fixture_pass": f179_ok,
+        "free_rider_blocked_ok": free_rider_blocked,
+        "loo_positive_revive_ok": loo_revive_ok,
+        "last_revive_loo_avg": ent_ok.get("last_revive_loo_avg"),
+        "hub_priority_delta": ent_ok.get("hub_priority_delta"),
+        "min_loo": refine_dual_revive_min_loo(),
+    }
+    print(json.dumps(out, indent=2))
+    return 0 if f179_ok else 1
 
 
 def cmd_ingest_hub_archival(args: argparse.Namespace) -> int:

@@ -1,3 +1,35 @@
+## 2026-08-01 — F179 LOO attribution floor for dual_pass revive
+
+### Papers / posts
+- Torii F89/F166 skill-attribution LOO free-rider demote.
+- SkillOpt / Hermes self-evolution: validation-gated recovery.
+- F177 tool_pp floor alone ignores free-riding skills with high dual_pp from pack probes.
+
+### OSS design patterns stolen
+1. `_load_attr_skill` free_rider / avg_contribution from skill-attribution ledger.
+2. `revive_loo_blocked` when free_rider or avg < TORII_REFINE_REVIVE_MIN_LOO after min_n.
+3. Positive LOO soft-boosts revive hub_priority_delta.
+4. Critic f179 + demote-eval loo_revive_idle_approve; fixture-refine-revive-loo.
+
+### Insight
+High refine_tool_contribution_pp can free-ride always re-entry when LOO marks the skill free_rider. Highest ROI: LOO free-rider/avg floor on dual_pass revive.
+
+### Feature shipped (F179)
+- refine_dual_revive_loo_gate + revive_loo_blocked
+- f179 critic / demote-eval / skill_loop revive_loo_gate_ok
+- hermes F179 notice; refine_loop_ok AND F179
+- scorecard revive_loo_gate_ok + loo_revive_idle_demoted
+
+### Loop-engineering
+Attribution LOO is a hard validation gate on recovery re-entry — not optional soft signal.
+
+### Metric
+- Offline: fixture_pass; demote-eval loo_revive_idle_demoted; refine_loop_ok L3
+- Live Modal: pytorch#191836 BIT3_OK ~44.2s POST_COMMENT=0 log_streaming=true F179 soft wire
+
+### SHA
+`4de7a410b3b7c92a35a1f24714d83239ed759753`
+
 ## 2026-08-01 — F178 GEPA refine full brand+EVAL pack (F165–F177)
 
 ### Papers / posts

@@ -575,7 +575,7 @@ def cmd_doctor(args: argparse.Namespace) -> int:
                 "feature_hub_archival_util": "F155",
                 "feature_hub_archival_util_critic": "F156",
                 "feature_hub_archival_loop": "F163",
-                "feature_refine_loop": "F170/F178",
+                "feature_refine_loop": "F170/F179",
                 "feature_scorecard_ops": "F135",
                 "doctor_pass": all_ok,
                 "recovery_ok": recovery_ok,
@@ -875,6 +875,14 @@ def product_scorecard(
         "low_pp_revive_idle_demoted": demote.get("revive_pp_gate_demote_ok")
         if demote
         else None,
+        "revive_loo_gate_ok": bool(
+            skill.get("revive_loo_gate_ok")
+            if skill.get("revive_loo_gate_ok") is not None
+            else doctor.get("revive_loo_gate_ok")
+        ),
+        "loo_revive_idle_demoted": demote.get("revive_loo_gate_demote_ok")
+        if demote
+        else None,
         "hub_archival_hub_pressure_idle_demoted": demote.get(
             "hub_archival_hub_pressure_demote_ok"
         )
@@ -964,7 +972,8 @@ def product_scorecard(
             (
                 f"Dual_pass revive gates: revive **{'ok' if metrics.get('refine_dual_revive_ok') else 'gap'}** · "
                 f"free-rider MT **{'ok' if metrics.get('free_rider_revive_ok') else 'gap'}** · "
-                f"pp-floor **{'ok' if metrics.get('revive_pp_gate_ok') else 'gap'}** (F175–F177)"
+                f"pp-floor **{'ok' if metrics.get('revive_pp_gate_ok') else 'gap'}** · "
+                f"LOO **{'ok' if metrics.get('revive_loo_gate_ok') else 'gap'}** (F175–F179)"
             ),
         ],
         "doctor": {
@@ -1097,8 +1106,10 @@ def product_scorecard(
             f"| revive_pp_gate_ok | {metrics.get('revive_pp_gate_ok')} |",
             f"| free_rider_revive_idle_demoted | {metrics.get('free_rider_revive_idle_demoted')} |",
             f"| low_pp_revive_idle_demoted | {metrics.get('low_pp_revive_idle_demoted')} |",
+            f"| revive_loo_gate_ok | {metrics.get('revive_loo_gate_ok')} |",
+            f"| loo_revive_idle_demoted | {metrics.get('loo_revive_idle_demoted')} |",
             "",
-            "Source: `python3 scripts/torii.py scorecard` · workflow F131 · demote F128/F151 · util F130 · hub-archival F155–F163 (F164) · GEPA refine F165–F177 (F170/F178).",
+            "Source: `python3 scripts/torii.py scorecard` · workflow F131 · demote F128/F151 · util F130 · hub-archival F155–F163 (F164) · GEPA refine F165–F179 (F170/F178/F179).",
             "",
             "These are **measured** offline/ops metrics — not marketing pass rates.",
             "",

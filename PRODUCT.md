@@ -286,6 +286,7 @@ util gap → GEPA refine → dual-gate LOO → dual_pp → federate promote
        → dual_pass revive → multi-tenant re-boost (F175)
        → free-rider MT gate (F176)
        → contribution_pp revive floor (F177)
+       → LOO attribution revive floor (F179)
 ```
 
 | Stage | Feature | Customer-facing meaning |
@@ -302,6 +303,7 @@ util gap → GEPA refine → dual-gate LOO → dual_pp → federate promote
 | **Dual_pass revive** | F175 | After decay, dual_pass recovers + multi-tenant re-boosts always |
 | **Free-rider MT gate** | F176 | Local dual_pass cannot clear multi-tenant decay alone |
 | **Revive pp floor** | F177 | dual_pass needs min `refine_tool_contribution_pp` to re-enter always |
+| **Revive LOO floor** | F179 | free-rider / low avg_contribution LOO blocks dual_pass revive |
 
 **One-liner (eng):** *Skills that fail tool util get refined, measured, and multi-tenant promoted — or they stay out of always budget; recovery is measured too.*
 
@@ -323,7 +325,9 @@ util gap → GEPA refine → dual-gate LOO → dual_pp → federate promote
 
 **Full GEPA refine EVAL pack (F178):** scorecard brand rows for revive gates + paper pack F165–F177 (decay→revive→free-rider→pp-floor).
 
-**Revive contribution_pp floor (F177):** SkillOpt-style validation — dual_pass with `refine_tool_contribution_pp` below `TORII_REFINE_REVIVE_MIN_PP` (default 10) sets `revive_pp_blocked` and does not re-enter always budget; multi-tenant promote also requires the floor. Critic `f177_revive_pp_gate` demotes low-pp recovery APPROVE; demote-eval `low_pp_revive_idle_demoted`. `refine_loop_ok` ANDs F165–F177.
+**Revive contribution_pp floor (F177):** SkillOpt-style validation — dual_pass with `refine_tool_contribution_pp` below `TORII_REFINE_REVIVE_MIN_PP` (default 10) sets `revive_pp_blocked` and does not re-enter always budget; multi-tenant promote also requires the floor. Critic `f177_revive_pp_gate` demotes low-pp recovery APPROVE; demote-eval `low_pp_revive_idle_demoted`. `refine_loop_ok` ANDs F165–F179.
+
+**Revive LOO attribution floor (F179):** skill-attribution free_rider or avg_contribution below `TORII_REFINE_REVIVE_MIN_LOO` (default 0.5, after min_n samples) blocks dual_pass revive even with high tool_pp; positive LOO soft-boosts re-entry. Critic `f179_revive_loo_gate` demotes; demote-eval `loo_revive_idle_demoted`.
 
 ---
 
