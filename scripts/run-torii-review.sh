@@ -214,6 +214,9 @@ if [[ -f "$SCRIPTS/second_agent_critic.py" ]]; then
       # F128: paper-ready critic demote-rate pack (good/weak/hub-gap)
       stage critic_demote_eval \
         python3 "$SCRIPTS/second_agent_critic.py" demote-eval --out-dir "$OUT_DIR" || true
+      # F129: product brand/ops scorecard (doctor + demote metrics into OUT_DIR)
+      stage product_scorecard \
+        python3 "$SCRIPTS/torii.py" scorecard --out-dir "$OUT_DIR" || true
       ;;
   esac
 fi

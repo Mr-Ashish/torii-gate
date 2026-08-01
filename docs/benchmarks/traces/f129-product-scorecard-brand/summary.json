@@ -1,0 +1,29 @@
+{
+  "feature": "F129",
+  "scored_at": "2026-08-01T07:07:45Z",
+  "brand_ready": true,
+  "level": "L3",
+  "metrics": {
+    "doctor_pass": true,
+    "recovery_ok": true,
+    "recovery_hub_gap_ok": true,
+    "skill_loop_level": "L3",
+    "memory_loop_level": "L3",
+    "critic_approve_demote_rate": 1.0,
+    "weak_approve_demoted": true,
+    "hub_gap_idle_demoted": true,
+    "demote_eval_pass": true
+  },
+  "model": "deepseek/deepseek-v4-pro",
+  "e2e": {
+    "repo": "pytorch/pytorch",
+    "pr": 191813,
+    "modal": true,
+    "bit3": "BIT3_OK",
+    "elapsed_s": 102.6,
+    "log_streaming": true,
+    "verdict": "REQUEST_CHANGES",
+    "post_comment": 0,
+    "modal_app": "https://modal.com/apps/mr-ashish/main/ap-Xq6o9znrMkM0FqPz4Xg59w"
+  }
+}

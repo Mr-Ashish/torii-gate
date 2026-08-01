@@ -173,6 +173,15 @@ tr:last-child td{border-bottom:0}
     <span class="pipe on">Paper traces</span>
   </div>
   <p class="note" style="margin:0 0 16px">Memory · product CLI · critic skills get a <strong style="color:var(--muted)">capped always slot</strong>, <strong style="color:var(--muted)">SkillReducer-lite bodies</strong>, and post-run <strong style="color:var(--muted)">tool utilization</strong>. Idle recovery tools soft-demote APPROVE and can spend <strong style="color:var(--muted)">one shared re-prompt</strong> — not infinite Hermes retries. Artifacts land in redacted traces for eval.</p>
+  <p class="ey" style="margin:8px 0 12px">Measured scorecard (not slogans)</p>
+  <div class="pipeline">
+    <span class="pipe on">Doctor</span>
+    <span class="pipe on">Recovery hub-gap</span>
+    <span class="pipe on">Demote rate</span>
+    <span class="pipe on">Skill L3</span>
+    <span class="pipe on">Memory L3</span>
+  </div>
+  <p class="note" style="margin:0 0 16px">Ops surface: <code style="color:var(--gold)">python3 scripts/torii.py scorecard</code> — fails closed without recovery hub-gap critic, and reports offline <strong style="color:var(--muted)">critic APPROVE demote rate</strong> (weak + hub-gap idle packs). <strong style="color:var(--muted)">Evidence over “zero false positives.”</strong></p>
   <p class="ey" style="margin:8px 0 12px">Memory compound loop (why noise dies twice)</p>
   <div class="pipeline">
     <span class="pipe on">Compound</span>
@@ -188,7 +197,7 @@ tr:last-child td{border-bottom:0}
   <p class="note" style="margin:0 0 24px"><strong style="color:var(--muted)">Stale memory does not confirm findings or crowd the inject budget.</strong> Scanners generate findings — Torii is the merge authority that compounds.</p>
   <div class="grid2">
     <div class="card"><div class="num">Surfaces</div><h3>Where the gate sits</h3><p>Pull requests · required status checks · optional bot comments · security labels · branch protection. Later: SARIF ingest from Semgrep / CodeQL / peers.</p></div>
-    <div class="card"><div class="num">Honesty</div><h3>Evidence over slogans</h3><p>No “zero false positives.” No “95% ATT&amp;CK autonomous exploit.” We measure confirmed findings, FP rate, skill contribution, memory-loop L0–L3, utilization, time-to-signal, gated PRs.</p></div>
+    <div class="card"><div class="num">Honesty</div><h3>Evidence over slogans</h3><p>No “zero false positives.” No “95% ATT&amp;CK autonomous exploit.” We measure confirmed findings, FP rate, skill contribution, memory-loop L0–L3, utilization, <strong>critic demote rate</strong>, recovery hub-gap readiness, time-to-signal, gated PRs.</p></div>
   </div>
   <div class="grid3" style="margin-top:8px">
     <div class="card"><div class="num">Maker</div><h3>Hermes agent</h3><p>Tools on the diff. Path:line evidence. Security pack by default. Memory tools discoverable via one CLI.</p></div>

@@ -17,6 +17,7 @@ Usage:
   python3 scripts/torii.py help
   python3 scripts/torii.py status
   python3 scripts/torii.py doctor
+  python3 scripts/torii.py scorecard
   python3 scripts/torii.py memory -- help
   python3 scripts/torii.py memory -- search -- -q "sql injection"
   python3 scripts/torii.py memory -- doctor
@@ -126,7 +127,7 @@ def help_payload() -> dict[str, Any]:
         "one_liner": "One product front door for Torii Gate (memory · gate · budget · loops).",
         "usage": "python3 scripts/torii.py <group|help|status|doctor> [-- <args>]",
         "groups": groups,
-        "builtins": ["help", "status", "doctor", "inject-hint"],
+        "builtins": ["help", "status", "doctor", "scorecard", "inject-hint"],
         "scored_at": _now(),
     }
 
@@ -147,13 +148,14 @@ def render_help_text() -> str:
         lines.append(f"| `{g['group']}` | `{g['script']}` | {g['help']} |")
     lines += [
         "",
-        "Builtins: `help` · `status` · `doctor` · `inject-hint`",
+        "Builtins: `help` · `status` · `doctor` · `scorecard` · `inject-hint`",
         "",
         "Examples:",
         "```bash",
         "python3 scripts/torii.py help",
         "python3 scripts/torii.py status",
         "python3 scripts/torii.py doctor",
+        "python3 scripts/torii.py scorecard",
         "python3 scripts/torii.py memory -- help",
         'python3 scripts/torii.py memory -- search -- -q "sql injection"',
         "python3 scripts/torii.py budget -- status",
@@ -389,6 +391,220 @@ def cmd_doctor(args: argparse.Namespace) -> int:
     return 0 if all_ok else 1
 
 
+def product_scorecard(
+    *,
+    root: Path | None = None,
+    run_demote: bool = True,
+    out_dir: Path | None = None,
+) -> dict[str, Any]:
+    """F129: brand/ops scorecard — doctor + loops + demote-eval paper metrics.
+
+    Packages measured capabilities (not slogans) for landing, install day-2,
+    and EVAL vault: recovery_hub_gap_ok, critic_approve_demote_rate, loop levels.
+    """
+    root = root or _root()
+    sd = _scripts_dir(root)
+    doctor: dict[str, Any] = {}
+    skill: dict[str, Any] = {}
+    memory: dict[str, Any] = {}
+    demote: dict[str, Any] = {}
+
+    def _run_json(cmd: list[str], timeout: int = 180) -> dict[str, Any]:
+        try:
+            r = subprocess.run(
+                cmd,
+                cwd=str(root),
+                capture_output=True,
+                text=True,
+                timeout=timeout,
+                env={**os.environ, "TORII_ROOT": str(root)},
+            )
+            if r.stdout.strip():
+                return json.loads(r.stdout)
+        except Exception as exc:
+            return {"error": str(exc)[:160], "ok": False}
+        return {"error": "empty", "ok": False}
+
+    doctor = _run_json([sys.executable, str(Path(__file__).resolve()), "doctor"])
+    skill = _run_json(
+        [sys.executable, str(sd / "skill_loop_status.py"), "scorecard", "--shallow"]
+    )
+    memory = _run_json(
+        [sys.executable, str(sd / "memory_loop_status.py"), "scorecard", "--shallow"]
+    )
+    if run_demote and (sd / "second_agent_critic.py").is_file():
+        demote_cmd = [
+            sys.executable,
+            str(sd / "second_agent_critic.py"),
+            "demote-eval",
+        ]
+        if out_dir:
+            demote_cmd += ["--out-dir", str(out_dir)]
+        demote = _run_json(demote_cmd, timeout=300)
+
+    doctor_pass = bool(doctor.get("doctor_pass"))
+    recovery_ok = bool(doctor.get("recovery_ok") or skill.get("recovery_ok"))
+    hub_gap_ok = bool(
+        doctor.get("recovery_hub_gap_ok")
+        if doctor.get("recovery_hub_gap_ok") is not None
+        else skill.get("recovery_hub_gap_ok")
+    )
+    demote_rate = demote.get("demote_rate")
+    demote_pass = bool(demote.get("eval_pass")) if demote else False
+    skill_level = skill.get("level")
+    mem_level = memory.get("level")
+
+    # brand headline metrics (privacy-safe floats/bools only)
+    metrics = {
+        "doctor_pass": doctor_pass,
+        "recovery_ok": recovery_ok,
+        "recovery_hub_gap_ok": hub_gap_ok,
+        "skill_loop_level": skill_level,
+        "memory_loop_level": mem_level,
+        "critic_approve_demote_rate": demote_rate,
+        "weak_approve_demoted": demote.get("weak_demote_ok"),
+        "hub_gap_idle_demoted": demote.get("hub_gap_demote_ok"),
+        "demote_eval_pass": demote_pass,
+    }
+    brand_ready = bool(
+        doctor_pass
+        and recovery_ok
+        and hub_gap_ok
+        and skill_level in ("L2", "L3")
+        and (not run_demote or demote_pass)
+    )
+    # Loop-Ready style level for product surface
+    if brand_ready and skill_level == "L3" and demote_pass:
+        level = "L3"
+    elif doctor_pass and recovery_ok:
+        level = "L2"
+    elif recovery_ok or doctor_pass:
+        level = "L1"
+    else:
+        level = "L0"
+
+    report: dict[str, Any] = {
+        "feature": "F129",
+        "feature_cli": FEATURE,
+        "schema": SCHEMA,
+        "scored_at": _now(),
+        "level": level,
+        "brand_ready": brand_ready,
+        "metrics": metrics,
+        "one_liner": (
+            "Measured gate readiness: doctor + recovery hub-gap critic + "
+            f"critic demote_rate={demote_rate}."
+        ),
+        "brand_lines": [
+            f"Doctor pass: **{doctor_pass}** · recovery skills **{'ok' if recovery_ok else 'gap'}**",
+            f"Hub gap critic path: **{'ok' if hub_gap_ok else 'gap'}** (F127/F128)",
+            f"Critic APPROVE demote rate (offline pack): **{demote_rate}**",
+            f"Skill loop **{skill_level}** · Memory loop **{mem_level}**",
+        ],
+        "doctor": {
+            "doctor_pass": doctor.get("doctor_pass"),
+            "recovery_ok": doctor.get("recovery_ok"),
+            "recovery_hub_gap_ok": doctor.get("recovery_hub_gap_ok"),
+            "recovery_active": doctor.get("recovery_active"),
+        },
+        "skill_loop": skill,
+        "memory_loop": memory,
+        "demote_eval": {
+            "eval_pass": demote.get("eval_pass"),
+            "demote_rate": demote.get("demote_rate"),
+            "weak_demote_ok": demote.get("weak_demote_ok"),
+            "hub_gap_demote_ok": demote.get("hub_gap_demote_ok"),
+            "paper": demote.get("paper"),
+        }
+        if demote
+        else None,
+        "cmds": {
+            "doctor": "python3 scripts/torii.py doctor",
+            "scorecard": "python3 scripts/torii.py scorecard",
+            "demote_eval": "python3 scripts/second_agent_critic.py demote-eval",
+        },
+    }
+    # write artifact
+    dests: list[Path] = []
+    if out_dir:
+        dests.append(Path(out_dir) / "product-scorecard.json")
+    # always soft-write under .torii for ops
+    dests.append(root / ".torii" / "product-scorecard.json")
+    def _rel(p: Path) -> str:
+        try:
+            return str(p.resolve().relative_to(root.resolve()))
+        except Exception:
+            # never leak home paths into artifacts
+            name = p.name
+            return name
+
+    for dest in dests:
+        try:
+            dest.parent.mkdir(parents=True, exist_ok=True)
+            # write without absolute paths first
+            slim = dict(report)
+            slim.pop("artifacts", None)
+            dest.write_text(json.dumps(slim, indent=2) + "\n", encoding="utf-8")
+            report.setdefault("artifacts", []).append(_rel(dest))
+        except OSError:
+            pass
+    # brand markdown snippet (no secrets / no home paths)
+    brand_md = root / "docs" / "brand" / "scorecard-metrics.md"
+    try:
+        lines = [
+            "# Torii Gate — measured scorecard (F129)",
+            "",
+            f"_Generated: `{report['scored_at']}` · level **{level}** · brand_ready={brand_ready}_",
+            "",
+            report["one_liner"],
+            "",
+            "| Metric | Value |",
+            "|--------|------:|",
+            f"| doctor_pass | {metrics['doctor_pass']} |",
+            f"| recovery_ok | {metrics['recovery_ok']} |",
+            f"| recovery_hub_gap_ok | {metrics['recovery_hub_gap_ok']} |",
+            f"| skill_loop_level | {metrics['skill_loop_level']} |",
+            f"| memory_loop_level | {metrics['memory_loop_level']} |",
+            f"| critic_approve_demote_rate | {metrics['critic_approve_demote_rate']} |",
+            f"| weak_approve_demoted | {metrics['weak_approve_demoted']} |",
+            f"| hub_gap_idle_demoted | {metrics['hub_gap_idle_demoted']} |",
+            "",
+            "Source: `python3 scripts/torii.py scorecard` · paper demote pack F128.",
+            "",
+            "These are **measured** offline/ops metrics — not marketing pass rates.",
+            "",
+        ]
+        brand_md.parent.mkdir(parents=True, exist_ok=True)
+        brand_md.write_text("\n".join(lines), encoding="utf-8")
+        report["brand_md"] = _rel(brand_md)
+        # rewrite primary .torii artifact with relative paths
+        for dest in dests:
+            try:
+                dest.write_text(json.dumps(report, indent=2) + "\n", encoding="utf-8")
+            except OSError:
+                pass
+    except OSError:
+        pass
+    return report
+
+
+def cmd_scorecard(args: argparse.Namespace) -> int:
+    """F129: product brand/ops scorecard with demote-eval metrics."""
+    od = None
+    if getattr(args, "out_dir", None) and args.out_dir:
+        od = Path(args.out_dir)
+    elif (os.environ.get("OUT_DIR") or "").strip():
+        od = Path(os.environ["OUT_DIR"])
+    skip_demote = bool(getattr(args, "shallow", False))
+    report = product_scorecard(
+        root=_root(),
+        run_demote=not skip_demote,
+        out_dir=od,
+    )
+    print(json.dumps(report, indent=2))
+    return 0 if report.get("brand_ready") else 1
+
+
 def cmd_inject_hint(args: argparse.Namespace) -> int:
     section = render_inject_hint()
     if args.prompt:
@@ -456,17 +672,34 @@ def cmd_fixture(args: argparse.Namespace) -> int:
         timeout=60,
     )
     dispatch_ok = disp_r.returncode == 0 and "torii_memory" in (disp_r.stdout or "")
-    fixture_pass = all([help_ok, status_ok, doctor_ok, hint_ok, dispatch_ok])
+    # F129: product scorecard shallow (skip demote for speed) must brand-ready doctor path
+    sc = subprocess.run(
+        [sys.executable, str(Path(__file__).resolve()), "scorecard", "--shallow"],
+        cwd=str(_root()),
+        capture_output=True,
+        text=True,
+        env={**os.environ, "TORII_ROOT": str(_root())},
+        timeout=180,
+    )
+    scorecard_ok = False
+    try:
+        scd = json.loads(sc.stdout)
+        scorecard_ok = bool(scd.get("brand_ready") or scd.get("metrics", {}).get("doctor_pass"))
+    except json.JSONDecodeError:
+        scorecard_ok = False
+    fixture_pass = all([help_ok, status_ok, doctor_ok, hint_ok, dispatch_ok, scorecard_ok])
     print(
         json.dumps(
             {
                 "feature": FEATURE,
+                "feature_scorecard": "F129",
                 "fixture_pass": fixture_pass,
                 "help_ok": help_ok,
                 "status_ok": status_ok,
                 "doctor_ok": doctor_ok,
                 "hint_ok": hint_ok,
                 "dispatch_ok": dispatch_ok,
+                "scorecard_ok": scorecard_ok,
                 "groups_n": len(h.get("groups") or []),
             },
             indent=2,
@@ -498,6 +731,16 @@ def main(argv: list[str] | None = None) -> int:
         return cmd_status(argparse.Namespace())
     if cmd == "doctor":
         return cmd_doctor(argparse.Namespace())
+    if cmd == "scorecard":
+        p = argparse.ArgumentParser()
+        p.add_argument("--out-dir", default="")
+        p.add_argument(
+            "--shallow",
+            action="store_true",
+            help="Skip demote-eval (doctor+loops only)",
+        )
+        ns, _ = p.parse_known_args(pre + passthrough)
+        return cmd_scorecard(ns)
     if cmd == "inject-hint":
         p = argparse.ArgumentParser()
         p.add_argument("--prompt", default="")

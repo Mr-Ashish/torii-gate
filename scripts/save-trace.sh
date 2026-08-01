@@ -96,6 +96,11 @@ copy_if "$OUT_DIR/recovery-hub-score.json" "$TRACE_DIR/recovery-hub-score.json"
 copy_if "$OUT_DIR/recovery-reprompt-decide.json" "$TRACE_DIR/recovery-reprompt-decide.json"
 # F128: paper critic demote-rate eval
 copy_if "$OUT_DIR/critic-demote-eval.json" "$TRACE_DIR/critic-demote-eval.json"
+# F129: product brand/ops scorecard (doctor + demote metrics)
+copy_if "$OUT_DIR/product-scorecard.json" "$TRACE_DIR/product-scorecard.json"
+if [[ -f "$TORII_ROOT/.torii/product-scorecard.json" ]]; then
+  copy_if "$TORII_ROOT/.torii/product-scorecard.json" "$TRACE_DIR/product-scorecard.torii.json"
+fi
 copy_if "$OUT_DIR/memory-tool-reprompt.env" "$TRACE_DIR/memory-tool-reprompt.env"
 copy_if "$OUT_DIR/memory-tool-audit.json" "$TRACE_DIR/memory-tool-audit.json"
 copy_if "$OUT_DIR/reprompt-budget.json" "$TRACE_DIR/reprompt-budget.json"

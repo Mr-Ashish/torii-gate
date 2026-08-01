@@ -1,14 +1,14 @@
 # Torii eval-trace report (F83)
 
-Generated: `2026-08-01T06:57:45Z`
+Generated: `2026-08-01T07:05:09Z`
 
 ## Aggregate
 
-- runs: **57** (modal=35, local=22)
+- runs: **58** (modal=35, local=23)
 - log_streaming true: **4**
 - fitness composite n=8
 - composite mean/median/min/max: **0.842** / 0.8494 / 0.77 / 0.8694
-- levels: `{"L2": 4, "L3": 4, "modal-f80-live": 1, "modal-f81-llm-critic": 1, "modal-f82-skills": 1, "modal-f83-pack-eval": 1, "\u2014": 45}`
+- levels: `{"L2": 4, "L3": 4, "modal-f80-live": 1, "modal-f81-llm-critic": 1, "modal-f82-skills": 1, "modal-f83-pack-eval": 1, "\u2014": 46}`
 - models: `deepseek/deepseek-v4-pro`, `fixture`
 
 ## Runs
@@ -72,6 +72,7 @@ Generated: `2026-08-01T06:57:45Z`
 | — | local | — | — | `deepseek/deepseek-v4-pro` | — | — | F126 | `f126-hub-gap-reprompt-fitness` |
 | — | local | — | — | `deepseek/deepseek-v4-pro` | — | — | F127 | `f127-hub-gap-critic-attr` |
 | — | local | — | — | `deepseek/deepseek-v4-pro` | — | — | F128 | `f128-doctor-demote-eval` |
+| — | local | — | — | `deepseek/deepseek-v4-pro` | — | — | F129 | `f129-product-scorecard-brand` |
 
 ## Notes
 

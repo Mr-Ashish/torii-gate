@@ -77,6 +77,17 @@ This is the differentiator vs static “agent skills.md” dumps: Torii **measur
 
 Always-on recovery skills (memory CLI · product doctor · second-agent critic) get a **capped always budget**, **compact bodies**, post-run **tool utilization** scoring, and **one shared soft re-prompt** under F108. Traces archive `skill-router.json`, `recovery-skill-util.json`, and `recovery-skill-reprompt.env` for paper eval — inject without tools is not success.
 
+### Measured product scorecard (F128–F129)
+
+Install/ops surface — not marketing copy:
+
+```bash
+python3 scripts/torii.py doctor      # fails closed without recovery_hub_gap_ok
+python3 scripts/torii.py scorecard   # doctor + loop L0–L3 + critic demote_rate
+```
+
+Reports **critic_approve_demote_rate** (offline weak + hub-gap idle APPROVE packs), recovery hub-gap critic readiness, and skill/memory loop levels. Landing and `docs/brand/scorecard-metrics.md` tell the same story: **evidence over slogans**.
+
 
 ## Memory compound loop (product story, F93–F108)
 

@@ -81,6 +81,27 @@ class ToriiProductCliTests(unittest.TestCase):
         self.assertEqual(data.get("feature_recovery"), "F128")
         self.assertIn("skill-prefer-product-cli", data.get("recovery_active") or [])
 
+    def test_f129_product_scorecard(self):
+        """F129: scorecard packages doctor + demote metrics for brand/ops."""
+        with tempfile.TemporaryDirectory() as td:
+            r = _run(["scorecard", "--out-dir", td])
+            self.assertEqual(r.returncode, 0, r.stderr + r.stdout)
+            data = json.loads(r.stdout)
+            self.assertEqual(data.get("feature"), "F129")
+            self.assertTrue(data.get("brand_ready"), data)
+            m = data.get("metrics") or {}
+            self.assertTrue(m.get("doctor_pass"), m)
+            self.assertTrue(m.get("recovery_hub_gap_ok"), m)
+            self.assertIsNotNone(m.get("critic_approve_demote_rate"), m)
+            self.assertTrue(m.get("demote_eval_pass"), m)
+            art = Path(td) / "product-scorecard.json"
+            self.assertTrue(art.is_file())
+            brand = ROOT / "docs" / "brand" / "scorecard-metrics.md"
+            self.assertTrue(brand.is_file())
+            body = brand.read_text(encoding="utf-8")
+            self.assertIn("critic_approve_demote_rate", body)
+            self.assertNotIn("/Users/", body)
+
 
 if __name__ == "__main__":
     unittest.main()

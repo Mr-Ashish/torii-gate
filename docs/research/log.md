@@ -1,5 +1,36 @@
 # Torii research → product log
 
+## 2026-08-01 — F129 product scorecard brand packaging
+
+### Papers / posts
+- Agent eval 2026 scoreboards: demote/validation rates belong on the product surface, not only vault JSON.
+- Loop-eng front door: doctor + scorecard as day-2 habit for installers.
+- F128 demote-eval without landing/ops packaging stays eng-only.
+
+### OSS design patterns stolen
+1. torii.py scorecard aggregates doctor + skill/memory levels + demote-eval.
+2. brand_ready + critic_approve_demote_rate as headline metrics.
+3. docs/brand/scorecard-metrics.md + landing “Measured scorecard” pipeline.
+4. run-torii-review product_scorecard stage; save-trace archives product-scorecard.json.
+
+### Insight
+Measured demote/recovery metrics only compound adoption when the product front door and brand story surface them. Highest ROI: one scorecard command + landing honesty.
+
+### Feature shipped (F129)
+- torii.py scorecard / product_scorecard
+- brand scorecard-metrics.md + landing + TORII.md
+- review wire + traces f129-product-scorecard-brand/
+
+### Metric
+- Offline: brand_ready L3 demote_rate=1.0; pytest
+- Live: Modal pytorch e2e POST_COMMENT=0
+
+### Loop-engineering / Hermes practice used
+**Front-door scorecard** — install-day and brand-day same numbers.
+
+### SHA
+`PENDING`
+
 ## 2026-08-01 — F128 doctor recovery_hub_gap_ok + demote-eval paper metric
 
 ### Papers / posts

@@ -174,6 +174,8 @@ budget always → compact body → score tool_hit → util gap? → budgeted re-
 
 **Doctor + demote-eval (F128):** `torii.py doctor` fails closed without `recovery_hub_gap_ok` (f127 critic + demote-eval wire); `second_agent_critic demote-eval` emits paper metric `critic_approve_demote_rate` on good/weak/hub-gap cases for EVAL vault.
 
+**Product scorecard (F129):** `python3 scripts/torii.py scorecard` aggregates doctor + skill/memory loop levels + demote-eval into brand/ops metrics (`brand_ready`, `critic_approve_demote_rate`) and writes `docs/brand/scorecard-metrics.md` — measured readiness on the landing story, not slogans.
+
 **Ops:** `python3 scripts/memory_loop_status.py scorecard` → L0–L3. Smoke requires L3 on the hub tree. CI job summary annotates readiness; optional advisory `torii/memory-loop` via `TORII_MEMORY_LOOP_STATUS_COMMIT=1`.
 
 ---
