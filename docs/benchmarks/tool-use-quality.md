@@ -2,7 +2,7 @@
 
 # Agent tool-use quality
 
-_Generated: `2026-08-01T15:23:09Z` · feature **TOOL_USE** · tool_use_ok=`True`_
+_Generated: `2026-08-01T16:39:05Z` · feature **TOOL_USE** · tool_use_ok=`True`_
 
 **One-liner:** Agent tool-use quality: tools-as-code chart, not SOUL prose
 
@@ -32,47 +32,47 @@ Buyer doc: [`docs/TOOL-USE.md`](../TOOL-USE.md) · Quieter: [`quieter-over-time.
 
 | Metric | Value |
 |--------|------:|
-| measured runs | 49 |
-| tool_use_rate | 0.8163 |
-| mean / median turns | 5.59 / 6 |
-| zero-tool rate | 0.1837 (n=9) |
-| solid+ rate (≥3 turns) | 0.7347 |
-| deep rate (≥5 turns) | 0.5714 |
-| quality_score | 0.7429 |
+| measured runs | 61 |
+| tool_use_rate | 0.8525 |
+| mean / median turns | 5.56 / 6 |
+| zero-tool rate | 0.1475 (n=9) |
+| solid+ rate (≥3 turns) | 0.7705 |
+| deep rate (≥5 turns) | 0.5902 |
+| quality_score | 0.7754 |
 | quality_ok | True |
 
 ### Quality bands
 
 | Band | count |
 |------|------:|
-| deep | 28 |
-| solid | 8 |
-| minimal | 4 |
+| deep | 36 |
+| solid | 11 |
+| minimal | 5 |
 | zero | 9 |
 
 ### Top tools (from agent-loop when present)
 
 | Tool | n |
 |------|--:|
-| `terminal` | 144 |
-| `read_file` | 6 |
+| `terminal` | 350 |
+| `read_file` | 36 |
 
 ## Recent dogfood rows
 
 | trace | repo | pr | turns | band | loop |
 |-------|------|---:|------:|------|:----:|
-| `20260801-0505-pytorch-pytorch-PR191813-modal-f11` | pytorch/pytorch | 191813 | None | unknown |  |
-| `20260801-1413-pytorch-pytorch-PR191840-modal-gol` | pytorch/pytorch | 191840 | 0 | zero |  |
-| `20260801-1418-pytorch-pytorch-PR191831-modal-buy` | pytorch/pytorch | 191831 | 0 | zero |  |
-| `20260801-1424-pytorch-pytorch-PR191840-modal-pub` | pytorch/pytorch | 191840 | 0 | zero |  |
-| `20260801-1431-pytorch-pytorch-PR191831-modal-ins` | pytorch/pytorch | 191831 | 0 | zero |  |
-| `20260801-1436-pytorch-pytorch-PR191840-modal-ops` | pytorch/pytorch | 191840 | 0 | zero |  |
-| `20260801-1442-pytorch-pytorch-PR191831-modal-ent` | pytorch/pytorch | 191831 | 0 | zero |  |
-| `20260801-1445-pytorch-pytorch-PR191840-modal-com` | pytorch/pytorch | 191840 | 0 | zero |  |
-| `20260801-1451-pytorch-pytorch-PR191836-modal-gat` | pytorch/pytorch | 191836 | 12 | deep | yes |
-| `20260801-1502-pytorch-pytorch-PR191840-modal-gat` | pytorch/pytorch | 191840 | 7 | deep | yes |
-| `20260801-1511-pytorch-pytorch-PR191840-modal-qui` | pytorch/pytorch | 191840 | 7 | deep |  |
-| `20260801-1519-pytorch-pytorch-PR191840-modal-too` | pytorch/pytorch | 191840 | 6 | deep | yes |
+| `20260801-1527-pytorch-pytorch-PR191840-modal-com` | pytorch/pytorch | 191840 | 3 | solid | yes |
+| `20260801-1535-pytorch-pytorch-PR191840-modal-wor` | pytorch/pytorch | 191840 | 2 | minimal | yes |
+| `20260801-1541-pytorch-pytorch-PR191840-modal-fed` | pytorch/pytorch | 191840 | 6 | deep | yes |
+| `20260801-1546-pytorch-pytorch-PR191840-modal-sel` | pytorch/pytorch | 191840 | 6 | deep | yes |
+| `20260801-1552-pytorch-pytorch-PR191840-modal-mem` | pytorch/pytorch | 191840 | 7 | deep | yes |
+| `20260801-1558-pytorch-pytorch-PR191840-modal-gtm` | pytorch/pytorch | 191840 | 9 | deep | yes |
+| `20260801-1605-pytorch-pytorch-PR191840-modal-ops` | pytorch/pytorch | 191840 | 8 | deep | yes |
+| `20260801-1610-pytorch-pytorch-PR191840-modal-bra` | pytorch/pytorch | 191840 | 4 | solid | yes |
+| `20260801-1618-pytorch-pytorch-PR191840-modal-cos` | pytorch/pytorch | 191840 | 3 | solid | yes |
+| `20260801-1624-pytorch-pytorch-PR191840-modal-lan` | pytorch/pytorch | 191840 | 6 | deep | yes |
+| `20260801-1630-pytorch-pytorch-PR191840-modal-pro` | pytorch/pytorch | 191840 | 5 | deep | yes |
+| `20260801-1636-pytorch-pytorch-PR191840-modal-rea` | pytorch/pytorch | 191840 | 6 | deep | yes |
 
 ## Refresh
 

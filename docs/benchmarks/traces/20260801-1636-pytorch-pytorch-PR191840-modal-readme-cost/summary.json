@@ -1,0 +1,20 @@
+{
+  "feature": "README_COST",
+  "schema_version": 1,
+  "repo": "pytorch/pytorch",
+  "pr": "191840",
+  "model": "deepseek/deepseek-v4-pro",
+  "host": "modal",
+  "bit3": true,
+  "elapsed_s": 143.8,
+  "log_streaming": true,
+  "tool_call_turns": 6,
+  "post_comment": 0,
+  "verdict": "APPROVE",
+  "block": false,
+  "certificate_id": "gc-c44356ac39c273bc",
+  "notes": "README_COST measured dogfood on GitHub front door + tool-use refresh",
+  "scored_at": "2026-08-01T16:39:05Z",
+  "modal_run": "https://modal.com/apps/mr-ashish/main/ap-ORBAkOx4nDd73Xt2Nfth3b",
+  "cost_usd": 0.017309839000000004
+}

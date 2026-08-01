@@ -141,6 +141,16 @@ def check_surfaces(root: Path) -> dict[str, Any]:
         and "MEMORY.md" in rm
         and "commercial" in rm.lower()
     )
+    # README_COST: GitHub front door shows measured dogfood p50 cost/TTS
+    results["checks"]["readme_measured_cost"] = bool(
+        re.search(r"Measured dogfood|cost/PR|cost\s*/\s*PR", rm, re.I)
+        and re.search(r"time-to-signal|~90s|p50|~\$0\.0", rm, re.I)
+        and (
+            "cost-pr-dashboard" in rm
+            or "golden-path-metrics" in rm
+            or "ops -- status" in rm
+        )
+    )
 
     # F-number budgets on *primary* slices (before Advanced)
     prod_primary = _primary_section(

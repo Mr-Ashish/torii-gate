@@ -1,4 +1,36 @@
 
+## 2026-08-01 — README_COST: measured dogfood on GitHub front door
+
+### Papers / posts
+- Loop Engineering / GTM: GitHub README is the highest-traffic surface; cost honesty must not hide only in PRODUCT/landing.
+- PRODUCT_COST + LANDING_COST shipped; README still lacked p50 TTS/cost.
+- Tool-use chart was stale vs vault (60 measured runs live).
+
+### Decide / copy / skip
+- **Copy:** README Measured dogfood line (~90s / ~$0.01) + cost-pr-dashboard link on surfaces table.
+- **Copy:** buyer_narrative `readme_measured_cost`; refresh tool-use-quality chart.
+- **Skip:** F185+; keep README F-ID budget.
+
+### Feature shipped (README_COST)
+- README measured dogfood honesty + golden path cost ops link
+- buyer fixture readme_measured_cost; tool-use report refresh
+
+### Metric
+- Offline: buyer 22/22 · commercial 10/10 · tool_use_ok · overall_est 8.5
+- Live Modal: pytorch#191840 BIT3_OK ~143.8s tools=6 POST_COMMENT=0 cert in vault
+- Traces: docs/benchmarks/traces/20260801-1636-pytorch-pytorch-PR191840-modal-readme-cost/
+- Modal: https://modal.com/apps/mr-ashish/main/ap-ORBAkOx4nDd73Xt2Nfth3b
+
+### scorecard_target
+simplicity (#12) · JTBD honesty · GTM
+
+### dim_lift
+first GitHub view shows measured cost/latency not only product map
+
+### SHA
+`(pending push)`
+
+
 ## 2026-08-01 — PRODUCT_COST: buyer brief measured dogfood + quieter chart refresh
 
 ### Papers / posts

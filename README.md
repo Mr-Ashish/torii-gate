@@ -34,7 +34,9 @@ Most AI PR bots optimize for *code quality comments*. Torii optimizes for **secu
 - Labels + required check **`torii/gate`** as the merge signal  
 - Every run teaches the next — stricter blocks, less noise  
 
-**CLI front door:** `python3 scripts/torii.py help` · `doctor` · `golden-path -- status` · `memory -- search`
+**CLI front door:** `python3 scripts/torii.py help` · `doctor` · `golden-path -- status` · `ops -- status` · `memory -- search`
+
+**Measured dogfood (honesty):** live Modal + Hermes on open-source PRs (`POST_COMMENT=0`) — **~90s** time-to-signal p50 · **~$0.01** cost/PR p50 · gate certificates with reason codes. Not slogans: [`docs/ops/cost-pr-dashboard.md`](docs/ops/cost-pr-dashboard.md) · [`docs/benchmarks/golden-path-metrics.md`](docs/benchmarks/golden-path-metrics.md) · landing: [`docs/brand/landing.html`](docs/brand/landing.html).
 
 Buyer brief: [`PRODUCT.md`](PRODUCT.md) · brand: [`docs/brand/`](docs/brand/) · Advanced loop detail (engineers): PRODUCT → **Advanced**.
 
@@ -85,7 +87,7 @@ Day-one path stays install → require **`torii/gate`** → first review. Everyt
 | Surface | Doc | Command |
 |---------|-----|---------|
 | Install / doctor | [`docs/INSTALL.md`](docs/INSTALL.md) | `python3 scripts/torii.py doctor` |
-| Golden path + cost/PR | [`docs/GOLDEN-PATH.md`](docs/GOLDEN-PATH.md) | `python3 scripts/torii.py golden-path -- status` |
+| Golden path + cost/PR | [`docs/GOLDEN-PATH.md`](docs/GOLDEN-PATH.md) · [`docs/ops/cost-pr-dashboard.md`](docs/ops/cost-pr-dashboard.md) | `python3 scripts/torii.py golden-path -- status` · `ops -- status` |
 | Gate certificate | [`docs/GATE.md`](docs/GATE.md) | `python3 scripts/torii.py certificate -- fixture` |
 | Quieter over time | [`docs/QUIETER.md`](docs/QUIETER.md) | `python3 scripts/torii.py quieter -- status` |
 | Tool-use quality | [`docs/TOOL-USE.md`](docs/TOOL-USE.md) | `python3 scripts/torii.py tool-use -- status` |
