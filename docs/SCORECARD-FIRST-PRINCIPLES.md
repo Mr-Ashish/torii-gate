@@ -50,7 +50,7 @@ Commercial fixture **8.5** = surface completeness. This sheet = **buyer packagin
 | Rank | Gap | Lifts | Effort | ROI | Status |
 |-----:|-----|-------|--------|-----|--------|
 | 1 | CLI cognitive-load collapse | #12 · #3 · #7 | S | 🔥 | **shipped** `2325be7` |
-| 2 | Pricing / packaging product surface | #10 · #11 · #2 | S | 🔥 | **this fire** |
+| 2 | Pricing / packaging product surface | #10 · #11 · #2 | S | 🔥 | **shipped** `7a5c0ca` |
 | 3 | **Own-repo quieter path after pack install** | #3 · #7 | M | 🔥 | next |
 | 4 | Enterprise isolation hermetic proof | #9 | S | med | next |
 | 5 | Public eval freshness badge | #5 · #11 | XS | med | later |
