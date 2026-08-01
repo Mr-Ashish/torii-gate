@@ -1,0 +1,7 @@
+{
+  "id": "skill-router",
+  "feature": "F84",
+  "script": "scripts/skill_router.py",
+  "status": "adopted",
+  "one_liner": "Progressive skill disclosure by path themes + hit scoring"
+}

@@ -31,6 +31,10 @@ Platform / AppSec engineer who needs every PR checked for security without drown
 
 **Measured gate.** Multi-corpus labeled benches (Python insecure-demo + Juice Shop synthetic) score recall before shipping harness changes.
 
+## Progressive skills (F84)
+
+Active skills are **indexed** into the prompt; full skill bodies load only for path-relevant themes (extensions + triggers). Post-run **skill hit rate** measures which skills actually fire — fuel for F74/F82 evolution without context bloat.
+
 ## Self-evolution (F82)
 
 Validated skill proposals (fitness-gated) only enter `agent/skills/active/` after offline regression gates (critic fixture + fitness fixture). Default off (`TORII_SKILL_AUTO_ADOPT=0`).

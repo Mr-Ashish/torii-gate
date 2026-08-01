@@ -31,6 +31,7 @@ stages:
     phase: pre
     injects:
       - F69 skills
+      - F84 skill router progressive
       - F70 TP signatures
       - F71 taint + federated
       - F72 chain rubric
@@ -86,6 +87,13 @@ stages:
     phase: memory
     feature: F82
     when: TORII_SKILL_AUTO_ADOPT=1
+  - id: skill_router_score
+    script: scripts/skill_router.py
+    soft: true
+    phase: checker
+    feature: F84
+    command: score
+    note: measure selected skill keyword hits in review
   - id: federated_hub
     script: scripts/federated_hub_ingest.py
     soft: true
@@ -176,6 +184,10 @@ capabilities:
     feature: F83
     script: scripts/eval_trace_report.py
     one_liner: Paper-ready aggregate metrics from redacted trace vault
+  - id: skill_router
+    feature: F84
+    script: scripts/skill_router.py
+    one_liner: Progressive skill disclosure by path themes + post-run hit scoring
 
 # Scripts that pack install must ship for intelligence path (F79)
 pack_scripts:
@@ -198,4 +210,5 @@ pack_scripts:
   - llm_critic.py
   - skill_auto_adopt.py
   - eval_trace_report.py
+  - skill_router.py
   - smoke-torii-gate.sh

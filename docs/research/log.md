@@ -1,5 +1,38 @@
 # Torii research → product log
 
+## 2026-08-01 — F84 progressive skill router + hit scoring
+
+### Papers / posts / OSS
+- Progressive disclosure (Claude Skills / Simon Willison / HN): index all skills; full body only for relevant verticals.
+- Vercel agent evals: ~56% of cases skills never invoked when dump-only — routing + measurement required.
+- **FederatedSkill** (arXiv 2606.03143): privacy-preserving collaborative skill evolution via themes, not raw trajectories.
+- Prior Torii: F69 bulk inject ≤8 skills; F82 auto-adopt; no path relevance or post-run hit rate.
+
+### OSS / eng patterns
+1. EXT_THEMES + skill frontmatter/DEFAULT_TRIGGERS → rank top-K; always-on core skills.
+2. Replace F69 bulk block with index + selected full skills (TORII_SKILL_ROUTER_REPLACE).
+3. Post-run keyword/title hit score → skill-hits.json; federated_skill_themes = ids only.
+
+### Insight
+Shipping skills without progressive load or invocation metrics wastes context and evolution signal. Highest ROI: **route by path themes + measure hits**.
+
+### Feature shipped (F84)
+- `scripts/skill_router.py` — index / select / inject / score / fixture / status
+- assemble-context progressive inject; run-torii-review skill_router_score stage
+- Pack + workflow capability + feature toggle `TORII_SKILL_ROUTER` (default on)
+- PRODUCT progressive-skills mental model; adopted tool skill-router
+
+### Loop-engineering practice used
+**Ship what you measure** — skill hit_rate is a first-class post-run metric for F74/F82.
+
+### Metric
+- Offline: fixture_pass; py selects f74+always; good hit_rate=1.0 > weak=0.0; privacy_ok
+- Live: **Modal** pytorch#191813 deepseek/deepseek-v4-pro BIT3_OK ~77s; log_streaming=true; tool_call_turns=7; POST_COMMENT=0
+- pytest: 506 passed
+
+### SHA
+_PENDING_
+
 ## 2026-08-01 — F83 pack skills ship + paper eval-trace report
 
 ### Papers / posts / OSS

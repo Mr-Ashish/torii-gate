@@ -163,6 +163,7 @@ RUNTIME_SCRIPTS=(
   llm_critic.py
   skill_auto_adopt.py
   eval_trace_report.py
+  skill_router.py
 )
 
 copy_file() {

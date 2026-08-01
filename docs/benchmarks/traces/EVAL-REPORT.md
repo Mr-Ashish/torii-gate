@@ -1,14 +1,14 @@
 # Torii eval-trace report (F83)
 
-Generated: `2026-08-01T01:37:52Z`
+Generated: `2026-08-01T01:43:55Z`
 
 ## Aggregate
 
-- runs: **12** (modal=4, local=8)
+- runs: **13** (modal=5, local=8)
 - log_streaming true: **4**
 - fitness composite n=8
 - composite mean/median/min/max: **0.842** / 0.8494 / 0.77 / 0.8694
-- levels: `{"L2": 4, "L3": 4, "modal-f80-live": 1, "modal-f81-llm-critic": 1, "modal-f82-skills": 1, "modal-f83-pack-eval": 1}`
+- levels: `{"L2": 4, "L3": 4, "modal-f80-live": 1, "modal-f81-llm-critic": 1, "modal-f82-skills": 1, "modal-f83-pack-eval": 1, "\u2014": 1}`
 - models: `deepseek/deepseek-v4-pro`, `fixture`
 
 ## Runs
@@ -27,6 +27,7 @@ Generated: `2026-08-01T01:37:52Z`
 | 2026-08-01T01:25:06Z | modal | pytorch/pytorch | 191813 | `deepseek/deepseek-v4-pro` | — | modal-f81-llm-critic | F81 | `20260801-0125-pytorch-pytorch-PR191813-modal-f81` |
 | 2026-08-01T01:31:08Z | modal | pytorch/pytorch | 191813 | `deepseek/deepseek-v4-pro` | — | modal-f82-skills | F82 | `20260801-0131-pytorch-pytorch-PR191813-modal-f82` |
 | 2026-08-01T01:37:52Z | modal | pytorch/pytorch | 191813 | `deepseek/deepseek-v4-pro` | — | modal-f83-pack-eval | F83 | `20260801-0137-pytorch-pytorch-PR191813-modal-f83` |
+| — | modal | pytorch/pytorch | 191813 | `deepseek/deepseek-v4-pro` | — | — | F84 | `20260801-0140-pytorch-pytorch-PR191813-modal-f84` |
 
 ## Notes
 

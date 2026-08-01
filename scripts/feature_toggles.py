@@ -445,6 +445,15 @@ REGISTRY: list[ToggleSpec] = [
         "F82",
     ),
     ToggleSpec(
+        "skill_router",
+        "TORII_SKILL_ROUTER",
+        "bool",
+        True,
+        "product",
+        "F84 progressive skill router (index + path-selected full skills + hit score)",
+        "F84",
+    ),
+    ToggleSpec(
         "chain_revalidate",
         "TORII_CHAIN_REVALIDATE",
         "bool",

@@ -224,12 +224,37 @@ if [[ -f "$SCRIPTS/fitness_gate_evolve.py" ]]; then
         *) _f74_args+=(--no-adopt) ;;
       esac
 
+      stage fitness_gate_evolve \
+        python3 "$SCRIPTS/fitness_gate_evolve.py" "${_f74_args[@]}" || true
+      ;;
+  esac
+fi
+
 # F82: safe skill auto-adopt (default off; regression-gated)
 if [[ -f "$SCRIPTS/skill_auto_adopt.py" ]]; then
   case "${TORII_SKILL_AUTO_ADOPT:-0}" in
     1|true|yes|on)
       stage skill_auto_adopt \
         python3 "$SCRIPTS/skill_auto_adopt.py" cycle || true
+      ;;
+  esac
+fi
+
+# F84: progressive skill hit scoring (measure what was selected/injected)
+if [[ -f "$SCRIPTS/skill_router.py" ]]; then
+  case "${TORII_SKILL_ROUTER:-1}" in
+    0|false|no|off) ;;
+    *)
+      _f84_review=""
+      for _c in "$OUT_DIR/review.md" "$OUT_DIR/review.normalized.md" "$OUT_DIR/hermes-review.md"; do
+        if [[ -f "$_c" ]]; then _f84_review="$_c"; break; fi
+      done
+      if [[ -n "$_f84_review" ]]; then
+        stage skill_router_score \
+          python3 "$SCRIPTS/skill_router.py" score \
+            --review "$_f84_review" \
+            --out-dir "$OUT_DIR" || true
+      fi
       ;;
   esac
 fi
@@ -241,10 +266,6 @@ if [[ -f "$SCRIPTS/federated_hub_ingest.py" ]]; then
     *)
       stage fed_promote \
         python3 "$SCRIPTS/federated_hub_ingest.py" promote || true
-      ;;
-  esac
-fi
-      stage fitness_gate_evolve         python3 "$SCRIPTS/fitness_gate_evolve.py" "${_f74_args[@]}" || true
       ;;
   esac
 fi

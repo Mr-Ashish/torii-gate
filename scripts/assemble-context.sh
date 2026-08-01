@@ -284,6 +284,37 @@ try:
 except Exception:
     skills_injected = "0"
 
+# F84: progressive skill router — index + path-selected full skills (replaces F69 bulk)
+skill_router_on = "0"
+skill_router_n = "0"
+try:
+    import sys as _sys_f84
+    _sys_f84.path.insert(0, str(torii_root / "scripts"))
+    from skill_router import (  # type: ignore
+        enabled as skill_router_enabled,
+        inject_into_prompt as skill_router_inject,
+        paths_from_args as skill_router_paths,
+    )
+
+    if skill_router_enabled():
+        _f84_paths = skill_router_paths(
+            pr_json=os.environ.get("PR_JSON_PATH") or "",
+            paths_file=os.environ.get("FILES_PATH") or "",
+        )
+        _f84 = skill_router_inject(
+            Path(os.environ["PROMPT_PATH"]),
+            root=torii_root,
+            paths=_f84_paths,
+        )
+        if _f84.get("injected"):
+            skill_router_on = "1"
+            skill_router_n = str(len(_f84.get("selected") or []))
+            skills_injected = "1"
+            prompt = Path(os.environ["PROMPT_PATH"]).read_text(encoding="utf-8")
+except Exception:
+    skill_router_on = "0"
+    skill_router_n = "0"
+
 # F70: inject compound TP signatures (confirmed true-positive patterns)
 tp_sigs_injected = "0"
 try:
@@ -649,6 +680,8 @@ meta = {
     "FP_RESOLVE": fp_resolve_on,
     "FP_RESOLVE_COUNT": fp_resolve_count,
     "SELF_EVOLVE_SKILLS": skills_injected,
+    "SKILL_ROUTER": skill_router_on,
+    "SKILL_ROUTER_N": skill_router_n,
     "TP_SIGNATURES": tp_sigs_injected,
     "SCOPED_MEMORY": scoped_memory_on,
     "SCOPED_MEMORY_TP": scoped_memory_tp,
