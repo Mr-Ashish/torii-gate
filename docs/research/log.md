@@ -33,7 +33,7 @@ Self-evolved memory-CLI skills succeed via **terminal**, not review prose. Witho
 **Verifier LOO + multi-dim contribution** — independent tool outcome dimension; default REJECT free-riders until tool or prose evidence.
 
 ### SHA
-`9099770298b3adb07f010be1dd1ede5af4e203fa`
+`87cbfcf38ee69aa27dc9db9c02bd0f6241ad4832`
 ## 2026-08-01 — F114 tool-invocation skill outcome + product CLI memory detect
 
 ### Papers / posts
