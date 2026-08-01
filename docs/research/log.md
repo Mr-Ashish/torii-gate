@@ -31,7 +31,7 @@ enterprise
 enterprise light (dim 9)
 
 ### SHA
-`(fill after push)`
+`bd9b5830cc8df1cda1e730ce1fb8e7bcaf67aa4b`
 
 ## 2026-08-01 — OPS: fail-closed defaults, cost/PR dashboard, smoke CI
 
