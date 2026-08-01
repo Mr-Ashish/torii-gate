@@ -124,6 +124,14 @@ GROUPS: dict[str, dict[str, Any]] = {
             "public-eval -- status",
         ],
     },
+    "install-ux": {
+        "script": "install_ux_check.py",
+        "help": "Install UX: 5-min path, one CLI, doctor defaults (dim 7)",
+        "examples": [
+            "install-ux -- fixture",
+            "install-ux -- report",
+        ],
+    },
 }
 
 
@@ -188,19 +196,21 @@ def render_help_text() -> str:
         "",
         "Builtins: `help` · `status` · `doctor` · `scorecard` · `inject-hint`",
         "",
+        "**One front door** for humans/install. Peer scripts (`torii_memory.py`, …) remain",
+        "for agents that pin them — day-one path is always `torii.py`.",
+        "",
+        "Install (5 minutes): `docs/INSTALL.md` · `./scripts/install-torii.sh [--minimal] DEST`",
+        "",
         "Examples:",
         "```bash",
         "python3 scripts/torii.py help",
-        "python3 scripts/torii.py status",
-        "python3 scripts/torii.py doctor",
+        "python3 scripts/torii.py doctor          # human summary (TTY default)",
+        "python3 scripts/torii.py doctor --json   # machine JSON",
         "python3 scripts/torii.py scorecard",
         "python3 scripts/torii.py memory -- help",
         'python3 scripts/torii.py memory -- search -- -q "sql injection"',
-        "python3 scripts/torii.py budget -- status",
-        "python3 scripts/torii.py memory-loop -- scorecard --shallow",
+        "python3 scripts/torii.py golden-path -- status",
         "```",
-        "",
-        "Memory-only agents may still use `scripts/torii_memory.py` directly (F103).",
         "",
     ]
     return "\n".join(lines)
@@ -595,45 +605,94 @@ def cmd_doctor(args: argparse.Namespace) -> int:
             and refine_dual_hub
         )
     )
-    print(
-        json.dumps(
-            {
-                "feature": FEATURE,
-                "feature_recovery": "F128",
-                "feature_recon_warm_hub": "F151",
-                "feature_hub_archival_util": "F155",
-                "feature_hub_archival_util_critic": "F156",
-                "feature_hub_archival_loop": "F163",
-                "feature_refine_loop": "F170/F186",
-                "feature_scorecard_ops": "F135",
-                "doctor_pass": all_ok,
-                "recovery_ok": recovery_ok,
-                "recovery_active": recovery_active,
-                "recovery_hub_gap_ok": hub_gap,
-                "recon_warm_hub_ok": recon_warm,
-                "hub_archival_util_ok": hub_arch,
-                "hub_archival_util_critic_ok": hub_arch_critic,
-                "hub_archival_hub_ok": hub_arch_hub,
-                "hub_archival_hub_inject_ok": hub_arch_inject,
-                "router_synth_ok": router_synth,
-                "reprompt_adaptive_ok": reprompt_adapt,
-                "hub_archival_fitness_ok": hub_arch_fit,
-                "hub_archival_loop_ok": ha_loop_ok,
-                "skill_refine_ok": skill_refine,
-                "skill_refine_attr_ok": skill_refine_attr,
-                "refine_dual_ok": refine_dual,
-                "refine_promote_ok": refine_promote,
-                "refine_dual_hub_ok": refine_dual_hub,
-                "refine_loop_ok": refine_loop_ok,
-                "scorecard_ops": sc_panel,
-                "scorecard_ops_ok": sc_panel.get("scorecard_ops_ok"),
-                "results": results,
-                "scored_at": _now(),
-            },
-            indent=2,
-        )
-    )
+    payload: dict[str, Any] = {
+        "feature": FEATURE,
+        "feature_recovery": "F128",
+        "feature_recon_warm_hub": "F151",
+        "feature_hub_archival_util": "F155",
+        "feature_hub_archival_util_critic": "F156",
+        "feature_hub_archival_loop": "F163",
+        "feature_refine_loop": "F170/F186",
+        "feature_scorecard_ops": "F135",
+        "doctor_pass": all_ok,
+        "recovery_ok": recovery_ok,
+        "recovery_active": recovery_active,
+        "recovery_hub_gap_ok": hub_gap,
+        "recon_warm_hub_ok": recon_warm,
+        "hub_archival_util_ok": hub_arch,
+        "hub_archival_util_critic_ok": hub_arch_critic,
+        "hub_archival_hub_ok": hub_arch_hub,
+        "hub_archival_hub_inject_ok": hub_arch_inject,
+        "router_synth_ok": router_synth,
+        "reprompt_adaptive_ok": reprompt_adapt,
+        "hub_archival_fitness_ok": hub_arch_fit,
+        "hub_archival_loop_ok": ha_loop_ok,
+        "skill_refine_ok": skill_refine,
+        "skill_refine_attr_ok": skill_refine_attr,
+        "refine_dual_ok": refine_dual,
+        "refine_promote_ok": refine_promote,
+        "refine_dual_hub_ok": refine_dual_hub,
+        "refine_loop_ok": refine_loop_ok,
+        "scorecard_ops": sc_panel,
+        "scorecard_ops_ok": sc_panel.get("scorecard_ops_ok"),
+        "results": results,
+        "scored_at": _now(),
+        "cli": "python3 scripts/torii.py",
+        "install_doc": "docs/INSTALL.md",
+    }
+    want_json = bool(getattr(args, "json", False))
+    env_json = (os.environ.get("TORII_DOCTOR_JSON") or "").strip().lower() in {
+        "1",
+        "true",
+        "yes",
+    }
+    # Default human text on TTY; JSON when piped, --json, or TORII_DOCTOR_JSON=1
+    if want_json or env_json or not sys.stdout.isatty():
+        print(json.dumps(payload, indent=2))
+    else:
+        print(render_doctor_text(payload))
     return 0 if all_ok else 1
+
+
+def render_doctor_text(payload: dict[str, Any]) -> str:
+    """Human day-2 doctor summary (install UX — hide F-stack by default)."""
+    ok = bool(payload.get("doctor_pass"))
+    lines = [
+        f"# Torii doctor · {'PASS' if ok else 'FAIL'}",
+        f"scored_at: {payload.get('scored_at')}",
+        f"doctor_pass: {ok}",
+        "",
+        "## Checks",
+    ]
+    for r in payload.get("results") or []:
+        if not isinstance(r, dict):
+            continue
+        mark = "ok" if r.get("ok") else "FAIL"
+        lines.append(f"- [{mark}] {r.get('check')}")
+    lines += [
+        "",
+        "## Product readiness (short)",
+        f"- recovery skills active: {payload.get('recovery_ok')} "
+        f"({', '.join(payload.get('recovery_active') or []) or 'none'})",
+        f"- recovery hub-gap: {payload.get('recovery_hub_gap_ok')}",
+        f"- hub-archival loop: {payload.get('hub_archival_loop_ok')}",
+        f"- refine loop: {payload.get('refine_loop_ok')}",
+        "",
+        "## Next",
+        "- Install: docs/INSTALL.md · require status **torii/gate**",
+        "- One CLI: python3 scripts/torii.py help|doctor|memory|gate",
+        "- JSON: python3 scripts/torii.py doctor --json",
+        "",
+    ]
+    if not ok:
+        fails = [
+            str(r.get("check"))
+            for r in (payload.get("results") or [])
+            if isinstance(r, dict) and not r.get("ok")
+        ]
+        lines.append(f"Failing checks: {', '.join(fails) or 'see JSON'}")
+        lines.append("")
+    return "\n".join(lines)
 
 
 def product_scorecard(
@@ -1345,7 +1404,14 @@ def main(argv: list[str] | None = None) -> int:
     if cmd == "status":
         return cmd_status(argparse.Namespace())
     if cmd == "doctor":
-        return cmd_doctor(argparse.Namespace())
+        p = argparse.ArgumentParser(prog="torii.py doctor")
+        p.add_argument(
+            "--json",
+            action="store_true",
+            help="Print full JSON (default: human text on TTY)",
+        )
+        ns, _ = p.parse_known_args(pre + passthrough)
+        return cmd_doctor(ns)
     if cmd == "scorecard":
         p = argparse.ArgumentParser()
         p.add_argument("--out-dir", default="")

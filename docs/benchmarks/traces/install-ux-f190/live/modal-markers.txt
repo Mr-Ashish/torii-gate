@@ -1,0 +1,17 @@
+429:[orch:err] **Verdict:** < APPROVE | REQUEST CHANGES | COMMENT >
+645:[orch:err] | procedure | 0.25 | Verdict + Blocking + Security + What I checked + trigger scenario |
+942:[hermes:err-live] **Verdict:** < APPROVE | REQUEST CHANGES | COMMENT >
+1100:[hermes:err-live] | procedure | 0.25 | Verdict + Blocking + Security + What I checked + trigger scenario |
+1553:[orch:err] **Verdict:** < APPROVE | REQUEST CHANGES | COMMENT >
+1769:[orch:err] | procedure | 0.25 | Verdict + Blocking + Security + What I checked + trigger scenario |
+2114:[hermes:err-live] **Verdict:** < APPROVE | REQUEST CHANGES | COMMENT >
+2272:[hermes:err-live] | procedure | 0.25 | Verdict + Blocking + Security + What I checked + trigger scenario |
+2612:[orch:out]       "name": "Verdict structure",
+4222:  "elapsed_s": 59.9,
+4226:  "log_streaming": true,
+4235:**Verdict:** COMMENT
+4246:Agent output did not match the review contract (missing: **Verdict:**, 
+4254:BIT3_OK
+4262:[review] **Verdict:** COMMENT
+4270:[review] Agent output did not match the review contract (missing: **Verdict:**, **Score:**, ### Summary, ### Blocking, ### Security audit, ### Tests & risk). Raw content preserved below.
+4288:[torii/done] ok=True orch_rc=0 elapsed_s=59.9 review=True

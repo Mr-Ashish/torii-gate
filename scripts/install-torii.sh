@@ -16,6 +16,7 @@
 # Options:
 #   --dest DIR          Target repo root (required unless positional DIR)
 #   --caller            Hub-managed thin workflow only (no agent/scripts copy)
+#   --minimal           5-minute pack: runtime gate scripts only (no bench/eval/modal)
 #   --dry-run           Print actions; do not write
 #   --force             Overwrite existing files without prompting
 #   --with-hub-ingest   Also copy ingest-torii-run.yml (hub repo only; pack mode)
@@ -33,6 +34,7 @@ FORCE=0
 WITH_INGEST=0
 WITH_RUNNER=0
 CALLER_MODE=0
+MINIMAL=0
 
 log() { printf '%s\n' "$*" >&2; }
 die() { log "ERROR: $*"; exit 1; }
@@ -56,6 +58,7 @@ while [[ $# -gt 0 ]]; do
     --dry-run) DRY_RUN=1; shift ;;
     --force) FORCE=1; shift ;;
     --caller) CALLER_MODE=1; shift ;;
+    --minimal) MINIMAL=1; shift ;;
     --with-hub-ingest) WITH_INGEST=1; shift ;;
     --with-runner-build) WITH_RUNNER=1; shift ;;
     -h | --help) usage 0 ;;
@@ -179,7 +182,43 @@ RUNTIME_SCRIPTS=(
   memory_temporal_graph.py
   torii_memory.py
   torii.py
+  install_ux_check.py
 )
+
+# Scripts omitted from --minimal (bench / eval / modal / heavy evolution).
+# Full pack remains default for day-2 compound loops.
+MINIMAL_EXCLUDE=(
+  bench_security_gate.py
+  bench_corpus.py
+  eval_trace_report.py
+  modal_secrets_bootstrap.py
+  self_evolve.py
+  skill_auto_adopt.py
+  skill_dual_rollout.py
+  skill_attribution.py
+  fitness_gate_evolve.py
+  pack-run-for-ui.py
+  review-to-openui.py
+  hub-ingest-run.py
+  publish-run-to-hub.py
+  publish-run-local.sh
+  build-hub-payload.py
+)
+
+runtime_scripts_list() {
+  if [[ "$MINIMAL" != "1" ]]; then
+    printf '%s\n' "${RUNTIME_SCRIPTS[@]}"
+    return 0
+  fi
+  local s ex skip
+  for s in "${RUNTIME_SCRIPTS[@]}"; do
+    skip=0
+    for ex in "${MINIMAL_EXCLUDE[@]}"; do
+      if [[ "$s" == "$ex" ]]; then skip=1; break; fi
+    done
+    [[ "$skip" == "1" ]] || printf '%s\n' "$s"
+  done
+}
 
 copy_file() {
   local from="$1" to="$2"
@@ -287,14 +326,22 @@ if [[ -d "$SRC/agent/skills" ]]; then
     log "dry-run: would copy agent/skills/"
   else
     mkdir -p "$DEST/agent/skills"
-    # copy tree but skip large proposal noise optionally — ship active + proposals + README
+    # full pack: active + proposals; --minimal: active only (smaller surface)
     if command -v rsync >/dev/null 2>&1; then
-      rsync -a --delete --exclude '.DS_Store' "$SRC/agent/skills/" "$DEST/agent/skills/"
+      if [[ "$MINIMAL" == "1" ]]; then
+        rsync -a --delete --exclude '.DS_Store' --exclude 'proposals/' \
+          "$SRC/agent/skills/" "$DEST/agent/skills/"
+      else
+        rsync -a --delete --exclude '.DS_Store' "$SRC/agent/skills/" "$DEST/agent/skills/"
+      fi
     else
       rm -rf "$DEST/agent/skills"
       cp -R "$SRC/agent/skills" "$DEST/agent/skills"
+      if [[ "$MINIMAL" == "1" && -d "$DEST/agent/skills/proposals" ]]; then
+        rm -rf "$DEST/agent/skills/proposals"
+      fi
     fi
-    log "copied agent/skills/ (active=$(find "$DEST/agent/skills/active" -name '*.md' 2>/dev/null | wc -l | tr -d ' '))"
+    log "copied agent/skills/ (active=$(find "$DEST/agent/skills/active" -name '*.md' 2>/dev/null | wc -l | tr -d ' ') minimal=$MINIMAL)"
     # F120: pack must ship recovery always skills (F113/F118 dual-gate adopted)
     for _rs in \
       skill-prefer-memory-cli-early.md \
@@ -344,8 +391,16 @@ if [[ -d "$SRC/agent/packs" ]]; then
   fi
 fi
 
-# runtime scripts
-copy_tree_files "scripts" "${RUNTIME_SCRIPTS[@]}"
+# runtime scripts (full pack or --minimal gate surface)
+# Portable array fill (macOS bash 3.2 has no mapfile)
+_RUNTIME_COPY=()
+while IFS= read -r _rscript; do
+  [[ -n "$_rscript" ]] && _RUNTIME_COPY+=("$_rscript")
+done < <(runtime_scripts_list)
+if [[ "$MINIMAL" == "1" ]]; then
+  log "mode=minimal (5-minute pack: excluded bench/eval/modal/heavy evolution scripts)"
+fi
+copy_tree_files "scripts" "${_RUNTIME_COPY[@]}"
 
 # F10: thin caller + reusable implementation (target keeps a copy of reusable for offline pin)
 copy_file \
@@ -410,16 +465,18 @@ seed_local_memory
 write_stamp "pack"
 
 log ""
-log "Next steps on the target repo (default branch):"
-log "  1. Commit the installed pack + .torii/MEMORY.md and push to the default branch."
-log "  2. Add secret OPENROUTER_API_KEY."
-log "  3. Memory is repo-local (.torii/) by default (F28). Optional hub: vars TORII_MEMORY_MODE=both|hub and/or TORII_HUB_PUBLISH=1 + secret TORII_HUB_TOKEN."
-log "  4. Optional vars: TORII_MODEL / TORII_HERMES_COMMIT / TORII_COOLDOWN_SECONDS / TORII_RUNNER_IMAGE / TORII_MEMORY_PATH."
-log "  5. Branch protection: require status check context torii/gate (security-aware merge signal)."
-log "  6. On a PR, comment: @torii review this pr"
-log "  Tip: offline smoke after install: bash scripts/smoke-torii-gate.sh (pack mode)."
-log "  Tip: product CLI: python3 scripts/torii.py help && python3 scripts/torii.py doctor"
-log "  Tip: memory stack doctor: python3 scripts/torii_memory.py help && python3 scripts/torii_memory.py doctor"
-log "  Tip: shared re-prompt budget default TORII_REPROMPT_MAX_EXTRA=1 (F108 — one paid recovery)."
-log "  Tip: for hub-managed installs (no local scripts), re-run with --caller."
+log "Next steps (5-minute path — see docs/INSTALL.md):"
+log "  1. Commit installed pack + .torii/MEMORY.md; push default branch."
+log "  2. Secret: OPENROUTER_API_KEY."
+log "  3. Branch protection: require status check **torii/gate**."
+log "  4. On a PR: @torii review this pr"
+log "  5. Day-2: python3 scripts/torii.py doctor"
+log "One CLI: python3 scripts/torii.py help|doctor|memory|gate  (not peer scripts on day one)"
+if [[ "$MINIMAL" == "1" ]]; then
+  log "Pack surface: minimal (gate/review). Re-install without --minimal for full compound-loop scripts."
+else
+  log "Pack surface: full runtime. Use --minimal for a smaller 5-minute surface."
+fi
+log "  Tip: offline smoke: bash scripts/smoke-torii-gate.sh"
+log "  Tip: hub-managed thin caller: re-run with --caller"
 log "Done."

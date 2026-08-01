@@ -1,3 +1,38 @@
+## 2026-08-01 — INSTALL_UX: 5-min path, --minimal pack, doctor text defaults
+
+### Papers / posts
+- AppSec install UX: dual entrypoints kill adoption; time-to-first-signal is the product.
+- Loop Engineering: day-2 doctor habit over F-number dumps.
+- Scorecard dim install UX 5.5 → lift with one CLI + smaller pack surface.
+
+### OSS design patterns stolen
+1. docs/INSTALL.md — five steps; require torii/gate; one CLI table.
+2. install-torii.sh --minimal excludes bench/eval/modal/heavy evolution + proposals.
+3. torii.py doctor human summary on TTY; --json / non-TTY for machines.
+4. install_ux_check hermetic fixture; pack README + golden path links.
+
+### Insight
+Install footer still pointed at torii_memory.py + dump-JSON doctor. Highest ROI: one front door + minimal pack flag.
+
+### Feature shipped (INSTALL_UX / F190)
+- docs/INSTALL.md · --minimal · render_doctor_text · install_ux_check · tests
+
+### Loop-engineering
+Install loop measured by operator steps, not script count.
+
+### Metric
+- Offline: install_ux fixture_pass; pytest 5 passed; doctor --json doctor_pass
+- Live Modal: pytorch#191831 BIT3_OK ~59.9s POST_COMMENT=0 log_streaming=true
+
+### scorecard_target
+install
+
+### dim_lift
+install UX (dim 7)
+
+### SHA
+`(fill after push)`
+
 ## 2026-08-01 — PUBLIC_EVAL: Juice Shop + 2 OSS-theme packs (seed 42)
 
 ### Papers / posts

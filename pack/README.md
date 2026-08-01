@@ -6,6 +6,8 @@
 
 Default install (without `--caller`) still copies the full pack (`agent/`, runtime `scripts/`, and a thin caller that points at the *target* repo for scripts).
 
+**5-minute surface:** `./scripts/install-torii.sh --minimal DEST` ships gate/review runtime only (skips bench/eval/modal/heavy evolution scripts and skill proposals). Day-one CLI: `python3 scripts/torii.py doctor`. See [`docs/INSTALL.md`](../docs/INSTALL.md).
+
 ## Memory (F28)
 
 Pack install seeds **`.torii/MEMORY.md`** on the target. After each review Torii commits a slim run pack under `.torii/runs/{trace_id}/` on the target default branch (`contents: write`). Hub memory is optional (`TORII_MEMORY_MODE=both|hub` or `TORII_HUB_PUBLISH=1`). Fat traces remain Actions artifacts only.

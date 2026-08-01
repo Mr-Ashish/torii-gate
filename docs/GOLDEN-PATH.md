@@ -10,9 +10,13 @@ install pack  →  secret  →  require torii/gate  →  @torii review  →  sig
 
 ## 5-minute install (target repo)
 
+**Short path:** [`docs/INSTALL.md`](INSTALL.md) · `./scripts/install-torii.sh [--minimal] DEST`
+
 ```bash
 # from a torii-gate checkout
 ./scripts/install-torii.sh /path/to/your-app
+# 5-minute surface (no bench/eval/modal scripts):
+# ./scripts/install-torii.sh --minimal /path/to/your-app
 # hub-managed thin caller only (free upgrades from hub main):
 # ./scripts/install-torii.sh --caller /path/to/your-app
 

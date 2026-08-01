@@ -1,0 +1,18 @@
+{
+  "feature": "INSTALL_UX",
+  "schema_version": 1,
+  "repo": "pytorch/pytorch",
+  "pr": "191831",
+  "pr_number": "191831",
+  "model": "deepseek/deepseek-chat-v4-pro",
+  "host": "modal",
+  "bit3": true,
+  "elapsed_s": 59.9,
+  "log_streaming": true,
+  "tool_call_turns": 0,
+  "post_comment": 0,
+  "verdict": "COMMENT",
+  "notes": "Install UX fire dogfood",
+  "scored_at": "2026-08-01T14:32:40Z",
+  "modal_run": "https://modal.com/apps/mr-ashish/main/ap-msUBylJcng2ERYkGAdUbC8"
+}

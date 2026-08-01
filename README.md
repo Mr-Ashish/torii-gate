@@ -69,12 +69,13 @@ Dogfood app with intentional vulns: [`demo/insecure/`](demo/insecure/). Gate con
 **Buyer loop:** install → require status **`torii/gate`** → `@torii review this pr` → metrics.
 
 ```bash
-./scripts/install-torii.sh /path/to/your-app
+./scripts/install-torii.sh /path/to/your-app           # or --minimal for 5-min surface
 # then: secret OPENROUTER_API_KEY · branch protection requires torii/gate
-python3 scripts/golden_path_metrics.py report   # → docs/benchmarks/golden-path-metrics.md
+python3 scripts/torii.py doctor                        # day-2 habit (one CLI)
+python3 scripts/golden_path_metrics.py report          # → docs/benchmarks/golden-path-metrics.md
 ```
 
-Full one-pager: [`docs/GOLDEN-PATH.md`](docs/GOLDEN-PATH.md) · published chart: [`docs/benchmarks/golden-path-metrics.md`](docs/benchmarks/golden-path-metrics.md).
+**5-minute install:** [`docs/INSTALL.md`](docs/INSTALL.md) · golden path: [`docs/GOLDEN-PATH.md`](docs/GOLDEN-PATH.md) · metrics: [`docs/benchmarks/golden-path-metrics.md`](docs/benchmarks/golden-path-metrics.md).
 
 **Public labeled eval** (Juice Shop + NodeGoat + Django/Flask themes, fixed seed):  
 [`docs/benchmarks/public-eval/SCORECARD.md`](docs/benchmarks/public-eval/SCORECARD.md) · `python3 scripts/public_eval.py report`
