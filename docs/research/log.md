@@ -31,7 +31,7 @@ Single Python demo under-tests JS/web packs. Highest ROI: **second labeled corpu
 - pytest: 472 passed
 
 ### SHA
-`(pending push)`
+`903a7cb3a57bb70c9d207303d72f398592de9cdc`
 
 ## 2026-08-01 — F75 scoped memory recall (Mem0 multi-scope TP/FP)
 
