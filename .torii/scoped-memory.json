@@ -35,7 +35,7 @@
       "source": "bench_promote",
       "repo": "pytorch/pytorch",
       "tenant": "",
-      "provenance": "/Users/ashishmishra/Documents/experiments/torii/.torii/tp-signatures.json",
+      "provenance": "torii/.torii/tp-signatures.json",
       "raw_id": "sqli-search"
     },
     {
@@ -65,7 +65,7 @@
       "source": "bench_promote",
       "repo": "pytorch/pytorch",
       "tenant": "",
-      "provenance": "/Users/ashishmishra/Documents/experiments/torii/.torii/tp-signatures.json",
+      "provenance": "torii/.torii/tp-signatures.json",
       "raw_id": "pickle-load"
     },
     {
@@ -96,7 +96,7 @@
       "source": "bench_promote",
       "repo": "pytorch/pytorch",
       "tenant": "",
-      "provenance": "/Users/ashishmishra/Documents/experiments/torii/.torii/tp-signatures.json",
+      "provenance": "torii/.torii/tp-signatures.json",
       "raw_id": "cmdi-run"
     },
     {
@@ -128,7 +128,7 @@
       "source": "bench_promote",
       "repo": "pytorch/pytorch",
       "tenant": "",
-      "provenance": "/Users/ashishmishra/Documents/experiments/torii/.torii/tp-signatures.json",
+      "provenance": "torii/.torii/tp-signatures.json",
       "raw_id": "secret-exposure"
     },
     {
@@ -155,7 +155,7 @@
       "source": "federated-signals",
       "repo": "",
       "tenant": "",
-      "provenance": "/Users/ashishmishra/Documents/experiments/torii/.torii/federated-signals.json",
+      "provenance": "torii/.torii/federated-signals.json",
       "raw_id": "command_injection"
     },
     {
@@ -181,7 +181,7 @@
       "source": "federated-signals",
       "repo": "",
       "tenant": "",
-      "provenance": "/Users/ashishmishra/Documents/experiments/torii/.torii/federated-signals.json",
+      "provenance": "torii/.torii/federated-signals.json",
       "raw_id": "insecure_deserialization"
     },
     {
@@ -209,7 +209,7 @@
       "source": "federated-signals",
       "repo": "",
       "tenant": "",
-      "provenance": "/Users/ashishmishra/Documents/experiments/torii/.torii/federated-signals.json",
+      "provenance": "torii/.torii/federated-signals.json",
       "raw_id": "secrets_exposure"
     },
     {
@@ -237,7 +237,7 @@
       "source": "federated-signals",
       "repo": "",
       "tenant": "",
-      "provenance": "/Users/ashishmishra/Documents/experiments/torii/.torii/federated-signals.json",
+      "provenance": "torii/.torii/federated-signals.json",
       "raw_id": "sql_injection"
     }
   ],
