@@ -34,7 +34,7 @@ Most AI PR bots optimize for *code quality comments*. Torii optimizes for **secu
 - Labels + required check **`torii/gate`** as the merge signal  
 - Every run teaches the next — stricter blocks, less noise  
 
-**CLI front door:** `python3 scripts/torii.py help` · `doctor` · `golden-path -- status` · `ops -- status` · `memory -- search`
+**CLI front door:** `python3 scripts/torii.py help` · `status --text` · `doctor` · `ops -- status` · `enterprise -- status` · `memory -- search`
 
 **Measured dogfood (honesty):** live Modal + Hermes on open-source PRs (`POST_COMMENT=0`) — **~90s** time-to-signal p50 · **~$0.01** cost/PR p50 · gate certificates with reason codes. Not slogans: [`docs/ops/cost-pr-dashboard.md`](docs/ops/cost-pr-dashboard.md) · [`docs/benchmarks/golden-path-metrics.md`](docs/benchmarks/golden-path-metrics.md) · landing: [`docs/brand/landing.html`](docs/brand/landing.html).
 
@@ -73,7 +73,10 @@ Dogfood app with intentional vulns: [`demo/insecure/`](demo/insecure/). Gate con
 
 ```bash
 ./scripts/install-torii.sh /path/to/your-app           # or --minimal for 5-min surface
+# multi-org fleet (optional enterprise light):
+# ./scripts/install-torii.sh --tenant acme-platform /path/to/your-app
 # then: secret OPENROUTER_API_KEY · branch protection requires torii/gate
+python3 scripts/torii.py status --text                 # day-2 one-screen (cost · cert · quieter · fail-closed)
 python3 scripts/torii.py doctor                        # day-2 habit (one CLI)
 python3 scripts/golden_path_metrics.py report          # → docs/benchmarks/golden-path-metrics.md
 ```
@@ -86,8 +89,9 @@ Day-one path stays install → require **`torii/gate`** → first review. Everyt
 
 | Surface | Doc | Command |
 |---------|-----|---------|
-| Install / doctor | [`docs/INSTALL.md`](docs/INSTALL.md) | `python3 scripts/torii.py doctor` |
+| Install / doctor | [`docs/INSTALL.md`](docs/INSTALL.md) | `python3 scripts/torii.py doctor` · `status --text` |
 | Golden path + cost/PR | [`docs/GOLDEN-PATH.md`](docs/GOLDEN-PATH.md) · [`docs/ops/cost-pr-dashboard.md`](docs/ops/cost-pr-dashboard.md) | `python3 scripts/torii.py golden-path -- status` · `ops -- status` |
+| Ops fail-closed | [`docs/ops/RELIABILITY.md`](docs/ops/RELIABILITY.md) | tool-turns gate on · smoke CI · `ops -- status` |
 | Gate certificate | [`docs/GATE.md`](docs/GATE.md) | `python3 scripts/torii.py certificate -- fixture` |
 | Quieter over time | [`docs/QUIETER.md`](docs/QUIETER.md) | `python3 scripts/torii.py quieter -- status` |
 | Tool-use quality | [`docs/TOOL-USE.md`](docs/TOOL-USE.md) | `python3 scripts/torii.py tool-use -- status` |
@@ -95,7 +99,7 @@ Day-one path stays install → require **`torii/gate`** → first review. Everyt
 | Memory (FP die twice) | [`docs/MEMORY.md`](docs/MEMORY.md) | `python3 scripts/torii.py memory -- doctor` |
 | Federation | [`docs/FEDERATION.md`](docs/FEDERATION.md) | `python3 scripts/torii.py federation -- status` |
 | Self-evolution (day-2) | [`docs/SELF-EVOLVE.md`](docs/SELF-EVOLVE.md) | `python3 scripts/torii.py self-evolve -- status` |
-| Enterprise light | [`docs/enterprise/`](docs/enterprise/) | `python3 scripts/torii.py enterprise -- status` |
+| Enterprise light | [`docs/enterprise/`](docs/enterprise/) · install `--tenant` | `python3 scripts/torii.py enterprise -- status` |
 | **Commercial rollup** | [`docs/benchmarks/commercial-scorecard.md`](docs/benchmarks/commercial-scorecard.md) | `python3 scripts/torii.py commercial -- status` |
 
 **Public labeled eval** (Juice Shop + NodeGoat + Django/Flask themes, fixed seed):  

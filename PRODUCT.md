@@ -70,7 +70,7 @@ Install path: [`docs/GOLDEN-PATH.md`](docs/GOLDEN-PATH.md) · metrics: [`docs/be
 
 **Gate certificate:** every open/close of **`torii/gate`** ships reason codes + path evidence (tools-as-code, not chat) → [`docs/GATE.md`](docs/GATE.md) · `python3 scripts/torii.py certificate -- fixture`.
 
-**Enterprise light:** multi-tenant org isolation + federation privacy (themes only — no paths/snippets) → [`docs/enterprise/`](docs/enterprise/).
+**Enterprise light:** multi-tenant org isolation + federation privacy (themes only — no paths/snippets) → [`docs/enterprise/`](docs/enterprise/) · install stamp `./scripts/install-torii.sh --tenant <id>` · `python3 scripts/torii.py enterprise -- status`.
 
 **Federation (buyer JTBD):** privacy-safe multi-tenant heat compounds quieter gates → [`docs/FEDERATION.md`](docs/FEDERATION.md) · `python3 scripts/torii.py federation -- status`.
 
@@ -78,7 +78,7 @@ Install path: [`docs/GOLDEN-PATH.md`](docs/GOLDEN-PATH.md) · metrics: [`docs/be
 
 **Compound memory:** FP die twice · TP stay sharp (path-evidenced write, tiers, scoped recall) → [`docs/MEMORY.md`](docs/MEMORY.md) · `python3 scripts/torii.py memory -- doctor`.
 
-**CLI:** `python3 scripts/torii.py help` · `doctor` · `golden-path -- status` · `certificate -- fixture` · `quieter -- status` · `tool-use -- status` · `ops -- status` · `commercial -- status` · `enterprise -- status`
+**CLI:** `python3 scripts/torii.py help` · `status --text` · `doctor` · `golden-path -- status` · `certificate -- fixture` · `quieter -- status` · `tool-use -- status` · `ops -- status` · `commercial -- status` · `enterprise -- status`
 
 **Commercial rollup (queue 1–6 + post-queue + workflow):** `python3 scripts/torii.py commercial -- fixture` → [`docs/benchmarks/commercial-scorecard.md`](docs/benchmarks/commercial-scorecard.md).
 

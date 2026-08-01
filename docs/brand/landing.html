@@ -203,6 +203,20 @@ tr:last-child td{border-bottom:0}
   </div>
 
   <div class="card" style="margin-top:16px;border-color:var(--hair-g)">
+    <div class="num">Enterprise light</div>
+    <h3 style="margin-bottom:10px">Multi-org without a SaaS control plane</h3>
+    <p>Day-one stays repo-local <code style="color:var(--gold)">.torii/</code>. Fleets stamp an optional tenant id — themes only on hub publish; cost/PR never federates.</p>
+    <p class="note" style="margin:12px 0 0"><code style="color:var(--gold)">./scripts/install-torii.sh --tenant acme-platform DEST</code> · <code style="color:var(--gold)">torii.py enterprise -- status</code> · <a href="../enterprise/ORG-ISOLATION.md">ORG-ISOLATION.md</a> · <a href="../INSTALL.md">INSTALL.md</a>.</p>
+  </div>
+
+  <div class="card" style="margin-top:16px;border-color:var(--hair-g)">
+    <div class="num">Ops · fail-closed</div>
+    <h3 style="margin-bottom:10px">Safe defaults, not chatty approvals</h3>
+    <p>Tool-turns gate blocks zero-tool APPROVE on multi-file code PRs. Smoke CI stays offline-green. Operators see cost × cert without Modal archaeology.</p>
+    <p class="note" style="margin:12px 0 0"><code style="color:var(--gold)">torii.py status --text</code> · <code style="color:var(--gold)">torii.py ops -- status</code> · <a href="../ops/RELIABILITY.md">RELIABILITY.md</a>.</p>
+  </div>
+
+  <div class="card" style="margin-top:16px;border-color:var(--hair-g)">
     <div class="num">Self-evolution</div>
     <h3 style="margin-bottom:10px">Skills that measure in — dual-gated</h3>
     <p>Day-2: proposals from run evidence and scorecard gaps. Adopt only after offline eval and attribution — not free-form prompt churn. Day-one remains install → <code style="color:var(--gold)">torii/gate</code>.</p>

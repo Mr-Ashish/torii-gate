@@ -1,7 +1,7 @@
 {
   "feature": "GATE_CERT",
   "schema": 2,
-  "scored_at": "2026-08-01T17:49:49Z",
+  "scored_at": "2026-08-01T17:58:26Z",
   "fixture_pass": true,
   "ok_n": 14,
   "total": 14,
@@ -48,19 +48,38 @@
       "certificate_id": "gc-620fd969d4470e58"
     },
     "vault": {
-      "vault_n": 25,
-      "with_cost_n": 25,
-      "cost_p50_usd": 0.017309839000000004,
+      "vault_n": 26,
+      "with_cost_n": 26,
+      "cost_p50_usd": 0.016810546000000003,
       "vault_ok": true
     }
   },
   "vault": {
     "vault_ok": true,
-    "vault_n": 25,
-    "with_cost_n": 25,
-    "cost_p50_usd": 0.017309839000000004,
+    "vault_n": 26,
+    "with_cost_n": 26,
+    "cost_p50_usd": 0.016810546000000003,
     "privacy": "local_vault_only",
     "recent": [
+      {
+        "trace_id": "20260801-1753-pytorch-pytorch-PR191840-modal-gtm-ent-ops",
+        "repo": "pytorch/pytorch",
+        "pr": "191840",
+        "certificate_id": "gc-61e9e283ea5a8716",
+        "block": false,
+        "state": "success",
+        "verdict": "APPROVE",
+        "path_score": 1.0,
+        "reason_codes_head": [
+          "verdict_approve_open",
+          "strong_path_evidence",
+          "blocking_with_paths"
+        ],
+        "cost_usd": 0.011171234999999998,
+        "time_to_signal_s": 108.0,
+        "host": "modal",
+        "model": "deepseek/deepseek-v4-pro"
+      },
       {
         "trace_id": "20260801-1743-pytorch-pytorch-PR191840-modal-ent-install-tenant",
         "repo": "pytorch/pytorch",
@@ -269,28 +288,9 @@
         "time_to_signal_s": 122.0,
         "host": "modal",
         "model": "deepseek/deepseek-v4-pro"
-      },
-      {
-        "trace_id": "20260801-1624-pytorch-pytorch-PR191840-modal-landing-cost",
-        "repo": "pytorch/pytorch",
-        "pr": "191840",
-        "certificate_id": "gc-c9f317b2365e7643",
-        "block": true,
-        "state": "failure",
-        "verdict": "REQUEST_CHANGES",
-        "path_score": 1.0,
-        "reason_codes_head": [
-          "verdict_request_changes",
-          "strong_path_evidence",
-          "blocking_with_paths"
-        ],
-        "cost_usd": 0.023839971999999997,
-        "time_to_signal_s": 117.0,
-        "host": "modal",
-        "model": "deepseek/deepseek-v4-pro"
       }
     ],
-    "one_liner": "Vault has 25 gate certificates \u00b7 cost p50 $0.017 (local only; not federated)."
+    "one_liner": "Vault has 26 gate certificates \u00b7 cost p50 $0.017 (local only; not federated)."
   },
   "scorecard_target": "evidence / simplicity (dim 12)",
   "dim_lift": "merge-authority evidence + vault cert\u00d7cost (tools-as-code)",

@@ -151,6 +151,28 @@ def check_surfaces(root: Path) -> dict[str, Any]:
             or "ops -- status" in rm
         )
     )
+    # GTM_ENT_OPS: enterprise --tenant + fail-closed on GitHub/landing front doors
+    results["checks"]["readme_enterprise_tenant"] = bool(
+        re.search(r"--tenant|install-torii\.sh --tenant", rm)
+        and re.search(r"enterprise", rm, re.I)
+    )
+    results["checks"]["readme_fail_closed"] = bool(
+        re.search(r"fail-closed|RELIABILITY\.md|tool-turns gate", rm, re.I)
+    )
+    results["checks"]["readme_status_text"] = bool(
+        re.search(r"status --text|status\s+--text", rm)
+    )
+    results["checks"]["landing_enterprise_tenant"] = bool(
+        re.search(r"--tenant|install-torii\.sh --tenant", land)
+        and re.search(r"Enterprise light|enterprise", land, re.I)
+    )
+    results["checks"]["landing_fail_closed"] = bool(
+        re.search(r"fail-closed|RELIABILITY\.md|tool-turns gate", land, re.I)
+    )
+    results["checks"]["product_enterprise_tenant"] = bool(
+        re.search(r"--tenant|install-torii\.sh --tenant", prod_buyer)
+        and re.search(r"enterprise", prod_buyer, re.I)
+    )
 
     # F-number budgets on *primary* slices (before Advanced)
     prod_primary = _primary_section(

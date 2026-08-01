@@ -417,8 +417,14 @@ def build_status_payload(root: Path | None = None) -> dict[str, Any]:
     if ops:
         day2["ops_ok"] = ops.get("ops_ok")
         day2["cost_ok"] = ops.get("cost_ok")
+        day2["fail_closed_safe_defaults"] = ops.get("fail_closed_safe_defaults")
+        day2["smoke_ci"] = ops.get("smoke_ci")
         if day2.get("cost_p50_usd") is None:
             day2["cost_p50_usd"] = ops.get("cost_p50")
+    ent = _soft_script_json(root, "enterprise_surface.py", ["status"], timeout=45)
+    if ent:
+        day2["enterprise_ok"] = ent.get("enterprise_ok")
+        day2["tenant_n"] = ent.get("tenant_n")
 
     groups_n = sum(1 for v in present.values() if v)
     return {
@@ -433,8 +439,8 @@ def build_status_payload(root: Path | None = None) -> dict[str, Any]:
         "extras": extras,
         "day2": day2,
         "one_liner": (
-            "Day-2 one screen: commercial · cost/PR · cert vault · quieter · "
-            "require torii/gate."
+            "Day-2 one screen: commercial · cost/PR · cert · quieter · "
+            "fail-closed · enterprise · require torii/gate."
         ),
         "scored_at": _now(),
     }
@@ -480,8 +486,19 @@ def render_status_text(payload: dict[str, Any]) -> str:
                 f"getting_quieter={day2.get('getting_quieter')} · "
                 f"score={day2.get('quiet_score_all')}"
             )
-        if day2.get("ops_ok") is not None:
-            lines.append(f"- ops: ok={day2.get('ops_ok')}")
+        if day2.get("ops_ok") is not None or day2.get("fail_closed_safe_defaults") is not None:
+            lines.append(
+                f"- ops: ok={day2.get('ops_ok')} · "
+                f"fail_closed_safe_defaults={day2.get('fail_closed_safe_defaults')} · "
+                f"smoke_ci={day2.get('smoke_ci')} "
+                f"(docs/ops/RELIABILITY.md)"
+            )
+        if day2.get("enterprise_ok") is not None:
+            lines.append(
+                f"- enterprise light: ok={day2.get('enterprise_ok')} · "
+                f"tenants={day2.get('tenant_n')} · "
+                f"install --tenant (optional fleet)"
+            )
     else:
         lines.append("- _(soft day-2 peeks unavailable — run doctor / commercial -- fixture)_")
 
@@ -494,8 +511,9 @@ def render_status_text(payload: dict[str, Any]) -> str:
         "",
         "## Next",
         "- Require status check **torii/gate** (merge authority)",
+        "- Fail-closed defaults on: tool-turns gate · smoke CI · cert on every gate",
         "- `python3 scripts/torii.py doctor` · `ops -- status` · `certificate -- report`",
-        "- `python3 scripts/torii.py quieter -- status` · `commercial -- status`",
+        "- `python3 scripts/torii.py quieter -- status` · `enterprise -- status`",
         "- JSON: `python3 scripts/torii.py status --json`",
         "",
         str(payload.get("one_liner") or ""),

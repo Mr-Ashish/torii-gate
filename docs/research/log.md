@@ -1,4 +1,38 @@
 
+## 2026-08-01 — GTM_ENT_OPS: README/landing enterprise + fail-closed on status
+
+### Papers / posts
+- GTM: GitHub README + landing are highest-traffic buyer surfaces after ENT_INSTALL_TENANT.
+- Ops dim 8: fail-closed defaults lived only in RELIABILITY.md — not on status --text.
+- Enterprise dim 9: --tenant shipped install, not front-door narrative.
+
+### Decide / copy / skip
+- **Copy:** README/landing enterprise --tenant + ops fail-closed cards; PRODUCT CLI/enterprise lines.
+- **Copy:** status --text rows for fail_closed_safe_defaults · smoke_ci · enterprise_ok.
+- **Copy:** buyer_narrative checks (readme/landing/product enterprise + fail-closed).
+- **Skip:** F185+; no new compound loops.
+
+### Feature shipped (GTM_ENT_OPS)
+- README · landing · PRODUCT enterprise/ops surfaces
+- torii.py status day2 fail-closed + enterprise
+- buyer_narrative fixture gates
+
+### Metric
+- Offline: buyer 28/28 · commercial 8.5 · status shows fail-closed + enterprise
+- Live Modal: pytorch#191840 BIT3_OK ~272s wall · tools present · POST_COMMENT=0
+- Traces: docs/benchmarks/traces/20260801-1753-pytorch-pytorch-PR191840-modal-gtm-ent-ops/
+- Modal: https://modal.com/apps/mr-ashish/main/ap-gSGgHeSpOHthjqPf90M04H
+
+### scorecard_target
+enterprise (#9) · ops (#8) · simplicity (#12) · GTM
+
+### dim_lift
+front doors + day-2 status show enterprise tenant and fail-closed without archaeology
+
+### SHA
+_pending_
+
+
 ## 2026-08-01 — ENT_INSTALL_TENANT: install --tenant + enterprise/quieter install path
 
 ### Papers / posts
