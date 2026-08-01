@@ -26,7 +26,7 @@ JTBD (#3) · tool-use · technical trust
 Dogfood agentic reviews use tools again under the chat model slug
 
 ### SHA
-(pending)
+`a79a0dd5792d78275533365bdbddec3b852062f5`
 
 ## 2026-08-01 — PILOT_PATH: design partner + paid pilot surface (Phase B #8)
 

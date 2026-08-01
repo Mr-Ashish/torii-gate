@@ -12,7 +12,7 @@ _Scored: `2026-08-01T19:19:39Z` · commercial **8.5** · overall **8.0** (cap un
 |-----:|-----|--------|
 | 1–8 | buyer packaging / pilot path | **shipped** |
 | 9 | First closed paid pilot | human |
-| — | Model alias for tool-use | **this fire** |
+| — | Model alias for tool-use | **shipped** `a79a0dd` |
 | 10 | No F185+ without customer win | standing |
 
 ```bash
