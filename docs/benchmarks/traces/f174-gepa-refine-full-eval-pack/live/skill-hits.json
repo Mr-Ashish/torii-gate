@@ -1,0 +1,94 @@
+{
+  "feature": "F84",
+  "schema": 1,
+  "f114": true,
+  "tool_outcome": true,
+  "scored_at": "2026-08-01T12:36:03Z",
+  "selected_n": 4,
+  "hit_n": 4,
+  "hit_rate": 1.0,
+  "prose_hit_n": 4,
+  "tool_hit_n": 3,
+  "tool_hit_rate": 0.75,
+  "hits": [
+    {
+      "id": "skill-prefer-hub-archival-early",
+      "hit": true,
+      "matched": [
+        "not",
+        "archival"
+      ],
+      "n_matched": 2,
+      "prose_hit": true,
+      "tool_hit": true,
+      "tool_matched": [
+        "hub_boost",
+        "TORII_RECON_WARM_HUB_QUERY",
+        "recon_warm_hub",
+        "hub-aware archival paging:\\n   `python3 scripts/archival_memory_search",
+        "recon_warm_hub"
+      ]
+    },
+    {
+      "id": "skill-prefer-memory-cli-early",
+      "hit": true,
+      "matched": [
+        "pickle",
+        "memory"
+      ],
+      "n_matched": 2,
+      "prose_hit": true,
+      "tool_hit": true,
+      "tool_matched": [
+        "torii.py memory",
+        "torii_memory.py",
+        "archival_memory_search.py"
+      ]
+    },
+    {
+      "id": "skill-prefer-product-cli",
+      "hit": true,
+      "matched": [
+        "torii.py doctor",
+        "doctor"
+      ],
+      "n_matched": 2,
+      "prose_hit": true,
+      "tool_hit": true,
+      "tool_matched": [
+        "torii.py doctor",
+        "torii.py status",
+        "torii.py budget"
+      ]
+    },
+    {
+      "id": "skill-f74-exploit-scenario",
+      "hit": true,
+      "matched": [
+        "sink",
+        "attacker",
+        "exploit",
+        "severity",
+        "pickle",
+        "trigger",
+        "request changes"
+      ],
+      "n_matched": 7,
+      "prose_hit": true,
+      "tool_hit": false,
+      "tool_matched": []
+    }
+  ],
+  "review": "docs/benchmarks/traces/f174-gepa-refine-full-eval-pack/live/review-bench-f70.raw.md",
+  "federated_skill_themes": [
+    "skill-prefer-hub-archival-early",
+    "skill-prefer-memory-cli-early",
+    "skill-prefer-product-cli",
+    "skill-f74-exploit-scenario"
+  ],
+  "tool_outcome_skills": [
+    "skill-prefer-hub-archival-early",
+    "skill-prefer-memory-cli-early",
+    "skill-prefer-product-cli"
+  ]
+}

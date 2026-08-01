@@ -51,9 +51,9 @@ A **torii** is the gate at a threshold — ordinary ground on one side, what mat
 | **Hub-archival** | Hub-archival skills that never page cold memory do not silently APPROVE. |
 | **Hub-archival (AppSec)** | Cross-tenant retrieval heat becomes next-run always budget — without sharing paths or snippets. |
 | **Hub-archival loop** | util → critic → re-prompt → fitness → hub inject — one measured `hub_archival_loop_ok` bit. |
-| **GEPA refine (eng)** | Skills that fail tool util get refined, measured, and multi-tenant promoted — or stay out of always budget. |
-| **GEPA refine (AppSec)** | Idle recovery skills cannot silently APPROVE after GEPA refine inject. |
-| **GEPA refine loop** | refine → dual-gate → dual_pp → promote → hub critic — one measured `refine_loop_ok` bit. |
+| **GEPA refine (eng)** | Skills that fail tool util get refined, measured, multi-tenant promoted, and decayed when dual_fail is chronic — or stay out of always budget. |
+| **GEPA refine (AppSec)** | Idle recovery skills cannot silently APPROVE after GEPA refine inject or multi-tenant decay. |
+| **GEPA refine loop** | refine → dual-gate → dual_pp → promote → hub critic → chronic decay → multi-tenant demote — one measured `refine_loop_ok` bit (F165–F173). |
 | **vs SAST** | Scanners generate findings; Torii is the merge authority that compounds. |
 | **Tagline** | Nothing ships without crossing the gate. |
 

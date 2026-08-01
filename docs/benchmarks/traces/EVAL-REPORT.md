@@ -150,3 +150,8 @@ Generated: `2026-08-01T09:45:56Z`
 ## F173 multi-tenant decay hub critic + refine_loop_ok extend
 - Offline demote-eval refine_decay_hub_idle_demoted; refine_loop_ok F165–F173
 - Live recall=1.0; Modal pytorch#191830 BIT3_OK ~99.6s POST_COMMENT=0
+
+## F174 GEPA refine full brand+EVAL pack (F165–F173)
+- refine_loop_ok includes chronic decay + multi-tenant demote
+- EVAL pack rolls F165–F173 live Modal BIT3 proofs
+- landing/TORII/scorecard brand one-liners updated for decay

@@ -934,10 +934,10 @@ def product_scorecard(
                 f"Hub-archival loop: **{'ok' if metrics.get('hub_archival_loop_ok') else 'gap'}** "
                 f"(util→critic→reprompt→fitness→hub inject · F155–F163)"
             ),
-            # F170: GEPA refine compound loop (F165–F169)
+            # F170/F174: GEPA refine compound loop (F165–F173)
             (
                 f"GEPA refine loop: **{'ok' if metrics.get('refine_loop_ok') else 'gap'}** "
-                f"(refine→dual-gate→dual_pp→promote→hub critic · F165–F169)"
+                f"(refine→dual→promote→decay→multi-tenant demote · F165–F173)"
             ),
         ],
         "doctor": {

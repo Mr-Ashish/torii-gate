@@ -1,5 +1,38 @@
 # Torii research → product log
 
+## 2026-08-01 — F174 GEPA refine full brand+EVAL pack (F165–F173)
+
+### Papers / posts
+- Loop Engineering: design the loop, get a score — full compound loops on brand surfaces.
+- F170 EVAL pack stopped at F169; F171–F173 decay/demote not paper-packaged.
+- Mental model E PRODUCT complete; landing lagged decay language.
+
+### OSS design patterns stolen
+1. f174 EVAL pack rolls F165–F173 live Modal proofs + decay demote rows.
+2. landing/TORII one-liners: evolve → measure → promote → decay.
+3. scorecard brand_lines F165–F173 pipeline; PRODUCT F170/F174 brand pack note.
+4. SEE-F174 pointer from historical f170 pack.
+
+### Insight
+Partial EVAL packs become script archaeology when the loop extends. Highest ROI: one full F165–F173 paper pack operators actually read.
+
+### Feature shipped (F174)
+- f174-gepa-refine-full-eval-pack/
+- landing + TORII + scorecard brand refresh
+- PRODUCT brand pack note
+
+### Metric
+- Offline: doctor refine_loop_ok; scorecard brand_ready L3; f174 pack 9 rows bit3_ok_n=9
+- Live local: recall=1.0 util_rate=1.0 F171–F172 hermes chain
+- Modal pytorch#191836 BIT3_OK ~141.7s POST_COMMENT=0 log_streaming=true
+
+### Loop-engineering / Hermes practice used
+**Package the full measured loop** — including decay demote.
+
+### SHA
+`(pending)`
+
+
 ## 2026-08-01 — F173 multi-tenant decay hub critic + refine_loop_ok extend
 
 ### Papers / posts

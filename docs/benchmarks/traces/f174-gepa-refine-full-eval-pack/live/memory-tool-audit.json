@@ -1,0 +1,42 @@
+{
+  "feature": "F105",
+  "schema": 1,
+  "score": 1.0,
+  "level": "L3",
+  "hit_count": 3,
+  "tools_used": [
+    "archival_search",
+    "torii_product_memory"
+  ],
+  "by_tool": {
+    "torii_product_memory": 2,
+    "archival_search": 1
+  },
+  "cli_subcmds": {
+    "search": 4
+  },
+  "inject_offered": true,
+  "utilization_gap": false,
+  "tool_call_turns": 2,
+  "feedback": [
+    "memory_tools_used=2 hits=3 tools=['archival_search', 'torii_product_memory']"
+  ],
+  "scored_at": "2026-08-01T12:36:03Z",
+  "hits_detail": [
+    {
+      "tool": "torii_product_memory",
+      "snip": "=1.00** \u2014 prefer early `python3 scripts/torii.py memory -- search` before re-raising themes. <!-- /torii-f142-memory-util-hub --> # Ta"
+    },
+    {
+      "tool": "archival_search",
+      "snip": "{\"command\": \"python3 scripts/archival_memory_search.py auto --files demo/insecure/app.py 2>&1 || echo \\\"SKILL_NOT_FOUND\\\"\", \"timeout\":"
+    },
+    {
+      "tool": "torii_product_memory",
+      "snip": "{\"command\": \"python3 scripts/torii.py memory -- search -- -q \\\"sql OR pickle OR secret OR injection OR command\\\" 2>&1 || ech"
+    }
+  ],
+  "out_dir": "docs/benchmarks/traces/f174-gepa-refine-full-eval-pack/live",
+  "loop_path": "docs/benchmarks/traces/f174-gepa-refine-full-eval-pack/live/agent-loop/agent-loop.json",
+  "enabled": true
+}
