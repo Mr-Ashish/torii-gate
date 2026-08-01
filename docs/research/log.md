@@ -31,7 +31,7 @@ JTBD (#3) + simplicity (#12)
 own-repo required check + measured quieter-over-time (not research harness)
 
 ### SHA
-`a39cf7e21e5609255520ea487f8d736812bbcbf2`
+`d21640b2fd86c10ab3fab1f6ad01d223ff7fe801`
 
 
 ## 2026-08-01 — GATE_CERT_WIRE: save-trace + workflow + ops last certificate
