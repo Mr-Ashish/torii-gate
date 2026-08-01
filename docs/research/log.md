@@ -31,7 +31,7 @@ Util without federation does not compound across tenants; doctor without recover
 **Doctor + federated scorecard** — recovery readiness is install-day and hub-day habit.
 
 ### SHA
-`1a6c33df0d1a1aba0da6a5ecdeadf8bc02755d18`
+`e34ad50bfc3e19f4dd2a719b44b6f42e0d55eca9`
 ## 2026-08-01 — F123 recovery skill loop packaging (traces + brand + scorecard)
 
 ### Papers / posts
