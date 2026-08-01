@@ -27,7 +27,7 @@ Dual compound free-rider detection — two measured loops, one demote.
 - Live Modal: pytorch#191836 BIT3_OK ~41.4s POST_COMMENT=0 log_streaming=true F180 soft wire
 
 ### SHA
-`249781dfd8c293a0186bd099c81204e2219fbd90`
+`3582e1a7df53dd8a9b989cc7ecef34d2ae73cd36`
 
 ## 2026-08-01 — F179 LOO attribution floor for dual_pass revive
 
