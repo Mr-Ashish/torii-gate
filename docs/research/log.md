@@ -27,7 +27,7 @@ Self-evolution without dual-gate adopt leaves recovery skills as proposals forev
 - pytest 589; Modal BIT3_OK ~157s skill in prompt log_streaming=true
 
 ### SHA
-_pending_
+`c43bb3eac4ae54a1ab44bc5af012a4eee27955cd`
 
 ## 2026-08-01 — F112 self-evolve skill from F106 memory recovery
 
