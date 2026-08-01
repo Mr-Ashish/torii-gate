@@ -222,7 +222,7 @@ def attribute(
         full_matched[sid] = _matched_in_text(_probes_for_card(by_id[sid]), text_low)
         if blob:
             try:
-                tool_matched[sid] = list(sr.match_tool_outcome(sid, blob) or [])
+                tool_matched[sid] = list(sr.match_tool_outcome(sid, blob, root=root) or [])
             except Exception:
                 tool_matched[sid] = []
         else:
@@ -376,7 +376,7 @@ def attribute_proposal(
     if tool_blob and tool_attr_enabled():
         try:
             sr = _import_mod("skill_router")
-            tool_matched = list(sr.match_tool_outcome(proposal_id, tool_blob) or [])
+            tool_matched = list(sr.match_tool_outcome(proposal_id, tool_blob, root=_root()) or [])
         except Exception:
             tool_matched = []
     tool_hit = len(tool_matched) >= 1

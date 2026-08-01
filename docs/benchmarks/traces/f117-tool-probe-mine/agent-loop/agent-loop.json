@@ -1,0 +1,1 @@
+{"tool_call_turns": 3, "messages": [{"role": "tool", "content": "python3 scripts/torii.py doctor\npython3 scripts/torii.py memory -- search -q sql"}], "steps": [{"cmd": "python3 scripts/torii.py doctor"}, {"cmd": "python3 scripts/torii.py memory -- search -q sql"}]}

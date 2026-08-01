@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""F69/F112: Torii-native self-evolution (Hermes best practices, not a Hermes fork).
+"""F69/F112/F117: Torii-native self-evolution (Hermes best practices, not a fork).
 
 Patterns adopted from Hermes self-evolution / skill evolution (H3, H9, H10):
   - trajectory packaging from agent-loop runs
@@ -11,13 +11,19 @@ Patterns adopted from Hermes self-evolution / skill evolution (H3, H9, H10):
 F112: memory utilization recovery signals (F105/F106) → skill proposal to call
 product CLI / torii_memory early (proactive use, not only soft re-prompt).
 
+F117: mine allowlisted tool-outcome probes from live skill-hits + agent-loop
+into durable `.torii/tool-outcome-probes.json` (merged by skill_router F114),
+and propose skills for novel tool families (product doctor/status, critic, …).
+
 Usage:
   python3 scripts/self_evolve.py ingest --out-dir DIR [--pr N] [--repo R]
   python3 scripts/self_evolve.py propose [--limit N]
+  python3 scripts/self_evolve.py mine-probes --out-dir DIR [--propose]
   python3 scripts/self_evolve.py eval [--proposal ID|all]
   python3 scripts/self_evolve.py adopt PROPOSAL_ID [--force]
   python3 scripts/self_evolve.py inject --prompt PATH [--out PATH]
   python3 scripts/self_evolve.py status
+  python3 scripts/self_evolve.py fixture   # F117 hermetic mine+score
   python3 scripts/self_evolve.py nudge-text   # print soft nudge if warranted
 
 Env:
@@ -25,6 +31,8 @@ Env:
   TORII_SELF_EVOLVE=0|1          (default 0 for auto-propose in CI; CLI always works)
   TORII_SELF_EVOLVE_AUTO_ADOPT=0|1  (default 0)
   TORII_EVOLUTION_ROOT           (default: <root>/memory/evolution)
+  TORII_TOOL_PROBE_MINE=1        (default 1) — F117 mine-probes soft post-run
+  TORII_TOOL_OUTCOME_PROBES_FILE override path for durable probe ledger
 """
 
 from __future__ import annotations
@@ -183,6 +191,348 @@ def cmd_ingest(args: argparse.Namespace) -> int:
     return 0
 
 
+# F117: allowlisted tool-outcome catalog (pattern → skill). Never free-form log regex.
+# Patterns are fixed product/security CLIs only — mined only when observed in-loop.
+TOOL_PROBE_CATALOG: list[dict[str, str]] = [
+    {
+        "pattern": r"torii\.py\s+memory\b",
+        "skill": "skill-prefer-memory-cli-early",
+        "label": "torii.py memory",
+    },
+    {
+        "pattern": r"torii_memory\.py\b",
+        "skill": "skill-prefer-memory-cli-early",
+        "label": "torii_memory.py",
+    },
+    {
+        "pattern": r"archival_memory_search\.py\b",
+        "skill": "skill-prefer-memory-cli-early",
+        "label": "archival_memory_search",
+    },
+    {
+        "pattern": r"memory_temporal_graph\.py\b",
+        "skill": "skill-prefer-memory-cli-early",
+        "label": "memory_temporal_graph",
+    },
+    {
+        "pattern": r"memory_compound_write\.py\b",
+        "skill": "skill-prefer-memory-cli-early",
+        "label": "memory_compound_write",
+    },
+    {
+        "pattern": r"torii\.py\s+doctor\b",
+        "skill": "skill-prefer-product-cli",
+        "label": "torii.py doctor",
+    },
+    {
+        "pattern": r"torii\.py\s+status\b",
+        "skill": "skill-prefer-product-cli",
+        "label": "torii.py status",
+    },
+    {
+        "pattern": r"torii\.py\s+budget\b",
+        "skill": "skill-prefer-product-cli",
+        "label": "torii.py budget",
+    },
+    {
+        "pattern": r"second_agent_critic\.py\b",
+        "skill": "skill-prefer-critic-early",
+        "label": "second_agent_critic",
+    },
+    {
+        "pattern": r"chain_revalidate\.py\b",
+        "skill": "skill-f74-prefer-chain-json",
+        "label": "chain_revalidate",
+    },
+    {
+        "pattern": r"taint_prefilter\.py\b",
+        "skill": "skill-f74-prefer-chain-json",
+        "label": "taint_prefilter",
+    },
+    {
+        "pattern": r"\brg\s+-n\b",
+        "skill": "skill-tool-depth-hunks",
+        "label": "rg -n",
+    },
+    {
+        "pattern": r"\bsed\s+-n\b",
+        "skill": "skill-tool-depth-hunks",
+        "label": "sed -n",
+    },
+]
+
+# Skill proposal bodies for novel F117 families (not already F112 memory)
+F117_SKILL_TEMPLATES: dict[str, dict[str, str]] = {
+    "skill-prefer-product-cli": {
+        "title": "Call torii product CLI doctor/status early",
+        "signal": "f117_product_cli_tools",
+        "body": (
+            "## Skill: prefer-product-cli (F117)\n\n"
+            "When the product umbrella CLI is available (F110):\n"
+            "1. Early mid-review call once:\n"
+            "   `python3 scripts/torii.py doctor` or `python3 scripts/torii.py status`\n"
+            "   `python3 scripts/torii.py budget -- status` when soft re-prompts are possible.\n"
+            "2. Use doctor/status as readiness hints only — still require path:line evidence.\n"
+            "3. Prefer product CLI over ad-hoc script hunting for memory/gate/budget surfaces.\n"
+        ),
+    },
+    "skill-prefer-critic-early": {
+        "title": "Run second-agent critic path evidence early",
+        "signal": "f117_critic_tools",
+        "body": (
+            "## Skill: prefer-critic-early (F117)\n\n"
+            "When dual-pass critic tooling is available:\n"
+            "1. After draft findings, run:\n"
+            "   `python3 scripts/second_agent_critic.py score --review REVIEW`\n"
+            "2. Demote APPROVE claims without path:line; boost full_chain themes.\n"
+            "3. Do not self-approve unvalidated narrative — checker is independent.\n"
+        ),
+    },
+}
+
+
+def _falsey(raw: str) -> bool:
+    return raw.strip().lower() in {"0", "false", "no", "off", "disabled", "n", "none", ""}
+
+
+def tool_probe_mine_enabled() -> bool:
+    raw = (os.environ.get("TORII_TOOL_PROBE_MINE") or "1").strip().lower()
+    return not _falsey(raw)
+
+
+def _import_skill_router():
+    import importlib.util
+
+    path = Path(__file__).resolve().parent / "skill_router.py"
+    name = "skill_router"
+    if name in sys.modules:
+        return sys.modules[name]
+    spec = importlib.util.spec_from_file_location(name, path)
+    if spec is None or spec.loader is None:
+        raise ImportError(name)
+    mod = importlib.util.module_from_spec(spec)
+    sys.modules[name] = mod
+    spec.loader.exec_module(mod)
+    return mod
+
+
+def _collect_tool_blob(out_dir: Path) -> str:
+    chunks: list[str] = []
+    for rel in (
+        "agent-loop/agent-loop.json",
+        "agent-loop.json",
+        "agent-loop/agent.log",
+        "hermes.log",
+        "skill-hits.json",
+        "skill-attribution.json",
+        "memory-tool-audit.json",
+    ):
+        p = out_dir / rel
+        if p.is_file():
+            try:
+                chunks.append(p.read_text(encoding="utf-8", errors="replace")[:120_000])
+            except OSError:
+                continue
+    return "\n".join(chunks)
+
+
+def _load_probe_ledger(root: Path) -> dict[str, Any]:
+    sr = _import_skill_router()
+    path = sr.probe_ledger_path(root)
+    if not path.is_file():
+        return {
+            "schema_version": 1,
+            "feature": "F117",
+            "updated_at": _now(),
+            "skills": {},
+            "history": [],
+        }
+    try:
+        data = json.loads(path.read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError):
+        data = {}
+    if not isinstance(data, dict):
+        data = {}
+    data.setdefault("schema_version", 1)
+    data.setdefault("feature", "F117")
+    data.setdefault("skills", {})
+    data.setdefault("history", [])
+    return data
+
+
+def _save_probe_ledger(root: Path, ledger: dict[str, Any]) -> Path:
+    sr = _import_skill_router()
+    path = sr.probe_ledger_path(root)
+    path.parent.mkdir(parents=True, exist_ok=True)
+    ledger["schema_version"] = 1
+    ledger["feature"] = "F117"
+    ledger["updated_at"] = _now()
+    path.write_text(json.dumps(ledger, indent=2) + "\n", encoding="utf-8")
+    return path
+
+
+def mine_tool_probes(
+    out_dir: Path,
+    *,
+    root: Path | None = None,
+    propose: bool = False,
+    min_hits: int = 1,
+) -> dict[str, Any]:
+    """F117: observe allowlisted tools in-loop → durable probe ledger (+ optional propose)."""
+    root = root or _root()
+    out_dir = Path(out_dir)
+    blob = _collect_tool_blob(out_dir)
+    # also fold skill-hits tool_matched labels
+    hits_doc: dict[str, Any] = {}
+    hp = out_dir / "skill-hits.json"
+    if hp.is_file():
+        try:
+            hits_doc = json.loads(hp.read_text(encoding="utf-8"))
+        except (OSError, json.JSONDecodeError):
+            hits_doc = {}
+
+    observed: list[dict[str, str]] = []
+    for entry in TOOL_PROBE_CATALOG:
+        pat = entry["pattern"]
+        try:
+            rx = re.compile(pat, re.I)
+        except re.error:
+            continue
+        if blob and rx.search(blob):
+            observed.append(dict(entry))
+            continue
+        # skill-hits may already label tool_matched
+        for h in hits_doc.get("hits") or []:
+            if not isinstance(h, dict):
+                continue
+            labels = " ".join(str(x) for x in (h.get("tool_matched") or []))
+            if h.get("tool_hit") and (rx.search(labels) or entry["label"].lower() in labels.lower()):
+                observed.append(dict(entry))
+                break
+
+    ledger = _load_probe_ledger(root)
+    skills = ledger.setdefault("skills", {})
+    added: list[str] = []
+    reinforced: list[str] = []
+    for obs in observed:
+        sid = obs["skill"]
+        pat = obs["pattern"]
+        ent = skills.get(sid) or {
+            "id": sid,
+            "patterns": [],
+            "labels": [],
+            "hits": 0,
+            "source": "f117_mine",
+        }
+        pats = list(ent.get("patterns") or [])
+        labels = list(ent.get("labels") or [])
+        if pat not in pats:
+            pats.append(pat)
+            added.append(f"{sid}:{obs['label']}")
+        else:
+            reinforced.append(f"{sid}:{obs['label']}")
+        if obs["label"] not in labels:
+            labels.append(obs["label"])
+        ent["patterns"] = pats[:16]
+        ent["labels"] = labels[:16]
+        ent["hits"] = int(ent.get("hits") or 0) + 1
+        ent["last_seen"] = _now()
+        ent["id"] = sid
+        skills[sid] = ent
+
+    # only keep patterns with hits >= min_hits for scoring (all stored, scored if hits ok)
+    # skill_router uses all patterns; hits counter is for propose gate
+    path = _save_probe_ledger(root, ledger)
+    hist = ledger.setdefault("history", [])
+    hist.append(
+        {
+            "at": _now(),
+            "out_dir": str(out_dir),
+            "observed_n": len(observed),
+            "added": added[:16],
+            "reinforced": reinforced[:16],
+            "tool_hit_n": hits_doc.get("tool_hit_n"),
+        }
+    )
+    ledger["history"] = hist[-80:]
+    _save_probe_ledger(root, ledger)
+
+    proposed: list[str] = []
+    if propose:
+        proposed = _propose_from_mined(root, skills, min_hits=min_hits)
+
+    # novel families observed this run
+    families = sorted({o["skill"] for o in observed})
+    return {
+        "feature": "F117",
+        "ledger": str(path),
+        "observed_n": len(observed),
+        "observed_skills": families,
+        "added": added,
+        "reinforced": reinforced,
+        "proposed": proposed,
+        "skills_n": len(skills),
+        "privacy_ok": "/Users/" not in json.dumps(skills),
+    }
+
+
+def _propose_from_mined(
+    root: Path,
+    skills: dict[str, Any],
+    *,
+    min_hits: int = 1,
+) -> list[str]:
+    """Create proposals for F117 skill families with enough mined hits."""
+    proposals_dir = root / "agent" / "skills" / "proposals"
+    proposals_dir.mkdir(parents=True, exist_ok=True)
+    existing: set[str] = set()
+    for d in (
+        proposals_dir,
+        root / "agent" / "skills" / "active",
+    ):
+        if d.is_dir():
+            for p in d.glob("*.md"):
+                if p.name != "README.md":
+                    existing.add(p.stem)
+    created: list[str] = []
+    ledger = _load_ledger(root)
+    for sid, tmpl in F117_SKILL_TEMPLATES.items():
+        ent = skills.get(sid) or {}
+        if int(ent.get("hits") or 0) < min_hits:
+            continue
+        if sid in existing:
+            continue
+        path = proposals_dir / f"{sid}.md"
+        header = (
+            f"---\n"
+            f"id: {sid}\n"
+            f"feature: F117\n"
+            f"status: proposal\n"
+            f"signal: {tmpl['signal']}\n"
+            f"created_at: {_now()}\n"
+            f"title: {tmpl['title']}\n"
+            f"---\n\n"
+        )
+        path.write_text(header + tmpl["body"], encoding="utf-8")
+        entry = {
+            "id": sid,
+            "title": tmpl["title"],
+            "path": str(path.relative_to(root)) if str(path).startswith(str(root)) else str(path),
+            "signal": tmpl["signal"],
+            "status": "proposal",
+            "created_at": _now(),
+            "eval": None,
+            "feature": "F117",
+        }
+        ledger["proposals"] = [p for p in ledger.get("proposals") or [] if p.get("id") != sid]
+        ledger["proposals"].append(entry)
+        existing.add(sid)
+        created.append(sid)
+    if created:
+        _save_ledger(root, ledger)
+    return created
+
+
 def _signals_from_loop(data: dict[str, Any], out_dir: Path) -> list[str]:
     signals: list[str] = []
     try:
@@ -223,6 +573,44 @@ def _signals_from_loop(data: dict[str, Any], out_dir: Path) -> list[str]:
                     signals.append("memory_inject_unused")
         except (json.JSONDecodeError, TypeError, ValueError):
             pass
+    # F114/F116/F117: skill-hits tool outcomes
+    hits_p = out_dir / "skill-hits.json"
+    if hits_p.is_file():
+        try:
+            hits = json.loads(hits_p.read_text(encoding="utf-8", errors="replace"))
+            if isinstance(hits, dict):
+                thr = int(hits.get("tool_hit_n") or 0)
+                if thr >= 1:
+                    signals.append("f114_tool_hit")
+                for sid in hits.get("tool_outcome_skills") or []:
+                    if "memory" in str(sid):
+                        signals.append("f117_memory_tools")
+                    if "product" in str(sid) or "cli" in str(sid):
+                        signals.append("f117_product_cli_tools")
+                # scan tool_matched labels
+                blob_labels = " ".join(
+                    str(x)
+                    for h in (hits.get("hits") or [])
+                    if isinstance(h, dict)
+                    for x in (h.get("tool_matched") or [])
+                )
+                if "doctor" in blob_labels.lower() or "torii.py status" in blob_labels.lower():
+                    signals.append("f117_product_cli_tools")
+                if "second_agent_critic" in blob_labels.lower():
+                    signals.append("f117_critic_tools")
+        except (json.JSONDecodeError, TypeError, ValueError):
+            pass
+    attr_p = out_dir / "skill-attribution.json"
+    if attr_p.is_file():
+        try:
+            attr = json.loads(attr_p.read_text(encoding="utf-8", errors="replace"))
+            if isinstance(attr, dict) and int(attr.get("tool_hit_n") or 0) >= 1:
+                signals.append("f115_tool_attr")
+                for sid in attr.get("tool_contributors") or []:
+                    if "memory" in str(sid):
+                        signals.append("f117_memory_tools")
+        except (json.JSONDecodeError, TypeError, ValueError):
+            pass
     # F50
     for rev in out_dir.glob("review-*.md"):
         if ".raw." in rev.name:
@@ -235,7 +623,14 @@ def _signals_from_loop(data: dict[str, Any], out_dir: Path) -> list[str]:
         if "**Verdict:** APPROVE" in body or "**Verdict:** APPROVE" in body:
             signals.append("verdict_approve")
         break
-    return signals
+    # de-dupe preserve order
+    seen: set[str] = set()
+    out: list[str] = []
+    for s in signals:
+        if s not in seen:
+            seen.add(s)
+            out.append(s)
+    return out
 
 
 def cmd_propose(args: argparse.Namespace) -> int:
@@ -319,6 +714,7 @@ def cmd_propose(args: argparse.Namespace) -> int:
         or sig_count.get("memory_utilization_gap", 0) >= 1
         or sig_count.get("memory_inject_unused", 0) >= 1
         or sig_count.get("f106_memory_reprompt", 0) >= 1
+        or sig_count.get("f117_memory_tools", 0) >= 1
     ):
         templates.append(
             {
@@ -337,6 +733,27 @@ def cmd_propose(args: argparse.Namespace) -> int:
                     "4. Do not wait for a soft re-prompt (F106) — proactive use scores higher (F105 utilization).\n"
                     "5. Soft re-prompts share a budget (F108); early use avoids spending the only recovery slot.\n"
                 ),
+            }
+        )
+    # F117: product CLI / critic tools observed in trajectories
+    if sig_count.get("f117_product_cli_tools", 0) >= 1 or sig_count.get("f114_tool_hit", 0) >= 2:
+        t = F117_SKILL_TEMPLATES["skill-prefer-product-cli"]
+        templates.append(
+            {
+                "id": "skill-prefer-product-cli",
+                "title": t["title"],
+                "signal": t["signal"],
+                "body": t["body"],
+            }
+        )
+    if sig_count.get("f117_critic_tools", 0) >= 1:
+        t = F117_SKILL_TEMPLATES["skill-prefer-critic-early"]
+        templates.append(
+            {
+                "id": "skill-prefer-critic-early",
+                "title": t["title"],
+                "signal": t["signal"],
+                "body": t["body"],
             }
         )
     # always offer soft mid-loop style nudge skill (H10)
@@ -367,7 +784,8 @@ def cmd_propose(args: argparse.Namespace) -> int:
         header = (
             f"---\n"
             f"id: {pid}\n"
-            f"feature: {'F112' if 'memory-cli' in tmpl['id'] or 'f106' in tmpl['signal'] else 'F69'}\n"
+            f"feature: "
+            f"{'F117' if tmpl['id'].startswith('skill-prefer-product') or tmpl['id'].startswith('skill-prefer-critic') else ('F112' if 'memory-cli' in tmpl['id'] or 'f106' in tmpl['signal'] else 'F69')}\n"
             f"status: proposal\n"
             f"signal: {tmpl['signal']}\n"
             f"created_at: {_now()}\n"
@@ -635,8 +1053,151 @@ def cmd_status(args: argparse.Namespace) -> int:
     return 0
 
 
+def cmd_mine_probes(args: argparse.Namespace) -> int:
+    """F117: mine allowlisted tool probes from a run dir into durable ledger."""
+    if not tool_probe_mine_enabled() and not getattr(args, "force", False):
+        print(json.dumps({"feature": "F117", "skipped": 1, "reason": "disabled"}))
+        return 0
+    out_dir = Path(args.out_dir)
+    if not out_dir.is_dir():
+        print(json.dumps({"feature": "F117", "error": "no_out_dir", "ok": False}))
+        return 1
+    result = mine_tool_probes(
+        out_dir,
+        root=_root(),
+        propose=bool(getattr(args, "propose", False)),
+        min_hits=int(getattr(args, "min_hits", 1) or 1),
+    )
+    print(json.dumps(result, indent=2))
+    return 0
+
+
+def cmd_fixture(args: argparse.Namespace) -> int:
+    """F117 hermetic: mine doctor CLI → durable probe scores skill-prefer-product-cli."""
+    import tempfile
+
+    root = _root()
+    with tempfile.TemporaryDirectory() as td:
+        td_path = Path(td)
+        os.environ["TORII_ROOT"] = str(td_path)
+        os.environ["TORII_EVOLUTION_ROOT"] = str(td_path / "memory" / "evolution")
+        os.environ["TORII_TOOL_OUTCOME_PROBES_FILE"] = str(
+            td_path / ".torii" / "tool-outcome-probes.json"
+        )
+        out = td_path / "out"
+        loop = out / "agent-loop"
+        loop.mkdir(parents=True)
+        # Live agent used product doctor + memory — F117 mines both
+        (loop / "agent-loop.json").write_text(
+            json.dumps(
+                {
+                    "tool_call_turns": 4,
+                    "message_count": 6,
+                    "session_id": "f117-sess",
+                    "messages": [
+                        {
+                            "role": "tool",
+                            "content": "python3 scripts/torii.py doctor\n"
+                            "python3 scripts/torii.py memory -- search -q sql\n"
+                            "python3 scripts/second_agent_critic.py score --review r.md\n",
+                        }
+                    ],
+                    "steps": [
+                        {"cmd": "python3 scripts/torii.py doctor"},
+                        {"cmd": "python3 scripts/torii.py memory -- search -q sql"},
+                        {"cmd": "python3 scripts/second_agent_critic.py score --review r.md"},
+                    ],
+                }
+            ),
+            encoding="utf-8",
+        )
+        (out / "skill-hits.json").write_text(
+            json.dumps(
+                {
+                    "tool_hit_n": 2,
+                    "tool_hit_rate": 0.5,
+                    "tool_outcome_skills": [
+                        "skill-prefer-memory-cli-early",
+                    ],
+                    "hits": [
+                        {
+                            "id": "skill-prefer-memory-cli-early",
+                            "hit": True,
+                            "tool_hit": True,
+                            "tool_matched": ["torii.py memory"],
+                        }
+                    ],
+                }
+            ),
+            encoding="utf-8",
+        )
+        (td_path / "agent" / "skills" / "proposals").mkdir(parents=True)
+        (td_path / "agent" / "skills" / "active").mkdir(parents=True)
+
+        mined = mine_tool_probes(out, root=td_path, propose=True, min_hits=1)
+        ledger = _load_probe_ledger(td_path)
+        product_patterns = (ledger.get("skills") or {}).get("skill-prefer-product-cli", {})
+        critic_patterns = (ledger.get("skills") or {}).get("skill-prefer-critic-early", {})
+        mem_patterns = (ledger.get("skills") or {}).get("skill-prefer-memory-cli-early", {})
+
+        # Dynamic probes must make skill_router match product doctor
+        sr = _import_skill_router()
+        blob = "tool: python3 scripts/torii.py doctor\n"
+        matched = sr.match_tool_outcome("skill-prefer-product-cli", blob, root=td_path)
+        match_ok = len(matched) >= 1
+
+        prop_product = (
+            td_path / "agent" / "skills" / "proposals" / "skill-prefer-product-cli.md"
+        ).is_file()
+        prop_critic = (
+            td_path / "agent" / "skills" / "proposals" / "skill-prefer-critic-early.md"
+        ).is_file()
+
+        # privacy: ledger has no absolute home paths from mining
+        privacy_ok = bool(mined.get("privacy_ok"))
+
+        fixture_pass = all(
+            [
+                mined.get("observed_n", 0) >= 3,
+                bool(product_patterns.get("patterns")),
+                bool(critic_patterns.get("patterns")),
+                bool(mem_patterns.get("patterns")),
+                match_ok,
+                prop_product,
+                prop_critic,
+                privacy_ok,
+            ]
+        )
+
+        # restore root env
+        os.environ["TORII_ROOT"] = str(root)
+        os.environ.pop("TORII_TOOL_OUTCOME_PROBES_FILE", None)
+        os.environ.pop("TORII_EVOLUTION_ROOT", None)
+
+        print(
+            json.dumps(
+                {
+                    "feature": "F117",
+                    "fixture_pass": fixture_pass,
+                    "observed_n": mined.get("observed_n"),
+                    "observed_skills": mined.get("observed_skills"),
+                    "product_patterns": product_patterns.get("patterns"),
+                    "critic_patterns": critic_patterns.get("patterns"),
+                    "mem_patterns": mem_patterns.get("patterns"),
+                    "match_ok": match_ok,
+                    "prop_product": prop_product,
+                    "prop_critic": prop_critic,
+                    "privacy_ok": privacy_ok,
+                    "proposed": mined.get("proposed"),
+                },
+                indent=2,
+            )
+        )
+        return 0 if fixture_pass else 1
+
+
 def main(argv: list[str] | None = None) -> int:
-    p = argparse.ArgumentParser(description="F69 Torii-native self-evolution")
+    p = argparse.ArgumentParser(description="F69/F112/F117 Torii-native self-evolution")
     sub = p.add_subparsers(dest="cmd", required=True)
 
     pi = sub.add_parser("ingest", help="Package agent-loop → trajectory")
@@ -648,6 +1209,13 @@ def main(argv: list[str] | None = None) -> int:
     pp = sub.add_parser("propose", help="Create skill proposals from trajectories")
     pp.add_argument("--limit", type=int, default=5)
     pp.set_defaults(func=cmd_propose)
+
+    pm = sub.add_parser("mine-probes", help="F117 mine allowlisted tool probes from run")
+    pm.add_argument("--out-dir", required=True)
+    pm.add_argument("--propose", action="store_true", help="Also write F117 skill proposals")
+    pm.add_argument("--min-hits", type=int, default=1)
+    pm.add_argument("--force", action="store_true")
+    pm.set_defaults(func=cmd_mine_probes)
 
     pe = sub.add_parser("eval", help="Score proposals offline")
     pe.add_argument("--proposal", default="all")
@@ -667,6 +1235,9 @@ def main(argv: list[str] | None = None) -> int:
         func=cmd_nudge_text
     )
     sub.add_parser("status", help="Ledger + active skills").set_defaults(func=cmd_status)
+    sub.add_parser("fixture", help="F117 hermetic mine+score fixture").set_defaults(
+        func=cmd_fixture
+    )
 
     args = p.parse_args(argv)
     return int(args.func(args))

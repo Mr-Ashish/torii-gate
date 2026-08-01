@@ -1,0 +1,17 @@
+{
+  "feature": "F117",
+  "ledger": "/Users/ashishmishra/Documents/experiments/torii/docs/benchmarks/traces/f117-tool-probe-mine/tool-outcome-probes.json",
+  "observed_n": 2,
+  "observed_skills": [
+    "skill-prefer-memory-cli-early",
+    "skill-prefer-product-cli"
+  ],
+  "added": [
+    "skill-prefer-memory-cli-early:torii.py memory",
+    "skill-prefer-product-cli:torii.py doctor"
+  ],
+  "reinforced": [],
+  "proposed": [],
+  "skills_n": 2,
+  "privacy_ok": true
+}

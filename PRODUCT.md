@@ -130,6 +130,8 @@ compound → write → consolidate → effective_critic → federate → scoped_
 
 **Tool-fitness compound (F116):** fitness ledger **shields** skills with `tool_hit_n≥1` from zombie demote, adds tool boosts for next inject, and federates privacy-safe `tool_outcome` themes; post-run score/attr pass explicit agent-loop paths.
 
+**Tool-probe self-evolve (F117):** allowlisted CLI patterns observed mid-review are mined into `.torii/tool-outcome-probes.json` (merged by F114 scoring) and can propose `skill-prefer-product-cli` / `skill-prefer-critic-early` — no free-form regex from logs.
+
 **Ops:** `python3 scripts/memory_loop_status.py scorecard` → L0–L3. Smoke requires L3 on the hub tree. CI job summary annotates readiness; optional advisory `torii/memory-loop` via `TORII_MEMORY_LOOP_STATUS_COMMIT=1`.
 
 ---

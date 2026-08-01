@@ -326,6 +326,21 @@ if [[ -f "$SCRIPTS/skill_fitness.py" ]]; then
   esac
 fi
 
+# F117: mine allowlisted tool-outcome probes from this run → durable ledger (+ soft propose)
+if [[ -f "$SCRIPTS/self_evolve.py" ]]; then
+  case "${TORII_TOOL_PROBE_MINE:-1}" in
+    0|false|no|off) ;;
+    *)
+      _f117_args=(mine-probes --out-dir "$OUT_DIR")
+      case "${TORII_SELF_EVOLVE:-0}" in
+        1|true|yes|on) _f117_args+=(--propose) ;;
+      esac
+      stage tool_probe_mine \
+        python3 "$SCRIPTS/self_evolve.py" "${_f117_args[@]}" || true
+      ;;
+  esac
+fi
+
 # F86: multi-tenant promote of skill themes (soft)
 if [[ -f "$SCRIPTS/skill_dual_rollout.py" ]]; then
   case "${TORII_SKILL_DUAL_ROLLOUT:-1}" in

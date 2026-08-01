@@ -1,0 +1,44 @@
+{
+  "schema_version": 1,
+  "feature": "F117",
+  "updated_at": "2026-08-01T05:30:56Z",
+  "skills": {
+    "skill-prefer-memory-cli-early": {
+      "id": "skill-prefer-memory-cli-early",
+      "patterns": [
+        "torii\\.py\\s+memory\\b"
+      ],
+      "labels": [
+        "torii.py memory"
+      ],
+      "hits": 1,
+      "source": "f117_mine",
+      "last_seen": "2026-08-01T05:30:56Z"
+    },
+    "skill-prefer-product-cli": {
+      "id": "skill-prefer-product-cli",
+      "patterns": [
+        "torii\\.py\\s+doctor\\b"
+      ],
+      "labels": [
+        "torii.py doctor"
+      ],
+      "hits": 1,
+      "source": "f117_mine",
+      "last_seen": "2026-08-01T05:30:56Z"
+    }
+  },
+  "history": [
+    {
+      "at": "2026-08-01T05:30:56Z",
+      "out_dir": "docs/benchmarks/traces/f117-tool-probe-mine",
+      "observed_n": 2,
+      "added": [
+        "skill-prefer-memory-cli-early:torii.py memory",
+        "skill-prefer-product-cli:torii.py doctor"
+      ],
+      "reinforced": [],
+      "tool_hit_n": 1
+    }
+  ]
+}

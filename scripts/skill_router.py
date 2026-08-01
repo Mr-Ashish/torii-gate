@@ -782,16 +782,62 @@ def _collect_tool_blob(
     return "\n".join(chunks)
 
 
-def tool_probes_for(sid: str) -> list[re.Pattern[str]]:
-    return list(TOOL_OUTCOME_PROBES.get(sid) or [])
+def probe_ledger_path(root: Path | None = None) -> Path:
+    """F117: durable mined tool-outcome probes (merged with static TOOL_OUTCOME_PROBES)."""
+    env = (os.environ.get("TORII_TOOL_OUTCOME_PROBES_FILE") or "").strip()
+    if env:
+        return Path(env).resolve()
+    return (root or _root()) / ".torii" / "tool-outcome-probes.json"
 
 
-def match_tool_outcome(sid: str, tool_blob: str) -> list[str]:
+def load_dynamic_probes(root: Path | None = None) -> dict[str, list[str]]:
+    """skill_id → list of regex pattern strings (F117 mine ledger)."""
+    p = probe_ledger_path(root)
+    if not p.is_file():
+        return {}
+    try:
+        data = json.loads(p.read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError):
+        return {}
+    skills = data.get("skills") if isinstance(data, dict) else None
+    if not isinstance(skills, dict):
+        return {}
+    out: dict[str, list[str]] = {}
+    for sid, ent in skills.items():
+        if not isinstance(sid, str) or "/" in sid or not isinstance(ent, dict):
+            continue
+        pats = ent.get("patterns") or []
+        if not isinstance(pats, list):
+            continue
+        clean = [str(x) for x in pats if isinstance(x, str) and 3 <= len(x) <= 120][:16]
+        if clean:
+            out[sid] = clean
+    return out
+
+
+def tool_probes_for(sid: str, root: Path | None = None) -> list[re.Pattern[str]]:
+    """Static F114 probes + F117 mined dynamic probes for a skill id."""
+    compiled: list[re.Pattern[str]] = list(TOOL_OUTCOME_PROBES.get(sid) or [])
+    seen = {rx.pattern for rx in compiled}
+    for pat in load_dynamic_probes(root).get(sid) or []:
+        if pat in seen:
+            continue
+        try:
+            compiled.append(re.compile(pat, re.I))
+            seen.add(pat)
+        except re.error:
+            continue
+    return compiled
+
+
+def match_tool_outcome(
+    sid: str, tool_blob: str, root: Path | None = None
+) -> list[str]:
     """Return matched probe labels for a skill against tool/log blob."""
     if not tool_blob:
         return []
     matched: list[str] = []
-    for rx in tool_probes_for(sid):
+    for rx in tool_probes_for(sid, root=root):
         m = rx.search(tool_blob)
         if m:
             matched.append(m.group(0)[:80])
@@ -901,7 +947,9 @@ def score_hits(
             if kl in text:
                 matched.append(kl)
         prose_hit = len(matched) >= 1
-        tool_matched = match_tool_outcome(sid, tool_blob) if use_tools else []
+        tool_matched = (
+            match_tool_outcome(sid, tool_blob, root=root) if use_tools else []
+        )
         tool_hit = len(tool_matched) >= 1
         # Combined: prose OR tool invocation proves skill fired
         is_hit = prose_hit or tool_hit

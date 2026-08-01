@@ -16,6 +16,21 @@ SCRIPT = ROOT / "scripts" / "self_evolve.py"
 
 
 class SelfEvolveTests(unittest.TestCase):
+    def test_f117_fixture(self):
+        r = subprocess.run(
+            [sys.executable, str(SCRIPT), "fixture"],
+            cwd=str(ROOT),
+            capture_output=True,
+            text=True,
+            env={**os.environ, "TORII_TOOL_PROBE_MINE": "1"},
+        )
+        self.assertEqual(r.returncode, 0, r.stderr + r.stdout)
+        data = json.loads(r.stdout)
+        self.assertTrue(data["fixture_pass"], data)
+        self.assertTrue(data["match_ok"])
+        self.assertTrue(data["prop_product"])
+        self.assertIn("skill-prefer-product-cli", data.get("observed_skills") or [])
+
     def test_f112_memory_recovery_signal_and_proposal(self):
         """F112: f106 recovery / utilization gap → skill-prefer-memory-cli-early."""
         with tempfile.TemporaryDirectory() as td:

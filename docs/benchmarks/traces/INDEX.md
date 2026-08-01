@@ -50,3 +50,4 @@ Paper/eval-safe slim traces (redacted). Large raw logs may be gitignored; always
 
 - `f115-tool-attr-dual/` — F115 tool LOO attribution + dual tool contribution (offline + Modal pytorch#191813 BIT3_OK)
 - `f116-tool-fitness/` — F116 tool demote shield + federate tool_outcome (offline + Modal pytorch#191813)
+- `f117-tool-probe-mine/` — F117 allowlisted tool-probe mine + proposals (offline + Modal pytorch#191813)

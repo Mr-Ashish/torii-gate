@@ -1,6 +1,38 @@
 # Torii research → product log
 
 
+## 2026-08-01 — F117 tool-probe self-evolve (allowlisted mine + propose)
+
+### Papers / posts
+- Hermes self-evolution / GEPA-lite: trajectories → proposals → eval → adopt.
+- SigLeak / contrastive skill signatures: portable tool evidence.
+- Trajectory eval 2026 + Mem2Act: tool path first-class (F114–F116).
+- Gap: static TOOL_OUTCOME_PROBES never learned doctor/status/critic CLIs from live runs.
+
+### OSS design patterns stolen
+1. Fixed allowlist catalog pattern→skill (never free-form log regex).
+2. Durable `.torii/tool-outcome-probes.json` merged by skill_router F114.
+3. Propose skill-prefer-product-cli / skill-prefer-critic-early from mined hits.
+4. Soft post-run mine-probes after fitness; --propose when TORII_SELF_EVOLVE=1.
+
+### Insight
+Tool-outcome scoring without evolution is a closed set. Highest ROI: mine only safe product CLIs into durable probes so next PR scores the tools the agent actually learned to call.
+
+### Feature shipped (F117)
+- `self_evolve.py` mine-probes / fixture + F117 propose templates + ingest signals
+- `skill_router.py` load_dynamic_probes merge
+- `run-torii-review.sh` soft tool_probe_mine stage
+- traces `docs/benchmarks/traces/f117-tool-probe-mine/`
+
+### Metric
+- Offline fixture_pass; mine doctor+critic+memory; match_ok
+- pytest 596; Modal pytorch#191813 BIT3_OK ~85s log_streaming=true POST_COMMENT=0
+
+### Loop-engineering / Hermes practice used
+**Trajectory packaging → bounded evolve** — allowlist constraints before any adopt.
+
+### SHA
+`fbff5de9e9e8816b66d6f26a6ce9a9c145b1e031`
 ## 2026-08-01 — F116 tool-fitness compound (demote shield + federate + live wire)
 
 ### Papers / posts
