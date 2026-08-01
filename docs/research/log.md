@@ -28,7 +28,7 @@ Hub post-score without critic demote is dashboard. Highest ROI: F127-style panel
 **Maker/checker demote on multi-tenant gap** — memory mirrors recovery F127.
 
 ### SHA
-`PENDING`
+`6e988cd639b0e2ff0371fa7b5d0dc8a191c6d7a2`
 
 
 ## 2026-08-01 — F142 memory util hub post-score compound
