@@ -1,5 +1,41 @@
 # Torii research → product log
 
+## 2026-08-01 — F74 fitness-gated skill evolution (SkillOpt / GEPA-lite)
+
+### Papers / posts / OSS
+- **SkillOpt** (arXiv 2605.23904): skills as external state; held-out validation gate; bounded add/delete/replace; rejected-edit buffer; zero deploy LLM cost.
+- **Hermes Agent Self-Evolution**: multi-dim FitnessScore + ConstraintValidator before adopt; GEPA reads traces.
+- **RSEA / GEPA lineage**: trajectory feedback → reflective mutation of NL artifacts.
+- Memory OSS (Mem0/Letta/Zep 2026): selective compound memory; port policy — F74 compounds *procedural* skills from fitness dims, not chat vectors.
+- Loop Engineering **loop-verifier**: default REJECT until evidence.
+
+### OSS / eng patterns
+1. Hermes constraints (size/growth/structure/safety) → hard reject.
+2. SkillOpt held-out gate → recommend adopt only if score≥18/25 + constraints.
+3. F73 fitness_signals weak dims → deterministic dim-templated skill patches.
+
+### Insight
+F69 proposes skills from trajectory *flags*; F73 scores procedure quality but never closes the loop. Highest ROI: **fitness → bounded mutate → gate → (optional) adopt**.
+
+### Feature shipped (F74)
+- `scripts/fitness_gate_evolve.py` — `analyze` / `mutate` / `validate` / `adopt` / `inject` / `fixture` / `cycle` / `status`
+- Consumes `memory/evolution/ledger.json` fitness_signals
+- Ledger: `fitness_mutations`, `rejected_edits`
+- Prompt inject `<!-- torii-f74-fitness-gate-evolve -->`; assemble + run-torii-review wire
+- Toggles `TORII_FITNESS_GATE_EVOLVE` / `TORII_FITNESS_GATE_AUTO_ADOPT` (default off for auto-adopt)
+- Adopted tool `fitness-gate-evolve`
+
+### Loop-engineering / Hermes practice used
+**Verifier-gated evolution** — maker proposes dim patches; checker constraints + held-out score; default REJECT.
+
+### Metric
+- Offline fixture: weak dims≥2; ≥1 adopt; malicious reject; inject_ok; pytest F74 5/5
+- Live: pytorch/pytorch#191813 deepseek/deepseek-v4-pro fitness composite=0.8694 L3; F74 cycle proposed skill-f74-prefer-chain-json + skill-f74-exploit-scenario (both validate adopt); POST_COMMENT=0; Modal blocked (secret torii-openrouter missing) → local Hermes fallback
+- pytest: 462 passed
+
+### SHA
+`(pending push)`
+
 ## 2026-08-01 — F73 trajectory fitness + eval-trace vault
 
 ### Papers / posts / OSS

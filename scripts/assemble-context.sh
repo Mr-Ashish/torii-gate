@@ -413,6 +413,26 @@ try:
 except Exception:
     trajectory_fitness_on = "0"
 
+# F74: fitness-gated skill evolution policy (SkillOpt/GEPA-lite)
+fitness_gate_evolve_on = "0"
+try:
+    import sys as _sys_f74
+    _sys_f74.path.insert(0, str(torii_root / "scripts"))
+    from fitness_gate_evolve import (  # type: ignore
+        enabled as fge_enabled,
+        analyze_fitness,
+        inject_into_prompt as inject_fge,
+        _load_ledger,
+    )
+
+    if fge_enabled():
+        _analysis = analyze_fitness(_load_ledger(torii_root))
+        if inject_fge(Path(os.environ["PROMPT_PATH"]), _analysis):
+            fitness_gate_evolve_on = "1"
+            prompt = Path(os.environ["PROMPT_PATH"]).read_text(encoding="utf-8")
+except Exception:
+    fitness_gate_evolve_on = "0"
+
 # F57: Mermaid architecture from changed files (soft)
 mermaid_on = "0"
 mermaid_nodes = "0"
@@ -573,6 +593,7 @@ meta = {
     "FEDERATED_SIGNALS": federated_signals_on,
     "CHAIN_REVALIDATE": chain_revalidate_on,
     "TRAJECTORY_FITNESS": trajectory_fitness_on,
+    "FITNESS_GATE_EVOLVE": fitness_gate_evolve_on,
 }
 with open(os.environ["META_PATH"], "w") as fh:
     for k, v in meta.items():

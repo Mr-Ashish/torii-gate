@@ -2,6 +2,7 @@
 .env.*
 !.env.example
 .torii-hermes-home/
+.torii-hermes-home-*/
 .torii-out/
 .torii-out-*/
 # F70 local compound TP memory (promoted by bench; do not commit host-specific hits)
@@ -38,3 +39,4 @@ memory/eval-traces/**
 !docs/benchmarks/traces/**/fitness.json
 !docs/benchmarks/traces/**/meta.json
 !docs/benchmarks/traces/**/review.md
+.torii-out-f74-modal.log

@@ -20,30 +20,31 @@
 | F71 | Taint prefilter + federated sanitized signals | agent_quality, tools, memory | **shipping** |
 | F72 | Full-chain revalidation maker/checker | agent_quality, tools, bench | **shipping** |
 | F73 | Trajectory fitness + paper-safe trace vault | agent_quality, memory, bench, tools | **shipping** |
+| F74 | Fitness-gated skill evolution (SkillOpt/GEPA-lite) | agent_quality, memory, tools | **shipping** |
 
 ## IN_PROGRESS
 
 | ID | Feature | Notes |
 |----|---------|-------|
-| — | — | open: Juice Shop vendor corpus; LLM second-agent critic; GEPA-style skill mutate from fitness_signals |
+| — | — | open: Juice Shop vendor corpus; LLM second-agent critic; Mem0-style scoped recall over TP/FP |
 
 ## LEFT
 
-— Juice Shop full cases; cross-tenant hub ingest of federated-signals; optional LLM checker atop F72; fitness-driven skill evolution
+— Juice Shop full cases; cross-tenant hub ingest of federated-signals; optional LLM checker atop F72; scoped memory recall over TP/FP
 
 ## Counts
 
-- **features_built_count:** 30 (F44–F73)
+- **features_built_count:** 31 (F44–F74)
 - **types_built:** agent_quality, product, memory, ops, bench, tools
 - **left_count:** open research
 - **progress_pct:** n/a (open research loop)
 - **eta:** open research only
 - **active_worktrees:** none
 - **federated_memory_note:** F65 tenant path; F70 TP local; F71 sanitized aggregate (theme/CWE/keywords)
-- **agent_design_note:** F70 dual-pass offline critic; F71 static-led prefilter; F72 maker/checker; F73 procedure fitness vault
+- **agent_design_note:** F70 dual-pass offline critic; F71 static-led prefilter; F72 maker/checker; F73 procedure fitness vault; F74 fitness-gated skill evolve
 - **meta_loop_note:** measure findings → chain gate → trajectory fitness → paper vault
 - **milvus_corpus:** 3 + complex #6 F67 e2e
 
 ## Status line
 
-`features_built_count=30 types_built=agent_quality,product,memory,ops,bench,tools f73=trajectory_fitness_vault`
+`features_built_count=31 types_built=agent_quality,product,memory,ops,bench,tools f74=fitness_gate_evolve`

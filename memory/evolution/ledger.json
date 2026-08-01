@@ -38,9 +38,156 @@
         "verdict_request_changes"
       ],
       "ingested_at": "2026-08-01T00:16:02Z"
+    },
+    {
+      "trajectory_id": "pr191813-20260801_055305_bdb402",
+      "path": "memory/evolution/trajectories/pr191813-20260801_055305_bdb402",
+      "repo": "pytorch/pytorch",
+      "pr_number": "191813",
+      "tool_call_turns": 3,
+      "signals": [
+        "f50_test_gap",
+        "verdict_request_changes"
+      ],
+      "ingested_at": "2026-08-01T00:23:52Z"
     }
   ],
-  "proposals": [],
+  "proposals": [
+    {
+      "id": "skill-f74-prefer-chain-json",
+      "title": "Prefer chain JSON over inference (fitness feedback)",
+      "path": "agent/skills/proposals/skill-f74-prefer-chain-json.md",
+      "weak_dims": [
+        "feedback"
+      ],
+      "source": "feedback:chain JSON absent; inferred from path+theme",
+      "keywords": [
+        "chain",
+        "taint-candidates",
+        "full_chain",
+        "revalidate"
+      ],
+      "status": "validated_adopt",
+      "feature": "F74",
+      "created_at": "2026-08-01T00:23:52Z",
+      "bytes": 575,
+      "eval": {
+        "scored_at": "2026-08-01T00:23:52Z",
+        "dims": {
+          "structure": 5,
+          "actionability": 4,
+          "evidence": 4,
+          "safety": 5,
+          "size": 5
+        },
+        "total": 23,
+        "max": 25,
+        "recommend": "adopt",
+        "weak_dim_coverage": 0.75,
+        "constraints": [
+          {
+            "name": "non_empty",
+            "passed": true,
+            "message": "skill text non-empty"
+          },
+          {
+            "name": "max_size",
+            "passed": true,
+            "message": "size=575 limit=4000"
+          },
+          {
+            "name": "structure",
+            "passed": true,
+            "message": "has_skill_header=True bullets=3 min=3"
+          },
+          {
+            "name": "safety",
+            "passed": true,
+            "message": "no unsafe instructions"
+          },
+          {
+            "name": "evidence_duty",
+            "passed": true,
+            "message": "preserves evidence duty"
+          },
+          {
+            "name": "keyword_coverage",
+            "passed": true,
+            "message": "keyword_hits=3/4"
+          }
+        ],
+        "reasons": [],
+        "feature": "F74"
+      }
+    },
+    {
+      "id": "skill-f74-exploit-scenario",
+      "title": "Exploit scenario language (fitness feedback)",
+      "path": "agent/skills/proposals/skill-f74-exploit-scenario.md",
+      "weak_dims": [
+        "feedback"
+      ],
+      "source": "feedback:no trigger/exploit scenario language",
+      "keywords": [
+        "trigger",
+        "exploit",
+        "attacker",
+        "scenario"
+      ],
+      "status": "validated_adopt",
+      "feature": "F74",
+      "created_at": "2026-08-01T00:23:52Z",
+      "bytes": 562,
+      "eval": {
+        "scored_at": "2026-08-01T00:23:52Z",
+        "dims": {
+          "structure": 5,
+          "actionability": 4,
+          "evidence": 4,
+          "safety": 5,
+          "size": 5
+        },
+        "total": 23,
+        "max": 25,
+        "recommend": "adopt",
+        "weak_dim_coverage": 1.0,
+        "constraints": [
+          {
+            "name": "non_empty",
+            "passed": true,
+            "message": "skill text non-empty"
+          },
+          {
+            "name": "max_size",
+            "passed": true,
+            "message": "size=560 limit=4000"
+          },
+          {
+            "name": "structure",
+            "passed": true,
+            "message": "has_skill_header=True bullets=3 min=3"
+          },
+          {
+            "name": "safety",
+            "passed": true,
+            "message": "no unsafe instructions"
+          },
+          {
+            "name": "evidence_duty",
+            "passed": true,
+            "message": "preserves evidence duty"
+          },
+          {
+            "name": "keyword_coverage",
+            "passed": true,
+            "message": "keyword_hits=4/4"
+          }
+        ],
+        "reasons": [],
+        "feature": "F74"
+      }
+    }
+  ],
   "adopted": [
     {
       "id": "skill-preserve-deep-tools",
@@ -109,7 +256,7 @@
       "feature": "F69"
     }
   ],
-  "updated_at": "2026-08-01T00:16:02Z",
+  "updated_at": "2026-08-01T00:23:52Z",
   "fitness_signals": [
     {
       "at": "2026-08-01T00:16:02Z",
@@ -130,6 +277,49 @@
       ],
       "low_fitness": false,
       "high_fitness": true
+    },
+    {
+      "at": "2026-08-01T00:23:52Z",
+      "feature": "F73",
+      "run_id": "20260801-0023-pytorch-pytorch-PR191813-pytorch-pr191813-f74-7e1a3b8",
+      "repo": "pytorch/pytorch",
+      "pr": "191813",
+      "composite": 0.8694,
+      "level": "L3",
+      "tool_use": 0.85,
+      "path_evidence": 0.9,
+      "procedure": 0.9375,
+      "chain_quality": 0.7,
+      "verdict": "REQUEST_CHANGES",
+      "feedback": [
+        "no trigger/exploit scenario language",
+        "chain JSON absent; inferred from path+theme"
+      ],
+      "low_fitness": false,
+      "high_fitness": true
     }
-  ]
+  ],
+  "fitness_mutations": [
+    {
+      "at": "2026-08-01T00:23:52Z",
+      "proposal_id": "skill-f74-prefer-chain-json",
+      "source": "feedback:chain JSON absent; inferred from path+theme",
+      "weak_dims": [
+        "feedback"
+      ],
+      "edit": "add",
+      "feature": "F74"
+    },
+    {
+      "at": "2026-08-01T00:23:52Z",
+      "proposal_id": "skill-f74-exploit-scenario",
+      "source": "feedback:no trigger/exploit scenario language",
+      "weak_dims": [
+        "feedback"
+      ],
+      "edit": "add",
+      "feature": "F74"
+    }
+  ],
+  "rejected_edits": []
 }

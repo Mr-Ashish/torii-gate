@@ -1,8 +1,8 @@
 {
   "schema_version": 1,
-  "feature": "F71",
+  "feature": "F74",
   "description": "Torii agent tool catalog \u2014 research \u2192 eval \u2192 adopt pipeline",
-  "updated_at": "2026-08-01T00:02:43Z",
+  "updated_at": "2026-08-01T00:21:25Z",
   "tools": [
     {
       "id": "terminal",
@@ -136,6 +136,18 @@
       "rationale": "Hermes multi-dim fitness + loop-verifier procedure contract + paper-safe vault",
       "feature": "F73",
       "adopted_at": "2026-08-01T00:15:00Z"
+    },
+    {
+      "id": "fitness-gate-evolve",
+      "name": "Fitness-gated skill evolution (SkillOpt/GEPA-lite)",
+      "status": "adopted",
+      "source": "research_oss",
+      "kind": "workflow_tool",
+      "toolset": "terminal",
+      "script": "scripts/fitness_gate_evolve.py",
+      "rationale": "F74: weak fitness dims \u2192 bounded skill patches; constraint + held-out gate default REJECT",
+      "feature": "F74",
+      "adopted_at": "2026-08-01T00:20:00Z"
     }
   ],
   "candidates": [

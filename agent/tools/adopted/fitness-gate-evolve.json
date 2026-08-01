@@ -1,0 +1,26 @@
+{
+  "id": "fitness-gate-evolve",
+  "name": "Fitness-gated skill evolution (F74)",
+  "status": "adopted",
+  "source": "research_oss",
+  "kind": "workflow_tool",
+  "toolset": "terminal",
+  "script": "scripts/fitness_gate_evolve.py",
+  "rationale": "SkillOpt/GEPA-lite + Hermes constraints: map F73 fitness_signals weak dims to bounded skill patches; default REJECT until held-out validation; rejected-edit buffer; zero deploy LLM cost",
+  "eval": {
+    "scored_at": "2026-08-01T00:20:00Z",
+    "dims": {
+      "signal": 5,
+      "safety": 5,
+      "effort": 4,
+      "torii_fit": 5,
+      "cost": 5
+    },
+    "total": 24,
+    "max": 25,
+    "recommend": "adopt",
+    "notes": "fixture_pass; malicious reject; adopt on weak path/chain dims"
+  },
+  "adopted_at": "2026-08-01T00:20:00Z",
+  "feature": "F74"
+}

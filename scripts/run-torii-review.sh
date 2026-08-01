@@ -180,6 +180,21 @@ if [[ -f "$SCRIPTS/self_evolve.py" && -d "$OUT_DIR/agent-loop" ]]; then
   esac
 fi
 
+# F74: fitness-gated skill evolution cycle (soft; propose+validate; adopt only if auto)
+if [[ -f "$SCRIPTS/fitness_gate_evolve.py" ]]; then
+  case "${TORII_FITNESS_GATE_EVOLVE:-1}" in
+    0|false|no|off) ;;
+    *)
+      _f74_args=(cycle --limit 3)
+      case "${TORII_FITNESS_GATE_AUTO_ADOPT:-0}" in
+        1|true|yes|on) _f74_args+=(--adopt) ;;
+        *) _f74_args+=(--no-adopt) ;;
+      esac
+      stage fitness_gate_evolve         python3 "$SCRIPTS/fitness_gate_evolve.py" "${_f74_args[@]}" || true
+      ;;
+  esac
+fi
+
 # F68: research tool candidates from this tree's loops (soft; opt-in)
 case "${TORII_AGENT_TOOLS_RESEARCH:-0}" in
   1|true|yes|on)
