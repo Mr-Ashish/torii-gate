@@ -26,7 +26,7 @@ Maker sees dual-loop free-rider heat before checker demotes.
 - Live Modal: pytorch#191836 BIT3_OK ~48.1s POST_COMMENT=0 log_streaming=true F181 soft wire
 
 ### SHA
-`22515a1388a30ca4e47ac04144f80c58fc577057`
+`7f618ae014573aa80a78879cb8f6f9636dc7c030`
 
 ## 2026-08-01 — F180 hub-archival × GEPA compound demote
 
