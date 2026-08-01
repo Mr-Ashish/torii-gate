@@ -30,7 +30,7 @@ simplicity (#12) · install (#7) · JTBD honesty
 buyers see measured cost/latency on first surface; install day-2 finds cost dashboard
 
 ### SHA
-`(pending push)`
+`94377798c37971999591c89b64c6c71f27290953`
 
 
 ## 2026-08-01 — COST_PR: measured cost/PR product surface (post-queue dogfood)
