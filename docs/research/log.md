@@ -28,7 +28,7 @@ Intelligence without a dual-loop story under-sells the moat. Highest ROI: **pack
 - Live: **Modal** pytorch#191813 deepseek/deepseek-v4-pro BIT3_OK ~110s; log_streaming=true; POST_COMMENT=0
 
 ### SHA
-PENDING
+11e8f88dcf7e9c8531eb5929b85934a2ef370c67
 
 ## 2026-08-01 — F98 MemGPT-style archival search + promote-to-core
 
