@@ -27,7 +27,7 @@ Package the full measured loop — including revive free-rider and contribution_
 - Live Modal: pytorch#191836 BIT3_OK ~46.9s POST_COMMENT=0 log_streaming=true
 
 ### SHA
-`920401dd5a647957e7dc5fa1f489db9b3dc1a8c7`
+`772589b5e4a479a045e94666e7e7b02cdf0d08fe`
 
 ## 2026-08-01 — F177 contribution_pp floor for dual_pass revive
 
