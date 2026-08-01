@@ -61,6 +61,18 @@ export REPO=owner/repo PR_NUMBER=1
 
 Dogfood app with intentional vulns: [`demo/insecure/`](demo/insecure/). Gate contract: [`docs/GATE.md`](docs/GATE.md).
 
+### Golden path (target repo → required check)
+
+**Buyer loop:** install → require status **`torii/gate`** → `@torii review this pr` → metrics.
+
+```bash
+./scripts/install-torii.sh /path/to/your-app
+# then: secret OPENROUTER_API_KEY · branch protection requires torii/gate
+python3 scripts/golden_path_metrics.py report   # → docs/benchmarks/golden-path-metrics.md
+```
+
+Full one-pager: [`docs/GOLDEN-PATH.md`](docs/GOLDEN-PATH.md) · published chart: [`docs/benchmarks/golden-path-metrics.md`](docs/benchmarks/golden-path-metrics.md).
+
 Install on a **target** repo: copy workflow pack or point `torii_repository` at this hub (see `pack/`).
 
 ## Live e2e (Modal)

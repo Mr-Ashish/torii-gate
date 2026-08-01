@@ -6,6 +6,8 @@ Generated: `2026-08-01T02:21:39Z` · readiness **L3** (100.0%)
 
 Torii is the **security merge authority** for every PR: maker agent + checker panel + compound memory.
 
+**Commercial golden path:** [`docs/GOLDEN-PATH.md`](../GOLDEN-PATH.md) — install → require **`torii/gate`** → first PR → [metrics chart](../benchmarks/golden-path-metrics.md).
+
 ## Install (target repo)
 
 ```bash
@@ -22,6 +24,7 @@ Torii is the **security merge authority** for every PR: maker agent + checker pa
 3. Optional vars: `TORII_MODEL=deepseek/deepseek-v4-pro`, `TORII_SECOND_CRITIC=1`, `TORII_SCOPED_MEMORY=1`.
 4. Branch protection: require status context **`torii/gate`**.
 5. On a PR: `@torii review this pr`
+6. Refresh commercial metrics (hub): `python3 scripts/golden_path_metrics.py report`
 
 ## Pipeline (workflows-as-code)
 

@@ -1,0 +1,19 @@
+{
+  "feature": "GOLDEN",
+  "schema_version": 1,
+  "repo": "pytorch/pytorch",
+  "pr": "191840",
+  "pr_number": "191840",
+  "model": "deepseek/deepseek-chat-v4-pro",
+  "host": "modal",
+  "bit3": true,
+  "elapsed_s": 48.0,
+  "log_streaming": true,
+  "tool_call_turns": 0,
+  "post_comment": 0,
+  "verdict": "COMMENT",
+  "notes": "Golden-path dogfood; fail-closed F45 zero tool turns \u2192 COMMENT (not APPROVE)",
+  "scored_at": "2026-08-01T14:14:45Z",
+  "modal_app": "torii-pr-review",
+  "modal_run": "https://modal.com/apps/mr-ashish/main/ap-74XJyEQyl4ZuTsrqD4thBb"
+}

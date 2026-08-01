@@ -1,0 +1,120 @@
+\"/tmp/torii-run-191840-1785593611/torii/.torii/tp-signatures.json\",\n  
+\"signal_count\": 0,\n  \"top\": [],\n  \"dry_run\": true\n}\n{\n  \"feature\": 
+\"F100\",\n  \"path\": 
+\"/tmp/torii-run-191840-1785593611/torii/.torii/memory-graph.json\",\n  
+\"node_count\": 0,\n  \"edge_count\": 0,\n  \"by_type\": {\n    \"co_path\": 
+0,\n    \"same_theme\": 0,\n    \"supersedes\": 0,\n    \"updated_from\": 0\n  
+}\n}\nLOCAL_PUBLISH=skipped\nHUB_PUBLISH=skipped\n/tmp/torii-run-191840-17855936
+11/torii/.torii-out/run-bundle.json\n/tmp/torii-run-191840-1785593611/torii/.tor
+ii-out/traces/pr191840-runlocal-a1/run-bundle.json\nRUN_BUNDLE=/tmp/torii-run-19
+1840-1785593611/torii/.torii-out/run-bundle.json\nREVIEW_FILE=/tmp/torii-run-191
+840-1785593611/torii/.torii-out/review-191840.md\nTORII_STATUS=success\nTRACE_DI
+R=/tmp/torii-run-191840-1785593611/torii/.torii-out/traces/pr191840-runlocal-a1\
+nRUN_BUNDLE=/tmp/torii-run-191840-1785593611/torii/.torii-out/run-bundle.json\n-
+-- memory-health 
+---\nMEMORY_MODE=local\nMEMORY_PATH=.torii\nFP_RULES=missing\nMEMORY_SOURCE=seed
+\nLOCAL_PUBLISH=skipped\nHUB_PUBLISH=skipped\n",
+  "artifact_summary": {
+    "hermes-191840.stderr": 51546,
+    "hermes-191840.reprompt.stderr": 26430,
+    "hermes-run.log": 2401,
+    "hermes-usage.json": 380,
+    "timings.json": 535,
+    "agent-loop/agent-loop.json": 29622,
+    "agent-loop/agent-loop.md": 2551,
+    "review-191840.md": 3374,
+    "agent_loop": {
+      "tool_call_turns": null,
+      "messages_or_turns": 1,
+      "keys": [
+        "agent_log_bytes",
+        "agent_log_sha256",
+        "captured_at",
+        "hermes_home",
+        "message_count",
+        "messages",
+        "model",
+        "provider",
+        "schema_version",
+        "session_id",
+        "sessions_files",
+        "steps",
+        "tool_call_turns",
+        "usage"
+      ]
+    },
+    "hermes_run_log_bytes": 2401,
+    "hermes_stderr_bytes": 51062
+  },
+  "elapsed_s": 48.0,
+  "trace_volume_path": "/traces/pytorch--pytorch-pr191840-1785593611",
+  "trace_volume_error": null,
+  "resources": "default-min (no cpu/memory reservation)",
+  "log_streaming": true,
+  "stream_note": "Live logs streamed to Modal UI via print+flush; Hermes 
+agent.log / hermes stderr tailed during orchestrator"
+}
+--- preview ---
+<!-- torii-review pr=191840 run=local 
+head=a27fb64a9ba8eb04cd449d1e6deac9a83cfc6f0a -->
+## 🏴‍☠️ Torii Review — PR #191840
+
+**Verdict:** COMMENT
+**Confidence:** low
+**Score:** 40/100
+**Review effort:** 2/5
+
+> ⚠️ **Incomplete agentic review (F45):** Hermes recorded **0 tool turns** on a 
+multi-file code PR (2 files). Torii fail-closed: **APPROVE is not allowed** 
+without workspace tools (`zero_tools_multi_file_code_nontarget_verdict`). Re-run
+so the agent reads changed files, or treat findings as low-trust.
+
+### Summary
+Agent output did not match the review contract (missing: **Verdict:**, 
+**Score:**, ### Summary, ### Blocking, ### Security audit, ### Tests & risk). 
+Raw content preserved below.
+
+### Walkthrough
+- Contract repair only — re-run for a full structured review
+
+### Architecture diag
+BIT3_OK
+================================================================
+[torii/review_preview] review-191840.md
+================================================================
+[review] <!-- torii-review pr=191840 run=local head=a27fb64a9ba8eb04cd449d1e6deac9a83cfc6f0a -->
+[review] ## 🏴‍☠️ Torii Review — PR #191840
+[review] 
+[review] **Verdict:** COMMENT
+[review] **Confidence:** low
+[review] **Score:** 40/100
+[review] **Review effort:** 2/5
+[review] 
+[review] > ⚠️ **Incomplete agentic review (F45):** Hermes recorded **0 tool turns** on a multi-file code PR (2 files). Torii fail-closed: **APPROVE is not allowed** without workspace tools (`zero_tools_multi_file_code_nontarget_verdict`). Re-run so the agent reads changed files, or treat findings as low-trust.
+[review] 
+[review] ### Summary
+[review] Agent output did not match the review contract (missing: **Verdict:**, **Score:**, ### Summary, ### Blocking, ### Security audit, ### Tests & risk). Raw content preserved below.
+[review] 
+[review] ### Walkthrough
+[review] - Contract repair only — re-run for a full structured review
+[review] 
+[review] ### Architecture diagram
+[review] <!-- torii-mermaid -->
+[review] 
+[review] _Auto-generated from 2 changed file(s) (F57). Edges between groups are adjacency, not proven runtime dependencies._
+[review] 
+[review] ```mermaid
+[review] flowchart LR
+[review]   %% PR changed modules (2 files, 2 groups)
+[review]   subgraph g_test["test"]
+[review]     f_test_package_test_analyze_py["test_analyze.py"]
+[review]     %% test/package/test_analyze.py
+[review]   end
+[review]   subgraph g_torch["torch"]
+[review]     f_torch_package_analyze_trace_dep
+================================================================
+[torii/done] ok=True orch_rc=0 elapsed_s=48.0 review=True
+================================================================
+Stopping app - local entrypoint completed.
+✓ App completed. View run at 
+https://modal.com/apps/mr-ashish/main/ap-74XJyEQyl4ZuTsrqD4thBb

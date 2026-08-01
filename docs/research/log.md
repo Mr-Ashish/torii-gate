@@ -1,3 +1,41 @@
+## 2026-08-01 — GOLDEN commercial path metrics (install → torii/gate → dogfood)
+
+### Papers / posts
+- Loop Engineering: score the **customer-visible** loop (time-to-signal), not internal F-depth.
+- Priority queue item #1 →7.5 commercial; stop shipping F185+ without golden-path chart.
+- AppSec install UX: one required-check doc beats compound-loop archaeology on the buyer surface.
+
+### OSS design patterns stolen
+1. `docs/GOLDEN-PATH.md` — single install → secret → require `torii/gate` → first PR path.
+2. `scripts/golden_path_metrics.py` aggregates vault dogfood + labeled good/weak recall.
+3. Live OSS verdicts unlabelled; TP/FP only from offline harnesses (honest chart).
+4. `torii.py golden-path` umbrella; fixture hermetic for smoke/CI.
+
+### Insight
+43 dogfood vault runs existed but no buyer-facing metrics doc. Highest ROI: publish golden path + FP/TP chart, not another compound pressure loop.
+
+### Feature shipped (GOLDEN / F187)
+- docs/GOLDEN-PATH.md + docs/benchmarks/golden-path-metrics.md
+- scripts/golden_path_metrics.py report|fixture|status
+- CLI group + tests; README/GATE/INSTALL-GUIDE links
+- research pattern golden-path-commercial-metrics-pattern.md
+
+### Loop-engineering
+Measure install→gate→signal; fitness of the product is commercial path completeness.
+
+### Metric
+- Offline: fixture_pass 12/12; labeled TP=9 good_recall=1.0 weak=0.0; pytest 5 passed
+- Live Modal: pytorch#191840 BIT3_OK ~48.0s POST_COMMENT=0 log_streaming=true COMMENT fail-closed F45
+
+### scorecard_target
+7.5
+
+### dim_lift
+simplicity + install UX + commercial trust (golden path)
+
+### SHA
+`(fill after push)`
+
 ## 2026-08-01 — F186 compound re-prompt chronic miss pressure
 
 ### Papers / posts

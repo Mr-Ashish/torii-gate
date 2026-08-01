@@ -37,6 +37,13 @@ Reusable workflow posts **two** commit statuses after a matched run (when `TORII
 
 Required checks for a hard merge gate should use **`torii/gate`**. Optional hard job fail: repo var `TORII_GATE_STRICT=1`.
 
+**Commercial golden path (install → required check → dogfood → FP/TP):** [`GOLDEN-PATH.md`](GOLDEN-PATH.md) · metrics [`benchmarks/golden-path-metrics.md`](benchmarks/golden-path-metrics.md).
+
+```bash
+python3 scripts/golden_path_metrics.py fixture
+python3 scripts/golden_path_metrics.py report
+```
+
 ## Dogfood
 Intentional insecure sample: `demo/insecure/` (SQLi / pickle / shell / secret leak). See `demo/insecure/README.md`.
 

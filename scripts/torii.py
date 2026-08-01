@@ -25,6 +25,8 @@ Usage:
   python3 scripts/torii.py budget -- status
   python3 scripts/torii.py skill-loop -- scorecard --shallow
   python3 scripts/torii.py memory-loop -- scorecard --shallow
+  python3 scripts/torii.py golden-path -- fixture
+  python3 scripts/torii.py golden-path -- report
 
 Env:
   TORII_ROOT
@@ -93,6 +95,15 @@ GROUPS: dict[str, dict[str, Any]] = {
             "workflow -- scorecard",
             "workflow -- validate",
             "workflow -- fixture",
+        ],
+    },
+    "golden-path": {
+        "script": "golden_path_metrics.py",
+        "help": "Commercial golden path: install → torii/gate → dogfood metrics (→7.5)",
+        "examples": [
+            "golden-path -- fixture",
+            "golden-path -- status",
+            "golden-path -- report",
         ],
     },
 }
