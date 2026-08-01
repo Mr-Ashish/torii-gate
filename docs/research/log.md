@@ -34,7 +34,7 @@ F69 proposes skills from trajectory *flags*; F73 scores procedure quality but ne
 - pytest: 462 passed
 
 ### SHA
-`(pending push)`
+`165cf24c0cf6abb22ec2d9b79c71086cc361d085`
 
 ## 2026-08-01 — F73 trajectory fitness + eval-trace vault
 
