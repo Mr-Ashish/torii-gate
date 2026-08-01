@@ -26,7 +26,7 @@ GTM (#11)
 Buyer landing is a public URL, not monorepo archaeology
 
 ### SHA
-(pending)
+`cfa5ab6502a22d3850c1835ee4abea78b9e55bf0`
 
 ## 2026-08-01 — GATE_ONBOARDING: Actions job summary require torii/gate (Phase B #6)
 

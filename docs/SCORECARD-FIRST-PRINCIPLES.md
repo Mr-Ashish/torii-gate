@@ -19,7 +19,7 @@ _Scored: `2026-08-01T18:57:17Z` · commercial **8.5** · overall **8.0** (cap un
 | Rank | Gap | Status |
 |-----:|-----|--------|
 | 1–6 | help · pricing · quieter · isolation · freshness · gate onboarding | **shipped** |
-| 7 | Deployed landing | **this fire** |
+| 7 | Deployed landing | **shipped** `cfa5ab6` |
 | 8 | Paid pilot / revenue proof | next |
 | 9 | SARIF Trust | vision |
 | 10 | No F185+ without customer win | standing |
