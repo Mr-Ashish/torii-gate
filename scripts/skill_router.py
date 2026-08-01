@@ -43,6 +43,7 @@ Env:
   TORII_HUB_GAP_REPROMPT      1 (default) | 0 — F126 hub gap_pressure biases F122 re-prompt
   TORII_HUB_GAP_PRESSURE_THR  default 0.34 — re-prompt idle recovery when hub gap ≥ thr
   TORII_HUB_ARCHIVAL_UTIL     1 (default) | 0 — F155 hub-archival in recovery util stack
+  TORII_SKILL_ROUTER_SYNTH    1 (default) | 0 — F160 synthesize skill-router.json from always skills
 """
 
 from __future__ import annotations
@@ -63,6 +64,7 @@ FEATURE_HUB = "F125"
 FEATURE_SCORECARD_HUB = "F138"
 FEATURE_HUB_ARCHIVAL_UTIL = "F155"
 FEATURE_HUB_ARCHIVAL_REPROMPT = "F157"
+FEATURE_ROUTER_SYNTH = "F160"
 SCHEMA = 1
 MARKER_OPEN = "<!-- torii-f84-skill-router -->"
 MARKER_CLOSE = "<!-- /torii-f84-skill-router -->"
@@ -1808,8 +1810,15 @@ def inject_into_prompt(
         "memory_hub_priority_deltas": selection.get("memory_hub_priority_deltas"),
         "feature_memory_hub": selection.get("feature_memory_hub"),
     }
-    # write selection artifact next to prompt if OUT_DIR
+    # write selection artifact next to prompt if OUT_DIR (F160: also prompt parent)
     od = (os.environ.get("OUT_DIR") or "").strip()
+    if not od and dest is not None:
+        # F160: bench/live puts prompt.md under out_dir without assemble OUT_DIR race
+        try:
+            if dest.name in ("prompt.md", "prompt-in.md") and dest.parent.is_dir():
+                od = str(dest.parent)
+        except Exception:
+            od = ""
     if od:
         art = Path(od) / "skill-router.json"
         try:
@@ -1822,6 +1831,7 @@ def inject_into_prompt(
                         "f120_chars_saved": selection.get("f120_chars_saved") or 0,
                         "f120_compact": selection.get("f120_compact") or [],
                         "hub_injected": result.get("hub_injected"),
+                        "synthesized": False,
                     },
                     indent=2,
                 )
@@ -2213,6 +2223,117 @@ def hub_archival_reprompt_enabled() -> bool:
     return raw not in _FALSEY
 
 
+def router_synth_enabled() -> bool:
+    """F160: synthesize skill-router.json from always skills when artifact missing."""
+    raw = (os.environ.get("TORII_SKILL_ROUTER_SYNTH") or "1").strip().lower()
+    return raw not in _FALSEY
+
+
+def ensure_skill_router_doc(
+    out_dir: Path | None = None,
+    *,
+    root: Path | None = None,
+    write: bool = True,
+    paths: list[str] | None = None,
+) -> dict[str, Any]:
+    """F160: load skill-router.json or synthesize from active always skills.
+
+    Live bench (bench_security_gate live) skips assemble-context, so inject never
+    writes skill-router.json and recovery util reports recovery_injected_n=0.
+    Synthesize always_selected from catalog so F121–F159 measure real always skills.
+    Privacy: skill ids only.
+    """
+    root = root or _root()
+    od = Path(out_dir) if out_dir else None
+    if od is None:
+        env_od = (os.environ.get("OUT_DIR") or "").strip()
+        if env_od:
+            od = Path(env_od)
+    if od:
+        rp = od / "skill-router.json"
+        if rp.is_file():
+            try:
+                data = json.loads(rp.read_text(encoding="utf-8"))
+                if isinstance(data, dict) and (
+                    data.get("selected") or data.get("always_selected")
+                ):
+                    return data
+            except (OSError, json.JSONDecodeError):
+                pass
+
+    if not router_synth_enabled():
+        return {
+            "feature": FEATURE,
+            "feature_router_synth": FEATURE_ROUTER_SYNTH,
+            "selected": [],
+            "always_selected": [],
+            "synthesized": False,
+            "reason": "synth_off",
+        }
+
+    cards = catalog(root)
+    always_cards = [c for c in cards if c.always]
+    # Prefer full select when paths available (richer always ranking under F119)
+    if paths:
+        try:
+            sel = select_skills(cards, paths, root=root)
+            always_ids = list(sel.get("always_selected") or [])
+            selected_ids = list(sel.get("selected") or [])
+            if not always_ids:
+                always_ids = [c.id for c in always_cards]
+            if not selected_ids:
+                selected_ids = list(always_ids)
+            doc: dict[str, Any] = {
+                "feature": FEATURE,
+                "feature_router_synth": FEATURE_ROUTER_SYNTH,
+                "selected": selected_ids,
+                "always_selected": always_ids,
+                "synthesized": True,
+                "synth_mode": "select_paths",
+                "inject_chars": 0,
+                "paths_n": len(paths),
+                "scored_at": _now(),
+                "reason": "missing_skill_router_artifact",
+            }
+        except Exception:
+            always_ids = [c.id for c in always_cards]
+            doc = {
+                "feature": FEATURE,
+                "feature_router_synth": FEATURE_ROUTER_SYNTH,
+                "selected": always_ids[:],
+                "always_selected": always_ids[:],
+                "synthesized": True,
+                "synth_mode": "always_catalog",
+                "inject_chars": 0,
+                "scored_at": _now(),
+                "reason": "missing_skill_router_artifact",
+            }
+    else:
+        always_ids = [c.id for c in always_cards]
+        doc = {
+            "feature": FEATURE,
+            "feature_router_synth": FEATURE_ROUTER_SYNTH,
+            "selected": always_ids[:],
+            "always_selected": always_ids[:],
+            "synthesized": True,
+            "synth_mode": "always_catalog",
+            "inject_chars": 0,
+            "scored_at": _now(),
+            "reason": "missing_skill_router_artifact",
+        }
+
+    if write and od:
+        try:
+            od.mkdir(parents=True, exist_ok=True)
+            (od / "skill-router.json").write_text(
+                json.dumps(doc, indent=2) + "\n", encoding="utf-8"
+            )
+            doc["artifact"] = str(od / "skill-router.json")
+        except OSError:
+            pass
+    return doc
+
+
 def score_recovery_util(
     out_dir: Path | None = None,
     *,
@@ -2233,18 +2354,17 @@ def score_recovery_util(
     router: dict[str, Any] = dict(router_doc or {})
     hits: dict[str, Any] = dict(hits_doc or {})
     if od:
-        rp = od / "skill-router.json"
         hp = od / "skill-hits.json"
-        if not router and rp.is_file():
-            try:
-                router = json.loads(rp.read_text(encoding="utf-8"))
-            except (OSError, json.JSONDecodeError):
-                router = {}
+        if not router:
+            # F160: load or synthesize skill-router.json (bench live skips assemble)
+            router = ensure_skill_router_doc(od, root=root, write=True)
         if not hits and hp.is_file():
             try:
                 hits = json.loads(hp.read_text(encoding="utf-8"))
             except (OSError, json.JSONDecodeError):
                 hits = {}
+    elif not router:
+        router = ensure_skill_router_doc(None, root=root, write=False)
 
     selected = list(router.get("selected") or [])
     always_sel = list(router.get("always_selected") or [])
@@ -2292,6 +2412,9 @@ def score_recovery_util(
     report = {
         "feature": "F121",
         "feature_hub_archival_util": FEATURE_HUB_ARCHIVAL_UTIL,
+        "feature_router_synth": FEATURE_ROUTER_SYNTH
+        if router.get("synthesized")
+        else None,
         "schema": SCHEMA,
         "scored_at": _now(),
         "recovery_ids": sorted(recovery_ids),
@@ -2314,6 +2437,9 @@ def score_recovery_util(
         "hub_archival_idle": hub_idle,
         "hub_archival_util_gap": hub_gap,
         "hub_archival_ok": (not hub_gap) if hub_injected else True,
+        # F160
+        "router_synthesized": bool(router.get("synthesized")),
+        "router_synth_mode": router.get("synth_mode"),
     }
     if od:
         try:
@@ -4214,6 +4340,89 @@ Call second-agent critic tools when uncertain.
             and "/Users/" not in ha_text
         )
 
+        # F160: synthesize skill-router when artifact missing → recovery injects always
+        os.environ["TORII_SKILL_ROUTER_SYNTH"] = "1"
+        synth_root = root / "f160-synth"
+        synth_root.mkdir(exist_ok=True)
+        active_s = synth_root / "agent" / "skills" / "active"
+        active_s.mkdir(parents=True)
+        for sid, prio, body in (
+            (
+                "skill-prefer-memory-cli-early",
+                100,
+                "Call torii memory CLI early.\n",
+            ),
+            (
+                HUB_ARCHIVAL_SKILL_ID,
+                95,
+                "Call archival with hub_boost early.\n",
+            ),
+            (
+                "skill-prefer-product-cli",
+                90,
+                "Call torii doctor early.\n",
+            ),
+        ):
+            (active_s / f"{sid}.md").write_text(
+                f"""---
+id: {sid}
+title: {sid}
+always: true
+always_priority: {prio}
+themes: memory,archival,recovery
+---
+
+## Skill
+
+{body}
+""",
+                encoding="utf-8",
+            )
+        # no skill-router.json yet — util must synth
+        od_s = synth_root / "out"
+        od_s.mkdir()
+        (od_s / "skill-hits.json").write_text(
+            json.dumps(
+                {
+                    "hits": [
+                        {
+                            "id": HUB_ARCHIVAL_SKILL_ID,
+                            "tool_hit": False,
+                            "hit": True,
+                            "prose_hit": True,
+                        },
+                        {
+                            "id": "skill-prefer-memory-cli-early",
+                            "tool_hit": True,
+                            "hit": True,
+                        },
+                    ],
+                    "tool_hit_n": 1,
+                }
+            ),
+            encoding="utf-8",
+        )
+        util_synth = score_recovery_util(od_s, root=synth_root)
+        router_art = od_s / "skill-router.json"
+        synth_doc = (
+            json.loads(router_art.read_text(encoding="utf-8"))
+            if router_art.is_file()
+            else {}
+        )
+        f160_ok = (
+            bool(util_synth.get("router_synthesized"))
+            or bool(synth_doc.get("synthesized"))
+        ) and (
+            int(util_synth.get("recovery_injected_n") or 0) >= 2
+            and util_synth.get("hub_archival_injected") is True
+            and util_synth.get("hub_archival_util_gap") is True
+            and HUB_ARCHIVAL_SKILL_ID in (util_synth.get("recovery_injected") or [])
+            and router_art.is_file()
+            and "skill-prefer-memory-cli-early"
+            in (synth_doc.get("always_selected") or [])
+            and "/Users/" not in json.dumps(synth_doc)
+        )
+
         # F136: scorecard util — tool hits ok; idle scorecard skill → gap; none → ok
         sc_util_out = root / "sc-util-out"
         sc_util_out.mkdir(exist_ok=True)
@@ -4449,6 +4658,7 @@ Call `python3 scripts/torii.py doctor` and scorecard early.
                 f138_ok,
                 f155_ok,
                 f157_ok,
+                f160_ok,
             ]
         )
         payload = {
@@ -4462,8 +4672,10 @@ Call `python3 scripts/torii.py doctor` and scorecard early.
             "f138": True,
             "f155": True,
             "f157": True,
+            "f160": True,
             "feature_hub_archival_util": FEATURE_HUB_ARCHIVAL_UTIL,
             "feature_hub_archival_reprompt": FEATURE_HUB_ARCHIVAL_REPROMPT,
+            "feature_router_synth": FEATURE_ROUTER_SYNTH,
             "feature_always_budget": "F119",
             "feature_compact": "F120",
             "feature_util": "F121",
@@ -4554,6 +4766,12 @@ Call `python3 scripts/torii.py doctor` and scorecard early.
             "f157_budget_kind": dec_ha.get("budget_kind"),
             "f157_ok_no_reprompt": int(dec_ha_ok.get("reprompt") or 0),
             "f157_prompt_has_f157": "F157" in ha_text,
+            "f160_ok": f160_ok,
+            "f160_recovery_injected_n": util_synth.get("recovery_injected_n"),
+            "f160_hub_archival_injected": util_synth.get("hub_archival_injected"),
+            "f160_hub_archival_gap": util_synth.get("hub_archival_util_gap"),
+            "f160_router_synthesized": util_synth.get("router_synthesized"),
+            "f160_always": synth_doc.get("always_selected"),
         }
         print(json.dumps(payload, indent=2))
         return 0 if fixture_pass else 1

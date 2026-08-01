@@ -1,0 +1,28 @@
+f160_skill_router_inject=1 always_n=3
+live_start model=deepseek/deepseek-v4-pro out_dir=docs/benchmarks/traces/f160-skill-router-synth/live
+::notice::F43 preflight cost · decision=allow reason=no_budget est=$0.2652 model=deepseek/deepseek-v4-pro
+F43 preflight cost · decision=allow reason=no_budget est=$0.2652 model=deepseek/deepseek-v4-pro
+::notice::hermes version matches pin 53559aaf: /Users/ashishmishra/.local/bin/hermes
+hermes version matches pin 53559aaf: /Users/ashishmishra/.local/bin/hermes
+::notice::F46 SOUL context scan clean (Hermes will load reviewer contract)
+F46 SOUL context scan clean (Hermes will load reviewer contract)
+::notice::Hermes review · model=deepseek/deepseek-v4-pro tier=explicit toolsets=terminal workspace=/Users/ashishmishra/Documents/experiments/torii hermes_home=/Users/ashishmishra/Documents/experiments/torii/.torii-hermes-home timeout=180s max_turns=12
+Hermes review · model=deepseek/deepseek-v4-pro tier=explicit toolsets=terminal workspace=/Users/ashishmishra/Documents/experiments/torii hermes_home=/Users/ashishmishra/Documents/experiments/torii/.torii-hermes-home timeout=180s max_turns=12
+hermes-run.log bytes=2401
+docs/benchmarks/traces/f160-skill-router-synth/live/agent-loop
+captured steps=8 messages=8 tool_turns=2 session=20260801_160302_82fb6b
+docs/benchmarks/traces/f160-skill-router-synth/live/review-bench-f70.md
+usage-summary: updated docs/benchmarks/traces/f160-skill-router-synth/live/review-bench-f70.md
+::notice::F50 severity calibration · reason=test_gap_non_approve match=missing_tests:tests & risk mutated=true
+F50 severity calibration · reason=test_gap_non_approve match=missing_tests:tests & risk mutated=true
+REVIEW_FILE=docs/benchmarks/traces/f160-skill-router-synth/live/review-bench-f70.md
+AGENT_LOOP_DIR=docs/benchmarks/traces/f160-skill-router-synth/live/agent-loop
+::notice::Review written: docs/benchmarks/traces/f160-skill-router-synth/live/review-bench-f70.md (5918 bytes)
+Review written: docs/benchmarks/traces/f160-skill-router-synth/live/review-bench-f70.md (5918 bytes)
+::notice::Agent loop captured: docs/benchmarks/traces/f160-skill-router-synth/live/agent-loop
+Agent loop captured: docs/benchmarks/traces/f160-skill-router-synth/live/agent-loop
+live_rc=0
+review=docs/benchmarks/traces/f160-skill-router-synth/live/review-bench-f70.md
+recall=1.0 tp=4 fn=0 passed=1
+verdict=REQUEST_CHANGES
+metrics=docs/benchmarks/traces/f160-skill-router-synth/live/bench-live-metrics.json

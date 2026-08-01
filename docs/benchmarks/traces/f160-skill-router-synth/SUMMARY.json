@@ -1,0 +1,33 @@
+{
+  "feature": "F160",
+  "title": "skill-router synth + bench live always inject",
+  "scored_at": "2026-08-01T10:35:42Z",
+  "live": {
+    "recall": 1.0,
+    "tp": 4,
+    "fn": 0,
+    "verdict": "REQUEST_CHANGES",
+    "passed": 1,
+    "model": "deepseek/deepseek-v4-pro",
+    "recovery_injected_n": 3,
+    "hub_archival_injected": true,
+    "hub_archival_util_gap": false,
+    "util_rate": 1.0,
+    "always_selected": [
+      "skill-prefer-memory-cli-early",
+      "skill-prefer-hub-archival-early",
+      "skill-prefer-product-cli"
+    ]
+  },
+  "modal": {
+    "repo": "pytorch/pytorch",
+    "pr": 191831,
+    "outcome": "BIT3_OK",
+    "elapsed_s": 89.7,
+    "log_streaming": true,
+    "modal_url": "https://modal.com/apps/mr-ashish/main/ap-ZzHbo3eudkUrMxOMBd3x2F"
+  },
+  "offline": {
+    "skill_router_fixture_f160_ok": true
+  }
+}

@@ -1,0 +1,231 @@
+{
+  "feature": "F70",
+  "mode": "live",
+  "at": "2026-08-01T10:33:37Z",
+  "model": "deepseek/deepseek-v4-pro",
+  "hermes_rc": 0,
+  "review": "docs/benchmarks/traces/f160-skill-router-synth/live/review-bench-f70.md",
+  "score": {
+    "feature": "F70",
+    "pack_id": "insecure-demo",
+    "verdict": "REQUEST_CHANGES",
+    "expected_verdict": "REQUEST_CHANGES",
+    "verdict_ok": true,
+    "tp": 4,
+    "fn": 0,
+    "required_total": 4,
+    "recall": 1.0,
+    "precision_proxy": 1.0,
+    "cases": [
+      {
+        "case_id": "sqli-search",
+        "hit": true,
+        "matched_terms": [
+          "sql injection",
+          "sqli",
+          "f-string",
+          "f\"select",
+          "execute(f",
+          "cur.execute(f",
+          "cwe-89"
+        ],
+        "path_ok": true
+      },
+      {
+        "case_id": "pickle-load",
+        "hit": true,
+        "matched_terms": [
+          "pickle",
+          "deserialize",
+          "deserialization",
+          "cwe-502",
+          "pickle.loads"
+        ],
+        "path_ok": true
+      },
+      {
+        "case_id": "cmdi-run",
+        "hit": true,
+        "matched_terms": [
+          "command injection",
+          "shell=true",
+          "rce",
+          "subprocess",
+          "cwe-78"
+        ],
+        "path_ok": true
+      },
+      {
+        "case_id": "secret-exposure",
+        "hit": true,
+        "matched_terms": [
+          "secret",
+          "api key",
+          "api_key",
+          "openrouter",
+          "credential",
+          "exposes",
+          "exposure"
+        ],
+        "path_ok": true
+      }
+    ],
+    "path_hits": [
+      {
+        "path": "demo/insecure/app.py",
+        "line": 15
+      },
+      {
+        "path": "demo/insecure/app.py",
+        "line": 22
+      },
+      {
+        "path": "demo/insecure/app.py",
+        "line": 28
+      },
+      {
+        "path": "demo/insecure/app.py",
+        "line": 33
+      },
+      {
+        "path": "demo/insecure/app.py",
+        "line": null
+      }
+    ],
+    "critic": {
+      "feature": "F70",
+      "pass": "dual_offline",
+      "effective_aware": true,
+      "graph_supersede_aware": true,
+      "graph_multi_hop": true,
+      "graph_supersede_edges": 0,
+      "graph_hop": {
+        "multi_hop": true,
+        "hops": 2,
+        "seed_n": 4,
+        "neighborhood_n": 4,
+        "seeds": [
+          "tp:cmdi-run",
+          "tp:pickle-load",
+          "tp:secret-exposure",
+          "tp:sqli-search"
+        ]
+      },
+      "effective_floor": 0.25,
+      "chunk_count": 4,
+      "likely_fp": 0,
+      "confirmed_tp": 4,
+      "stale_tp_match": 0,
+      "superseded_tp": 0,
+      "weak_evidence": 0,
+      "precision_proxy": 1.0,
+      "effective_precision": 0.8436,
+      "findings": [
+        {
+          "index": 0,
+          "status": "confirmed_tp",
+          "has_path": true,
+          "paths": [
+            {
+              "path": "demo/insecure/app.py",
+              "line": 15
+            }
+          ],
+          "tp_signature_hits": [
+            "sqli-search"
+          ],
+          "tp_effective_max": 0.8577,
+          "tp_effective_scores": [
+            0.8577
+          ],
+          "demote_reason": "",
+          "graph_filtered": null,
+          "preview": "**SQL Injection** \u2014 `demo/insecure/app.py:15`"
+        },
+        {
+          "index": 1,
+          "status": "confirmed_tp",
+          "has_path": true,
+          "paths": [
+            {
+              "path": "demo/insecure/app.py",
+              "line": 22
+            }
+          ],
+          "tp_signature_hits": [
+            "pickle-load"
+          ],
+          "tp_effective_max": 0.8202,
+          "tp_effective_scores": [
+            0.8202
+          ],
+          "demote_reason": "",
+          "graph_filtered": null,
+          "preview": "**Insecure Deserialization** \u2014 `demo/insecure/app.py:22`"
+        },
+        {
+          "index": 2,
+          "status": "confirmed_tp",
+          "has_path": true,
+          "paths": [
+            {
+              "path": "demo/insecure/app.py",
+              "line": 28
+            }
+          ],
+          "tp_signature_hits": [
+            "cmdi-run"
+          ],
+          "tp_effective_max": 0.8389,
+          "tp_effective_scores": [
+            0.8389
+          ],
+          "demote_reason": "",
+          "graph_filtered": null,
+          "preview": "**Command Injection** \u2014 `demo/insecure/app.py:28`"
+        },
+        {
+          "index": 3,
+          "status": "confirmed_tp",
+          "has_path": true,
+          "paths": [
+            {
+              "path": "demo/insecure/app.py",
+              "line": 33
+            },
+            {
+              "path": "demo/insecure/app.py",
+              "line": 15
+            },
+            {
+              "path": "demo/insecure/app.py",
+              "line": 22
+            },
+            {
+              "path": "demo/insecure/app.py",
+              "line": 28
+            }
+          ],
+          "tp_signature_hits": [
+            "sqli-search",
+            "pickle-load",
+            "cmdi-run",
+            "secret-exposure"
+          ],
+          "tp_effective_max": 0.8577,
+          "tp_effective_scores": [
+            0.8577,
+            0.8202,
+            0.8389,
+            0.8389
+          ],
+          "demote_reason": "",
+          "graph_filtered": null,
+          "preview": "**Credential Exposure** \u2014 `demo/insecure/app.py:33`    | Issue | CWE | Path:line | Severity | |---|---|---|---| | SQL Injection | CWE-89 | `demo/insecure/app.py:15` | Critical | | "
+        }
+      ]
+    },
+    "score_pct": 100.0,
+    "passed": true
+  }
+}

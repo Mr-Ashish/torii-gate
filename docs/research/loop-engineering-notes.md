@@ -54,3 +54,4 @@ Also mirrored from LOOP.md budget/observability: each fire records metrics (reca
 - F157: hub-archival util soft re-prompt under F108 (recover hub_boost before F156 demote-only)
 - F158: hub-archival util fitness demote/boost (chronic inject≠hub_boost compounds into ledger)
 - F159: F108 adaptive dual-recovery slot (f106↔f157) — one bonus when complementary kind used base
+- F160: skill-router synth for bench live (always recovery inject measurable when assemble skipped)

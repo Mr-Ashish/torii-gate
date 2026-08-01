@@ -1,0 +1,60 @@
+{
+  "feature": "F105",
+  "schema": 1,
+  "score": 1.0,
+  "level": "L3",
+  "hit_count": 7,
+  "tools_used": [
+    "archival_search",
+    "torii_memory",
+    "torii_product_memory"
+  ],
+  "by_tool": {
+    "torii_memory": 2,
+    "archival_search": 3,
+    "torii_product_memory": 2
+  },
+  "cli_subcmds": {
+    "search": 3
+  },
+  "inject_offered": true,
+  "utilization_gap": false,
+  "tool_call_turns": 2,
+  "feedback": [
+    "memory_tools_used=3 hits=7 tools=['archival_search', 'torii_memory', 'torii_product_memory']"
+  ],
+  "scored_at": "2026-08-01T10:33:36Z",
+  "hits_detail": [
+    {
+      "tool": "torii_memory",
+      "snip": "\"command\": \"ls scripts/torii.py scripts/torii_memory.py scripts/archival_memory_search.py 2>&1\", \"workdir\": \"/Users/ashishmishra/Docume"
+    },
+    {
+      "tool": "archival_search",
+      "snip": "orii.py scripts/torii_memory.py scripts/archival_memory_search.py 2>&1\", \"workdir\": \"/Users/ashishmishra/Documents/experiments/torii\"}"
+    },
+    {
+      "tool": "torii_memory",
+      "snip": "ry_search.py\\nscripts/torii.py\\nscripts/torii_memory.py\", \"exit_code\": 0, \"error\": null}"
+    },
+    {
+      "tool": "archival_search",
+      "snip": "{\"output\": \"scripts/archival_memory_search.py\\nscripts/torii.py\\nscripts/torii_memory.py\", \"exit_code\": 0, \"error\": null}"
+    },
+    {
+      "tool": "torii_product_memory",
+      "snip": "{\"command\": \"python3 scripts/torii.py memory -- search -- -q \\\"auth OR sql OR pickle OR secret OR injection OR command OR de"
+    },
+    {
+      "tool": "archival_search",
+      "snip": "{\"command\": \"python3 scripts/archival_memory_search.py auto --files demo/insecure/app.py 2>&1\", \"timeout\": 30, \"workdir\": \"/Users/ashi"
+    },
+    {
+      "tool": "torii_product_memory",
+      "snip": "ing findings, call: `python3 scripts/torii.py memory -- search -- -q \"auth OR sql OR pickle OR secret\"` or `python3 scripts/to"
+    }
+  ],
+  "out_dir": "docs/benchmarks/traces/f160-skill-router-synth/live",
+  "loop_path": "docs/benchmarks/traces/f160-skill-router-synth/live/agent-loop/agent-loop.json",
+  "enabled": true
+}

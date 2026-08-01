@@ -2763,3 +2763,31 @@ Budget with selective dual-recovery — not unbounded multi-reprompt.
 
 ### SHA
 `e470d39299d0e49c2abc9a87543d514fbc0187a4`
+
+## 2026-08-01 — F160 skill-router synth for bench util measurement
+
+### Papers / posts
+- SkillsBench: measure genuine skill utilization requires knowing inject set.
+- Assay: idle always skills invisible if inject set is empty.
+- Live F155–F159: recovery_injected_n=0 on insecure-demo because skill-router.json missing.
+
+### Insight
+Bench live skips assemble-context. Without skill-router artifact, F121–F159 treat runs as "no recovery injected" and never measure hub-archival util. Highest ROI: synthesize always skills + inject progressive router before hermes.
+
+### Feature shipped (F160)
+- `ensure_skill_router_doc` — load or synthesize always_selected
+- `score_recovery_util` uses synth when artifact missing
+- inject writes skill-router next to prompt.md parent
+- `bench_security_gate live` skill_router inject before hermes
+- fixture f160_ok; skill_loop router_synth_ok
+
+### Loop-engineering
+Observe what you inject — measurement without inject artifact is theater.
+
+### Metric
+- Offline fixture f160_ok (synth recovery_injected_n≥2, hub_archival gap)
+- Live: recovery_injected_n=3, hub_archival_injected, util_rate=1.0, recall=1.0
+- Modal pytorch#191831 BIT3_OK ~90s
+
+### SHA
+`pending`

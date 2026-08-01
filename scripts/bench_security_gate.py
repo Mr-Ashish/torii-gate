@@ -948,6 +948,31 @@ def cmd_live(args: argparse.Namespace) -> int:
     env.setdefault("TORII_MAX_TURNS", "12")
     env.setdefault("TORII_REVIEW_TIMEOUT_SECONDS", str(args.timeout))
 
+    # F160: inject progressive always skills + write skill-router.json so recovery
+    # util (F121–F159) measures hub-archival/memory always skills on bench live
+    # (this path skips assemble-context).
+    try:
+        sys.path.insert(0, str(root / "scripts"))
+        from skill_router import (  # type: ignore
+            inject_into_prompt as _skill_inject,
+            ensure_skill_router_doc as _ensure_router,
+        )
+
+        _inj = _skill_inject(
+            prompt_path,
+            root=root,
+            paths=["demo/insecure/app.py"],
+        )
+        _ensure_router(out_dir, root=root, write=True, paths=["demo/insecure/app.py"])
+        env["TORII_SKILL_ROUTER"] = "1"
+        if _inj.get("injected"):
+            print(
+                f"f160_skill_router_inject=1 always_n={len(_inj.get('always_selected') or [])}",
+                file=sys.stderr,
+            )
+    except Exception as _exc:
+        print(f"f160_skill_router_soft_fail={str(_exc)[:80]}", file=sys.stderr)
+
     hermes = root / "scripts" / "run-hermes-review.sh"
     if not hermes.is_file():
         print("error: run-hermes-review.sh missing", file=sys.stderr)
