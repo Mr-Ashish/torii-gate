@@ -1,0 +1,20 @@
+{
+  "feature": "COMMERCIAL_COST",
+  "schema_version": 1,
+  "repo": "pytorch/pytorch",
+  "pr": "191840",
+  "model": "deepseek/deepseek-v4-pro",
+  "host": "modal",
+  "bit3": true,
+  "elapsed_s": 122.9,
+  "log_streaming": true,
+  "tool_call_turns": 5,
+  "post_comment": 0,
+  "verdict": "APPROVE",
+  "block": false,
+  "certificate_id": "gc-23ee89e53f33b7d9",
+  "notes": "COMMERCIAL_COST cost honesty panel on commercial rollup + doctor",
+  "scored_at": "2026-08-01T16:51:49Z",
+  "modal_run": "https://modal.com/apps/mr-ashish/main/ap-c2ciRNy46UFW2lySOb8Uro",
+  "cost_usd": 0.015617399
+}

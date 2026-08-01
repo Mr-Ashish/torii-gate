@@ -2,9 +2,9 @@
 
 # Commercial product scorecard
 
-_Generated: `2026-08-01T16:42:46Z` · schema **2** · **overall_est=8.5/10** (baseline 6.6) · commercial_ok=`True`_
+_Generated: `2026-08-01T16:51:50Z` · schema **2** · **overall_est=8.5/10** (baseline 6.6) · commercial_ok=`True`_
 
-Single commercial scorecard: golden path · buyer · public eval · install · ops · enterprise · gate cert · quieter · tool-use · workflow
+Single commercial scorecard: golden path · buyer · public eval · install · ops · enterprise · gate cert · quieter · tool-use · workflow · measured cost/PR
 
 Heuristic commercial score from hermetic surface fixtures — not a customer interview score. Cap 8.5 until live revenue proof.
 
@@ -47,16 +47,35 @@ Deterministic pipeline graph vs LLM prose — validate offline before paid runs.
 |---------|--------|-----|:----:|
 | `workflow` | L3 | workflows-as-code (deterministic pipeline) | yes |
 
+## Cost honesty (measured dogfood)
+
+Measured dogfood cost/PR + time-to-signal (local vault only; not federated)
+
+| Metric | Value |
+|--------|------:|
+| cost_honesty_ok | True |
+| cost_ok (≥5 hermes-usage + p50) | True |
+| cost samples | 25 |
+| cost/PR p50 (USD) | 0.016 |
+| time-to-signal p50 (s) | 92.3 |
+| cost dashboard not stub | True |
+| privacy: cost local (not federated) | True |
+| landing measured dogfood | True |
+
+Audit: [cost-pr-dashboard.md](../ops/cost-pr-dashboard.md) · [golden-path-metrics.md](golden-path-metrics.md) · [enterprise/PRIVACY.md](../enterprise/PRIVACY.md).
+
 ## Buyer artifacts
 
 | Artifact | Present |
 |----------|:-------:|
 | `buyer_diagram` | True |
+| `cost_pr_dashboard` | True |
 | `enterprise_privacy` | True |
 | `federation_md` | True |
 | `gate_md` | True |
 | `golden_path_md` | True |
 | `install_md` | True |
+| `landing_html` | True |
 | `memory_md` | True |
 | `ops_dashboard` | True |
 | `public_eval_md` | True |
@@ -72,6 +91,7 @@ Deterministic pipeline graph vs LLM prose — validate offline before paid runs.
 python3 scripts/commercial_scorecard.py report
 python3 scripts/commercial_scorecard.py fixture
 python3 scripts/torii.py commercial -- status
+python3 scripts/torii.py ops -- status
 ```
 
-Related: [GOLDEN-PATH](../GOLDEN-PATH.md) · [WORKFLOWS](../WORKFLOWS.md) · [QUIETER](../QUIETER.md) · [TOOL-USE](../TOOL-USE.md) · [GATE](../GATE.md) · [public-eval](public-eval/SCORECARD.md) · [ops](../ops/DASHBOARD.md) · [enterprise](../enterprise/)
+Related: [GOLDEN-PATH](../GOLDEN-PATH.md) · [WORKFLOWS](../WORKFLOWS.md) · [QUIETER](../QUIETER.md) · [TOOL-USE](../TOOL-USE.md) · [GATE](../GATE.md) · [public-eval](public-eval/SCORECARD.md) · [ops](../ops/DASHBOARD.md) · [cost/PR](../ops/cost-pr-dashboard.md) · [enterprise](../enterprise/)

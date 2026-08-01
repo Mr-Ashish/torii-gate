@@ -167,6 +167,87 @@ def run_fixture(root: Path, script: str) -> dict[str, Any]:
     }
 
 
+def _cost_honesty_panel(
+    root: Path, *, cost_body: str = "", landing_body: str = ""
+) -> dict[str, Any]:
+    """Measured dogfood cost/PR panel for commercial rollup (COMMERCIAL_COST)."""
+    import re
+
+    dash_json = root / "docs" / "ops" / "dashboard.json"
+    cost_ok = False
+    cost_n = 0
+    cost_p50 = None
+    tts_p50 = None
+    if dash_json.is_file():
+        try:
+            data = json.loads(dash_json.read_text(encoding="utf-8"))
+            cpr = data.get("cost_per_pr") or {}
+            cost_ok = bool(cpr.get("cost_ok"))
+            cost_n = int(cpr.get("cost_n") or (cpr.get("cost_usd") or {}).get("n") or 0)
+            cost_p50 = (cpr.get("cost_usd") or {}).get("p50")
+            tts_p50 = (cpr.get("time_to_signal_s") or {}).get("p50")
+        except (json.JSONDecodeError, OSError, TypeError, ValueError):
+            pass
+    # Fallback: parse generated cost-pr-dashboard markdown
+    if not cost_ok and cost_body:
+        cost_ok = "cost_ok=**True**" in cost_body or "cost_ok=True" in cost_body
+        m = re.search(r"cost/PR p50 \(USD\)\s*\|\s*([0-9.]+)", cost_body)
+        if m:
+            try:
+                cost_p50 = float(m.group(1))
+            except ValueError:
+                pass
+        m = re.search(r"time-to-signal p50 \(s\)\s*\|\s*([0-9.]+)", cost_body)
+        if m:
+            try:
+                tts_p50 = float(m.group(1))
+            except ValueError:
+                pass
+        m = re.search(r"cost samples[^\|]*\|\s*(\d+)", cost_body, re.I)
+        if m:
+            cost_n = int(m.group(1))
+    head = "\n".join(cost_body.splitlines()[:8]) if cost_body else ""
+    cost_md_not_stub = bool(
+        cost_body
+        and "Cost / PR dashboard" in head
+        and "(stub)" not in head
+    )
+    privacy_cost_local = False
+    priv = root / "docs" / "enterprise" / "PRIVACY.md"
+    if priv.is_file():
+        pt = priv.read_text(encoding="utf-8")
+        privacy_cost_local = "Cost / PR telemetry" in pt and (
+            "never" in pt.lower() or "local vault" in pt.lower()
+        )
+    landing_measured = bool(
+        re.search(r"~90s|~\$0\.0|time-to-signal|Measured dogfood", landing_body, re.I)
+    )
+    ok = bool(
+        cost_ok
+        and cost_md_not_stub
+        and (root / "docs" / "ops" / "cost-pr-dashboard.md").is_file()
+        and privacy_cost_local
+    )
+    return {
+        "cost_ok": cost_ok,
+        "cost_n": cost_n,
+        "cost_p50_usd": cost_p50,
+        "tts_p50_s": tts_p50,
+        "cost_md_not_stub": cost_md_not_stub,
+        "privacy_cost_local": privacy_cost_local,
+        "landing_measured": landing_measured,
+        "cost_honesty_ok": ok,
+        "one_liner": (
+            "Measured dogfood cost/PR + time-to-signal (local vault only; not federated)"
+        ),
+        "paths": {
+            "cost_md": "docs/ops/cost-pr-dashboard.md",
+            "golden_path_md": "docs/benchmarks/golden-path-metrics.md",
+            "privacy_md": "docs/enterprise/PRIVACY.md",
+        },
+    }
+
+
 def estimate_overall(results: list[dict[str, Any]]) -> dict[str, Any]:
     """Heuristic commercial score: baseline + weighted lifts when fixtures pass.
 
@@ -217,12 +298,17 @@ def build_report(root: Path | None = None) -> dict[str, Any]:
     priority = [r for r in results if r.get("queue") == "priority"]
     post = [r for r in results if r.get("queue") == "post"]
     # docs presence quick check for golden path metrics artifact
+    cost_md = root / "docs" / "ops" / "cost-pr-dashboard.md"
+    cost_body = cost_md.read_text(encoding="utf-8") if cost_md.is_file() else ""
+    landing = root / "docs" / "brand" / "landing.html"
+    landing_body = landing.read_text(encoding="utf-8") if landing.is_file() else ""
     artifacts = {
         "golden_path_md": (root / "docs" / "benchmarks" / "golden-path-metrics.md").is_file(),
         "public_eval_md": (root / "docs" / "benchmarks" / "public-eval" / "SCORECARD.md").is_file(),
         "buyer_diagram": (root / "docs" / "brand" / "BUYER-DIAGRAM.md").is_file(),
         "install_md": (root / "docs" / "INSTALL.md").is_file(),
         "ops_dashboard": (root / "docs" / "ops" / "DASHBOARD.md").is_file(),
+        "cost_pr_dashboard": cost_md.is_file(),
         "enterprise_privacy": (root / "docs" / "enterprise" / "PRIVACY.md").is_file(),
         "quieter_md": (root / "docs" / "QUIETER.md").is_file(),
         "tool_use_md": (root / "docs" / "TOOL-USE.md").is_file(),
@@ -234,18 +320,23 @@ def build_report(root: Path | None = None) -> dict[str, Any]:
         "federation_md": (root / "docs" / "FEDERATION.md").is_file(),
         "memory_md": (root / "docs" / "MEMORY.md").is_file(),
         "self_evolve_md": (root / "docs" / "SELF-EVOLVE.md").is_file(),
+        "landing_html": landing.is_file(),
     }
+    # COMMERCIAL_COST: measured cost honesty rollup (not a new surface script)
+    cost_honesty = _cost_honesty_panel(root, cost_body=cost_body, landing_body=landing_body)
     report = {
         "feature": FEATURE,
         "schema": SCHEMA,
         "scored_at": _now(),
         "scorecard_target": "7.5+",
         "dim_lift": (
-            "commercial rollup: priority 1–6 + post-queue cert/quieter/tools + workflows-as-code"
+            "commercial rollup: priority 1–6 + post-queue cert/quieter/tools + "
+            "workflows-as-code + cost honesty"
         ),
         "one_liner": (
             "Single commercial scorecard: golden path · buyer · public eval · "
-            "install · ops · enterprise · gate cert · quieter · tool-use · workflow"
+            "install · ops · enterprise · gate cert · quieter · tool-use · "
+            "workflow · measured cost/PR"
         ),
         "surfaces": results,
         "priority_surfaces": priority,
@@ -253,6 +344,7 @@ def build_report(root: Path | None = None) -> dict[str, Any]:
         "core_surfaces": [r for r in results if r.get("queue") == "core"],
         "estimate": est,
         "artifacts": artifacts,
+        "cost_honesty": cost_honesty,
         "all_surfaces_pass": all(r.get("ok") for r in results),
         "priority_pass": all(r.get("ok") for r in priority) if priority else False,
         "post_queue_pass": all(r.get("ok") for r in post) if post else False,
@@ -260,7 +352,10 @@ def build_report(root: Path | None = None) -> dict[str, Any]:
         "post_queue_complete": bool(post) and all(r.get("ok") for r in post),
     }
     report["commercial_ok"] = bool(
-        report["all_surfaces_pass"] and report["artifacts_ok"] and est["overall_est"] >= 7.5
+        report["all_surfaces_pass"]
+        and report["artifacts_ok"]
+        and est["overall_est"] >= 7.5
+        and bool(cost_honesty.get("cost_honesty_ok"))
     )
     return report
 
@@ -337,7 +432,28 @@ def render_md(report: dict[str, Any]) -> str:
             lines.append(
                 f"| `{r.get('id')}` | {r.get('target')} | {r.get('dim')} | {mark} |"
             )
+    cost = report.get("cost_honesty") or {}
     lines += [
+        "",
+        "## Cost honesty (measured dogfood)",
+        "",
+        cost.get("one_liner")
+        or "Measured dogfood cost/PR + time-to-signal (local vault only).",
+        "",
+        "| Metric | Value |",
+        "|--------|------:|",
+        f"| cost_honesty_ok | {cost.get('cost_honesty_ok')} |",
+        f"| cost_ok (≥5 hermes-usage + p50) | {cost.get('cost_ok')} |",
+        f"| cost samples | {cost.get('cost_n')} |",
+        f"| cost/PR p50 (USD) | {cost.get('cost_p50_usd')} |",
+        f"| time-to-signal p50 (s) | {cost.get('tts_p50_s')} |",
+        f"| cost dashboard not stub | {cost.get('cost_md_not_stub')} |",
+        f"| privacy: cost local (not federated) | {cost.get('privacy_cost_local')} |",
+        f"| landing measured dogfood | {cost.get('landing_measured')} |",
+        "",
+        "Audit: [cost-pr-dashboard.md](../ops/cost-pr-dashboard.md) · "
+        "[golden-path-metrics.md](golden-path-metrics.md) · "
+        "[enterprise/PRIVACY.md](../enterprise/PRIVACY.md).",
         "",
         "## Buyer artifacts",
         "",
@@ -354,6 +470,7 @@ def render_md(report: dict[str, Any]) -> str:
         "python3 scripts/commercial_scorecard.py report",
         "python3 scripts/commercial_scorecard.py fixture",
         "python3 scripts/torii.py commercial -- status",
+        "python3 scripts/torii.py ops -- status",
         "```",
         "",
         "Related: [GOLDEN-PATH](../GOLDEN-PATH.md) · "
@@ -362,6 +479,7 @@ def render_md(report: dict[str, Any]) -> str:
         "[GATE](../GATE.md) · "
         "[public-eval](public-eval/SCORECARD.md) · "
         "[ops](../ops/DASHBOARD.md) · "
+        "[cost/PR](../ops/cost-pr-dashboard.md) · "
         "[enterprise](../enterprise/)",
         "",
     ]
@@ -394,6 +512,7 @@ def cmd_fixture(args: argparse.Namespace) -> int:
     (root / OUT_JSON).write_text(
         json.dumps(report, indent=2, default=str) + "\n", encoding="utf-8"
     )
+    cost = report.get("cost_honesty") or {}
     payload = {
         "feature": FEATURE,
         "schema": SCHEMA,
@@ -401,6 +520,9 @@ def cmd_fixture(args: argparse.Namespace) -> int:
         "all_surfaces_pass": report.get("all_surfaces_pass"),
         "post_queue_complete": report.get("post_queue_complete"),
         "artifacts_ok": report.get("artifacts_ok"),
+        "cost_honesty_ok": bool(cost.get("cost_honesty_ok")),
+        "cost_ok": bool(cost.get("cost_ok")),
+        "cost_p50_usd": cost.get("cost_p50_usd"),
         "overall_est": (report.get("estimate") or {}).get("overall_est"),
         "surfaces_pass": (report.get("estimate") or {}).get("surfaces_pass"),
         "surfaces_total": (report.get("estimate") or {}).get("surfaces_total"),
@@ -424,6 +546,12 @@ def cmd_status(args: argparse.Namespace) -> int:
                         "commercial_ok": data.get("commercial_ok"),
                         "overall_est": (data.get("estimate") or {}).get("overall_est"),
                         "surfaces_pass": (data.get("estimate") or {}).get("surfaces_pass"),
+                        "cost_honesty_ok": (data.get("cost_honesty") or {}).get(
+                            "cost_honesty_ok"
+                        ),
+                        "cost_p50_usd": (data.get("cost_honesty") or {}).get(
+                            "cost_p50_usd"
+                        ),
                         "at": data.get("scored_at"),
                     },
                     indent=2,

@@ -750,9 +750,17 @@ def render_doctor_text(payload: dict[str, Any]) -> str:
         f"- hub-archival loop: {payload.get('hub_archival_loop_ok')}",
         f"- refine loop: {payload.get('refine_loop_ok')}",
         "",
+        "## Cost honesty (day-2)",
+        "- Measured dogfood cost/PR + time-to-signal: "
+        "`python3 scripts/torii.py ops -- status` · "
+        "`python3 scripts/torii.py commercial -- status`",
+        "- Tables: docs/ops/cost-pr-dashboard.md · "
+        "docs/benchmarks/commercial-scorecard.md (Cost honesty section)",
+        "- Telemetry is **local vault only** (not federated) — docs/enterprise/PRIVACY.md",
+        "",
         "## Next",
         "- Install: docs/INSTALL.md · require status **torii/gate**",
-        "- One CLI: python3 scripts/torii.py help|doctor|memory|gate",
+        "- One CLI: python3 scripts/torii.py help|doctor|memory|gate|ops",
         "- JSON: python3 scripts/torii.py doctor --json",
         "",
     ]

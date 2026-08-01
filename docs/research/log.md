@@ -1,4 +1,37 @@
 
+## 2026-08-01 — COMMERCIAL_COST: cost honesty panel on commercial rollup + doctor
+
+### Papers / posts
+- Loop Engineering: commercial rollup without cost/PR still under-sells measured honesty.
+- COST_PR + LANDING + ENTERPRISE privacy shipped; commercial-scorecard lacked cost section.
+- Day-2 doctor was silent on cost — operators only found ops dashboard by map.
+
+### Decide / copy / skip
+- **Copy:** commercial cost_honesty panel (p50 cost/TTS, privacy local, landing measured).
+- **Copy:** artifacts cost_pr_dashboard + landing; commercial_ok requires cost_honesty_ok.
+- **Copy:** doctor human text Cost honesty day-2 pointer (no F-IDs).
+- **Skip:** F185+; no new surface script weight (panel only).
+
+### Feature shipped (COMMERCIAL_COST)
+- commercial_scorecard Cost honesty section + fixture fields
+- torii doctor text cost/ops/commercial pointers
+
+### Metric
+- Offline: commercial cost_honesty_ok · cost_p50≈0.015 · fixture_pass · overall_est 8.5
+- Live Modal: pytorch#191840 BIT3_OK ~122.9s tools=5 POST_COMMENT=0 cert in vault
+- Traces: docs/benchmarks/traces/20260801-1649-pytorch-pytorch-PR191840-modal-commercial-cost/
+- Modal: https://modal.com/apps/mr-ashish/main/ap-c2ciRNy46UFW2lySOb8Uro
+
+### scorecard_target
+simplicity (#12) · ops (#8) · commercial trust
+
+### dim_lift
+one commercial rollup shows measured cost honesty next to queue surfaces
+
+### SHA
+`(pending push)`
+
+
 ## 2026-08-01 — ENTERPRISE_COST_PRIVACY: cost/PR telemetry is local, not federated
 
 ### Papers / posts
