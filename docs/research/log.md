@@ -31,7 +31,7 @@ Intelligence loops that never reach Modal waste F67 streaming. Highest ROI: **ma
 - pytest: 490 passed
 
 ### SHA
-`(pending push)`
+`2cd2963e7f68ffc53e358c394984647580f117f9`
 
 ## 2026-08-01 — F79 workflows-as-code + install capability guide
 
