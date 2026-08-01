@@ -390,6 +390,24 @@ REGISTRY: list[ToggleSpec] = [
         "F68 allow unattended adopt (default off — human gate)",
         "F68",
     ),
+    ToggleSpec(
+        "taint_prefilter",
+        "TORII_TAINT_PREFILTER",
+        "bool",
+        True,
+        "product",
+        "F71 deterministic source→sink prefilter inject into review prompt",
+        "F71",
+    ),
+    ToggleSpec(
+        "federated_signals",
+        "TORII_FEDERATED_SIGNALS",
+        "bool",
+        True,
+        "product",
+        "F71 inject privacy-safe federated TP/prefilter signals into prompt",
+        "F71",
+    ),
     # --- numeric knobs (still registry-documented) ---
     ToggleSpec(
         "issue_context_max",

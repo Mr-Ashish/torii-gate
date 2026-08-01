@@ -1,0 +1,26 @@
+{
+  "id": "taint-prefilter",
+  "name": "Deterministic source→sink prefilter (F71)",
+  "status": "adopted",
+  "source": "research_oss",
+  "kind": "workflow_tool",
+  "toolset": "terminal",
+  "script": "scripts/taint_prefilter.py",
+  "rationale": "SemTaint-style modular source/sink catalog + deepsec regex-prefilter pattern; static-led candidates guide agent before LLM prose; federated sanitize exports privacy-safe signals",
+  "eval": {
+    "scored_at": "2026-08-01T00:05:00Z",
+    "dims": {
+      "signal": 5,
+      "safety": 5,
+      "effort": 4,
+      "torii_fit": 5,
+      "cost": 5
+    },
+    "total": 24,
+    "max": 25,
+    "recommend": "adopt",
+    "notes": "offline insecure-demo recall=1.0; privacy-safe federate; live hermes tp=4"
+  },
+  "adopted_at": "2026-08-01T00:05:00Z",
+  "feature": "F71"
+}

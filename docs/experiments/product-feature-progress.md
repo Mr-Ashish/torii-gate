@@ -1,6 +1,6 @@
 # Product feature progress
 
-**Updated:** 2026-08-01 (F70 labeled bench + dual critic + TP memory)  
+**Updated:** 2026-08-01 (F71 taint prefilter + federated signals)  
 **Loop:** continuous product backlog
 
 ## SHIPPED
@@ -17,6 +17,7 @@
 | F68 | Agent tools research→eval→adopt | product, agent_quality | **shipping** |
 | F69 | Torii-native self-evolution (skills) | product, memory | **shipping** |
 | F70 | Labeled vuln bench + dual critic + TP sigs | agent_quality, memory, bench | **shipping** |
+| F71 | Taint prefilter + federated sanitized signals | agent_quality, tools, memory | **shipping** |
 
 ## IN_PROGRESS
 
@@ -26,21 +27,21 @@
 
 ## LEFT
 
-— Juice Shop full cases; federated TP aggregate across tenants; LLM critic pass
+— Juice Shop full cases; cross-tenant hub ingest of federated-signals; LLM second-agent critic
 
 ## Counts
 
-- **features_built_count:** 27 (F44–F70)
-- **types_built:** agent_quality, product, memory, ops, bench
+- **features_built_count:** 28 (F44–F71)
+- **types_built:** agent_quality, product, memory, ops, bench, tools
 - **left_count:** open research
 - **progress_pct:** n/a (open research loop)
 - **eta:** open research only
 - **active_worktrees:** none
-- **federated_memory_note:** F65 tenant path; F70 TP local (federation of TP next)
-- **agent_design_note:** F70 dual-pass offline critic; live LLM critic optional
-- **meta_loop_note:** bench metrics close the measure→promote→inject loop
+- **federated_memory_note:** F65 tenant path; F70 TP local; F71 sanitized aggregate (theme/CWE/keywords)
+- **agent_design_note:** F70 dual-pass offline critic; F71 static-led prefilter stage
+- **meta_loop_note:** bench + prefilter measure→promote→federate→inject
 - **milvus_corpus:** 3 + complex #6 F67 e2e
 
 ## Status line
 
-`features_built_count=27 types_built=agent_quality,product,memory,ops,bench f70=bench_dual_critic_tp`
+`features_built_count=28 types_built=agent_quality,product,memory,ops,bench,tools f71=taint_prefilter_federated`

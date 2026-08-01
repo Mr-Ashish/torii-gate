@@ -304,6 +304,74 @@ try:
 except Exception:
     tp_sigs_injected = "0"
 
+# F71: deterministic source→sink prefilter + federated sanitized signals
+taint_prefilter_on = "0"
+taint_candidates = "0"
+federated_signals_on = "0"
+try:
+    import sys as _sys_f71
+    _sys_f71.path.insert(0, str(torii_root / "scripts"))
+    from taint_prefilter import (  # type: ignore
+        enabled as taint_enabled,
+        scan_paths,
+        inject_into_prompt as inject_taint,
+        inject_federated_into_prompt,
+        federate as federate_signals,
+        default_fed_path,
+        load_json_list,
+    )
+
+    if taint_enabled():
+        _file_paths = []
+        for f in files:
+            p = f.get("path") or f.get("filename") or ""
+            if p:
+                # prefer workspace-relative paths under torii_root / WORKSPACE
+                for base in (Path(os.environ.get("WORKSPACE") or ".") , torii_root):
+                    cand = base / p
+                    if cand.is_file():
+                        _file_paths.append(cand)
+                        break
+                else:
+                    if Path(p).is_file():
+                        _file_paths.append(Path(p))
+        if not _file_paths:
+            # fall back: demo insecure when present (local dogfood)
+            _demo = torii_root / "demo" / "insecure"
+            if _demo.is_dir():
+                _file_paths = [_demo]
+        if _file_paths:
+            _scan = scan_paths(_file_paths, root=torii_root)
+            (out_dir / "taint-candidates.json").write_text(
+                __import__("json").dumps(_scan, indent=2) + "\n", encoding="utf-8"
+            )
+            if inject_taint(Path(os.environ["PROMPT_PATH"]), _scan):
+                taint_prefilter_on = "1"
+                taint_candidates = str(_scan.get("candidate_count") or 0)
+                prompt = Path(os.environ["PROMPT_PATH"]).read_text(encoding="utf-8")
+            # federate local TP + this scan into privacy-safe aggregate (soft)
+            try:
+                _fed_dest = default_fed_path(torii_root)
+                _tp = default_tp_path(torii_root) if "default_tp_path" in dir() else (torii_root / ".torii" / "tp-signatures.json")
+                try:
+                    from bench_security_gate import default_tp_path as _dtp  # type: ignore
+                    _tp = _dtp(torii_root)
+                except Exception:
+                    _tp = torii_root / ".torii" / "tp-signatures.json"
+                _tenant = (os.environ.get("TORII_MEMORY_TENANT") or "").strip()
+                _fed = federate_signals(tp_path=_tp if _tp.is_file() else None, scan=_scan, dest=_fed_dest, tenant=_tenant)
+                (out_dir / "federated-signals.json").write_text(
+                    __import__("json").dumps(_fed, indent=2) + "\n", encoding="utf-8"
+                )
+                _sigs_f = _fed.get("signals") or load_json_list(_fed_dest, "signals")
+                if _sigs_f and inject_federated_into_prompt(Path(os.environ["PROMPT_PATH"]), _sigs_f):
+                    federated_signals_on = "1"
+                    prompt = Path(os.environ["PROMPT_PATH"]).read_text(encoding="utf-8")
+            except Exception:
+                federated_signals_on = "0"
+except Exception:
+    taint_prefilter_on = "0"
+
 # F57: Mermaid architecture from changed files (soft)
 mermaid_on = "0"
 mermaid_nodes = "0"
@@ -459,6 +527,9 @@ meta = {
     "FP_RESOLVE_COUNT": fp_resolve_count,
     "SELF_EVOLVE_SKILLS": skills_injected,
     "TP_SIGNATURES": tp_sigs_injected,
+    "TAINT_PREFILTER": taint_prefilter_on,
+    "TAINT_CANDIDATES": taint_candidates,
+    "FEDERATED_SIGNALS": federated_signals_on,
 }
 with open(os.environ["META_PATH"], "w") as fh:
     for k, v in meta.items():

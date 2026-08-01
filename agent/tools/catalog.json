@@ -1,8 +1,8 @@
 {
   "schema_version": 1,
-  "feature": "F68",
+  "feature": "F71",
   "description": "Torii agent tool catalog \u2014 research \u2192 eval \u2192 adopt pipeline",
-  "updated_at": "2026-07-31T19:23:47Z",
+  "updated_at": "2026-08-01T00:02:43Z",
   "tools": [
     {
       "id": "terminal",
@@ -91,6 +91,32 @@
       },
       "adopted_at": "2026-07-31T19:23:47Z",
       "feature": "F68"
+    },
+    {
+      "id": "taint-prefilter",
+      "name": "Deterministic source\u2192sink prefilter + federated signals",
+      "status": "adopted",
+      "source": "research_oss",
+      "kind": "workflow_tool",
+      "toolset": "terminal",
+      "script": "scripts/taint_prefilter.py",
+      "rationale": "SemTaint + deepsec patterns: static source/sink catalog \u2192 agent context; privacy-safe federated aggregate",
+      "eval": {
+        "scored_at": "2026-08-01T00:05:00Z",
+        "dims": {
+          "signal": 5,
+          "safety": 5,
+          "effort": 4,
+          "torii_fit": 5,
+          "cost": 5
+        },
+        "total": 24,
+        "max": 25,
+        "recommend": "adopt",
+        "notes": "insecure-demo recall=1.0; live e2e tp=4; federate privacy_ok"
+      },
+      "adopted_at": "2026-08-01T00:05:00Z",
+      "feature": "F71"
     }
   ],
   "candidates": [
