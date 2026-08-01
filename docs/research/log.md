@@ -31,7 +31,7 @@ Always-priority compound ranks skills; paid recovery still only fired on full lo
 **Budgeted intervention** — hub bias chooses when to spend the one recovery re-prompt.
 
 ### SHA
-`PENDING`
+`cce8981d1837d109ff60cc10f8cc18089891eea4`
 
 ## 2026-08-01 — F125 hub recovery-util post-score compound
 
