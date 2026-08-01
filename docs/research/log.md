@@ -29,7 +29,7 @@ Federated scorecard util without hub post-score is inert data. Highest ROI: F125
 **Federate → post-score → prioritize next cycle** — scorecard ops mirror recovery F125.
 
 ### SHA
-`PENDING`
+`8927504cc973bc0f1f126833f2c33f0dca355e33`
 
 
 ## 2026-08-01 — F137 scorecard util soft re-prompt
