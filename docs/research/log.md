@@ -31,7 +31,7 @@ Intelligence features that never ship in `install-torii.sh` pack are dead to cus
 - pytest: 487 passed
 
 ### SHA
-`(pending push)`
+`40a471bf098f5b6d722b4bc2d151243f421fa7ef`
 
 ## 2026-08-01 — F78 multi-checker second-agent critic (maker/checker)
 
