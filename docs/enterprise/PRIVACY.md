@@ -44,12 +44,27 @@ python3 scripts/enterprise_surface.py fixture
 python3 scripts/federated_hub_ingest.py fixture
 ```
 
+## Cost / PR telemetry (local vault only)
+
+Measured dogfood cost and time-to-signal (landing/README/PRODUCT honesty numbers) live in the **hub operator vault** — not in multi-tenant federation.
+
+| Surface | What it stores | Cross-tenant? |
+|---------|----------------|:-------------:|
+| `docs/benchmarks/traces/` | Redacted run package: timings, hermes-usage USD estimate, gate certificate | **No** — local to the hub/dogfood checkout |
+| `docs/ops/cost-pr-dashboard.md` | Aggregate p50 cost/TTS from that vault | **No** |
+| `memory/federation/*.json` | Themes · CWE · basenames · tenant **hashes** · util bins | Themes only — **never** USD, token counts, Modal run URLs, or PR numbers |
+
+**Buyer line:** *You can publish cost honesty for your own dogfood without putting spend data into the federation graph.*
+
+Operators: `python3 scripts/torii.py ops -- status` · [`../ops/cost-pr-dashboard.md`](../ops/cost-pr-dashboard.md). Soft budget `TORII_MAX_COST_USD` is a **repo** GHA var — not a federated signal.
+
 ## Defaults
 
 | Setting | Default | Notes |
 |---------|---------|-------|
 | Repo-local `.torii/` | **on** | No hub required |
 | Hub federation | opt-in / hub-side | Themes only when enabled |
+| Cost / PR vault | local traces | Never promoted to federation |
 | `TORII_FED_MIN_TENANTS` | **2** | Single-tenant cannot promote alone |
 | Modal webhook open | **off** | See ops reliability |
 
@@ -57,4 +72,5 @@ python3 scripts/federated_hub_ingest.py fixture
 
 - Org isolation story: [ORG-ISOLATION.md](ORG-ISOLATION.md)  
 - Ops fail-closed: [`docs/ops/RELIABILITY.md`](../ops/RELIABILITY.md)  
-- Engine: `scripts/federated_hub_ingest.py` (F77+)
+- Cost dashboard: [`docs/ops/cost-pr-dashboard.md`](../ops/cost-pr-dashboard.md)  
+- Engine: `scripts/federated_hub_ingest.py`

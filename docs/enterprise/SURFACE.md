@@ -2,7 +2,7 @@
 
 # Enterprise surface inventory
 
-_Generated: `2026-08-01T15:44:51Z` · **enterprise_ok=True**_
+_Generated: `2026-08-01T16:42:44Z` · **enterprise_ok=True**_
 
 Org isolation + federation privacy as product docs and audit CLI — themes only, no paths/snippets/raw tenant IDs
 
@@ -12,6 +12,7 @@ Org isolation + federation privacy as product docs and audit CLI — themes only
 - tenant hashes only in global aggregates
 - promote requires min_tenants (default 2)
 - repo-local .torii/ default; hub opt-in
+- cost/PR dogfood vault stays local (never federated USD/tokens)
 
 ## Tenants (`memory/tenants/`) — n=6
 
@@ -47,8 +48,11 @@ Org isolation + federation privacy as product docs and audit CLI — themes only
 ## Docs
 
 - [ORG-ISOLATION.md](ORG-ISOLATION.md) — org isolation story
-- [PRIVACY.md](PRIVACY.md) — federation privacy one-pager
+- [PRIVACY.md](PRIVACY.md) — federation privacy one-pager + **cost/PR telemetry local**
 - [../FEDERATION.md](../FEDERATION.md) — buyer JTBD (merge-authority federation)
+- [../ops/cost-pr-dashboard.md](../ops/cost-pr-dashboard.md) — measured cost (not federated)
+
+Cost telemetry documented as local vault only: **True**
 
 ## Refresh
 

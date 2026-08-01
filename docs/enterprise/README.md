@@ -18,3 +18,5 @@ python3 scripts/torii.py federation -- status
 ```
 
 **Buyer line:** *Cross-tenant learning without paths, snippets, or raw org IDs.*
+
+**Cost honesty:** dogfood cost/PR and hermes-usage stay in the **local vault** — never federated. See [PRIVACY.md](PRIVACY.md) · Cost / PR telemetry.

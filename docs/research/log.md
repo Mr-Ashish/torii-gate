@@ -1,4 +1,36 @@
 
+## 2026-08-01 — ENTERPRISE_COST_PRIVACY: cost/PR telemetry is local, not federated
+
+### Papers / posts
+- Enterprise dim 9: cost honesty (README/PRODUCT) raised the question “does spend data leave the tenant?”
+- Federation privacy allowlist is themes/CWE/hashes — USD/tokens were implicit, not product copy.
+- Loop Engineering: measure what you ship; also document what you never share.
+
+### Decide / copy / skip
+- **Copy:** PRIVACY.md Cost/PR telemetry section (vault local; federation never USD).
+- **Copy:** ORG-ISOLATION guarantee #6; enterprise_surface fixture + SURFACE guarantee.
+- **Skip:** F185+; no new federation fields; no cost aggregation across tenants.
+
+### Feature shipped (ENTERPRISE_COST_PRIVACY)
+- PRIVACY + ORG-ISOLATION cost-local contract
+- enterprise_surface privacy_cost_telemetry_local checks + report
+
+### Metric
+- Offline: enterprise fixture_pass · enterprise_ok · commercial 10/10 · overall_est 8.5
+- Live Modal: pytorch#191840 BIT3_OK ~126.2s tools=3 POST_COMMENT=0 cert in vault
+- Traces: docs/benchmarks/traces/20260801-1642-pytorch-pytorch-PR191840-modal-ent-cost-priv/
+- Modal: https://modal.com/apps/mr-ashish/main/ap-vPDc8IZ3C7cz5liRjq8OCm
+
+### scorecard_target
+enterprise (#9) · JTBD trust
+
+### dim_lift
+enterprise buyers see cost honesty without fearing spend federation
+
+### SHA
+`(pending push)`
+
+
 ## 2026-08-01 — README_COST: measured dogfood on GitHub front door
 
 ### Papers / posts

@@ -1,0 +1,20 @@
+{
+  "feature": "ENTERPRISE_COST_PRIVACY",
+  "schema_version": 1,
+  "repo": "pytorch/pytorch",
+  "pr": "191840",
+  "model": "deepseek/deepseek-v4-pro",
+  "host": "modal",
+  "bit3": true,
+  "elapsed_s": 126.2,
+  "log_streaming": true,
+  "tool_call_turns": 3,
+  "post_comment": 0,
+  "verdict": "APPROVE",
+  "block": false,
+  "certificate_id": "gc-7d4a3cd3ec21d7e6",
+  "notes": "ENTERPRISE_COST_PRIVACY cost/PR local vault not federated",
+  "scored_at": "2026-08-01T16:45:38Z",
+  "modal_run": "https://modal.com/apps/mr-ashish/main/ap-vPDc8IZ3C7cz5liRjq8OCm",
+  "cost_usd": 0.021760091999999998
+}

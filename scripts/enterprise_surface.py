@@ -136,18 +136,39 @@ def docs_surface(root: Path) -> dict[str, bool]:
         if (root / OUT_REL / "PRIVACY.md").is_file()
         else ""
     )
+    org_txt = (
+        (root / OUT_REL / "ORG-ISOLATION.md").read_text(encoding="utf-8")
+        if (root / OUT_REL / "ORG-ISOLATION.md").is_file()
+        else ""
+    )
     fed_buyer = root / "docs" / "FEDERATION.md"
     fed_txt = fed_buyer.read_text(encoding="utf-8") if fed_buyer.is_file() else ""
+    # ENTERPRISE_COST_PRIVACY: cost/PR dogfood is local vault, not federated
+    privacy_cost_local = bool(
+        re.search(r"Cost\s*/\s*PR telemetry|cost/PR telemetry", privacy_txt, re.I)
+        and re.search(r"never|not.*(federat|cross.tenant)|local vault", privacy_txt, re.I)
+        and (
+            "cost-pr-dashboard" in privacy_txt
+            or "hermes-usage" in privacy_txt
+            or "benchmarks/traces" in privacy_txt
+        )
+    )
+    org_cost_local = bool(
+        re.search(r"Cost\s*/\s*PR telemetry stays local|cost/PR telemetry stays local", org_txt, re.I)
+        or (
+            "cost" in org_txt.lower()
+            and "federation" in org_txt.lower()
+            and re.search(r"never|local", org_txt, re.I)
+        )
+    )
     return {
         "readme": (root / OUT_REL / "README.md").is_file(),
         "org_isolation": (root / OUT_REL / "ORG-ISOLATION.md").is_file(),
         "privacy": (root / OUT_REL / "PRIVACY.md").is_file(),
         "privacy_names_allowlist": "tenant hash" in privacy_txt.lower(),
-        "org_diagram": "Org A" in (
-            (root / OUT_REL / "ORG-ISOLATION.md").read_text(encoding="utf-8")
-            if (root / OUT_REL / "ORG-ISOLATION.md").is_file()
-            else ""
-        ),
+        "privacy_cost_telemetry_local": privacy_cost_local,
+        "org_cost_telemetry_local": org_cost_local,
+        "org_diagram": "Org A" in org_txt,
         # Buyer JTBD front door (merge-authority federation, not only enterprise/)
         "federation_buyer_doc": fed_buyer.is_file(),
         "federation_buyer_mentions_privacy": (
@@ -213,6 +234,7 @@ def build_report(root: Path | None = None) -> dict[str, Any]:
             "tenant hashes only in global aggregates",
             "promote requires min_tenants (default 2)",
             "repo-local .torii/ default; hub opt-in",
+            "cost/PR dogfood vault stays local (never federated USD/tokens)",
         ],
         "paths": {
             "readme": str(OUT_REL / "README.md"),
@@ -227,6 +249,7 @@ def build_report(root: Path | None = None) -> dict[str, Any]:
         and docs.get("org_isolation")
         and docs.get("privacy")
         and docs.get("org_diagram")
+        and docs.get("privacy_cost_telemetry_local")
         and fed.get("all_ok")
         and hub.get("fixture_pass")
     )
@@ -275,13 +298,18 @@ def render_surface_md(report: dict[str, Any]) -> str:
         lines.append(
             f"| `{a.get('file')}` | {a.get('privacy_ok')} | {issues if a.get('ok') else '**'+issues+'**'} |"
         )
+    docs = report.get("docs") or {}
+    cost_ok = docs.get("privacy_cost_telemetry_local")
     lines += [
         "",
         "## Docs",
         "",
         "- [ORG-ISOLATION.md](ORG-ISOLATION.md) — org isolation story",
-        "- [PRIVACY.md](PRIVACY.md) — federation privacy one-pager",
+        "- [PRIVACY.md](PRIVACY.md) — federation privacy one-pager + **cost/PR telemetry local**",
         "- [../FEDERATION.md](../FEDERATION.md) — buyer JTBD (merge-authority federation)",
+        "- [../ops/cost-pr-dashboard.md](../ops/cost-pr-dashboard.md) — measured cost (not federated)",
+        "",
+        f"Cost telemetry documented as local vault only: **{cost_ok}**",
         "",
         "## Refresh",
         "",
@@ -323,6 +351,8 @@ def cmd_fixture(args: argparse.Namespace) -> int:
         "docs_org": bool(docs.get("org_isolation")),
         "docs_privacy": bool(docs.get("privacy")),
         "docs_org_diagram": bool(docs.get("org_diagram")),
+        "docs_privacy_cost_local": bool(docs.get("privacy_cost_telemetry_local")),
+        "docs_org_cost_local": bool(docs.get("org_cost_telemetry_local")),
         "docs_federation_buyer": bool(docs.get("federation_buyer_doc")),
         "docs_federation_buyer_privacy": bool(docs.get("federation_buyer_mentions_privacy")),
         "docs_federation_buyer_gate": bool(docs.get("federation_buyer_mentions_gate")),

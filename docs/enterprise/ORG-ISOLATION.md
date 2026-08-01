@@ -33,7 +33,8 @@
 2. **No raw tenant names in global aggregate fields** — hub stores **hashes** of tenant ids for counting, not `acme-corp`.  
 3. **Promote gate** — single-tenant noise/poison does not become multi-tenant “truth” until enough independent tenants share the theme.  
 4. **Repo-local remains default** — day-one install uses `.torii/` only; hub publish is opt-in (`TORII_MEMORY_MODE` / `TORII_HUB_PUBLISH`).  
-5. **Fail-closed reviews still apply** — zero-tool APPROVE is blocked regardless of tenant (see `docs/ops/RELIABILITY.md`).
+5. **Fail-closed reviews still apply** — zero-tool APPROVE is blocked regardless of tenant (see `docs/ops/RELIABILITY.md`).  
+6. **Cost / PR telemetry stays local** — hermes-usage USD estimates and dogfood vault rows never enter federation (see [PRIVACY.md](PRIVACY.md) · Cost / PR telemetry).
 
 ## Operator model
 

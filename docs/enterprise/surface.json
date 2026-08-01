@@ -3,7 +3,7 @@
   "schema": 1,
   "scorecard_target": "enterprise",
   "dim_lift": "enterprise light (dim 9) multi-tenant product surface",
-  "scored_at": "2026-08-01T14:42:43Z",
+  "scored_at": "2026-08-01T16:42:44Z",
   "one_liner": "Org isolation + federation privacy as product docs and audit CLI \u2014 themes only, no paths/snippets/raw tenant IDs",
   "tenants": [
     {
@@ -171,7 +171,12 @@
     "org_isolation": true,
     "privacy": true,
     "privacy_names_allowlist": true,
-    "org_diagram": true
+    "privacy_cost_telemetry_local": true,
+    "org_cost_telemetry_local": true,
+    "org_diagram": true,
+    "federation_buyer_doc": true,
+    "federation_buyer_mentions_privacy": true,
+    "federation_buyer_mentions_gate": true
   },
   "federated_hub_fixture": {
     "available": true,
@@ -184,12 +189,14 @@
     "no cross-tenant path inject via federation",
     "tenant hashes only in global aggregates",
     "promote requires min_tenants (default 2)",
-    "repo-local .torii/ default; hub opt-in"
+    "repo-local .torii/ default; hub opt-in",
+    "cost/PR dogfood vault stays local (never federated USD/tokens)"
   ],
   "paths": {
     "readme": "docs/enterprise/README.md",
     "org_isolation": "docs/enterprise/ORG-ISOLATION.md",
     "privacy": "docs/enterprise/PRIVACY.md",
+    "federation_buyer": "docs/FEDERATION.md",
     "surface_md": "docs/enterprise/SURFACE.md"
   },
   "enterprise_ok": true
