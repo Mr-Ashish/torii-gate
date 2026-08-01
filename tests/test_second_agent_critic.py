@@ -441,6 +441,86 @@ class SecondAgentCriticTests(unittest.TestCase):
             reasons = " ".join(data["decision"].get("reasons") or [])
             self.assertIn("memory_hub_gap", reasons)
 
+    def test_f150_recon_warm_hub_demotes_approve(self):
+        """F150: multi-tenant recon-warm heat + local hub ignore demotes APPROVE."""
+        with tempfile.TemporaryDirectory() as td:
+            root = Path(td)
+            fed = root / "memory" / "federation"
+            fed.mkdir(parents=True)
+            (fed / "recon-warm-signals.json").write_text(
+                json.dumps(
+                    {
+                        "signals": [
+                            {
+                                "id": "recon-warm-ok",
+                                "theme": "recon-warm-ok",
+                                "tags": ["recon_warm", "f148"],
+                                "hits": 5,
+                                "tenants": 3,
+                                "tenant_hashes": ["x", "y", "z"],
+                                "path_basenames": [],
+                            },
+                            {
+                                "id": "recon-warm-theme-pickle",
+                                "theme": "insecure_deserialization",
+                                "tags": ["recon_warm", "warm_theme", "f148"],
+                                "hits": 3,
+                                "tenants": 2,
+                                "tenant_hashes": ["x", "y"],
+                                "path_basenames": [],
+                            },
+                        ]
+                    }
+                )
+                + "\n",
+                encoding="utf-8",
+            )
+            od = root / "out"
+            od.mkdir()
+            (od / "archival-search.json").write_text(
+                json.dumps(
+                    {
+                        "mode": "auto",
+                        "hit_count": 1,
+                        "hub_boost_n": 0,
+                        "hub_themes": [],
+                        "hub_query": {"enabled": False},
+                    }
+                ),
+                encoding="utf-8",
+            )
+            review = root / "approve.md"
+            review.write_text(
+                "## Review\n**Verdict:** APPROVE\n\n### Summary\nok\n\n"
+                "### Blocking\nnone\n\n### What I checked\n`app.py:1` ok\n",
+                encoding="utf-8",
+            )
+            env = {
+                "TORII_ROOT": str(root),
+                "TORII_RECON_WARM_HUB_CRITIC": "1",
+                "TORII_RECON_WARM_HUB_THR": "0.2",
+                "TORII_RECON_WARM_FEDERATE": "1",
+                "TORII_RECON_WARM_HUB_QUERY": "1",
+                "TORII_SECOND_CRITIC_MIN_PATH": "0.1",
+            }
+            r = _run(
+                ["run", "--review", str(review), "--out-dir", str(od), "--force"],
+                env=env,
+            )
+            self.assertEqual(r.returncode, 0, r.stderr + r.stdout)
+            data = json.loads(r.stdout)
+            ids = [c["id"] for c in data.get("checkers") or []]
+            self.assertIn("f150_recon_warm_hub", ids)
+            rwh = next(c for c in data["checkers"] if c["id"] == "f150_recon_warm_hub")
+            self.assertFalse(rwh["ok"], rwh)
+            self.assertTrue(
+                data["decision"]["demoted"]
+                or data["decision"]["recommended_verdict"] != "APPROVE",
+                data["decision"],
+            )
+            reasons = " ".join(data["decision"].get("reasons") or [])
+            self.assertIn("recon_warm_hub", reasons)
+
 
 if __name__ == "__main__":
     unittest.main()

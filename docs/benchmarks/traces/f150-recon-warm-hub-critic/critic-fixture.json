@@ -1,0 +1,35 @@
+{
+  "feature": "F78",
+  "feature_hub_gap": "F127",
+  "feature_scorecard_hub_gap": "F139",
+  "feature_memory_util": "F141",
+  "feature_memory_hub_gap": "F143",
+  "feature_recon_warm_hub": "F150",
+  "fixture_pass": true,
+  "f139_ok": true,
+  "has_f139": true,
+  "f141_ok": true,
+  "has_f141": true,
+  "f143_ok": true,
+  "has_f143": true,
+  "f150_ok": true,
+  "has_f150": true,
+  "good_composite": 0.7205,
+  "weak_composite": 0.5217,
+  "delta": 0.1988,
+  "good_level": "L2",
+  "weak_level": "L1",
+  "weak_decision": {
+    "maker_verdict": "APPROVE",
+    "recommended_verdict": "COMMENT",
+    "demoted": true,
+    "reasons": [
+      "path_evidence_below_0.4 (0.3)"
+    ],
+    "path_evidence": 0.3,
+    "composite": 0.5217
+  },
+  "inject_ok": true,
+  "f127_ok": true,
+  "has_f127": true
+}

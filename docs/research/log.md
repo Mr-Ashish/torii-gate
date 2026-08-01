@@ -1,5 +1,36 @@
 # Torii research → product log
 
+## 2026-08-01 — F150 recon-warm hub critic demote
+
+### Papers / posts
+- F127/F139/F143 hub gap critics: multi-tenant pressure + local idle → demote.
+- F148/F149 recon-warm federate + hub query without enforcement leave APPROVE free.
+- Loop-eng maker/checker: federation without demote is dashboard theater.
+
+### OSS design patterns stolen
+1. run_f150_recon_warm_hub heat from multi-tenant recon-warm signals.
+2. local_idle when archival-search hub_boost_n=0 / hub themes empty under heat.
+3. decide_verdict demotes APPROVE; inject brief F150; fixture f150_ok.
+4. TORII_RECON_WARM_HUB_CRITIC / THR.
+
+### Insight
+Hub warm query without critic demote can be soft-disabled. Highest ROI: F150 demotes APPROVE when multi-tenant retrieval heat is ignored.
+
+### Feature shipped (F150)
+- second_agent f150_recon_warm_hub + decide_verdict + fixture/tests
+- PRODUCT/research/brand; traces
+
+### Metric
+- Offline: fixture f150_ok; pytest 620 passed
+- Live: Modal pytorch#191813 BIT3_OK ~61s REQUEST_CHANGES POST_COMMENT=0 log_streaming=true
+
+### Loop-engineering / Hermes practice used
+**Maker/checker demote on multi-tenant recon-warm ignore** — closed-loop federation.
+
+### SHA
+`PENDING`
+
+
 ## 2026-08-01 — F149 hub recon-warm → archival auto-query
 
 ### Papers / posts

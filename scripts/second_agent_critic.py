@@ -33,6 +33,8 @@ Env:
   TORII_MEMORY_UTIL_CRITIC      1 (default) | 0 — F141 memory util gap checker
   TORII_MEMORY_HUB_GAP_CRITIC   1 (default) | 0 — F143 memory hub gap_pressure checker
   TORII_MEMORY_HUB_GAP_THR      default 0.34 — multi-tenant memory util gap thr
+  TORII_RECON_WARM_HUB_CRITIC   1 (default) | 0 — F150 recon-warm hub ignore demote
+  TORII_RECON_WARM_HUB_THR      default 0.34 — multi-tenant recon-warm heat thr
 """
 
 from __future__ import annotations
@@ -52,6 +54,7 @@ FEATURE_HUB_GAP = "F127"
 FEATURE_SCORECARD_HUB_GAP = "F139"
 FEATURE_MEMORY_UTIL = "F141"
 FEATURE_MEMORY_HUB_GAP = "F143"
+FEATURE_RECON_WARM_HUB = "F150"
 SCHEMA = 1
 MARKER = "<!-- torii-f78-second-agent-critic -->"
 
@@ -799,6 +802,188 @@ def run_f143_memory_hub_gap(
         )
 
 
+def recon_warm_hub_critic_enabled() -> bool:
+    """F150: multi-tenant recon-warm heat ignored locally → critic demote."""
+    raw = (os.environ.get("TORII_RECON_WARM_HUB_CRITIC") or "1").strip().lower()
+    return raw not in _FALSEY
+
+
+def recon_warm_hub_thr() -> float:
+    raw = (os.environ.get("TORII_RECON_WARM_HUB_THR") or "0.34").strip()
+    try:
+        return max(0.0, min(1.0, float(raw)))
+    except ValueError:
+        return 0.34
+
+
+def run_f150_recon_warm_hub(
+    out_dir: Path | None,
+    root: Path | None = None,
+) -> CheckerResult:
+    """F150: multi-tenant recon-warm hub heat + local ignore → demote signal.
+
+    F148/F149 export and expand hub warm themes. If multi-tenant retrieval heat
+    is high but this run never hub-boosted archival hits (or never ran archival
+    auto with hub query), APPROVE is systemic risk — same maker/checker demote
+    pattern as F143 memory hub gap.
+    """
+    if not recon_warm_hub_critic_enabled():
+        return CheckerResult(
+            id="f150_recon_warm_hub",
+            name="Recon-warm hub heat (F150)",
+            ok=True,
+            score=0.5,
+            detail={"soft_skip": True, "reason": "recon_warm_hub_critic_off"},
+        )
+    _ensure_path()
+    root = root or _root()
+    thr = recon_warm_hub_thr()
+    try:
+        from archival_memory_search import (  # type: ignore
+            post_score_recon_warm_hub,
+            load_recon_warm_hub_signals,
+            recon_warm_hub_query_enabled,
+            recon_warm_federate_enabled,
+        )
+
+        if not recon_warm_federate_enabled() and not recon_warm_hub_query_enabled():
+            return CheckerResult(
+                id="f150_recon_warm_hub",
+                name="Recon-warm hub heat (F150)",
+                ok=True,
+                score=0.5,
+                detail={"soft_skip": True, "reason": "recon_warm_hub_off"},
+            )
+        hub = post_score_recon_warm_hub(root=root)
+        sigs = load_recon_warm_hub_signals(root=root)
+        theme_n = int(hub.get("theme_n") or len(hub.get("themes") or []))
+        max_tenants = 0
+        total_hits = 0
+        for s in sigs:
+            if not isinstance(s, dict):
+                continue
+            tn = int(s.get("tenants") or len(s.get("tenant_hashes") or []) or 1)
+            max_tenants = max(max_tenants, tn)
+            total_hits += int(s.get("hits") or 1)
+        # heat pressure: multi-tenant themes + hits (privacy fields only)
+        heat = min(
+            1.0,
+            0.25 * min(4, theme_n)
+            + 0.2 * min(4, max_tenants)
+            + 0.05 * min(10, total_hits),
+        )
+        multi = max_tenants >= 2 and theme_n >= 1
+        high = multi or heat >= thr
+
+        local: dict[str, Any] = {}
+        archival_path = None
+        if out_dir is not None:
+            od = Path(out_dir)
+            for name in (
+                "archival-search.json",
+                "archival_search.json",
+                "archival-auto.json",
+            ):
+                p = od / name
+                if p.is_file():
+                    archival_path = p
+                    break
+            if archival_path is not None:
+                try:
+                    local = json.loads(archival_path.read_text(encoding="utf-8"))
+                except (OSError, json.JSONDecodeError):
+                    local = {}
+
+        hub_boost_n = int(local.get("hub_boost_n") or 0)
+        hub_themes_local = list(local.get("hub_themes") or [])
+        hq = local.get("hub_query") if isinstance(local.get("hub_query"), dict) else {}
+        hub_query_on = bool(hq.get("enabled")) if hq else bool(
+            local.get("feature_hub_query") == "F149"
+        )
+        mode = str(local.get("mode") or "")
+        hit_count = int(local.get("hit_count") or 0)
+        used_hub = (
+            hub_boost_n >= 1
+            or bool(hub_themes_local)
+            or mode in ("auto_hub", "auto_graph_hub")
+            or hub_query_on
+        )
+        # local ignore: hub heat high but this run did not apply hub warm paging
+        if archival_path is None:
+            local_idle = high  # never produced archival artifact under multi-tenant heat
+            reason_idle = "no_archival_search_artifact"
+        elif high and not used_hub:
+            local_idle = True
+            reason_idle = "hub_warm_ignored"
+        elif high and hub_boost_n < 1 and theme_n >= 1 and hit_count >= 0:
+            # query may list themes but zero boosts still counts as weak use
+            local_idle = hub_boost_n < 1 and not hub_themes_local
+            reason_idle = "hub_boost_zero"
+        else:
+            local_idle = False
+            reason_idle = "hub_warm_applied" if used_hub else "hub_heat_low"
+
+        if not high:
+            return CheckerResult(
+                id="f150_recon_warm_hub",
+                name="Recon-warm hub heat (F150)",
+                ok=True,
+                score=1.0 if used_hub else 0.85,
+                detail={
+                    "feature": FEATURE_RECON_WARM_HUB,
+                    "heat": round(heat, 4),
+                    "thr": thr,
+                    "high": False,
+                    "theme_n": theme_n,
+                    "max_tenants": max_tenants,
+                    "hub_boost_n": hub_boost_n,
+                    "used_hub": used_hub,
+                    "privacy_ok": hub.get("privacy_ok"),
+                    "reason": "recon_warm_heat_below_thr",
+                },
+            )
+        if local_idle:
+            score = round(max(0.05, (1.0 - heat) * 0.35), 4)
+            ok = False
+            reason = f"recon_warm_hub_high_local_idle:{reason_idle}"
+        else:
+            score = 0.9
+            ok = True
+            reason = "recon_warm_hub_high_local_ok"
+        return CheckerResult(
+            id="f150_recon_warm_hub",
+            name="Recon-warm hub heat (F150)",
+            ok=ok,
+            score=round(score, 4),
+            detail={
+                "feature": FEATURE_RECON_WARM_HUB,
+                "heat": round(heat, 4),
+                "thr": thr,
+                "high": high,
+                "multi_tenant": multi,
+                "theme_n": theme_n,
+                "max_tenants": max_tenants,
+                "total_hits": total_hits,
+                "hub_boost_n": hub_boost_n,
+                "hub_themes_local_n": len(hub_themes_local),
+                "used_hub": used_hub,
+                "local_idle": local_idle,
+                "archival_artifact": archival_path.name if archival_path else None,
+                "privacy_ok": hub.get("privacy_ok"),
+                "reason": reason,
+            },
+        )
+    except Exception as e:
+        return CheckerResult(
+            id="f150_recon_warm_hub",
+            name="Recon-warm hub heat (F150)",
+            ok=True,
+            score=0.5,
+            error=str(e)[:200],
+            detail={"soft_fail": True},
+        )
+
+
 def run_f139_scorecard_hub_gap(
     out_dir: Path | None,
     root: Path | None = None,
@@ -973,6 +1158,7 @@ def composite_panel(checkers: list[CheckerResult]) -> dict[str, Any]:
         "f139_scorecard_hub_gap": 0.07,  # F139 multi-tenant scorecard util gap
         "f141_memory_util": 0.07,  # F141 Mem0/Letta tools-must-be-called
         "f143_memory_hub_gap": 0.07,  # F143 multi-tenant memory util gap
+        "f150_recon_warm_hub": 0.07,  # F150 multi-tenant recon-warm ignore
         "structure": 0.12,
         "f70_dual_critic": 0.20,
         "f72_chain": 0.16,
@@ -1104,6 +1290,18 @@ def decide_verdict(
                     "memory_hub_gap_pressure_idle "
                     f"({detail.get('gap_pressure')}>={detail.get('thr')})"
                 )
+        # F150: multi-tenant recon-warm heat ignored (no hub archival boost) → demote
+        rwh = next((c for c in checkers if c.id == "f150_recon_warm_hub"), None)
+        if rwh and not rwh.ok:
+            detail = rwh.detail or {}
+            if detail.get("high") and detail.get("local_idle"):
+                recommended = "COMMENT"
+                demoted = True
+                reasons.append(
+                    "recon_warm_hub_heat_idle "
+                    f"({detail.get('heat')}>={detail.get('thr')};"
+                    f"{detail.get('reason')})"
+                )
     elif maker == "UNKNOWN":
         recommended = "COMMENT"
         demoted = True
@@ -1141,6 +1339,7 @@ def run_panel(
         run_f139_scorecard_hub_gap(out_dir, root),
         run_f141_memory_util(out_dir, root),
         run_f143_memory_hub_gap(out_dir, root),
+        run_f150_recon_warm_hub(out_dir, root),
     ]
     # F81: optional LLM checker after deterministic panel draft
     panel_draft = {
@@ -1242,12 +1441,14 @@ def render_inject() -> str:
             "9. **F139 scorecard hub gap** — multi-tenant scorecard util gap + local idle → demote APPROVE",
             "10. **F141 memory util** — memory inject offered but unused tools → demote APPROVE",
             "11. **F143 memory hub gap** — multi-tenant memory util gap + local idle → demote APPROVE",
+            "12. **F150 recon-warm hub** — multi-tenant retrieval-hot themes ignored (no hub archival boost) → demote APPROVE",
             "",
             "**Default stance:** weak APPROVE without path evidence will be **demoted**.",
             "Prefer REQUEST CHANGES with path:line over narrative-only APPROVE.",
             "Call recovery CLIs (memory/doctor/critic) when hub gap pressure is elevated.",
             "Call scorecard ops CLIs (doctor/scorecard/demote-eval) when scorecard hub gap is elevated.",
             "Call memory CLIs (`torii.py memory -- search`) when memory inject was offered or hub memory gap is elevated.",
+            "Honor multi-tenant recon-warm hub themes (F149 archival auto hub query) when F150 heat is elevated.",
             "",
             "<!-- /torii-f78-second-agent-critic -->",
             "",
@@ -1372,6 +1573,7 @@ def cmd_fixture(args: argparse.Namespace) -> int:
             and "F139" in body
             and "F141" in body
             and "F143" in body
+            and "F150" in body
         )
 
     # F127: hub gap high + local idle + APPROVE → demote
@@ -1590,6 +1792,9 @@ def cmd_fixture(args: argparse.Namespace) -> int:
     has_f143 = any(
         c.get("id") == "f143_memory_hub_gap" for c in (g.get("checkers") or [])
     )
+    has_f150 = any(
+        c.get("id") == "f150_recon_warm_hub" for c in (g.get("checkers") or [])
+    )
     # F141: memory inject unused + APPROVE demote
     f141_ok = False
     try:
@@ -1755,6 +1960,121 @@ def cmd_fixture(args: argparse.Namespace) -> int:
     except Exception:
         f143_ok = False
 
+    # F150: multi-tenant recon-warm heat + local hub ignore → demote
+    f150_ok = False
+    try:
+        with tempfile.TemporaryDirectory() as td6:
+            root_r = Path(td6)
+            od = root_r / "out"
+            od.mkdir()
+            fed = root_r / "memory" / "federation"
+            fed.mkdir(parents=True)
+            (fed / "recon-warm-signals.json").write_text(
+                json.dumps(
+                    {
+                        "schema_version": 1,
+                        "feature": "F148",
+                        "privacy_ok": True,
+                        "signals": [
+                            {
+                                "id": "recon-warm-ok",
+                                "theme": "recon-warm-ok",
+                                "tags": ["recon_warm", "f148"],
+                                "hits": 6,
+                                "tenants": 3,
+                                "tenant_hashes": ["a", "b", "c"],
+                                "path_basenames": [],
+                            },
+                            {
+                                "id": "recon-warm-theme-sql-injection",
+                                "theme": "sql_injection",
+                                "tags": ["recon_warm", "warm_theme", "f148"],
+                                "hits": 4,
+                                "tenants": 2,
+                                "tenant_hashes": ["a", "b"],
+                                "path_basenames": [],
+                            },
+                        ],
+                    }
+                )
+                + "\n",
+                encoding="utf-8",
+            )
+            # archival ran without hub warm (ignore multi-tenant heat)
+            (od / "archival-search.json").write_text(
+                json.dumps(
+                    {
+                        "mode": "auto",
+                        "hit_count": 2,
+                        "hub_boost_n": 0,
+                        "hub_themes": [],
+                        "hub_query": {"enabled": False, "themes": []},
+                        "feature_hub_query": None,
+                    }
+                )
+                + "\n",
+                encoding="utf-8",
+            )
+            prev_root = os.environ.get("TORII_ROOT")
+            prev_thr = os.environ.get("TORII_RECON_WARM_HUB_THR")
+            os.environ["TORII_ROOT"] = str(root_r)
+            os.environ["TORII_RECON_WARM_HUB_CRITIC"] = "1"
+            os.environ["TORII_RECON_WARM_HUB_THR"] = "0.2"
+            os.environ["TORII_RECON_WARM_FEDERATE"] = "1"
+            os.environ["TORII_RECON_WARM_HUB_QUERY"] = "1"
+            try:
+                chk_r = run_f150_recon_warm_hub(od, root=root_r)
+                fake_panel = {"composite": 0.8, "level": "L2"}
+                dec_r = decide_verdict(
+                    "APPROVE",
+                    fake_panel,
+                    [
+                        CheckerResult(
+                            id="structure",
+                            name="s",
+                            ok=True,
+                            score=1.0,
+                            detail={"path_mentions": 5},
+                        ),
+                        CheckerResult(
+                            id="f73_fitness",
+                            name="f",
+                            ok=True,
+                            score=1.0,
+                            detail={"path_evidence": 0.9},
+                        ),
+                        chk_r,
+                    ],
+                )
+                if chk_r.detail and chk_r.detail.get("soft_skip"):
+                    f150_ok = False
+                else:
+                    f150_ok = (
+                        (
+                            not chk_r.ok
+                            and bool((chk_r.detail or {}).get("local_idle"))
+                            and bool((chk_r.detail or {}).get("high"))
+                        )
+                        or (
+                            dec_r.get("demoted")
+                            and any(
+                                "recon_warm_hub" in str(r)
+                                for r in (dec_r.get("reasons") or [])
+                            )
+                        )
+                    )
+            finally:
+                if prev_root is None:
+                    os.environ.pop("TORII_ROOT", None)
+                else:
+                    os.environ["TORII_ROOT"] = prev_root
+                if prev_thr is None:
+                    os.environ.pop("TORII_RECON_WARM_HUB_THR", None)
+                else:
+                    os.environ["TORII_RECON_WARM_HUB_THR"] = prev_thr
+    except Exception:
+        f150_ok = False
+
     fixture_pass = (
         good_ok
         and weak_ok
@@ -1768,6 +2088,8 @@ def cmd_fixture(args: argparse.Namespace) -> int:
         and has_f141
         and f143_ok
         and has_f143
+        and f150_ok
+        and has_f150
     )
     print(
         json.dumps(
@@ -1777,6 +2099,7 @@ def cmd_fixture(args: argparse.Namespace) -> int:
                 "feature_scorecard_hub_gap": FEATURE_SCORECARD_HUB_GAP,
                 "feature_memory_util": FEATURE_MEMORY_UTIL,
                 "feature_memory_hub_gap": FEATURE_MEMORY_HUB_GAP,
+                "feature_recon_warm_hub": FEATURE_RECON_WARM_HUB,
                 "fixture_pass": fixture_pass,
                 "f139_ok": f139_ok,
                 "has_f139": has_f139,
@@ -1784,6 +2107,8 @@ def cmd_fixture(args: argparse.Namespace) -> int:
                 "has_f141": has_f141,
                 "f143_ok": f143_ok,
                 "has_f143": has_f143,
+                "f150_ok": f150_ok,
+                "has_f150": has_f150,
                 "good_composite": g_comp,
                 "weak_composite": w_comp,
                 "delta": round(delta, 4),

@@ -216,6 +216,8 @@ budget always → compact body → score tool_hit → util gap? → budgeted re-
 
 **Hub warm → archival query (F149):** multi-tenant recon-warm themes **expand archival auto-query and soft-boost hit ranking** (`TORII_RECON_WARM_HUB_QUERY=1`) so cross-tenant retrieval heat pages related cold TPs even without local co_path — F148 export compounds into the next PR’s search, not write-only federation.
 
+**Recon-warm hub critic (F150):** second-agent checker `f150_recon_warm_hub` **demotes APPROVE** when multi-tenant retrieval-hot themes are present but this run ignored hub archival boost (`TORII_RECON_WARM_HUB_CRITIC=1`) — closed-loop federation enforced by maker/checker, not dashboards alone.
+
 **Ops:** `python3 scripts/memory_loop_status.py scorecard` → L0–L3. Smoke requires L3 on the hub tree. CI job summary annotates readiness; optional advisory `torii/memory-loop` via `TORII_MEMORY_LOOP_STATUS_COMMIT=1`.
 
 ---
