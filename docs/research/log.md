@@ -30,7 +30,7 @@ Compound TP/FP memory without scope ranking wastes tokens and can re-raise dismi
 - pytest: 467 passed
 
 ### SHA
-`(pending push)`
+`9857d14012e867c4bbd62c79677e79e7dbc4f704`
 
 ## 2026-08-01 — F74 fitness-gated skill evolution (SkillOpt / GEPA-lite)
 
