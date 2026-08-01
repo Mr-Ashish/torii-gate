@@ -1,4 +1,35 @@
 
+## 2026-08-01 — GTM_README: product surfaces map on GitHub front door
+
+### Papers / posts
+- Loop Engineering: one discoverable operator map beats research log archaeology.
+- Simplicity #12: README was missing QUIETER/MEMORY/WORKFLOWS/FEDERATION after shipping them.
+- Buyer narrative: keep F-IDs off primary README (budget already enforced).
+
+### Decide / copy / skip
+- **Copy:** README product surfaces table (doc + torii.py command per surface).
+- **Copy:** buyer_narrative check `readme_product_surfaces`.
+- **Copy:** drop residual F67/F82 on live e2e blurb.
+- **Skip:** F185+; no new product modules.
+
+### Feature shipped (GTM_README)
+- README product surfaces map · buyer narrative fixture check · zero F-IDs on README
+
+### Metric
+- Offline: buyer 19/19 · commercial 10/10
+- Live Modal: pytorch#191840 BIT3_OK ~157.9s tools=9 POST_COMMENT=0
+- Traces: docs/benchmarks/traces/20260801-1558-pytorch-pytorch-PR191840-modal-gtm-readme/
+
+### scorecard_target
+simplicity (#12) · JTBD (#3)
+
+### dim_lift
+GitHub front door maps every buyer surface to one CLI
+
+### SHA
+_pending_
+
+
 ## 2026-08-01 — MEMORY: buyer compound-memory surface (FP die twice)
 
 ### Papers / posts

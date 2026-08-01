@@ -110,6 +110,13 @@ def check_surfaces(root: Path) -> dict[str, Any]:
     results["checks"]["readme_links_buyer"] = bool(
         re.search(r"BUYER-DIAGRAM|buyer diagram|How Torii works", rm, re.I)
     )
+    # README product surface map (simplicity: operators find docs without F-table)
+    results["checks"]["readme_product_surfaces"] = bool(
+        re.search(r"Product surfaces", rm, re.I)
+        and "QUIETER.md" in rm
+        and "MEMORY.md" in rm
+        and "commercial" in rm.lower()
+    )
 
     # F-number budgets on *primary* slices (before Advanced)
     prod_primary = _primary_section(

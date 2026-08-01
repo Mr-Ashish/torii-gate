@@ -78,14 +78,26 @@ python3 scripts/golden_path_metrics.py report          # → docs/benchmarks/gol
 
 **5-minute install:** [`docs/INSTALL.md`](docs/INSTALL.md) · golden path: [`docs/GOLDEN-PATH.md`](docs/GOLDEN-PATH.md) · metrics: [`docs/benchmarks/golden-path-metrics.md`](docs/benchmarks/golden-path-metrics.md).
 
+### Product surfaces (one CLI)
+
+Day-one path stays install → require **`torii/gate`** → first review. Everything below is the same product, discoverable without research F-IDs:
+
+| Surface | Doc | Command |
+|---------|-----|---------|
+| Install / doctor | [`docs/INSTALL.md`](docs/INSTALL.md) | `python3 scripts/torii.py doctor` |
+| Golden path + cost/PR | [`docs/GOLDEN-PATH.md`](docs/GOLDEN-PATH.md) | `python3 scripts/torii.py golden-path -- status` |
+| Gate certificate | [`docs/GATE.md`](docs/GATE.md) | `python3 scripts/torii.py certificate -- fixture` |
+| Quieter over time | [`docs/QUIETER.md`](docs/QUIETER.md) | `python3 scripts/torii.py quieter -- status` |
+| Tool-use quality | [`docs/TOOL-USE.md`](docs/TOOL-USE.md) | `python3 scripts/torii.py tool-use -- status` |
+| Workflows-as-code | [`docs/WORKFLOWS.md`](docs/WORKFLOWS.md) | `python3 scripts/torii.py workflow -- scorecard` |
+| Memory (FP die twice) | [`docs/MEMORY.md`](docs/MEMORY.md) | `python3 scripts/torii.py memory -- doctor` |
+| Federation | [`docs/FEDERATION.md`](docs/FEDERATION.md) | `python3 scripts/torii.py federation -- status` |
+| Self-evolution (day-2) | [`docs/SELF-EVOLVE.md`](docs/SELF-EVOLVE.md) | `python3 scripts/torii.py self-evolve -- status` |
+| Enterprise light | [`docs/enterprise/`](docs/enterprise/) | `python3 scripts/torii.py enterprise -- status` |
+| **Commercial rollup** | [`docs/benchmarks/commercial-scorecard.md`](docs/benchmarks/commercial-scorecard.md) | `python3 scripts/torii.py commercial -- status` |
+
 **Public labeled eval** (Juice Shop + NodeGoat + Django/Flask themes, fixed seed):  
 [`docs/benchmarks/public-eval/SCORECARD.md`](docs/benchmarks/public-eval/SCORECARD.md) · `python3 scripts/public_eval.py report`
-
-**Enterprise light** (org isolation + federation privacy):  
-[`docs/enterprise/`](docs/enterprise/) · `python3 scripts/enterprise_surface.py status`
-
-**Commercial scorecard** (priority queue 1–6 rollup →7.5+):  
-[`docs/benchmarks/commercial-scorecard.md`](docs/benchmarks/commercial-scorecard.md) · `python3 scripts/commercial_scorecard.py report`
 
 Install on a **target** repo: copy workflow pack or point `torii_repository` at this hub (see `pack/`).
 
@@ -99,7 +111,7 @@ modal run modal_app/app.py --bit 3 --repo owner/name --pr N \
 modal run modal_app/app.py --bit 3 --repo owner/name --pr N --llm-critic --no-post-comment
 ```
 
-Hermes logs stream to the Modal UI (F67). Skills evolve offline with regression gates (F82).
+Hermes logs stream to the Modal UI. Skills evolve offline with dual-gate adopt (see [`docs/SELF-EVOLVE.md`](docs/SELF-EVOLVE.md)).
 
 ## Stack (reused control plane)
 
