@@ -1,0 +1,7 @@
+{
+  "id": "skill-attribution",
+  "feature": "F88",
+  "script": "scripts/skill_attribution.py",
+  "status": "adopted",
+  "one_liner": "Leave-one-out skill contribution; reject free-riders on adopt"
+}

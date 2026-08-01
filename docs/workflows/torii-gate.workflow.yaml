@@ -199,6 +199,10 @@ capabilities:
     feature: F87
     script: scripts/skill_auto_adopt.py
     one_liner: Dual-rollout contribution_pp>0 required before skill adopt (gate)
+  - id: skill_attribution
+    feature: F88
+    script: scripts/skill_attribution.py
+    one_liner: Per-skill LOO attribution; reject free-riders before adopt
   - id: eval_trace_report
     feature: F83
     script: scripts/eval_trace_report.py
@@ -240,4 +244,5 @@ pack_scripts:
   - skill_router.py
   - skill_fitness.py
   - skill_dual_rollout.py
+  - skill_attribution.py
   - smoke-torii-gate.sh

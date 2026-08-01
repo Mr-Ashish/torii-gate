@@ -31,6 +31,10 @@ Platform / AppSec engineer who needs every PR checked for security without drown
 
 **Measured gate.** Multi-corpus labeled benches (Python insecure-demo + Juice Shop synthetic) score recall before shipping harness changes.
 
+## Per-skill attribution (F88)
+
+Pack-level dual-rollout is necessary but not sufficient. Leave-one-out + unique keyword attribution identifies **free-rider** skills that never solo-hit; auto-adopt rejects them even when F74 validate says adopt.
+
 ## Adopt only if skills contribute (F87)
 
 Skill auto-adopt (F82) now requires the F86 dual-rollout gate: `skill_contribution_pp > 0` (with-skills vs ablated). Zero-contribution libraries never enter `agent/skills/active/` even if F74 validate says adopt.

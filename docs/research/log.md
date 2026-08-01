@@ -1,5 +1,35 @@
 # Torii research → product log
 
+## 2026-08-01 — F88 per-skill LOO attribution (reject free-riders)
+
+### Papers / posts / OSS
+- **Not All Skills Help / Assay** (arXiv 2606.15390): retire inert skills; per-task masking beats global purge.
+- Ablation LOO as component attribution for trustworthy gates.
+- Prior F86/F87: pack-level contribution_pp only — free-riders could still bulk-adopt.
+
+### OSS / eng patterns
+1. solo_hit + unique keywords + LOO delta → contribution score.
+2. free_rider = no solo_hit and no unique (always-on floored).
+3. auto-adopt reject `f88_zero_attribution` unless --force.
+
+### Insight
+Pack dual-rollout is necessary but not sufficient. Highest ROI: **attribute which skill drives the delta**.
+
+### Feature shipped (F88)
+- `scripts/skill_attribution.py` attribute/rank/filter/fixture
+- skill_auto_adopt F88 gate + per-proposal attribution filter
+- pack/workflow/PRODUCT; tests
+
+### Loop-engineering practice used
+**Component ablation** — LOO + unique coverage before promote.
+
+### Metric
+- Offline: fixture_pass; free-rider contribution=0; gate f88 ok; 520 pytest
+- Live: **Modal** pytorch#191813 deepseek/deepseek-v4-pro BIT3_OK ~93s; log_streaming=true; POST_COMMENT=0
+
+### SHA
+_PENDING_
+
 ## 2026-08-01 — F87 dual contribution gate on skill auto-adopt
 
 ### Papers / posts / OSS

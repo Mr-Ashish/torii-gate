@@ -1,0 +1,126 @@
+{
+  "feature": "F88",
+  "schema": 1,
+  "scored_at": "2026-08-01T02:04:58Z",
+  "paths": [
+    "demo/insecure/app.py",
+    "demo/insecure/db.py"
+  ],
+  "selected": [
+    "skill-preserve-deep-tools",
+    "skill-tool-depth-hunks",
+    "skill-f74-exploit-scenario",
+    "skill-f74-prefer-chain-json"
+  ],
+  "hit_rate_full": 1.0,
+  "hit_n_full": 4,
+  "skills": [
+    {
+      "id": "skill-tool-depth-hunks",
+      "solo_hit": true,
+      "n_matched": 9,
+      "matched": [
+        "head",
+        "diff",
+        "hunk",
+        "tool",
+        "prefer",
+        "hunks",
+        "over",
+        "file"
+      ],
+      "unique": [
+        "head",
+        "diff",
+        "hunk",
+        "hunks",
+        "over",
+        "file",
+        "heads"
+      ],
+      "n_unique": 7,
+      "loo_delta_hit_rate": 0.0,
+      "contribution": 4.5,
+      "free_rider": false,
+      "always": true
+    },
+    {
+      "id": "skill-f74-exploit-scenario",
+      "solo_hit": true,
+      "n_matched": 7,
+      "matched": [
+        "attacker trigger",
+        "sink",
+        "attacker",
+        "pickle",
+        "trigger",
+        "request changes",
+        "skill"
+      ],
+      "unique": [
+        "attacker trigger",
+        "attacker",
+        "pickle",
+        "trigger",
+        "request changes"
+      ],
+      "n_unique": 5,
+      "loo_delta_hit_rate": 0.0,
+      "contribution": 3.5,
+      "free_rider": false,
+      "always": false
+    },
+    {
+      "id": "skill-f74-prefer-chain-json",
+      "solo_hit": true,
+      "n_matched": 7,
+      "matched": [
+        "unvalidated",
+        "taint",
+        "chain",
+        "sink",
+        "candidate",
+        "skill",
+        "prefer"
+      ],
+      "unique": [
+        "unvalidated",
+        "taint",
+        "chain",
+        "candidate"
+      ],
+      "n_unique": 4,
+      "loo_delta_hit_rate": 0.0,
+      "contribution": 3.0,
+      "free_rider": false,
+      "always": false
+    },
+    {
+      "id": "skill-preserve-deep-tools",
+      "solo_hit": true,
+      "n_matched": 2,
+      "matched": [
+        "tool",
+        "tools"
+      ],
+      "unique": [
+        "tools"
+      ],
+      "n_unique": 1,
+      "loo_delta_hit_rate": 0.0,
+      "contribution": 1.5,
+      "free_rider": false,
+      "always": true
+    }
+  ],
+  "contributing": [
+    "skill-tool-depth-hunks",
+    "skill-f74-exploit-scenario",
+    "skill-f74-prefer-chain-json",
+    "skill-preserve-deep-tools"
+  ],
+  "free_riders": [],
+  "min_contribution": 0.01,
+  "n_contributing": 4,
+  "n_free_riders": 0
+}

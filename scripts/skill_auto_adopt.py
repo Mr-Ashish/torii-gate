@@ -24,6 +24,7 @@ Env:
   TORII_SKILL_AUTO_ADOPT     0 (default) | 1 — enable cycle in CI/post-run
   TORII_SKILL_AUTO_ADOPT_CORPUS  0 (default) | 1 — also require bench_corpus all
   TORII_SKILL_AUTO_ADOPT_DUAL    1 (default) | 0 — require F86 dual contribution_pp>0
+  TORII_SKILL_AUTO_ADOPT_ATTR    1 (default) | 0 — require F88 per-skill attribution>0
   TORII_SKILL_AUTO_ADOPT_MAX     default 3 skills per cycle
   TORII_ROOT
 """
@@ -72,6 +73,12 @@ def corpus_gate_enabled() -> bool:
 def dual_gate_enabled() -> bool:
     """F87: SkillsBench-style contribution gate (default on)."""
     raw = (os.environ.get("TORII_SKILL_AUTO_ADOPT_DUAL") or "1").strip().lower()
+    return raw not in _FALSEY
+
+
+def attribution_gate_enabled() -> bool:
+    """F88: per-skill LOO attribution before adopt (default on)."""
+    raw = (os.environ.get("TORII_SKILL_AUTO_ADOPT_ATTR") or "1").strip().lower()
     return raw not in _FALSEY
 
 
@@ -258,6 +265,15 @@ def run_regression_gates(root: Path) -> dict[str, Any]:
                         "rc": 2,
                     }
                 )
+    # F88: per-skill attribution fixture (library health)
+    attr_script = _scripts() / "skill_attribution.py"
+    if attribution_gate_enabled() and attr_script.is_file():
+        product = Path(__file__).resolve().parents[1]
+        run(
+            "f88_skill_attribution",
+            [sys.executable, str(attr_script), "fixture"],
+            cwd=product if (product / "docs/benchmarks/fixtures/insecure-demo-good-review.md").is_file() else root,
+        )
     if corpus_gate_enabled():
         run(
             "f76_corpus_all",
@@ -267,6 +283,36 @@ def run_regression_gates(root: Path) -> dict[str, Any]:
     results["passed"] = all(g.get("ok") for g in results["gates"]) if results["gates"] else False
     results["at"] = _now()
     return results
+
+
+def _proposal_attribution(root: Path, proposal_id: str) -> dict[str, Any]:
+    """F88: score proposal contribution on dual good+enriched review."""
+    try:
+        sys.path.insert(0, str(_scripts()))
+        from skill_attribution import (  # type: ignore
+            attribute_proposal,
+            enrich_review,
+            DEFAULT_GOOD,
+        )
+
+        prop = root / "agent" / "skills" / "proposals" / f"{proposal_id}.md"
+        if not prop.is_file():
+            # also try product root for active skills being re-checked
+            prop = root / "agent" / "skills" / "active" / f"{proposal_id}.md"
+        body = prop.read_text(encoding="utf-8", errors="replace") if prop.is_file() else ""
+        good = root / DEFAULT_GOOD
+        if not good.is_file():
+            good = Path(__file__).resolve().parents[1] / DEFAULT_GOOD
+        text = enrich_review(good.read_text(encoding="utf-8", errors="replace") if good.is_file() else "")
+        return attribute_proposal(proposal_id, body, text)
+    except Exception as exc:
+        return {
+            "id": proposal_id,
+            "error": str(exc)[:120],
+            "contribution": 0.0,
+            "free_rider": True,
+            "solo_hit": False,
+        }
 
 
 def adopt_one(root: Path, proposal_id: str, *, force: bool = False) -> dict[str, Any]:
@@ -282,6 +328,18 @@ def adopt_one(root: Path, proposal_id: str, *, force: bool = False) -> dict[str,
             "recommend": vr.recommend,
             "reasons": vr.reasons,
         }
+    # F88: per-skill attribution — free-riders do not adopt
+    attr: dict[str, Any] | None = None
+    if attribution_gate_enabled() and not force:
+        attr = _proposal_attribution(root, proposal_id)
+        if attr.get("free_rider") or float(attr.get("contribution") or 0) <= 0:
+            return {
+                "ok": False,
+                "id": proposal_id,
+                "error": "f88_zero_attribution",
+                "attribution": attr,
+                "recommend": vr.recommend,
+            }
     result = adopt_proposal(root, proposal_id, force=force)
     if result.get("ok"):
         ledger = _load_ledger(root)
@@ -292,8 +350,10 @@ def adopt_one(root: Path, proposal_id: str, *, force: bool = False) -> dict[str,
                 "id": proposal_id,
                 "feature": FEATURE,
                 "f87": True,
+                "f88": True,
                 "total": vr.total,
                 "forced": force,
+                "attribution": attr,
             }
         )
         ledger["skill_auto_adopts"] = hist[-50:]
@@ -326,7 +386,7 @@ def cycle(
     adopted = []
     rejected = []
     for c in candidates:
-        # re-validate immediately before adopt
+        # re-validate immediately before adopt (+ F88 attribution)
         res = adopt_one(root, c["id"], force=force)
         if res.get("ok"):
             adopted.append(res)
@@ -448,6 +508,7 @@ def cmd_status(args: argparse.Namespace) -> int:
                 "f87": True,
                 "enabled": enabled(),
                 "dual_gate": dual_gate_enabled(),
+                "attr_gate": attribution_gate_enabled(),
                 "corpus_gate": corpus_gate_enabled(),
                 "candidates": len(cands),
                 "candidate_ids": [c["id"] for c in cands],

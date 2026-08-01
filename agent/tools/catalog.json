@@ -1,8 +1,8 @@
 {
   "schema_version": 1,
-  "feature": "F86",
+  "feature": "F88",
   "description": "Torii agent tool catalog \u2014 research \u2192 eval \u2192 adopt pipeline",
-  "updated_at": "2026-08-01T01:52:42Z",
+  "updated_at": "2026-08-01T02:02:38Z",
   "tools": [
     {
       "id": "terminal",
@@ -309,6 +309,15 @@
       "script": "scripts/skill_dual_rollout.py",
       "feature": "F86",
       "rationale": "SkillsBench with/ablated contribution + multi-tenant skill promote",
+      "adopted_at": "2026-08-01"
+    },
+    {
+      "id": "skill-attribution",
+      "name": "Per-skill LOO attribution (F88)",
+      "status": "adopted",
+      "script": "scripts/skill_attribution.py",
+      "feature": "F88",
+      "source": "research",
       "adopted_at": "2026-08-01"
     }
   ],
