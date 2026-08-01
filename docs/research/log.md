@@ -28,7 +28,7 @@ Proposals without dual-gate adopt are backlog theater. Highest ROI: close F132 w
 **Verifier before merge** — scorecard-gap skills enter active only after dual+attr gates.
 
 ### SHA
-`PENDING`
+`b711f25600b42eae59f76a32c862ac7d0461b356`
 
 ## 2026-08-01 — F132 self-evolve from scorecard gap themes
 
