@@ -31,7 +31,7 @@ simplicity (#12) · evidence / merge-authority honesty
 certificate surface shows vault cert×cost without ops archaeology
 
 ### SHA
-_pending_
+`5d953ffa6e057dfa807e295a35c0b239918da477`
 
 
 ## 2026-08-01 — GATE_COST_PAIR: certificate × cost on GATE contract
@@ -1336,7 +1336,7 @@ Validation gates on recovery — dual_pass without contribution is not re-entry.
 - Hermes self-evolution / SkillOpt: validation-gated recovery after reject.
 
 ### OSS design patterns stolen
-1. Sticky multi_tenant_decay after local dual_pass (`local_revive_pending_mt`, soft boost only).
+1. Sticky multi_tenant_decay after local dual_pass (`local_revive5d953ffa6e057dfa807e295a35c0b239918da477mt`, soft boost only).
 2. Full clear + always re-boost only on FederatedSkill promote_refine_dual_revive.
 3. Router free-rider soft Δprio; prompt free-rider line.
 4. Critic `f176_free_rider_revive` + demote-eval `free_rider_revive_idle_approve`.
