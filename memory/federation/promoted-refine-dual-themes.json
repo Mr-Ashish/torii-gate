@@ -1,0 +1,17 @@
+{
+  "schema_version": 1,
+  "feature": "F168",
+  "scope": "promoted_refine_dual_themes",
+  "updated_at": "2026-08-01T11:57:13Z",
+  "min_tenants": 2,
+  "min_hits": 2,
+  "min_pp": 1.0,
+  "source_skill_n": 1,
+  "promoted_n": 0,
+  "blocked": [
+    "skill-prefer-memory-cli-early"
+  ],
+  "privacy": "skill_id_bins_tenant_hash_only",
+  "privacy_ok": true,
+  "signals": []
+}

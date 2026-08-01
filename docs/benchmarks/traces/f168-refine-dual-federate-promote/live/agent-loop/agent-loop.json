@@ -1,0 +1,283 @@
+{
+  "schema_version": 1,
+  "captured_at": "2026-08-01T11:57:12Z",
+  "model": "deepseek/deepseek-v4-pro",
+  "provider": "openrouter",
+  "session_id": "20260801_172631_cb33a2",
+  "hermes_home": "/Users/ashishmishra/Documents/experiments/torii/.torii-hermes-home",
+  "usage": {
+    "estimated_cost_usd": 0.009896424,
+    "cost_status": "estimated",
+    "cost_source": "provider_models_api",
+    "input_tokens": 17908,
+    "output_tokens": 2370,
+    "cache_read_tokens": 12288,
+    "cache_write_tokens": 0,
+    "reasoning_tokens": 747,
+    "total_tokens": 32566,
+    "api_calls": 3,
+    "model": "deepseek/deepseek-v4-pro",
+    "provider": "openrouter",
+    "session_id": "20260801_172631_cb33a2",
+    "completed": true,
+    "failed": false,
+    "service_tier": null
+  },
+  "tool_call_turns": 2,
+  "message_count": 9,
+  "steps": [
+    {
+      "step": 0,
+      "kind": "user",
+      "role": "user",
+      "timestamp": 1785585392.33829,
+      "content_preview": "<!-- torii-f142-memory-util-hub -->\n## Federated memory util (F142 hub compound)\n\nCross-tenant memory tool outcomes (skill/tool themes + util bins only; no paths):\n- `skill-prefer-memory-cli-early`: hits=5 tenants=1 tool_hits=5 \u0394prio=+38 bin=hit\n- Hub memory util_ok hits=3 \u2014 keep memory tools in the loop.\n<!-- /torii-f142-memory-util-hub -->\n\n# Task\nYou are Torii Gate security reviewer. Review the following file for vulnerabilities.\nProduce Markdown with **Verdict:**, **Score:**, ### Summary, ### Blocking,\n### Security audit, ### Key findings, ### Tests & risk, ### What I checked.\nEvery finding MUST cite a path (use `demo/insecure/app.py`). Prefer high-severity issues.\n\n**Repo:** local-bench\n**File under review:** `demo/insecure/app.py`\n\n<!-- torii-f70-tp-signatures -->\n## Known true-positive signatures (F70 compound memory)\n\nThese patterns were confirmed on labeled benches or prior TP promotions.\nPrefer raising path-evidenced findings that match; do not skip them as noise.\n\n- `sqli-search` theme=sql_injection cwe=CWE-89 hits=11 keywords=[sql injection, sqli, f-string, f\"select, string-formatted, execute(f, cur.execute(f, cwe-89]\n- `pickle-load` theme=insecure_deserialization cwe=CWE-502 hits=11 keywords=[pickle, deserialize, deserialization, unsafe load, cwe-502, pickle.loads]\n- `cmdi-run` theme=command_injection cwe=CWE-78 hits=11 keywords=[command injection, shell=true, os command, rce, subprocess, cwe-78, shell injection]\n- `secret-exposure` theme=secrets_exposure cwe=CWE-200,CWE-798 hits=11 keywords=[secret, api key, api_key, openrouter, credential, exposes, exposure]\n\n\n```python\n\"\"\"Demo insecure snippet for Torii Gate dogfood \u2014 DO NOT deploy.\"\"\"\n\nfrom flask import Flask, request\nimport sqlite3\nimport os\nimport pickle\nimport subprocess\n\napp = Flask(__name__)\n\n\n@app.get(\"/search\")\ndef search():\n    # intentional SQL injection for gate demo\n    q = request.args.get(\"q\", \"\")\n    con = sqlite3.connect(\"app.db\")\n    cur = con.cursor()\n    cur.execute(f\"SELECT * FROM",
+      "content_bytes": 2005
+    },
+    {
+      "step": 1,
+      "kind": "assistant_tool_calls",
+      "role": "assistant",
+      "timestamp": 1785585400.8022919,
+      "content_preview": "Let me start by checking what tools/scripts are available and gathering context before producing",
+      "content_bytes": 96,
+      "tool_calls": [
+        {
+          "id": "call_83b7b1ab1ab349efb5cc723d",
+          "name": "terminal",
+          "arguments_preview": "{\"command\": \"ls scripts/torii.py scripts/torii_memory.py scripts/archival_memory_search.py 2>&1\", \"workdir\": \"/Users/ashishmishra/Documents/experiments/torii\"}"
+        },
+        {
+          "id": "call_19bf989aa2044aff8cfc6a2b",
+          "name": "terminal",
+          "arguments_preview": "{\"command\": \"python3 scripts/torii.py doctor 2>&1 || python3 scripts/torii.py status 2>&1\", \"workdir\": \"/Users/ashishmishra/Documents/experiments/torii\"}"
+        },
+        {
+          "id": "call_96dc8361cd1e462ab4498618",
+          "name": "terminal",
+          "arguments_preview": "{\"command\": \"python3 scripts/torii.py memory -- search -- -q \\\"sql OR pickle OR secret OR command\\\" 2>&1\", \"workdir\": \"/Users/ashishmishra/Documents/experiments/torii\"}"
+        }
+      ]
+    },
+    {
+      "step": 2,
+      "kind": "tool_result",
+      "role": "tool",
+      "timestamp": 1785585401.083303,
+      "content_preview": "{\"output\": \"scripts/archival_memory_search.py\\nscripts/torii.py\\nscripts/torii_memory.py\", \"exit_code\": 0, \"error\": null}",
+      "content_bytes": 121,
+      "tool_name": "terminal"
+    },
+    {
+      "step": 3,
+      "kind": "tool_result",
+      "role": "tool",
+      "timestamp": 1785585401.364458,
+      "content_preview": "{\"output\": \"{\\n  \\\"feature\\\": \\\"F110\\\",\\n  \\\"feature_recovery\\\": \\\"F128\\\",\\n  \\\"feature_recon_warm_hub\\\": \\\"F151\\\",\\n  \\\"feature_hub_archival_util\\\": \\\"F155\\\",\\n  \\\"feature_hub_archival_util_critic\\\": \\\"F156\\\",\\n  \\\"feature_hub_archival_loop\\\": \\\"F163\\\",\\n  \\\"feature_scorecard_ops\\\": \\\"F135\\\",\\n  \\\"doctor_pass\\\": true,\\n  \\\"recovery_ok\\\": true,\\n  \\\"recovery_active\\\": [\\n    \\\"skill-prefer-memory-cli-early\\\",\\n    \\\"skill-prefer-product-cli\\\",\\n    \\\"skill-prefer-critic-early\\\",\\n    \\\"skill-prefer-hub-archival-early\\\"\\n  ],\\n  \\\"recovery_hub_gap_ok\\\": true,\\n  \\\"recon_warm_hub_ok\\\": true,\\n  \\\"hub_archival_util_ok\\\": true,\\n  \\\"hub_archival_util_critic_ok\\\": true,\\n  \\\"hub_archival_hub_ok\\\": true,\\n  \\\"hub_archival_hub_inject_ok\\\": true,\\n  \\\"router_synth_ok\\\": true,\\n  \\\"reprompt_adaptive_ok\\\": true,\\n  \\\"hub_archival_fitness_ok\\\": true,\\n  \\\"hub_archival_loop_ok\\\": true,\\n  \\\"scorecard_ops\\\": {\\n    \\\"feature\\\": \\\"F135\\\",\\n    \\\"active_n\\\": 0,\\n    \\\"active\\\": [],\\n    \\\"fed_n\\\": 0,\\n    \\\"fitness_ingested_n\\\": 0,\\n    \\\"scorecard_ops_ok\\\": false,\\n    \\\"privacy_ok\\\": true,\\n    \\\"fed_skill_n\\\": 0,\\n    \\\"fitness_skills\\\": [],\\n    \\\"last_scorecard_ingest_n\\\": 0\\n  },\\n  \\\"scorecard_ops_ok\\\": false,\\n  \\\"results\\\": [\\n    {\\n      \\\"check\\\": \\\"memory\\\",\\n      \\\"ok\\\": true,\\n      \\\"rc\\\": 0\\n    },\\n    {\\n      \\\"check\\\": \\\"memory_loop\\\",\\n      \\\"ok\\\": true,\\n      \\\"rc\\\": 0\\n    },\\n    {\\n      \\\"check\\\": \\\"budget\\\",\\n      \\\"ok\\\": true,\\n      \\\"rc\\\": 0\\n    },\\n    {\\n      \\\"check\\\": \\\"skill_loop\\\",\\n      \\\"ok\\\": true,\\n      \\\"rc\\\": 0,\\n      \\\"recovery_ok\\\": true,\\n      \\\"recovery_active\\\": [\\n        \\\"skill-prefer-memory-cli-early\\\",\\n        \\\"skill-prefer-product-cli\\\",\\n        \\\"skill-prefer-critic-early\\\",\\n        \\\"skill-prefer-hub-archival-early\\\"\\n      ],\\n      \\\"recovery_hub_gap_ok\\\": true,\\n      \\\"recon_warm_hub_ok\\\": true,\\n      \\\"hub_archival_util_ok\\\": true,\\n      \\\"hub_archival_util_critic_ok\\\": true,\\n      \\\"hub_archival_hub_ok\\",
+      "content_bytes": 2000,
+      "tool_name": "terminal"
+    },
+    {
+      "step": 4,
+      "kind": "tool_result",
+      "role": "tool",
+      "timestamp": 1785585401.493958,
+      "content_preview": "{\"output\": \"{\\n  \\\"feature\\\": \\\"F98\\\",\\n  \\\"query\\\": \\\"sql OR pickle OR secret OR command\\\",\\n  \\\"tokens\\\": [\\n    \\\"sql\\\",\\n    \\\"or\\\",\\n    \\\"pickle\\\",\\n    \\\"or\\\",\\n    \\\"secret\\\",\\n    \\\"or\\\",\\n    \\\"command\\\"\\n  ],\\n  \\\"hit_count\\\": 8,\\n  \\\"total_candidates\\\": 37,\\n  \\\"hits\\\": [\\n    {\\n      \\\"id\\\": \\\"sqli-search\\\",\\n      \\\"source\\\": \\\"tp\\\",\\n      \\\"tier_hint\\\": \\\"archival\\\",\\n      \\\"theme\\\": \\\"sql_injection\\\",\\n      \\\"keywords\\\": [\\n        \\\"sql injection\\\",\\n        \\\"sqli\\\",\\n        \\\"f-string\\\",\\n        \\\"f\\\\\\\"select\\\",\\n        \\\"string-formatted\\\",\\n        \\\"execute(f\\\",\\n        \\\"cur.execute(f\\\",\\n        \\\"cwe-89\\\"\\n      ],\\n      \\\"path_globs\\\": [\\n        \\\"demo/insecure/app.py\\\",\\n        \\\"insecure/app.py\\\",\\n        \\\"app.py\\\"\\n      ],\\n      \\\"hits\\\": 11,\\n      \\\"effective_score\\\": 1.0,\\n      \\\"score\\\": 0.7214,\\n      \\\"preview\\\": \\\"sql_injection sql injection sqli f-string f\\\\\\\"select string-formatted execute(f cur.execute(f cwe-89 demo/insecure/app.py insecure/app.py app.py sqli-search\\\"\\n    },\\n    {\\n      \\\"id\\\": \\\"sql_injection\\\",\\n      \\\"source\\\": \\\"federated\\\",\\n      \\\"tier_hint\\\": \\\"archival\\\",\\n      \\\"theme\\\": \\\"sql_injection\\\",\\n      \\\"keywords\\\": [\\n        \\\"sql injection\\\",\\n        \\\"sqli\\\",\\n        \\\"f-string\\\",\\n        \\\"f\\\\\\\"select\\\",\\n        \\\"string-formatted\\\",\\n        \\\"execute(f\\\",\\n        \\\"cur.execute(f\\\",\\n        \\\"cwe-89\\\"\\n      ],\\n      \\\"path_globs\\\": [],\\n      \\\"hits\\\": 22,\\n      \\\"effective_score\\\": 0.0,\\n      \\\"score\\\": 0.4714,\\n      \\\"preview\\\": \\\"sql_injection sql injection sqli f-string f\\\\\\\"select string-formatted execute(f cur.execute(f cwe-89\\\"\\n    },\\n    {\\n      \\\"id\\\": \\\"memory:1:## review craft\\\",\\n      \\\"source\\\": \\\"memory_md\\\",\\n      \\\"tier_hint\\\": \\\"recall\\\",\\n      \\\"theme\\\": \\\"review_history\\\",\\n      \\\"keywords\\\": [\\n        \\\"review\\\",\\n        \\\"craft\\\",\\n        \\\"focus\\\",\\n        \\\"findings\\\",\\n        \\\"on\\\",\\n        \\\"new\\\",\\n        \\\"code\\\",\\n        \\\"int",
+      "content_bytes": 2000,
+      "tool_name": "terminal"
+    },
+    {
+      "step": 5,
+      "kind": "assistant_tool_calls",
+      "role": "assistant",
+      "timestamp": 1785585411.228571,
+      "content_preview": "",
+      "content_bytes": 0,
+      "tool_calls": [
+        {
+          "id": "call_755c8306b5b44340a953d156",
+          "name": "terminal",
+          "arguments_preview": "{\"command\": \"python3 scripts/archival_memory_search.py auto --files demo/insecure/app.py 2>&1\", \"workdir\": \"/Users/ashishmishra/Documents/experiments/torii\"}"
+        },
+        {
+          "id": "call_e61b987b182543199ae864bf",
+          "name": "terminal",
+          "arguments_preview": "{\"command\": \"python3 scripts/torii.py budget -- status 2>&1\", \"workdir\": \"/Users/ashishmishra/Documents/experiments/torii\"}"
+        }
+      ]
+    },
+    {
+      "step": 6,
+      "kind": "tool_result",
+      "role": "tool",
+      "timestamp": 1785585411.317334,
+      "content_preview": "{\"output\": \"{\\n  \\\"feature\\\": \\\"F98\\\",\\n  \\\"feature_graph\\\": \\\"F144\\\",\\n  \\\"feature_supersede\\\": \\\"F145\\\",\\n  \\\"feature_recon\\\": \\\"F146\\\",\\n  \\\"mode\\\": \\\"auto_graph_hub\\\",\\n  \\\"paths\\\": [\\n    \\\"demo/insecure/app.py\\\"\\n  ],\\n  \\\"query\\\": \\\"app.py app command injection sql injection insecure deserialization secrets exposure sql_injection command_injection secrets_exposure insecure_deserialization sql injection pickle\\\",\\n  \\\"hit_count\\\": 8,\\n  \\\"superseded_filtered\\\": 0,\\n  \\\"reconsolidated_n\\\": 4,\\n  \\\"reconsolidation\\\": {\\n    \\\"enabled\\\": true,\\n    \\\"updated_n\\\": 4,\\n    \\\"ids\\\": [\\n      \\\"sqli-search\\\",\\n      \\\"cmdi-run\\\",\\n      \\\"secret-exposure\\\",\\n      \\\"pickle-load\\\"\\n    ],\\n    \\\"soft_skip\\\": false,\\n    \\\"privacy_ok\\\": true,\\n    \\\"written\\\": true,\\n    \\\"themes\\\": [\\n      \\\"sql injection\\\",\\n      \\\"command injection\\\",\\n      \\\"secrets exposure\\\",\\n      \\\"insecure deserialization\\\"\\n    ],\\n    \\\"tp_path\\\": \\\"tp-signatures.json\\\",\\n    \\\"ledger\\\": \\\"archival-reconsolidation.json\\\"\\n  },\\n  \\\"feature_recon_fed\\\": \\\"F148\\\",\\n  \\\"feature_hub_query\\\": \\\"F149\\\",\\n  \\\"recon_federate\\\": {\\n    \\\"feature\\\": \\\"F148\\\",\\n    \\\"fed_path\\\": \\\"memory/federation/recon-warm-signals.json\\\",\\n    \\\"fed_n\\\": 5,\\n    \\\"privacy_ok\\\": true,\\n    \\\"hub\\\": {\\n      \\\"feature\\\": \\\"F77\\\",\\n      \\\"global_count\\\": 30,\\n      \\\"privacy_ok\\\": true\\n    },\\n    \\\"themes\\\": [\\n      \\\"sql_injection\\\",\\n      \\\"command_injection\\\",\\n      \\\"secrets_exposure\\\",\\n      \\\"insecure_deserialization\\\"\\n    ],\\n    \\\"signals\\\": [\\n      {\\n        \\\"id\\\": \\\"recon-warm-ok\\\",\\n        \\\"theme\\\": \\\"recon-warm-ok\\\",\\n        \\\"hits\\\": 36\\n      },\\n      {\\n        \\\"id\\\": \\\"recon-warm-theme-sql_injection\\\",\\n        \\\"theme\\\": \\\"sql_injection\\\",\\n        \\\"hits\\\": 9\\n      },\\n      {\\n        \\\"id\\\": \\\"recon-warm-theme-command_injection\\\",\\n        \\\"theme\\\": \\\"command_injection\\\",\\n        \\\"hits\\\": 9\\n      },\\n      {\\n        \\\"id\\\": \\\"recon-warm-theme-secrets_exposure\\\",\\n        \\\"",
+      "content_bytes": 2000,
+      "tool_name": "terminal"
+    },
+    {
+      "step": 7,
+      "kind": "tool_result",
+      "role": "tool",
+      "timestamp": 1785585411.4041228,
+      "content_preview": "{\"output\": \"{\\n  \\\"feature\\\": \\\"F108\\\",\\n  \\\"enabled\\\": true,\\n  \\\"env_max_extra\\\": 1,\\n  \\\"state\\\": {\\n    \\\"schema\\\": 1,\\n    \\\"feature\\\": \\\"F108\\\",\\n    \\\"feature_adaptive\\\": \\\"F159\\\",\\n    \\\"enabled\\\": true,\\n    \\\"max_extra\\\": 1,\\n    \\\"base_max_extra\\\": 1,\\n    \\\"used\\\": 0,\\n    \\\"remaining\\\": 1,\\n    \\\"attempts\\\": [],\\n    \\\"blocked\\\": [],\\n    \\\"adaptive_expanded\\\": false,\\n    \\\"updated_at\\\": \\\"2026-08-01T11:56:51Z\\\"\\n  },\\n  \\\"path\\\": null\\n}\", \"exit_code\": 0, \"error\": null}",
+      "content_bytes": 489,
+      "tool_name": "terminal"
+    },
+    {
+      "step": 8,
+      "kind": "assistant",
+      "role": "assistant",
+      "timestamp": 1785585432.521893,
+      "content_preview": "All tool checks confirm the four TP signatures at max confidence. Here is the review.\n\n---\n\n**Verdict:** REQUEST CHANGES\n**Score:** 5/100\n\n### Summary\n\nThis file is a deliberately insecure Flask demo containing four critical vulnerabilities on four separate endpoints \u2014 each independently would block merge. Zero mitigations, zero input validation, zero safe defaults. Not production-viable in any sense; the `\"\"\"DO NOT deploy\"\"\"` docstring is the only defense and it is not a control.\n\n### Blocking\n\nAll four findings below are independently blocking. Each has a concrete, trivially exploitable trigger path.\n\n### Security audit\n\n**No.** Four confirmed criticals, no safe endpoints.\n\n### Key findings\n\n1.  **SQL Injection \u2014 `demo/insecure/app.py:16`**\n    `cur.execute(f\"SELECT * FROM items WHERE name = '{q}'\")`\n    CWE-89. User-controlled `q` (query param, line 13) interpolated via f-string directly into SQL. No parameterization.\n    *Attacker trigger:* `GET /search?q=' UNION SELECT 1,2,3 --` exfiltrates arbitrary table data; `GET /search?q='; DROP TABLE items; --` destroys data.\n    **Severity: CRITICAL.**\n\n2.  **Insecure Deserialization \u2014 `demo/insecure/app.py:23`**\n    `pickle.loads(data)` where `data = request.data` (line 22, raw POST body).\n    CWE-502. Untrusted pickle input yields arbitrary code execution via `__reduce__` gadget chains.\n    *Attacker trigger:* `POST /load` with a crafted pickle payload \u2014 attacker achieves RCE on the server process.\n    **Severity: CRITICAL.**\n\n3.  **Command Injection \u2014 `demo/insecure/app.py:28`**\n    `subprocess.check_output(cmd, shell=True)` where `cmd = request.args.get(\"cmd\", \"echo hi\")` (line 27).\n    CWE-78. `shell=True` passes the string through `/bin/sh`, enabling shell metacharacter injection.\n    *Attacker trigger:* `GET /run?cmd=cat /etc/passwd` reads files; `GET /run?cmd=; rm -rf /` (or reverse shell payload) achieves full host compromise.\n    **Severity: CRITICAL.**\n\n4.  **Secret Exposure \u2014 `demo/insecure/app.py:32`**\n    ",
+      "content_bytes": 2012
+    }
+  ],
+  "messages": [
+    {
+      "id": 117,
+      "session_id": "20260801_172631_cb33a2",
+      "role": "user",
+      "content": "<!-- torii-f142-memory-util-hub -->\n## Federated memory util (F142 hub compound)\n\nCross-tenant memory tool outcomes (skill/tool themes + util bins only; no paths):\n- `skill-prefer-memory-cli-early`: hits=5 tenants=1 tool_hits=5 \u0394prio=+38 bin=hit\n- Hub memory util_ok hits=3 \u2014 keep memory tools in the loop.\n<!-- /torii-f142-memory-util-hub -->\n\n# Task\nYou are Torii Gate security reviewer. Review the following file for vulnerabilities.\nProduce Markdown with **Verdict:**, **Score:**, ### Summary, ### Blocking,\n### Security audit, ### Key findings, ### Tests & risk, ### What I checked.\nEvery finding MUST cite a path (use `demo/insecure/app.py`). Prefer high-severity issues.\n\n**Repo:** local-bench\n**File under review:** `demo/insecure/app.py`\n\n<!-- torii-f70-tp-signatures -->\n## Known true-positive signatures (F70 compound memory)\n\nThese patterns were confirmed on labeled benches or prior TP promotions.\nPrefer raising path-evidenced findings that match; do not skip them as noise.\n\n- `sqli-search` theme=sql_injection cwe=CWE-89 hits=11 keywords=[sql injection, sqli, f-string, f\"select, string-formatted, execute(f, cur.execute(f, cwe-89]\n- `pickle-load` theme=insecure_deserialization cwe=CWE-502 hits=11 keywords=[pickle, deserialize, deserialization, unsafe load, cwe-502, pickle.loads]\n- `cmdi-run` theme=command_injection cwe=CWE-78 hits=11 keywords=[command injection, shell=true, os command, rce, subprocess, cwe-78, shell injection]\n- `secret-exposure` theme=secrets_exposure cwe=CWE-200,CWE-798 hits=11 keywords=[secret, api key, api_key, openrouter, credential, exposes, exposure]\n\n\n```python\n\"\"\"Demo insecure snippet for Torii Gate dogfood \u2014 DO NOT deploy.\"\"\"\n\nfrom flask import Flask, request\nimport sqlite3\nimport os\nimport pickle\nimport subprocess\n\napp = Flask(__name__)\n\n\n@app.get(\"/search\")\ndef search():\n    # intentional SQL injection for gate demo\n    q = request.args.get(\"q\", \"\")\n    con = sqlite3.connect(\"app.db\")\n    cur = con.cursor()\n    cur.execute(f\"SELECT * FROM items WHERE name = '{q}'\")\n    return {\"rows\": cur.fetchall()}\n\n\n@app.post(\"/load\")\ndef load():\n    # intentional unsafe deserialize\n    data = request.data\n    return {\"obj\": str(pickle.loads(data))}\n\n\n@app.get(\"/run\")\ndef run_cmd():\n    # intentional command injection\n    cmd = request.args.get(\"cmd\", \"echo hi\")\n    return {\"out\": subprocess.check_output(cmd, shell=True).decode()}\n\n\n@app.get(\"/secret\")\ndef secret():\n    return {\"key\": os.environ.get(\"OPENROUTER_API_KEY\", \"missing\")}\n\n```\n\n<!-- torii-f84-skill-router -->\n## Skill router (F84/F119/F120 \u2014 progressive disclosure + compact)\n\nUse the **index** for awareness; follow **selected full skills** as reviewer discipline.\nRouted themes: chain, cmdi, pickle, python, review, secrets, sqli, taint, tools.\n\n### Skill index (all active)\n\n- `skill-archival-memory-search` \u2014 Archival memory search when cold facts may apply [general]\n- `skill-f74-exploit-scenario` \u2605 \u2014 skill-f74-exploit-scenario [exploit,attacker,sqli,cmdi]\n- `skill-f74-prefer-chain-json` \u2014 skill-f74-prefer-chain-json [taint,chain,python,javascript]\n- `skill-prefer-critic-early` \u2014 skill-prefer-critic-early [critic,checker,path,evidence]\n- `skill-prefer-hub-archival-early` \u2605 \u2014 skill-prefer-hub-archival-early [archival,hub,recon_warm,memory]\n- `skill-prefer-memory-cli-early` \u2605 \u2014 skill-prefer-memory-cli-early [memory,cli,search,graph]\n- `skill-prefer-product-cli` \u2605 \u2014 skill-prefer-product-cli [product,cli,doctor,status]\n- `skill-preserve-deep-tools` \u2014 Preserve deep tool patterns that worked [review,tools,depth,deep_tools]\n- `skill-soft-tool-nudge` \u2014 Soft mid-review tool nudge [review,tools,h10_soft_nudge]\n- `skill-tool-depth-hunks` \u2014 Tool depth: prefer diff hunks over file heads [review,diff,tools,zero_tools]\n\n### Selected full skills\n\n#### skill-prefer-memory-cli-early\n\n---\n---\n\n## Skill: prefer-memory-cli-early\n\n1. Before finishing findings, call:\n   `python3 scripts/torii.py memory -- search -- -q \"auth OR sql OR pickle OR secret\"`\n   or `python3 scripts/torii_memory.py search -- -q \"theme keywords\"`\n2. Prefer search/graph on changed basenames before re-raising old themes.\n3. Treat hits as hints only \u2014 still require path:line evidence to block.\n4. Do not wait for F106 re-prompt \u2014 early use saves the F108 recovery bu\n\u2026(F120 compacted)\n\n#### skill-prefer-hub-archival-early\n\n---\n---\n\n## Skill: prefer-hub-archival-early (F153/F154)\n\n1. **Before** finishing findings, run hub-aware archival paging:\n   `python3 scripts/archival_memory_search.py auto --files changed.py`\n   `python3 scripts/torii.py memory -- search -- -q \"hub warm themes\"`\n   Keep `TORII_RECON_WARM_HUB_QUERY=1` (F149 expands auto-query).\n2. Prefer hits with **hub_boost** / multi-tenant warm themes; still require path:line.\n3. Do **not** re-raise F145-superseded\n\u2026(F120 compacted)\n\n#### skill-prefer-product-cli\n\n---\n---\n\n## Skill: prefer-product-cli\n\n1. Early mid-review call once:\n   `python3 scripts/torii.py doctor` or `python3 scripts/torii.py status`\n   `python3 scripts/torii.py budget -- status` when soft re-prompts are possible.\n2. Treat doctor/status as readiness hints only \u2014 still require path:line evidence.\n3. Prefer product CLI over ad-hoc script hunting for memory/gate/budget surfaces.\n\n#### skill-f74-exploit-scenario\n\n<!-- F74 adopted 2026-08-01T01:28:42Z -->\n---\nid: skill-f74-exploit-scenario\nfeature: F74\nstatus: adopted\nsource: feedback:no trigger/exploit scenario language\nweak_dims: feedback\ncreated_at: 2026-08-01T01:00:38Z\ntitle: Exploit scenario language (fitness feedback)\n---\n\n## Skill: exploit-scenario (F74 fitness-gated)\n\nWhen REQUEST CHANGES on a confirmed sink:\n1. Add one **attacker trigger** sentence (how input reaches the sink).\n2. Keep it concrete (endpoint, CLI flag, pickle load path) \u2014 no generic \"could be bad\".\n3. If no realistic trigger exists, lower severity or mark residual risk honestly.\n<!-- /torii-f84-skill-router -->\n\n<!-- torii-f125-recovery-hub -->\n## Federated recovery util (F125 hub compound)\n\nCross-tenant recovery tool outcomes (skill ids + util bins only; no paths):\n- `skill-prefer-memory-cli-early`: hits=90 tenants=3 tool_hits=1 \u0394prio=+40 bin=hit\n- `skill-prefer-hub-archival-early`: hits=78 tenants=1 tool_hits=1 \u0394prio=+32 bin=hit\n- `skill-prefer-product-cli`: hits=45 tenants=1 tool_hits=1 \u0394prio=+32 bin=hit\n- `skill-f74-exploit-scenario`: hits=25 tenants=1 tool_hits=0 \u0394prio=+29 bin=hit\n- **Hub gap pressure=0.35** \u2014 prefer early recovery CLI tool calls (memory/doctor/critic) before finalizing.\n<!-- /torii-f125-recovery-hub -->\n\n<!-- torii-f162-hub-archival-hub -->\n## Federated hub-archival util (F161/F162 hub pressure)\n\nCross-tenant hub-archival tool outcomes (skill ids + util bins only; no paths):\n- `skill-prefer-hub-archival-early`: hits=62 tenants=1 tool_hits=1 gap_hits=1 \u0394prio=+34 bin=hit\n- Hub-archival util_ok hits=61 \u2014 keep hub_boost archival in the loop.\n<!-- /torii-f162-hub-archival-hub -->\n\n\n<!-- torii-f138-scorecard-hub -->\n## Federated scorecard util (F138 hub compound)\n\nCross-tenant scorecard-gap ops tool outcomes (skill ids + util bins only; no paths):\n- (no hub scorecard skill themes yet \u2014 local scorecard adopt applies)\n<!-- /torii-f138-scorecard-hub -->",
+      "timestamp": 1785585392.33829,
+      "tool_name": null,
+      "tool_calls": null,
+      "tool_call_id": null
+    },
+    {
+      "id": 118,
+      "session_id": "20260801_172631_cb33a2",
+      "role": "assistant",
+      "content": "Let me start by checking what tools/scripts are available and gathering context before producing",
+      "timestamp": 1785585400.8022919,
+      "tool_name": null,
+      "tool_calls": [
+        {
+          "id": "call_83b7b1ab1ab349efb5cc723d",
+          "call_id": "call_83b7b1ab1ab349efb5cc723d",
+          "response_item_id": "fc_83b7b1ab1ab349efb5cc723d",
+          "type": "function",
+          "function": {
+            "name": "terminal",
+            "arguments": "{\"command\": \"ls scripts/torii.py scripts/torii_memory.py scripts/archival_memory_search.py 2>&1\", \"workdir\": \"/Users/ashishmishra/Documents/experiments/torii\"}"
+          }
+        },
+        {
+          "id": "call_19bf989aa2044aff8cfc6a2b",
+          "call_id": "call_19bf989aa2044aff8cfc6a2b",
+          "response_item_id": "fc_19bf989aa2044aff8cfc6a2b",
+          "type": "function",
+          "function": {
+            "name": "terminal",
+            "arguments": "{\"command\": \"python3 scripts/torii.py doctor 2>&1 || python3 scripts/torii.py status 2>&1\", \"workdir\": \"/Users/ashishmishra/Documents/experiments/torii\"}"
+          }
+        },
+        {
+          "id": "call_96dc8361cd1e462ab4498618",
+          "call_id": "call_96dc8361cd1e462ab4498618",
+          "response_item_id": "fc_96dc8361cd1e462ab4498618",
+          "type": "function",
+          "function": {
+            "name": "terminal",
+            "arguments": "{\"command\": \"python3 scripts/torii.py memory -- search -- -q \\\"sql OR pickle OR secret OR command\\\" 2>&1\", \"workdir\": \"/Users/ashishmishra/Documents/experiments/torii\"}"
+          }
+        }
+      ],
+      "tool_call_id": null
+    },
+    {
+      "id": 119,
+      "session_id": "20260801_172631_cb33a2",
+      "role": "tool",
+      "content": "{\"output\": \"scripts/archival_memory_search.py\\nscripts/torii.py\\nscripts/torii_memory.py\", \"exit_code\": 0, \"error\": null}",
+      "timestamp": 1785585401.083303,
+      "tool_name": "terminal",
+      "tool_calls": null,
+      "tool_call_id": "call_83b7b1ab1ab349efb5cc723d"
+    },
+    {
+      "id": 120,
+      "session_id": "20260801_172631_cb33a2",
+      "role": "tool",
+      "content": "{\"output\": \"{\\n  \\\"feature\\\": \\\"F110\\\",\\n  \\\"feature_recovery\\\": \\\"F128\\\",\\n  \\\"feature_recon_warm_hub\\\": \\\"F151\\\",\\n  \\\"feature_hub_archival_util\\\": \\\"F155\\\",\\n  \\\"feature_hub_archival_util_critic\\\": \\\"F156\\\",\\n  \\\"feature_hub_archival_loop\\\": \\\"F163\\\",\\n  \\\"feature_scorecard_ops\\\": \\\"F135\\\",\\n  \\\"doctor_pass\\\": true,\\n  \\\"recovery_ok\\\": true,\\n  \\\"recovery_active\\\": [\\n    \\\"skill-prefer-memory-cli-early\\\",\\n    \\\"skill-prefer-product-cli\\\",\\n    \\\"skill-prefer-critic-early\\\",\\n    \\\"skill-prefer-hub-archival-early\\\"\\n  ],\\n  \\\"recovery_hub_gap_ok\\\": true,\\n  \\\"recon_warm_hub_ok\\\": true,\\n  \\\"hub_archival_util_ok\\\": true,\\n  \\\"hub_archival_util_critic_ok\\\": true,\\n  \\\"hub_archival_hub_ok\\\": true,\\n  \\\"hub_archival_hub_inject_ok\\\": true,\\n  \\\"router_synth_ok\\\": true,\\n  \\\"reprompt_adaptive_ok\\\": true,\\n  \\\"hub_archival_fitness_ok\\\": true,\\n  \\\"hub_archival_loop_ok\\\": true,\\n  \\\"scorecard_ops\\\": {\\n    \\\"feature\\\": \\\"F135\\\",\\n    \\\"active_n\\\": 0,\\n    \\\"active\\\": [],\\n    \\\"fed_n\\\": 0,\\n    \\\"fitness_ingested_n\\\": 0,\\n    \\\"scorecard_ops_ok\\\": false,\\n    \\\"privacy_ok\\\": true,\\n    \\\"fed_skill_n\\\": 0,\\n    \\\"fitness_skills\\\": [],\\n    \\\"last_scorecard_ingest_n\\\": 0\\n  },\\n  \\\"scorecard_ops_ok\\\": false,\\n  \\\"results\\\": [\\n    {\\n      \\\"check\\\": \\\"memory\\\",\\n      \\\"ok\\\": true,\\n      \\\"rc\\\": 0\\n    },\\n    {\\n      \\\"check\\\": \\\"memory_loop\\\",\\n      \\\"ok\\\": true,\\n      \\\"rc\\\": 0\\n    },\\n    {\\n      \\\"check\\\": \\\"budget\\\",\\n      \\\"ok\\\": true,\\n      \\\"rc\\\": 0\\n    },\\n    {\\n      \\\"check\\\": \\\"skill_loop\\\",\\n      \\\"ok\\\": true,\\n      \\\"rc\\\": 0,\\n      \\\"recovery_ok\\\": true,\\n      \\\"recovery_active\\\": [\\n        \\\"skill-prefer-memory-cli-early\\\",\\n        \\\"skill-prefer-product-cli\\\",\\n        \\\"skill-prefer-critic-early\\\",\\n        \\\"skill-prefer-hub-archival-early\\\"\\n      ],\\n      \\\"recovery_hub_gap_ok\\\": true,\\n      \\\"recon_warm_hub_ok\\\": true,\\n      \\\"hub_archival_util_ok\\\": true,\\n      \\\"hub_archival_util_critic_ok\\\": true,\\n      \\\"hub_archival_hub_ok\\\": true,\\n      \\\"hub_archival_hub_inject_ok\\\": true,\\n      \\\"router_synth_ok\\\": true,\\n      \\\"reprompt_adaptive_ok\\\": true,\\n      \\\"hub_archival_fitness_ok\\\": true\\n    }\\n  ],\\n  \\\"scored_at\\\": \\\"2026-08-01T11:56:41Z\\\"\\n}\", \"exit_code\": 0, \"error\": null}",
+      "timestamp": 1785585401.364458,
+      "tool_name": "terminal",
+      "tool_calls": null,
+      "tool_call_id": "call_19bf989aa2044aff8cfc6a2b"
+    },
+    {
+      "id": 121,
+      "session_id": "20260801_172631_cb33a2",
+      "role": "tool",
+      "content": "{\"output\": \"{\\n  \\\"feature\\\": \\\"F98\\\",\\n  \\\"query\\\": \\\"sql OR pickle OR secret OR command\\\",\\n  \\\"tokens\\\": [\\n    \\\"sql\\\",\\n    \\\"or\\\",\\n    \\\"pickle\\\",\\n    \\\"or\\\",\\n    \\\"secret\\\",\\n    \\\"or\\\",\\n    \\\"command\\\"\\n  ],\\n  \\\"hit_count\\\": 8,\\n  \\\"total_candidates\\\": 37,\\n  \\\"hits\\\": [\\n    {\\n      \\\"id\\\": \\\"sqli-search\\\",\\n      \\\"source\\\": \\\"tp\\\",\\n      \\\"tier_hint\\\": \\\"archival\\\",\\n      \\\"theme\\\": \\\"sql_injection\\\",\\n      \\\"keywords\\\": [\\n        \\\"sql injection\\\",\\n        \\\"sqli\\\",\\n        \\\"f-string\\\",\\n        \\\"f\\\\\\\"select\\\",\\n        \\\"string-formatted\\\",\\n        \\\"execute(f\\\",\\n        \\\"cur.execute(f\\\",\\n        \\\"cwe-89\\\"\\n      ],\\n      \\\"path_globs\\\": [\\n        \\\"demo/insecure/app.py\\\",\\n        \\\"insecure/app.py\\\",\\n        \\\"app.py\\\"\\n      ],\\n      \\\"hits\\\": 11,\\n      \\\"effective_score\\\": 1.0,\\n      \\\"score\\\": 0.7214,\\n      \\\"preview\\\": \\\"sql_injection sql injection sqli f-string f\\\\\\\"select string-formatted execute(f cur.execute(f cwe-89 demo/insecure/app.py insecure/app.py app.py sqli-search\\\"\\n    },\\n    {\\n      \\\"id\\\": \\\"sql_injection\\\",\\n      \\\"source\\\": \\\"federated\\\",\\n      \\\"tier_hint\\\": \\\"archival\\\",\\n      \\\"theme\\\": \\\"sql_injection\\\",\\n      \\\"keywords\\\": [\\n        \\\"sql injection\\\",\\n        \\\"sqli\\\",\\n        \\\"f-string\\\",\\n        \\\"f\\\\\\\"select\\\",\\n        \\\"string-formatted\\\",\\n        \\\"execute(f\\\",\\n        \\\"cur.execute(f\\\",\\n        \\\"cwe-89\\\"\\n      ],\\n      \\\"path_globs\\\": [],\\n      \\\"hits\\\": 22,\\n      \\\"effective_score\\\": 0.0,\\n      \\\"score\\\": 0.4714,\\n      \\\"preview\\\": \\\"sql_injection sql injection sqli f-string f\\\\\\\"select string-formatted execute(f cur.execute(f cwe-89\\\"\\n    },\\n    {\\n      \\\"id\\\": \\\"memory:1:## review craft\\\",\\n      \\\"source\\\": \\\"memory_md\\\",\\n      \\\"tier_hint\\\": \\\"recall\\\",\\n      \\\"theme\\\": \\\"review_history\\\",\\n      \\\"keywords\\\": [\\n        \\\"review\\\",\\n        \\\"craft\\\",\\n        \\\"focus\\\",\\n        \\\"findings\\\",\\n        \\\"on\\\",\\n        \\\"new\\\",\\n        \\\"code\\\",\\n        \\\"introduced\\\",\\n        \\\"by\\\",\\n        \\\"the\\\",\\n        \\\"pr\\\",\\n        \\\"require\\\",\\n        \\\"concrete\\\",\\n        \\\"trigger\\\",\\n        \\\"scenario.\\\",\\n        \\\"bugs/security\\\",\\n        \\\"thorough.\\\",\\n        \\\"style/nits\\\",\\n        \\\"high\\\",\\n        \\\"bar\\\",\\n        \\\"or\\\",\\n        \\\"omit.\\\",\\n        \\\"prefer\\\",\\n        \\\"silence\\\"\\n      ],\\n      \\\"path_globs\\\": [],\\n      \\\"hits\\\": 1,\\n      \\\"effective_score\\\": 0.35,\\n      \\\"title\\\": \\\"## Review craft\\\",\\n      \\\"score\\\": 0.4689,\\n      \\\"preview\\\": \\\"## Review craft - Focus findings on **new code** introduced by the PR; require a concrete trigger scenario. - Bugs/security: thorough. Style/nits: high bar or omit. - Prefer silenc\\\"\\n    },\\n    {\\n      \\\"id\\\": \\\"cmdi-run\\\",\\n      \\\"source\\\": \\\"tp\\\",\\n      \\\"tier_hint\\\": \\\"archival\\\",\\n      \\\"theme\\\": \\\"command_injection\\\",\\n      \\\"keywords\\\": [\\n        \\\"command injection\\\",\\n        \\\"shell=true\\\",\\n        \\\"os command\\\",\\n        \\\"rce\\\",\\n        \\\"subprocess\\\",\\n        \\\"cwe-78\\\",\\n        \\\"shell injection\\\"\\n      ],\\n      \\\"path_globs\\\": [\\n        \\\"demo/insecure/app.py\\\",\\n        \\\"insecure/app.py\\\",\\n        \\\"app.py\\\"\\n      ],\\n      \\\"hits\\\": 11,\\n      \\\"effective_score\\\": 0.9893,\\n      \\\"score\\\": 0.4402,\\n      \\\"preview\\\": \\\"command_injection command injection shell=true os command rce subprocess cwe-78 shell injection demo/insecure/app.py insecure/app.py app.py cmdi-run\\\"\\n    },\\n    {\\n      \\\"id\\\": \\\"secret-exposure\\\",\\n      \\\"source\\\": \\\"tp\\\",\\n      \\\"tier_hint\\\": \\\"archival\\\",\\n      \\\"theme\\\": \\\"secrets_exposure\\\",\\n      \\\"keywords\\\": [\\n        \\\"secret\\\",\\n        \\\"api key\\\",\\n        \\\"api_key\\\",\\n        \\\"openrouter\\\",\\n        \\\"credential\\\",\\n        \\\"exposes\\\",\\n        \\\"exposure\\\"\\n      ],\\n      \\\"path_globs\\\": [\\n        \\\"demo/insecure/app.py\\\",\\n        \\\"insecure/app.py\\\",\\n        \\\"app.py\\\"\\n      ],\\n      \\\"hits\\\": 11,\\n      \\\"effective_score\\\": 0.9893,\\n      \\\"score\\\": 0.4402,\\n      \\\"preview\\\": \\\"secrets_exposure secret api key api_key openrouter credential exposes exposure demo/insecure/app.py insecure/app.py app.py secret-exposure\\\"\\n    },\\n    {\\n      \\\"id\\\": \\\"pickle-load\\\",\\n      \\\"source\\\": \\\"tp\\\",\\n      \\\"tier_hint\\\": \\\"archival\\\",\\n      \\\"theme\\\": \\\"insecure_deserialization\\\",\\n      \\\"keywords\\\": [\\n        \\\"pickle\\\",\\n        \\\"deserialize\\\",\\n        \\\"deserialization\\\",\\n        \\\"unsafe load\\\",\\n        \\\"cwe-502\\\",\\n        \\\"pickle.loads\\\"\\n      ],\\n      \\\"path_globs\\\": [\\n        \\\"demo/insecure/app.py\\\",\\n        \\\"insecure/app.py\\\",\\n        \\\"app.py\\\"\\n      ],\\n      \\\"hits\\\": 11,\\n      \\\"effective_score\\\": 0.9706,\\n      \\\"score\\\": 0.4355,\\n      \\\"preview\\\": \\\"insecure_deserialization pickle deserialize deserialization unsafe load cwe-502 pickle.loads demo/insecure/app.py insecure/app.py app.py pickle-load\\\"\\n    },\\n    {\\n      \\\"id\\\": \\\"recovery-util-hit-skill-prefer-memory-cli-early\\\",\\n      \\\"source\\\": \\\"federated\\\",\\n      \\\"tier_hint\\\": \\\"archival\\\",\\n      \\\"theme\\\": \\\"skill-prefer-memory-cli-early\\\",\\n      \\\"keywords\\\": [\\n        \\\"prefer-memory-cli-early\\\",\\n        \\\"recovery-util\\\",\\n        \\\"tool-hit\\\"\\n      ],\\n      \\\"path_globs\\\": [],\\n      \\\"hits\\\": 54,\\n      \\\"effective_score\\\": 0.0,\\n      \\\"score\\\": 0.3786,\\n      \\\"preview\\\": \\\"skill-prefer-memory-cli-early prefer-memory-cli-early recovery-util tool-hit\\\"\\n    },\\n    {\\n      \\\"id\\\": \\\"tp-797f66626140\\\",\\n      \\\"source\\\": \\\"federated\\\",\\n      \\\"tier_hint\\\": \\\"archival\\\",\\n      \\\"theme\\\": \\\"sql_injection\\\",\\n      \\\"keywords\\\": [\\n        \\\"sql\\\",\\n        \\\"injection\\\",\\n        \\\"execute\\\",\\n        \\\"sqlite\\\",\\n        \\\"sqli-search\\\",\\n        \\\"pickle-load\\\",\\n        \\\"secret-exposure\\\"\\n      ],\\n      \\\"path_globs\\\": [],\\n      \\\"hits\\\": 528,\\n      \\\"effective_score\\\": 0.0,\\n      \\\"score\\\": 0.3786,\\n      \\\"preview\\\": \\\"sql_injection sql injection execute sqlite sqli-search pickle-load secret-exposure\\\"\\n    }\\n  ],\\n  \\\"sources_scanned\\\": [\\n    \\\"federated\\\",\\n    \\\"memory_md\\\",\\n    \\\"tp\\\"\\n  ],\\n  \\\"searched_at\\\": \\\"2026-08-01T11:56:41Z\\\"\\n}\", \"exit_code\": 0, \"error\": null}",
+      "timestamp": 1785585401.493958,
+      "tool_name": "terminal",
+      "tool_calls": null,
+      "tool_call_id": "call_96dc8361cd1e462ab4498618"
+    },
+    {
+      "id": 122,
+      "session_id": "20260801_172631_cb33a2",
+      "role": "assistant",
+      "content": "",
+      "timestamp": 1785585411.228571,
+      "tool_name": null,
+      "tool_calls": [
+        {
+          "id": "call_755c8306b5b44340a953d156",
+          "call_id": "call_755c8306b5b44340a953d156",
+          "response_item_id": "fc_755c8306b5b44340a953d156",
+          "type": "function",
+          "function": {
+            "name": "terminal",
+            "arguments": "{\"command\": \"python3 scripts/archival_memory_search.py auto --files demo/insecure/app.py 2>&1\", \"workdir\": \"/Users/ashishmishra/Documents/experiments/torii\"}"
+          }
+        },
+        {
+          "id": "call_e61b987b182543199ae864bf",
+          "call_id": "call_e61b987b182543199ae864bf",
+          "response_item_id": "fc_e61b987b182543199ae864bf",
+          "type": "function",
+          "function": {
+            "name": "terminal",
+            "arguments": "{\"command\": \"python3 scripts/torii.py budget -- status 2>&1\", \"workdir\": \"/Users/ashishmishra/Documents/experiments/torii\"}"
+          }
+        }
+      ],
+      "tool_call_id": null
+    },
+    {
+      "id": 123,
+      "session_id": "20260801_172631_cb33a2",
+      "role": "tool",
+      "content": "{\"output\": \"{\\n  \\\"feature\\\": \\\"F98\\\",\\n  \\\"feature_graph\\\": \\\"F144\\\",\\n  \\\"feature_supersede\\\": \\\"F145\\\",\\n  \\\"feature_recon\\\": \\\"F146\\\",\\n  \\\"mode\\\": \\\"auto_graph_hub\\\",\\n  \\\"paths\\\": [\\n    \\\"demo/insecure/app.py\\\"\\n  ],\\n  \\\"query\\\": \\\"app.py app command injection sql injection insecure deserialization secrets exposure sql_injection command_injection secrets_exposure insecure_deserialization sql injection pickle\\\",\\n  \\\"hit_count\\\": 8,\\n  \\\"superseded_filtered\\\": 0,\\n  \\\"reconsolidated_n\\\": 4,\\n  \\\"reconsolidation\\\": {\\n    \\\"enabled\\\": true,\\n    \\\"updated_n\\\": 4,\\n    \\\"ids\\\": [\\n      \\\"sqli-search\\\",\\n      \\\"cmdi-run\\\",\\n      \\\"secret-exposure\\\",\\n      \\\"pickle-load\\\"\\n    ],\\n    \\\"soft_skip\\\": false,\\n    \\\"privacy_ok\\\": true,\\n    \\\"written\\\": true,\\n    \\\"themes\\\": [\\n      \\\"sql injection\\\",\\n      \\\"command injection\\\",\\n      \\\"secrets exposure\\\",\\n      \\\"insecure deserialization\\\"\\n    ],\\n    \\\"tp_path\\\": \\\"tp-signatures.json\\\",\\n    \\\"ledger\\\": \\\"archival-reconsolidation.json\\\"\\n  },\\n  \\\"feature_recon_fed\\\": \\\"F148\\\",\\n  \\\"feature_hub_query\\\": \\\"F149\\\",\\n  \\\"recon_federate\\\": {\\n    \\\"feature\\\": \\\"F148\\\",\\n    \\\"fed_path\\\": \\\"memory/federation/recon-warm-signals.json\\\",\\n    \\\"fed_n\\\": 5,\\n    \\\"privacy_ok\\\": true,\\n    \\\"hub\\\": {\\n      \\\"feature\\\": \\\"F77\\\",\\n      \\\"global_count\\\": 30,\\n      \\\"privacy_ok\\\": true\\n    },\\n    \\\"themes\\\": [\\n      \\\"sql_injection\\\",\\n      \\\"command_injection\\\",\\n      \\\"secrets_exposure\\\",\\n      \\\"insecure_deserialization\\\"\\n    ],\\n    \\\"signals\\\": [\\n      {\\n        \\\"id\\\": \\\"recon-warm-ok\\\",\\n        \\\"theme\\\": \\\"recon-warm-ok\\\",\\n        \\\"hits\\\": 36\\n      },\\n      {\\n        \\\"id\\\": \\\"recon-warm-theme-sql_injection\\\",\\n        \\\"theme\\\": \\\"sql_injection\\\",\\n        \\\"hits\\\": 9\\n      },\\n      {\\n        \\\"id\\\": \\\"recon-warm-theme-command_injection\\\",\\n        \\\"theme\\\": \\\"command_injection\\\",\\n        \\\"hits\\\": 9\\n      },\\n      {\\n        \\\"id\\\": \\\"recon-warm-theme-secrets_exposure\\\",\\n        \\\"theme\\\": \\\"secrets_exposure\\\",\\n        \\\"hits\\\": 9\\n      },\\n      {\\n        \\\"id\\\": \\\"recon-warm-theme-insecure_deserialization\\\",\\n        \\\"theme\\\": \\\"insecure_deserialization\\\",\\n        \\\"hits\\\": 9\\n      }\\n    ]\\n  },\\n  \\\"recon_hub\\\": {\\n    \\\"feature\\\": \\\"F148\\\",\\n    \\\"enabled\\\": true,\\n    \\\"signal_n\\\": 5,\\n    \\\"theme_n\\\": 4,\\n    \\\"themes\\\": [\\n      \\\"sql_injection\\\",\\n      \\\"command_injection\\\",\\n      \\\"secrets_exposure\\\",\\n      \\\"insecure_deserialization\\\"\\n    ],\\n    \\\"top\\\": [\\n      {\\n        \\\"theme\\\": \\\"sql_injection\\\",\\n        \\\"hits\\\": 9,\\n        \\\"tenants\\\": 1,\\n        \\\"priority\\\": 1.0\\n      },\\n      {\\n        \\\"theme\\\": \\\"command_injection\\\",\\n        \\\"hits\\\": 9,\\n        \\\"tenants\\\": 1,\\n        \\\"priority\\\": 1.0\\n      },\\n      {\\n        \\\"theme\\\": \\\"secrets_exposure\\\",\\n        \\\"hits\\\": 9,\\n        \\\"tenants\\\": 1,\\n        \\\"priority\\\": 1.0\\n      },\\n      {\\n        \\\"theme\\\": \\\"insecure_deserialization\\\",\\n        \\\"hits\\\": 9,\\n        \\\"tenants\\\": 1,\\n        \\\"priority\\\": 1.0\\n      }\\n    ],\\n    \\\"privacy_ok\\\": true\\n  },\\n  \\\"hub_themes\\\": [\\n    \\\"sql_injection\\\",\\n    \\\"command_injection\\\",\\n    \\\"secrets_exposure\\\",\\n    \\\"insecure_deserialization\\\"\\n  ],\\n  \\\"hub_query\\\": {\\n    \\\"enabled\\\": true,\\n    \\\"themes\\\": [\\n      \\\"sql_injection\\\",\\n      \\\"command_injection\\\",\\n      \\\"secrets_exposure\\\",\\n      \\\"insecure_deserialization\\\"\\n    ],\\n    \\\"theme_n\\\": 4,\\n    \\\"signal_n\\\": 5,\\n    \\\"top\\\": [\\n      {\\n        \\\"theme\\\": \\\"sql_injection\\\",\\n        \\\"hits\\\": 8,\\n        \\\"tenants\\\": 1,\\n        \\\"priority\\\": 1.0\\n      },\\n      {\\n        \\\"theme\\\": \\\"command_injection\\\",\\n        \\\"hits\\\": 8,\\n        \\\"tenants\\\": 1,\\n        \\\"priority\\\": 1.0\\n      },\\n      {\\n        \\\"theme\\\": \\\"secrets_exposure\\\",\\n        \\\"hits\\\": 8,\\n        \\\"tenants\\\": 1,\\n        \\\"priority\\\": 1.0\\n      },\\n      {\\n        \\\"theme\\\": \\\"insecure_deserialization\\\",\\n        \\\"hits\\\": 8,\\n        \\\"tenants\\\": 1,\\n        \\\"priority\\\": 1.0\\n      }\\n    ],\\n    \\\"privacy_ok\\\": true,\\n    \\\"feature\\\": \\\"F149\\\"\\n  },\\n  \\\"hub_boost_n\\\": 8,\\n  \\\"graph_themes\\\": [\\n    \\\"command injection\\\",\\n    \\\"sql injection\\\",\\n    \\\"insecure deserialization\\\",\\n    \\\"secrets exposure\\\"\\n  ],\\n  \\\"graph\\\": {\\n    \\\"enabled\\\": true,\\n    \\\"hops\\\": 2,\\n    \\\"seed_n\\\": 4,\\n    \\\"neighbor_n\\\": 6,\\n    \\\"soft_skip\\\": false,\\n    \\\"privacy_ok\\\": true\\n  },\\n  \\\"supersede\\\": {\\n    \\\"enabled\\\": true,\\n    \\\"filtered_n\\\": 0,\\n    \\\"themes\\\": [],\\n    \\\"ids\\\": [],\\n    \\\"soft_skip\\\": false,\\n    \\\"privacy_ok\\\": true,\\n    \\\"hop\\\": {\\n      \\\"multi_hop\\\": true,\\n      \\\"hops\\\": 2,\\n      \\\"seed_n\\\": 4,\\n      \\\"neighborhood_n\\\": 4,\\n      \\\"seeds\\\": [\\n        \\\"tp:cmdi-run\\\",\\n        \\\"tp:pickle-load\\\",\\n        \\\"tp:secret-exposure\\\",\\n        \\\"tp:sqli-search\\\"\\n      ]\\n    },\\n    \\\"supersede_edge_n\\\": 0\\n  },\\n  \\\"hits\\\": [\\n    {\\n      \\\"id\\\": \\\"sqli-search\\\",\\n      \\\"source\\\": \\\"tp\\\",\\n      \\\"score\\\": 1.0,\\n      \\\"theme\\\": \\\"sql_injection\\\",\\n      \\\"reconsolidated\\\": true\\n    },\\n    {\\n      \\\"id\\\": \\\"cmdi-run\\\",\\n      \\\"source\\\": \\\"tp\\\",\\n      \\\"score\\\": 1.0,\\n      \\\"theme\\\": \\\"command_injection\\\",\\n      \\\"reconsolidated\\\": true\\n    },\\n    {\\n      \\\"id\\\": \\\"secret-exposure\\\",\\n      \\\"source\\\": \\\"tp\\\",\\n      \\\"score\\\": 1.0,\\n      \\\"theme\\\": \\\"secrets_exposure\\\",\\n      \\\"reconsolidated\\\": true\\n    },\\n    {\\n      \\\"id\\\": \\\"pickle-load\\\",\\n      \\\"source\\\": \\\"tp\\\",\\n      \\\"score\\\": 1.0,\\n      \\\"theme\\\": \\\"insecure_deserialization\\\",\\n      \\\"reconsolidated\\\": true\\n    },\\n    {\\n      \\\"id\\\": \\\"tp-797f66626140\\\",\\n      \\\"source\\\": \\\"federated\\\",\\n      \\\"score\\\": 0.6241,\\n      \\\"theme\\\": \\\"sql_injection\\\",\\n      \\\"reconsolidated\\\": null\\n    },\\n    {\\n      \\\"id\\\": \\\"recon-warm-theme-sql_injection\\\",\\n      \\\"source\\\": \\\"federated\\\",\\n      \\\"score\\\": 0.5476,\\n      \\\"theme\\\": \\\"sql_injection\\\",\\n      \\\"reconsolidated\\\": null\\n    },\\n    {\\n      \\\"id\\\": \\\"sql_injection\\\",\\n      \\\"source\\\": \\\"federated\\\",\\n      \\\"score\\\": 0.5476,\\n      \\\"theme\\\": \\\"sql_injection\\\",\\n      \\\"reconsolidated\\\": null\\n    },\\n    {\\n      \\\"id\\\": \\\"recon-warm-theme-command_injection\\\",\\n      \\\"source\\\": \\\"federated\\\",\\n      \\\"score\\\": 0.5094,\\n      \\\"theme\\\": \\\"command_injection\\\",\\n      \\\"reconsolidated\\\": null\\n    }\\n  ],\\n  \\\"hits_superseded\\\": []\\n}\", \"exit_code\": 0, \"error\": null}",
+      "timestamp": 1785585411.317334,
+      "tool_name": "terminal",
+      "tool_calls": null,
+      "tool_call_id": "call_755c8306b5b44340a953d156"
+    },
+    {
+      "id": 124,
+      "session_id": "20260801_172631_cb33a2",
+      "role": "tool",
+      "content": "{\"output\": \"{\\n  \\\"feature\\\": \\\"F108\\\",\\n  \\\"enabled\\\": true,\\n  \\\"env_max_extra\\\": 1,\\n  \\\"state\\\": {\\n    \\\"schema\\\": 1,\\n    \\\"feature\\\": \\\"F108\\\",\\n    \\\"feature_adaptive\\\": \\\"F159\\\",\\n    \\\"enabled\\\": true,\\n    \\\"max_extra\\\": 1,\\n    \\\"base_max_extra\\\": 1,\\n    \\\"used\\\": 0,\\n    \\\"remaining\\\": 1,\\n    \\\"attempts\\\": [],\\n    \\\"blocked\\\": [],\\n    \\\"adaptive_expanded\\\": false,\\n    \\\"updated_at\\\": \\\"2026-08-01T11:56:51Z\\\"\\n  },\\n  \\\"path\\\": null\\n}\", \"exit_code\": 0, \"error\": null}",
+      "timestamp": 1785585411.4041228,
+      "tool_name": "terminal",
+      "tool_calls": null,
+      "tool_call_id": "call_e61b987b182543199ae864bf"
+    },
+    {
+      "id": 125,
+      "session_id": "20260801_172631_cb33a2",
+      "role": "assistant",
+      "content": "All tool checks confirm the four TP signatures at max confidence. Here is the review.\n\n---\n\n**Verdict:** REQUEST CHANGES\n**Score:** 5/100\n\n### Summary\n\nThis file is a deliberately insecure Flask demo containing four critical vulnerabilities on four separate endpoints \u2014 each independently would block merge. Zero mitigations, zero input validation, zero safe defaults. Not production-viable in any sense; the `\"\"\"DO NOT deploy\"\"\"` docstring is the only defense and it is not a control.\n\n### Blocking\n\nAll four findings below are independently blocking. Each has a concrete, trivially exploitable trigger path.\n\n### Security audit\n\n**No.** Four confirmed criticals, no safe endpoints.\n\n### Key findings\n\n1.  **SQL Injection \u2014 `demo/insecure/app.py:16`**\n    `cur.execute(f\"SELECT * FROM items WHERE name = '{q}'\")`\n    CWE-89. User-controlled `q` (query param, line 13) interpolated via f-string directly into SQL. No parameterization.\n    *Attacker trigger:* `GET /search?q=' UNION SELECT 1,2,3 --` exfiltrates arbitrary table data; `GET /search?q='; DROP TABLE items; --` destroys data.\n    **Severity: CRITICAL.**\n\n2.  **Insecure Deserialization \u2014 `demo/insecure/app.py:23`**\n    `pickle.loads(data)` where `data = request.data` (line 22, raw POST body).\n    CWE-502. Untrusted pickle input yields arbitrary code execution via `__reduce__` gadget chains.\n    *Attacker trigger:* `POST /load` with a crafted pickle payload \u2014 attacker achieves RCE on the server process.\n    **Severity: CRITICAL.**\n\n3.  **Command Injection \u2014 `demo/insecure/app.py:28`**\n    `subprocess.check_output(cmd, shell=True)` where `cmd = request.args.get(\"cmd\", \"echo hi\")` (line 27).\n    CWE-78. `shell=True` passes the string through `/bin/sh`, enabling shell metacharacter injection.\n    *Attacker trigger:* `GET /run?cmd=cat /etc/passwd` reads files; `GET /run?cmd=; rm -rf /` (or reverse shell payload) achieves full host compromise.\n    **Severity: CRITICAL.**\n\n4.  **Secret Exposure \u2014 `demo/insecure/app.py:32`**\n    `os.environ.get(\"OPENROUTER_API_KEY\")` returned directly in the JSON response body.\n    CWE-200 / CWE-798. Any unauthenticated caller retrieves the active API key.\n    *Attacker trigger:* `GET /secret` returns `{\"key\": \"sk-or-...\"}` \u2014 key usable for billable API calls under the victim's account.\n    **Severity: HIGH** (downgraded from critical only because the env var may be unset; when set, impact is credential theft + financial loss).\n\n### Tests and risk\n\n- No tests present for the file under review. Risk is maximum \u2014 every endpoint is exploitable via unauthenticated HTTP requests.\n- Even if this is a demo/bench file never deployed, the presence of a secret-exposing endpoint creates risk of accidental deployment with a live key.\n\n### Multi-lens checklist\n\n| Lens | Verdict | Note |\n|------|---------|------|\n| Injection (SQL/NoSQL/OS) | **concern** | SQLi + CMDi both confirmed (lines 16, 28) |\n| AuthZ / access control | **concern** | No auth on any endpoint; secret endpoint (line 32) exposes credentials to unauthenticated callers |\n| Secrets / credential handling | **concern** | `OPENROUTER_API_KEY` exposed in plaintext response (line 32) |\n| XSS / output encoding | n/a | JSON responses, no HTML rendering path |\n| CSRF | n/a | No state-changing GET that would benefit (state changes already trivially accessible) |\n| SSRF | n/a | No outbound requests from server |\n| Path traversal | n/a | No file-path construction from user input |\n| Unsafe deserialization | **concern** | `pickle.loads` on untrusted `request.data` (line 23) |\n| Crypto misuse | n/a | No crypto operations |\n| Supply-chain / dependency | n/a | Standard library + Flask + sqlite3 \u2014 no version-pinning concerns visible in this diff |\n| Fail-open defaults | **concern** | All endpoints default to exposed; `shell=True` is opt-in dangerous |\n| DoS / unbounded work | ok | No unbounded loops or resource exhaustion visible |\n\n### What I checked\n\n- Read full file (32 lines, 4 endpoints).\n- Ran memory search (`torii.py memory`) \u2014 all four F70 TP signatures (`sqli-search`, `cmdi-run`, `pickle-load`, `secret-exposure`) matched with path globs targeting `demo/insecure/app.py` and scores 0.97\u20131.0.\n- Ran hub archival auto-search \u2014 reconsolidated all four TP signatures at score 1.0; federation reconfirmed all four themes across 9 cross-tenant hits each.\n- Ran `torii.py doctor` \u2014 all checks pass, no recovery gaps.\n- No FP patterns to exclude; no prior dismissals on this file.\n\n**\u2014 Torii Gate**",
+      "timestamp": 1785585432.521893,
+      "tool_name": null,
+      "tool_calls": null,
+      "tool_call_id": null
+    }
+  ],
+  "agent_log_bytes": 2401,
+  "agent_log_sha256": "a0f27d73e5b407842bd88c6b2fc23f738525129d596edde15b542889087a0cea",
+  "sessions_files": []
+}

@@ -1065,6 +1065,15 @@ if [[ -f "$SKILL_ROUTER_HELPER" && $TIMED_OUT -eq 0 && "${HERMES_CLI_ARGV_BROKEN
                 *)
                   python3 "$TORII_ROOT/scripts/skill_dual_rollout.py" refine-dual --out-dir "$OUT_DIR" >/dev/null 2>&1 || true
                   notice "F167 refine dual-rollout contribution_pp · refine-dual.json"
+                  # F168: federate bins + multi-tenant promote (FederatedSkill gate)
+                  case "${TORII_SKILL_REFINE_PROMOTE:-1}" in
+                    0|false|no|off) ;;
+                    *)
+                      python3 "$TORII_ROOT/scripts/skill_dual_rollout.py" promote-refine-dual >/dev/null 2>&1 || true
+                      python3 "$TORII_ROOT/scripts/skill_dual_rollout.py" cycle-refine-promote --out-dir "$OUT_DIR" --skip-dual >/dev/null 2>&1 || true
+                      notice "F168 refine dual federate+promote · promoted-refine-dual-themes.json"
+                      ;;
+                  esac
                   ;;
               esac
             fi

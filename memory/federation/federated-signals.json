@@ -2,8 +2,8 @@
   "schema_version": 1,
   "feature": "F77",
   "scope": "global",
-  "updated_at": "2026-08-01T07:36:03Z",
-  "count": 9,
+  "updated_at": "2026-08-01T11:57:13Z",
+  "count": 30,
   "privacy": "theme_cwe_keywords_basenames_tenant_hash_only",
   "privacy_ok": true,
   "privacy_issues": [],
@@ -22,13 +22,14 @@
         "recovery-util-ok"
       ],
       "path_basenames": [],
-      "hits": 16,
+      "hits": 82,
       "source": "recovery_skill_util",
       "tenant_hashes": [
         "e28384f7c5c5",
-        "40f9e71e83d3"
+        "40f9e71e83d3",
+        "056062a8ac5d"
       ],
-      "tenants": 2
+      "tenants": 3
     },
     {
       "id": "recovery-util-hit-skill-prefer-memory-cli-early",
@@ -46,13 +47,14 @@
         "tool-hit"
       ],
       "path_basenames": [],
-      "hits": 15,
+      "hits": 55,
       "source": "recovery_skill_util",
       "tenant_hashes": [
         "e28384f7c5c5",
-        "40f9e71e83d3"
+        "40f9e71e83d3",
+        "1eb79b0e3dcc"
       ],
-      "tenants": 2
+      "tenants": 3
     },
     {
       "id": "tp-797f66626140",
@@ -78,11 +80,291 @@
       "path_basenames": [
         "app.py"
       ],
-      "hits": 406,
+      "hits": 528,
       "source": "f104_integrity_compound",
       "tenant_hashes": [
         "a04cf8718dc6"
       ],
+      "tenants": 1
+    },
+    {
+      "id": "memory-util-ok",
+      "theme": "memory-util-ok",
+      "cwe": [],
+      "tags": [
+        "memory_util",
+        "util_ok",
+        "f141",
+        "federated_memory"
+      ],
+      "keywords": [
+        "memory-util-ok",
+        "full"
+      ],
+      "path_basenames": [],
+      "hits": 429,
+      "source": "memory_tool_util",
+      "tenants": 1
+    },
+    {
+      "id": "recon-warm-ok",
+      "theme": "recon-warm-ok",
+      "cwe": [],
+      "tags": [
+        "recon_warm",
+        "archival_retrieve",
+        "f148",
+        "federated_memory"
+      ],
+      "keywords": [
+        "recon-warm",
+        "archival-promote",
+        "gte4"
+      ],
+      "path_basenames": [],
+      "hits": 180,
+      "source": "archival_reconsolidation",
+      "tenants": 1
+    },
+    {
+      "id": "memory-util-gap",
+      "theme": "memory-util-gap",
+      "cwe": [],
+      "tags": [
+        "memory_util",
+        "utilization_gap",
+        "f141",
+        "federated_memory"
+      ],
+      "keywords": [
+        "memory-util-gap",
+        "inject-unused"
+      ],
+      "path_basenames": [],
+      "hits": 96,
+      "source": "memory_tool_util",
+      "tenants": 1
+    },
+    {
+      "id": "memory-util-tool-torii_product_memory",
+      "theme": "memory-tool-torii_product_memory",
+      "cwe": [],
+      "tags": [
+        "memory_util",
+        "tool_outcome",
+        "f141",
+        "federated_memory"
+      ],
+      "keywords": [
+        "torii_product_memory",
+        "memory-tool"
+      ],
+      "path_basenames": [],
+      "hits": 87,
+      "source": "memory_tool_util",
+      "tenants": 1
+    },
+    {
+      "id": "skill-prefer-hub-archival-early",
+      "theme": "skill-prefer-hub-archival-early",
+      "cwe": [],
+      "tags": [
+        "skill_hit",
+        "f85",
+        "federated_skill",
+        "tool_outcome",
+        "f116",
+        "hub_archival",
+        "f158",
+        "hub_boost"
+      ],
+      "keywords": [
+        "prefer-hub-archival-early",
+        "skill-fitness",
+        "tool-outcome",
+        "hub-archival",
+        "hub-boost"
+      ],
+      "path_basenames": [],
+      "hits": 84,
+      "source": "skill_fitness",
+      "tenants": 1
+    },
+    {
+      "id": "memory-util-tool-torii_memory",
+      "theme": "memory-tool-torii_memory",
+      "cwe": [],
+      "tags": [
+        "memory_util",
+        "tool_outcome",
+        "f141",
+        "federated_memory"
+      ],
+      "keywords": [
+        "torii_memory",
+        "memory-tool"
+      ],
+      "path_basenames": [],
+      "hits": 81,
+      "source": "memory_tool_util",
+      "tenants": 1
+    },
+    {
+      "id": "skill-prefer-memory-cli-early",
+      "theme": "skill-prefer-memory-cli-early",
+      "cwe": [],
+      "tags": [
+        "skill_hit",
+        "f85",
+        "federated_skill",
+        "tool_outcome",
+        "f116"
+      ],
+      "keywords": [
+        "prefer-memory-cli-early",
+        "skill-fitness",
+        "tool-outcome"
+      ],
+      "path_basenames": [],
+      "hits": 48,
+      "source": "skill_fitness",
+      "tenants": 1
+    },
+    {
+      "id": "skill-prefer-product-cli",
+      "theme": "skill-prefer-product-cli",
+      "cwe": [],
+      "tags": [
+        "skill_hit",
+        "f85",
+        "federated_skill",
+        "tool_outcome",
+        "f116"
+      ],
+      "keywords": [
+        "prefer-product-cli",
+        "skill-fitness",
+        "tool-outcome"
+      ],
+      "path_basenames": [],
+      "hits": 48,
+      "source": "skill_fitness",
+      "tenants": 1
+    },
+    {
+      "id": "recon-warm-theme-command_injection",
+      "theme": "command_injection",
+      "cwe": [],
+      "tags": [
+        "recon_warm",
+        "warm_theme",
+        "f148",
+        "federated_memory"
+      ],
+      "keywords": [
+        "command_injection",
+        "recon-warm"
+      ],
+      "path_basenames": [],
+      "hits": 45,
+      "source": "archival_reconsolidation",
+      "tenants": 1
+    },
+    {
+      "id": "recon-warm-theme-insecure_deserialization",
+      "theme": "insecure_deserialization",
+      "cwe": [],
+      "tags": [
+        "recon_warm",
+        "warm_theme",
+        "f148",
+        "federated_memory"
+      ],
+      "keywords": [
+        "insecure_deserialization",
+        "recon-warm"
+      ],
+      "path_basenames": [],
+      "hits": 45,
+      "source": "archival_reconsolidation",
+      "tenants": 1
+    },
+    {
+      "id": "recon-warm-theme-secrets_exposure",
+      "theme": "secrets_exposure",
+      "cwe": [],
+      "tags": [
+        "recon_warm",
+        "warm_theme",
+        "f148",
+        "federated_memory"
+      ],
+      "keywords": [
+        "secrets_exposure",
+        "recon-warm"
+      ],
+      "path_basenames": [],
+      "hits": 45,
+      "source": "archival_reconsolidation",
+      "tenants": 1
+    },
+    {
+      "id": "recon-warm-theme-sql_injection",
+      "theme": "sql_injection",
+      "cwe": [],
+      "tags": [
+        "recon_warm",
+        "warm_theme",
+        "f148",
+        "federated_memory"
+      ],
+      "keywords": [
+        "sql_injection",
+        "recon-warm"
+      ],
+      "path_basenames": [],
+      "hits": 45,
+      "source": "archival_reconsolidation",
+      "tenants": 1
+    },
+    {
+      "id": "recovery-util-gap",
+      "theme": "recovery-util-gap",
+      "cwe": [],
+      "tags": [
+        "recovery_util",
+        "utilization_gap",
+        "f124",
+        "federated_skill"
+      ],
+      "keywords": [
+        "recovery-util-gap",
+        "idle-recovery"
+      ],
+      "path_basenames": [],
+      "hits": 44,
+      "source": "recovery_skill_util",
+      "tenants": 1
+    },
+    {
+      "id": "skill-f74-exploit-scenario",
+      "theme": "skill-f74-exploit-scenario",
+      "cwe": [],
+      "tags": [
+        "skill_hit",
+        "f85",
+        "federated_skill",
+        "tool_outcome",
+        "f116"
+      ],
+      "keywords": [
+        "f74-exploit-scenario",
+        "skill-fitness",
+        "tool-outcome"
+      ],
+      "path_basenames": [],
+      "hits": 36,
+      "source": "skill_fitness",
       "tenants": 1
     },
     {
@@ -216,22 +498,51 @@
       "tenants": 1
     },
     {
-      "id": "recovery-util-gap",
-      "theme": "recovery-util-gap",
+      "id": "recovery-util-hit-skill-prefer-hub-archival-early",
+      "theme": "skill-prefer-hub-archival-early",
       "cwe": [],
       "tags": [
         "recovery_util",
-        "utilization_gap",
+        "tool_outcome",
         "f124",
-        "federated_skill"
+        "federated_skill",
+        "hub_archival",
+        "f155",
+        "hub_boost"
       ],
       "keywords": [
-        "recovery-util-gap",
-        "idle-recovery"
+        "prefer-hub-archival-early",
+        "recovery-util",
+        "tool-hit",
+        "hub-archival",
+        "hub-boost",
+        "recon-warm"
       ],
       "path_basenames": [],
-      "hits": 14,
+      "hits": 18,
       "source": "recovery_skill_util",
+      "tenant_hashes": [
+        "056062a8ac5d"
+      ],
+      "tenants": 1
+    },
+    {
+      "id": "memory-util-tool-archival_search",
+      "theme": "memory-tool-archival_search",
+      "cwe": [],
+      "tags": [
+        "memory_util",
+        "tool_outcome",
+        "f141",
+        "federated_memory"
+      ],
+      "keywords": [
+        "archival_search",
+        "memory-tool"
+      ],
+      "path_basenames": [],
+      "hits": 12,
+      "source": "memory_tool_util",
       "tenants": 1
     },
     {
@@ -250,14 +561,132 @@
         "tool-hit"
       ],
       "path_basenames": [],
-      "hits": 1,
+      "hits": 10,
       "source": "recovery_skill_util",
       "tenant_hashes": [
         "40f9e71e83d3"
       ],
       "tenants": 1
+    },
+    {
+      "id": "memory-util-tool-memory_compound",
+      "theme": "memory-tool-memory_compound",
+      "cwe": [],
+      "tags": [
+        "memory_util",
+        "tool_outcome",
+        "f141",
+        "federated_memory"
+      ],
+      "keywords": [
+        "memory_compound",
+        "memory-tool"
+      ],
+      "path_basenames": [],
+      "hits": 3,
+      "source": "memory_tool_util",
+      "tenants": 1
+    },
+    {
+      "id": "memory-util-tool-memory_consolidate",
+      "theme": "memory-tool-memory_consolidate",
+      "cwe": [],
+      "tags": [
+        "memory_util",
+        "tool_outcome",
+        "f141",
+        "federated_memory"
+      ],
+      "keywords": [
+        "memory_consolidate",
+        "memory-tool"
+      ],
+      "path_basenames": [],
+      "hits": 3,
+      "source": "memory_tool_util",
+      "tenants": 1
+    },
+    {
+      "id": "memory-util-tool-memory_events",
+      "theme": "memory-tool-memory_events",
+      "cwe": [],
+      "tags": [
+        "memory_util",
+        "tool_outcome",
+        "f141",
+        "federated_memory"
+      ],
+      "keywords": [
+        "memory_events",
+        "memory-tool"
+      ],
+      "path_basenames": [],
+      "hits": 3,
+      "source": "memory_tool_util",
+      "tenants": 1
+    },
+    {
+      "id": "memory-util-inject-idle",
+      "theme": "memory-util-inject-idle",
+      "cwe": [],
+      "tags": [
+        "memory_util",
+        "inject_idle",
+        "f141",
+        "federated_memory"
+      ],
+      "keywords": [
+        "memory-inject-idle"
+      ],
+      "path_basenames": [],
+      "hits": 2,
+      "source": "memory_tool_util",
+      "tenants": 1
+    },
+    {
+      "id": "hub-archival-util-gap",
+      "theme": "hub-archival-util-gap",
+      "cwe": [],
+      "tags": [
+        "recovery_util",
+        "hub_archival",
+        "utilization_gap",
+        "f155",
+        "federated_skill"
+      ],
+      "keywords": [
+        "hub-archival-gap",
+        "hub-boost-idle",
+        "recon-warm"
+      ],
+      "path_basenames": [],
+      "hits": 1,
+      "source": "recovery_skill_util",
+      "tenant_hashes": [
+        "1eb79b0e3dcc"
+      ],
+      "tenants": 1
+    },
+    {
+      "id": "memory-util-tool-memory_graph",
+      "theme": "memory-tool-memory_graph",
+      "cwe": [],
+      "tags": [
+        "memory_util",
+        "tool_outcome",
+        "f141",
+        "federated_memory"
+      ],
+      "keywords": [
+        "memory_graph",
+        "memory-tool"
+      ],
+      "path_basenames": [],
+      "hits": 1,
+      "source": "memory_tool_util",
+      "tenants": 1
     }
   ],
-  "last_source_repo": "demo/insecure",
-  "last_tenant_hash": "a04cf8718dc6"
+  "last_source_repo": "scorecard_skill_util",
+  "last_tenant_hash": null
 }

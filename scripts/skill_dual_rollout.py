@@ -24,8 +24,10 @@ Product thesis:
 Commands:
   dual      — with-skills vs ablated/no-skills contribution on pack fixtures
   refine-dual — F167 with-refine vs ablated-refine contribution_pp paper metric
+  federate-refine-dual — F168 privacy-safe federate of refine_pp bins
+  promote-refine-dual — F168 multi-tenant promote gate for refine dual themes
   promote   — multi-tenant promote of skill-* federated themes
-  fixture   — hermetic dual_pass + promote gate + privacy + tool + refine dual
+  fixture   — hermetic dual_pass + promote gate + privacy + tool + refine dual/promote
   status    — last metrics / ledger pointers
   all       — dual across bench_corpus packs
 
@@ -34,8 +36,10 @@ Env:
   TORII_SKILL_DUAL_ROLLOUT   1 (default) | 0
   TORII_SKILL_DUAL_TOOL     1 (default) | 0 — F115 tool_blob dual contribution
   TORII_SKILL_REFINE_DUAL   1 (default) | 0 — F167 refine contribution dual
+  TORII_SKILL_REFINE_PROMOTE 1 (default) | 0 — F168 multi-tenant refine promote
   TORII_SKILL_PROMOTE_MIN_TENANTS  default 2
   TORII_SKILL_PROMOTE_MIN_HITS     default 2
+  TORII_SKILL_REFINE_PROMOTE_MIN_PP default 1.0 — min tool or skill contrib_pp
 """
 
 from __future__ import annotations
@@ -53,7 +57,10 @@ from typing import Any
 FEATURE = "F86"
 FEATURE_TOOL = "F115"
 FEATURE_REFINE = "F167"
+FEATURE_REFINE_PROMOTE = "F168"
 SCHEMA = 1
+REFINE_DUAL_FED_REL = "memory/federation/skill-refine-dual-signals.json"
+PROMOTED_REFINE_REL = "memory/federation/promoted-refine-dual-themes.json"
 
 _FALSEY = frozenset({"0", "false", "no", "off", "disabled", "n", "none", ""})
 
@@ -120,6 +127,27 @@ def refine_dual_enabled() -> bool:
     """F167: paper dual-rollout for F165 GEPA-lite refined skill bodies."""
     raw = (os.environ.get("TORII_SKILL_REFINE_DUAL") or "1").strip().lower()
     return raw not in _FALSEY
+
+
+def refine_promote_enabled() -> bool:
+    """F168: multi-tenant promote of refine dual contribution themes."""
+    raw = (os.environ.get("TORII_SKILL_REFINE_PROMOTE") or "1").strip().lower()
+    return raw not in _FALSEY
+
+
+def refine_promote_min_pp() -> float:
+    try:
+        return float(os.environ.get("TORII_SKILL_REFINE_PROMOTE_MIN_PP") or "1.0")
+    except (TypeError, ValueError):
+        return 1.0
+
+
+def _tenant_hash(root: Path) -> str:
+    """Privacy-safe tenant id (short hash of root path; no absolute path in signals)."""
+    import hashlib
+
+    raw = str(root.resolve())
+    return hashlib.sha256(raw.encode("utf-8")).hexdigest()[:12]
 
 
 def _int_env(name: str, default: int) -> int:
@@ -532,6 +560,16 @@ def run_refine_dual(
         "scored_at": _now(),
     }
     _write_refine_dual(out_dir, report)
+    # F168: soft federate when dual produces a report (privacy-safe bins)
+    if refine_promote_enabled():
+        try:
+            fed = federate_refine_dual(report, root=root, out_dir=out_dir)
+            report["federate_refine_dual"] = {
+                "federated_n": fed.get("federated_n"),
+                "privacy_ok": fed.get("privacy_ok"),
+            }
+        except Exception:
+            report["federate_refine_dual"] = {"federated_n": 0, "error": 1}
     return report
 
 
@@ -718,6 +756,403 @@ def _write_tmp(text: str, suffix: str = ".md") -> Path:
     return p
 
 
+def _contrib_bin(pp: float) -> str:
+    if pp >= 50:
+        return "high"
+    if pp >= 10:
+        return "mid"
+    if pp > 0:
+        return "low"
+    if pp == 0:
+        return "zero"
+    return "neg"
+
+
+def federate_refine_dual(
+    report: dict[str, Any] | None = None,
+    root: Path | None = None,
+    *,
+    out_dir: Path | None = None,
+    tenant_hash: str | None = None,
+) -> dict[str, Any]:
+    """F168: privacy-safe federate of F167 refine dual metrics.
+
+    Emits skill id + contribution bins + dual_pass only — no paths, bodies, or
+    absolute paths. Multi-tenant promote (promote_refine_dual) reads this file.
+    """
+    root = root or _root()
+    if not refine_promote_enabled() and not refine_dual_enabled():
+        return {
+            "feature": FEATURE_REFINE_PROMOTE,
+            "federated_n": 0,
+            "reason": "refine_promote_off",
+            "privacy_ok": True,
+        }
+    if report is None and out_dir is not None:
+        p = Path(out_dir) / "refine-dual.json"
+        if p.is_file():
+            try:
+                report = json.loads(p.read_text(encoding="utf-8"))
+            except (OSError, json.JSONDecodeError):
+                report = None
+    if not isinstance(report, dict):
+        return {
+            "feature": FEATURE_REFINE_PROMOTE,
+            "federated_n": 0,
+            "reason": "no_refine_dual",
+            "privacy_ok": True,
+        }
+
+    th = tenant_hash or _tenant_hash(root)
+    skill_ids = list(report.get("refined_skill_ids") or [])
+    tool_pp = float(report.get("refine_tool_contribution_pp") or 0)
+    skill_pp = float(report.get("refine_contribution_pp") or 0)
+    probe_d = int(report.get("refine_probe_delta") or 0)
+    dual_pass = bool(report.get("refine_dual_pass"))
+    dest = root / REFINE_DUAL_FED_REL
+    dest.parent.mkdir(parents=True, exist_ok=True)
+    existing: dict[str, Any] = {
+        "schema_version": SCHEMA,
+        "feature": FEATURE_REFINE_PROMOTE,
+        "signals": [],
+    }
+    if dest.is_file():
+        try:
+            data = json.loads(dest.read_text(encoding="utf-8"))
+            if isinstance(data, dict):
+                existing = data
+                existing.setdefault("signals", [])
+        except (OSError, json.JSONDecodeError):
+            pass
+
+    by_key: dict[str, dict[str, Any]] = {}
+    for s in existing.get("signals") or []:
+        if isinstance(s, dict):
+            key = f"{s.get('theme') or s.get('skill_id')}|{s.get('tenant_hash') or ''}"
+            by_key[key] = s
+
+    federated = 0
+    ids = skill_ids or ["skill-prefer-hub-archival-early"]
+    for sid in ids:
+        if not str(sid).startswith("skill-"):
+            continue
+        key = f"{sid}|{th}"
+        prev = by_key.get(key) if isinstance(by_key.get(key), dict) else {}
+        hits = int(prev.get("hits") or 0) + 1
+        # accumulate best positive tool_pp seen for this tenant
+        prev_tool = float(prev.get("tool_contrib_pp") or 0)
+        best_tool = max(prev_tool, tool_pp)
+        entry = {
+            "id": f"refine-dual-{sid}"[:64],
+            "theme": sid,
+            "skill_id": sid,
+            "tags": [
+                "refine_dual",
+                "f167",
+                "f168",
+                "gepa",
+                "federated_skill",
+                "skill_hit",
+                "dual_pass" if dual_pass else "dual_fail",
+            ],
+            "source": "skill_refine_dual",
+            "hits": hits,
+            "tenants": 1,  # per-tenant row; promote aggregates
+            "tenant_hash": th,
+            "tenant_hashes": sorted(
+                set(list(prev.get("tenant_hashes") or []) + [th])
+            )[:16],
+            "tool_contrib_pp": best_tool,
+            "skill_contrib_pp": max(float(prev.get("skill_contrib_pp") or 0), skill_pp),
+            "probe_delta": max(int(prev.get("probe_delta") or 0), probe_d),
+            "util_rate_bin": _contrib_bin(best_tool if best_tool else skill_pp),
+            "dual_pass": dual_pass or bool(prev.get("dual_pass")),
+            "updated_at": _now(),
+            "feature": FEATURE_REFINE_PROMOTE,
+        }
+        by_key[key] = entry
+        federated += 1
+
+    # collapse privacy check
+    signals = list(by_key.values())[-200:]
+    doc = {
+        "schema_version": SCHEMA,
+        "feature": FEATURE_REFINE_PROMOTE,
+        "scope": "skill_refine_dual",
+        "updated_at": _now(),
+        "privacy": "skill_id_bins_tenant_hash_only",
+        "privacy_ok": True,
+        "signals": signals,
+    }
+    blob = json.dumps(doc)
+    if "/Users/" in blob or "/home/" in blob:
+        doc["privacy_ok"] = False
+        doc["signals"] = []
+        federated = 0
+    dest.write_text(json.dumps(doc, indent=2) + "\n", encoding="utf-8")
+
+    # also write next to out_dir for traces
+    if out_dir is not None:
+        try:
+            od = Path(out_dir)
+            od.mkdir(parents=True, exist_ok=True)
+            (od / "skill-refine-dual-signals.json").write_text(
+                json.dumps(doc, indent=2) + "\n", encoding="utf-8"
+            )
+        except OSError:
+            pass
+
+    return {
+        "feature": FEATURE_REFINE_PROMOTE,
+        "path": str(dest),
+        "federated_n": federated,
+        "signals_n": len(doc["signals"]),
+        "privacy_ok": doc["privacy_ok"],
+        "tenant_hash": th,
+        "tool_contrib_pp": tool_pp,
+        "dual_pass": dual_pass,
+    }
+
+
+def promote_refine_dual_themes(
+    root: Path | None = None,
+    *,
+    min_tenants: int | None = None,
+    min_hits: int | None = None,
+    min_pp: float | None = None,
+) -> dict[str, Any]:
+    """F168: FederatedSkill-style gate — promote refine dual only if multi-tenant agree.
+
+    Aggregates skill-refine-dual-signals by skill_id across tenant_hashes.
+    Requires ≥min_tenants and positive contribution bin (tool or skill pp ≥ min_pp).
+    """
+    root = root or _root()
+    if not refine_promote_enabled():
+        return {
+            "feature": FEATURE_REFINE_PROMOTE,
+            "promoted_n": 0,
+            "reason": "refine_promote_off",
+            "privacy_ok": True,
+            "themes": [],
+        }
+    min_t = (
+        min_tenants
+        if min_tenants is not None
+        else _int_env("TORII_SKILL_PROMOTE_MIN_TENANTS", 2)
+    )
+    min_h = (
+        min_hits if min_hits is not None else _int_env("TORII_SKILL_PROMOTE_MIN_HITS", 2)
+    )
+    thr = min_pp if min_pp is not None else refine_promote_min_pp()
+
+    path = root / REFINE_DUAL_FED_REL
+    # also merge out_dir copy if present
+    sigs: list[dict[str, Any]] = []
+    for p in (
+        path,
+        root / "memory" / "federation" / "skill-refine-signals.json",
+    ):
+        if not p.is_file():
+            continue
+        try:
+            data = json.loads(p.read_text(encoding="utf-8"))
+        except (OSError, json.JSONDecodeError):
+            continue
+        raw = data.get("signals") if isinstance(data, dict) else data
+        if isinstance(raw, list):
+            for s in raw:
+                if not isinstance(s, dict):
+                    continue
+                tags = [str(t).lower() for t in (s.get("tags") or [])]
+                src = str(s.get("source") or "").lower()
+                if (
+                    "refine_dual" in tags
+                    or "f167" in tags
+                    or "f168" in tags
+                    or src == "skill_refine_dual"
+                    or "refine" in tags
+                ):
+                    sigs.append(s)
+
+    # aggregate by skill_id
+    by_sid: dict[str, dict[str, Any]] = {}
+    for s in sigs:
+        sid = str(s.get("skill_id") or s.get("theme") or "")
+        if not sid.startswith("skill-"):
+            continue
+        ent = by_sid.setdefault(
+            sid,
+            {
+                "skill_id": sid,
+                "theme": sid,
+                "tenant_hashes": set(),
+                "hits": 0,
+                "tool_contrib_pp": 0.0,
+                "skill_contrib_pp": 0.0,
+                "probe_delta": 0,
+                "dual_pass_n": 0,
+            },
+        )
+        ths = s.get("tenant_hashes") or (
+            [s.get("tenant_hash")] if s.get("tenant_hash") else []
+        )
+        for th in ths:
+            if th:
+                ent["tenant_hashes"].add(str(th))
+        # also count tenants field when hashes missing
+        if not ths and int(s.get("tenants") or 0) >= 1:
+            ent["tenant_hashes"].add(f"anon-{s.get('id') or sid}")
+        ent["hits"] += max(1, int(s.get("hits") or 1))
+        ent["tool_contrib_pp"] = max(
+            float(ent["tool_contrib_pp"]), float(s.get("tool_contrib_pp") or 0)
+        )
+        ent["skill_contrib_pp"] = max(
+            float(ent["skill_contrib_pp"]), float(s.get("skill_contrib_pp") or 0)
+        )
+        ent["probe_delta"] = max(int(ent["probe_delta"]), int(s.get("probe_delta") or 0))
+        if s.get("dual_pass"):
+            ent["dual_pass_n"] += 1
+
+    clean: list[dict[str, Any]] = []
+    blocked: list[str] = []
+    for sid, ent in by_sid.items():
+        tenants = len(ent["tenant_hashes"])
+        hits = int(ent["hits"])
+        best_pp = max(float(ent["tool_contrib_pp"]), float(ent["skill_contrib_pp"]))
+        # probe_delta as soft pp proxy when rates tie
+        if best_pp <= 0 and int(ent["probe_delta"]) > 0:
+            best_pp = float(int(ent["probe_delta"]) * 10)
+        ok = tenants >= min_t and hits >= min_h and best_pp >= thr
+        if not ok:
+            blocked.append(sid)
+            continue
+        clean.append(
+            {
+                "id": f"promoted-refine-{sid}"[:64],
+                "theme": sid,
+                "skill_id": sid,
+                "tags": [
+                    "promoted_refine_dual",
+                    "f168",
+                    "f167",
+                    "federated_skill",
+                    "skill_hit",
+                ],
+                "source": "skill_refine_dual_promote",
+                "hits": hits,
+                "tenants": tenants,
+                "tenant_hashes": sorted(ent["tenant_hashes"])[:16],
+                "tool_contrib_pp": float(ent["tool_contrib_pp"]),
+                "skill_contrib_pp": float(ent["skill_contrib_pp"]),
+                "probe_delta": int(ent["probe_delta"]),
+                "util_rate_bin": _contrib_bin(best_pp),
+                "dual_pass_n": int(ent["dual_pass_n"]),
+                "feature": FEATURE_REFINE_PROMOTE,
+            }
+        )
+
+    out = root / PROMOTED_REFINE_REL
+    out.parent.mkdir(parents=True, exist_ok=True)
+    doc = {
+        "schema_version": SCHEMA,
+        "feature": FEATURE_REFINE_PROMOTE,
+        "scope": "promoted_refine_dual_themes",
+        "updated_at": _now(),
+        "min_tenants": min_t,
+        "min_hits": min_h,
+        "min_pp": thr,
+        "source_skill_n": len(by_sid),
+        "promoted_n": len(clean),
+        "blocked": blocked[:32],
+        "privacy": "skill_id_bins_tenant_hash_only",
+        "privacy_ok": True,
+        "signals": clean,
+    }
+    blob = json.dumps(doc)
+    if "/Users/" in blob or "/home/" in blob:
+        doc["privacy_ok"] = False
+        doc["signals"] = []
+        doc["promoted_n"] = 0
+        clean = []
+    out.write_text(json.dumps(doc, indent=2) + "\n", encoding="utf-8")
+
+    # soft fitness boost for promoted refine skills
+    fitness_boosted = _soft_fitness_refine_promote(root, [c["skill_id"] for c in clean])
+
+    return {
+        "feature": FEATURE_REFINE_PROMOTE,
+        "path": str(out),
+        "source_skill_n": len(by_sid),
+        "promoted_n": doc["promoted_n"],
+        "blocked_n": len(blocked),
+        "blocked": blocked[:16],
+        "min_tenants": min_t,
+        "min_hits": min_h,
+        "min_pp": thr,
+        "privacy_ok": doc["privacy_ok"],
+        "themes": [s.get("theme") for s in clean[:16]],
+        "fitness_boosted": fitness_boosted,
+    }
+
+
+def _soft_fitness_refine_promote(root: Path, skill_ids: list[str]) -> list[str]:
+    """Mark promoted refine dual skills on fitness ledger (priority soft boost)."""
+    if not skill_ids:
+        return []
+    try:
+        sf = _import_mod("skill_fitness")
+    except Exception:
+        return []
+    try:
+        ledger = sf.load_ledger(root)
+        skills = ledger.setdefault("skills", {})
+        boosted: list[str] = []
+        for sid in skill_ids:
+            e = skills.setdefault(sid, {"id": sid})
+            e["refine_dual_promoted"] = True
+            e["last_refine_promote_at"] = _now()
+            e["hub_priority_delta"] = max(int(e.get("hub_priority_delta") or 0), 18)
+            e["gepa_refined"] = True
+            e["demoted"] = False
+            boosted.append(sid)
+        if boosted:
+            sf.save_ledger(ledger, sf.ledger_path(root))
+        return boosted
+    except Exception:
+        return []
+
+
+def cycle_refine_dual_promote(
+    root: Path | None = None,
+    *,
+    out_dir: Path | None = None,
+    run_dual: bool = True,
+) -> dict[str, Any]:
+    """F168: optional refine-dual → federate → multi-tenant promote (one cycle)."""
+    root = root or _root()
+    dual_report: dict[str, Any] = {}
+    if run_dual and refine_dual_enabled():
+        dual_report = run_refine_dual(root, out_dir=out_dir)
+    elif out_dir is not None:
+        p = Path(out_dir) / "refine-dual.json"
+        if p.is_file():
+            try:
+                dual_report = json.loads(p.read_text(encoding="utf-8"))
+            except (OSError, json.JSONDecodeError):
+                dual_report = {}
+    fed = federate_refine_dual(dual_report or None, root=root, out_dir=out_dir)
+    prom = promote_refine_dual_themes(root)
+    return {
+        "feature": FEATURE_REFINE_PROMOTE,
+        "refine_dual_pass": dual_report.get("refine_dual_pass"),
+        "refine_tool_contribution_pp": dual_report.get("refine_tool_contribution_pp"),
+        "federate": fed,
+        "promote": prom,
+        "ok": bool(fed.get("privacy_ok", True) and prom.get("privacy_ok", True)),
+        "scored_at": _now(),
+    }
+
+
 def promote_skill_themes(
     root: Path | None = None,
     *,
@@ -869,6 +1304,42 @@ def cmd_refine_dual(args: argparse.Namespace) -> int:
         Path(out).write_text(json.dumps(report, indent=2) + "\n", encoding="utf-8")
     print(json.dumps(report, indent=2))
     return 0 if report.get("refine_dual_pass") else 1
+
+
+def cmd_federate_refine_dual(args: argparse.Namespace) -> int:
+    root = _root()
+    od = Path(args.out_dir) if (getattr(args, "out_dir", "") or "").strip() else None
+    report = None
+    rp = (getattr(args, "report", "") or "").strip()
+    if rp:
+        p = Path(rp)
+        if p.is_file():
+            report = json.loads(p.read_text(encoding="utf-8"))
+    result = federate_refine_dual(report, root=root, out_dir=od)
+    print(json.dumps(result, indent=2))
+    return 0 if result.get("privacy_ok", True) else 1
+
+
+def cmd_promote_refine_dual(args: argparse.Namespace) -> int:
+    result = promote_refine_dual_themes(
+        _root(),
+        min_tenants=getattr(args, "min_tenants", None),
+        min_hits=getattr(args, "min_hits", None),
+        min_pp=getattr(args, "min_pp", None),
+    )
+    print(json.dumps(result, indent=2))
+    return 0 if result.get("privacy_ok", True) else 1
+
+
+def cmd_cycle_refine_promote(args: argparse.Namespace) -> int:
+    od = Path(args.out_dir) if (getattr(args, "out_dir", "") or "").strip() else None
+    result = cycle_refine_dual_promote(
+        _root(),
+        out_dir=od,
+        run_dual=not bool(getattr(args, "skip_dual", False)),
+    )
+    print(json.dumps(result, indent=2))
+    return 0 if result.get("ok") else 1
 
 
 def cmd_dual(args: argparse.Namespace) -> int:
@@ -1061,6 +1532,111 @@ Prefer multi-tenant warm archival.
             else:
                 os.environ["TORII_ROOT"] = prev_root
 
+    # F168: multi-tenant promote of refine dual — 2 tenants promote, 1 blocked
+    f168_ok = False
+    f168_prom: dict[str, Any] = {}
+    with tempfile.TemporaryDirectory() as td168:
+        td168_path = Path(td168)
+        prev_root = os.environ.get("TORII_ROOT")
+        try:
+            os.environ["TORII_ROOT"] = str(td168_path)
+            os.environ["TORII_SKILL_REFINE_PROMOTE"] = "1"
+            fed_dir = td168_path / "memory" / "federation"
+            fed_dir.mkdir(parents=True)
+            multi_sid = "skill-prefer-hub-archival-early"
+            single_sid = "skill-noise-refine-single"
+            # two tenants positive tool_pp for multi_sid; one tenant for noise
+            signals = [
+                {
+                    "id": "rd-a",
+                    "theme": multi_sid,
+                    "skill_id": multi_sid,
+                    "tags": ["refine_dual", "f167", "f168", "federated_skill"],
+                    "source": "skill_refine_dual",
+                    "hits": 3,
+                    "tenants": 1,
+                    "tenant_hash": "tenant-aaa",
+                    "tenant_hashes": ["tenant-aaa"],
+                    "tool_contrib_pp": 50.0,
+                    "skill_contrib_pp": 0.0,
+                    "probe_delta": 3,
+                    "dual_pass": True,
+                    "util_rate_bin": "high",
+                },
+                {
+                    "id": "rd-b",
+                    "theme": multi_sid,
+                    "skill_id": multi_sid,
+                    "tags": ["refine_dual", "f167", "f168", "federated_skill"],
+                    "source": "skill_refine_dual",
+                    "hits": 2,
+                    "tenants": 1,
+                    "tenant_hash": "tenant-bbb",
+                    "tenant_hashes": ["tenant-bbb"],
+                    "tool_contrib_pp": 40.0,
+                    "skill_contrib_pp": 0.0,
+                    "probe_delta": 2,
+                    "dual_pass": True,
+                    "util_rate_bin": "mid",
+                },
+                {
+                    "id": "rd-noise",
+                    "theme": single_sid,
+                    "skill_id": single_sid,
+                    "tags": ["refine_dual", "f168", "federated_skill"],
+                    "source": "skill_refine_dual",
+                    "hits": 9,
+                    "tenants": 1,
+                    "tenant_hash": "tenant-ccc",
+                    "tenant_hashes": ["tenant-ccc"],
+                    "tool_contrib_pp": 90.0,
+                    "skill_contrib_pp": 0.0,
+                    "probe_delta": 3,
+                    "dual_pass": True,
+                    "util_rate_bin": "high",
+                },
+            ]
+            (fed_dir / "skill-refine-dual-signals.json").write_text(
+                json.dumps(
+                    {
+                        "schema_version": 1,
+                        "feature": "F168",
+                        "signals": signals,
+                        "privacy_ok": True,
+                    }
+                )
+                + "\n",
+                encoding="utf-8",
+            )
+            f168_prom = promote_refine_dual_themes(
+                td168_path, min_tenants=2, min_hits=2, min_pp=1.0
+            )
+            themes = set(f168_prom.get("themes") or [])
+            multi_ok168 = multi_sid in themes
+            single_blocked168 = single_sid not in themes
+            privacy168 = bool(f168_prom.get("privacy_ok"))
+            # federate path privacy on synthetic dual report
+            fed_rep = federate_refine_dual(
+                {
+                    "refine_dual_pass": True,
+                    "refined_skill_ids": [multi_sid],
+                    "refine_tool_contribution_pp": 50.0,
+                    "refine_contribution_pp": 0.0,
+                    "refine_probe_delta": 3,
+                },
+                root=td168_path,
+                tenant_hash="tenant-ddd",
+            )
+            fed_ok = bool(fed_rep.get("privacy_ok")) and int(fed_rep.get("federated_n") or 0) >= 1
+            blob = (fed_dir / "skill-refine-dual-signals.json").read_text(encoding="utf-8")
+            no_abs = "/Users/" not in blob and "/home/" not in blob
+            f168_ok = multi_ok168 and single_blocked168 and privacy168 and fed_ok and no_abs
+        finally:
+            if prev_root is None:
+                os.environ.pop("TORII_ROOT", None)
+            else:
+                os.environ["TORII_ROOT"] = prev_root
+
     fixture_pass = all(
         [
             dual_ok,
@@ -1074,6 +1650,7 @@ Prefer multi-tenant warm archival.
             int((dual.get("with_skills") or {}).get("tool_hit_n") or 0) >= 1
             or not tool_dual_enabled(),
             f167_ok,
+            f168_ok,
         ]
     )
     print(
@@ -1082,8 +1659,10 @@ Prefer multi-tenant warm archival.
                 "feature": FEATURE,
                 "feature_tool": FEATURE_TOOL,
                 "feature_refine": FEATURE_REFINE,
+                "feature_refine_promote": FEATURE_REFINE_PROMOTE,
                 "f115": True,
                 "f167": True,
+                "f168": True,
                 "fixture_pass": fixture_pass,
                 "dual_pass": dual_ok,
                 "skill_contribution_pp": dual.get("skill_contribution_pp"),
@@ -1110,6 +1689,11 @@ Prefer multi-tenant warm archival.
                 ),
                 "refine_probe_delta": refine_dual_report.get("refine_probe_delta"),
                 "refine_skill_ids": refine_dual_report.get("refined_skill_ids"),
+                "f168_ok": f168_ok,
+                "f168_promoted_n": f168_prom.get("promoted_n"),
+                "f168_themes": f168_prom.get("themes"),
+                "f168_blocked": f168_prom.get("blocked"),
+                "f168_privacy_ok": f168_prom.get("privacy_ok"),
             },
             indent=2,
         )
@@ -1159,6 +1743,35 @@ def main(argv: list[str] | None = None) -> int:
     prd.add_argument("--out-dir", default="", help="write refine-dual.json here")
     prd.add_argument("--out", default="", help="optional full report path")
     prd.set_defaults(func=cmd_refine_dual)
+
+    pfr = sub.add_parser(
+        "federate-refine-dual",
+        help="F168 privacy-safe federate of refine dual contribution bins",
+    )
+    pfr.add_argument("--out-dir", default="", help="dir with refine-dual.json")
+    pfr.add_argument("--report", default="", help="path to refine-dual.json")
+    pfr.set_defaults(func=cmd_federate_refine_dual)
+
+    ppr = sub.add_parser(
+        "promote-refine-dual",
+        help="F168 multi-tenant promote gate for refine dual themes",
+    )
+    ppr.add_argument("--min-tenants", type=int, default=None)
+    ppr.add_argument("--min-hits", type=int, default=None)
+    ppr.add_argument("--min-pp", type=float, default=None)
+    ppr.set_defaults(func=cmd_promote_refine_dual)
+
+    pcy = sub.add_parser(
+        "cycle-refine-promote",
+        help="F168 refine-dual → federate → multi-tenant promote",
+    )
+    pcy.add_argument("--out-dir", default="")
+    pcy.add_argument(
+        "--skip-dual",
+        action="store_true",
+        help="use existing refine-dual.json only",
+    )
+    pcy.set_defaults(func=cmd_cycle_refine_promote)
 
     args = p.parse_args(argv)
     return int(args.func(args))

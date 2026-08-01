@@ -1,0 +1,107 @@
+{
+  "schema_version": 1,
+  "feature": "F85",
+  "feature_tool": "F116",
+  "scope": "skill_fitness",
+  "updated_at": "2026-08-01T11:57:13Z",
+  "count": 4,
+  "tool_outcome_n": 4,
+  "privacy": "skill_id_hits_tenant_hash_only",
+  "privacy_ok": true,
+  "privacy_issues": [],
+  "signals": [
+    {
+      "id": "skill-prefer-memory-cli-early",
+      "theme": "skill-prefer-memory-cli-early",
+      "cwe": [],
+      "tags": [
+        "skill_hit",
+        "f85",
+        "federated_skill",
+        "tool_outcome",
+        "f116"
+      ],
+      "keywords": [
+        "prefer-memory-cli-early",
+        "skill-fitness",
+        "tool-outcome"
+      ],
+      "path_basenames": [],
+      "hits": 13,
+      "source": "skill_fitness",
+      "tenants": 1,
+      "tool_hits": 13
+    },
+    {
+      "id": "skill-prefer-product-cli",
+      "theme": "skill-prefer-product-cli",
+      "cwe": [],
+      "tags": [
+        "skill_hit",
+        "f85",
+        "federated_skill",
+        "tool_outcome",
+        "f116"
+      ],
+      "keywords": [
+        "prefer-product-cli",
+        "skill-fitness",
+        "tool-outcome"
+      ],
+      "path_basenames": [],
+      "hits": 13,
+      "source": "skill_fitness",
+      "tenants": 1,
+      "tool_hits": 13
+    },
+    {
+      "id": "skill-prefer-hub-archival-early",
+      "theme": "skill-prefer-hub-archival-early",
+      "cwe": [],
+      "tags": [
+        "skill_hit",
+        "f85",
+        "federated_skill",
+        "tool_outcome",
+        "f116",
+        "hub_archival",
+        "f158",
+        "hub_boost"
+      ],
+      "keywords": [
+        "prefer-hub-archival-early",
+        "skill-fitness",
+        "tool-outcome",
+        "hub-archival",
+        "hub-boost"
+      ],
+      "path_basenames": [],
+      "hits": 24,
+      "source": "skill_fitness",
+      "tenants": 1,
+      "tool_hits": 24
+    },
+    {
+      "id": "skill-f74-exploit-scenario",
+      "theme": "skill-f74-exploit-scenario",
+      "cwe": [],
+      "tags": [
+        "skill_hit",
+        "f85",
+        "federated_skill",
+        "tool_outcome",
+        "f116"
+      ],
+      "keywords": [
+        "f74-exploit-scenario",
+        "skill-fitness",
+        "tool-outcome"
+      ],
+      "path_basenames": [],
+      "hits": 11,
+      "source": "skill_fitness",
+      "tenants": 1,
+      "tool_hits": 5
+    }
+  ]
+}

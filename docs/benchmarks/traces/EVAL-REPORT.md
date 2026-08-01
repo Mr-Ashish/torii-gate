@@ -121,3 +121,8 @@ Generated: `2026-08-01T09:45:56Z`
 - Offline f167_ok refine_tool_contribution_pp>0
 - Live refine-dual.json + F167 hermes notice; recall=1.0
 - Modal pytorch#191832 BIT3_OK ~172s POST_COMMENT=0
+
+## F168 refine dual multi-tenant federate + promote
+- Offline f168_ok multi promote / single blocked
+- Live F168 hermes notice; recall=1.0
+- Modal pytorch#191830 BIT3_OK ~89.6s POST_COMMENT=0

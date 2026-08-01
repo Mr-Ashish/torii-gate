@@ -1,0 +1,30 @@
+{
+  "feature": "F168",
+  "title": "refine dual multi-tenant federate + promote",
+  "scored_at": "2026-08-01T11:58:32Z",
+  "pattern": "federate refine_pp bins \u2192 min_tenants promote \u2192 fitness boost",
+  "offline": {
+    "f168_ok": true
+  },
+  "live_local": {
+    "recall": 1.0,
+    "tp": 4,
+    "util_rate": 1.0,
+    "recovery_injected_n": 3,
+    "refine_dual_pass": true,
+    "refine_tool_contribution_pp": 50.0,
+    "model": "deepseek/deepseek-v4-pro"
+  },
+  "promote": {
+    "promoted_n": 0,
+    "themes": []
+  },
+  "modal": {
+    "repo": "pytorch/pytorch",
+    "pr": 191830,
+    "outcome": "BIT3_OK",
+    "elapsed_s": 89.6,
+    "log_streaming": true,
+    "post_comment": 0
+  }
+}

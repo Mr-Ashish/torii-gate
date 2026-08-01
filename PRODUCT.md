@@ -232,6 +232,8 @@ budget always → compact body → score tool_hit → util gap? → budgeted re-
 
 **Refine dual-rollout contribution_pp (F167):** SkillsBench/GEPA paper metric — `skill_dual_rollout.py refine-dual` measures with-refine (GEPA body + hub_boost tools) vs ablated baseline (`refine_tool_contribution_pp`, `refine_probe_delta`). Soft hermes wire writes `refine-dual.json`; skill-loop surfaces `refine_dual_ok`.
 
+**Refine dual multi-tenant promote (F168):** FederatedSkill gate — privacy-safe `skill-refine-dual-signals.json` (skill id + contrib bins + tenant hash only); `promote-refine-dual` requires ≥2 tenants and positive `refine_tool_contribution_pp` before writing `promoted-refine-dual-themes.json` and soft fitness priority boost. Single-tenant high scores stay blocked.
+
 ---
 
 ## Mental model D — Hub-archival compound loop (F155–F163)

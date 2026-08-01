@@ -1,0 +1,96 @@
+{
+  "schema_version": 1,
+  "feature": "F141",
+  "scope": "memory_tool_util",
+  "updated_at": "2026-08-01T11:57:12Z",
+  "count": 4,
+  "privacy": "tool_ids_util_bins_tenant_hash_only",
+  "privacy_ok": true,
+  "signals": [
+    {
+      "id": "memory-util-ok",
+      "theme": "memory-util-ok",
+      "cwe": [],
+      "tags": [
+        "memory_util",
+        "util_ok",
+        "f141",
+        "federated_memory"
+      ],
+      "keywords": [
+        "memory-util-ok",
+        "full"
+      ],
+      "path_basenames": [],
+      "hits": 7,
+      "source": "memory_tool_util",
+      "tenants": 1,
+      "util_rate_bin": "full",
+      "hit_bucket": "gte4",
+      "tool_n": 3
+    },
+    {
+      "id": "memory-util-tool-archival_search",
+      "theme": "memory-tool-archival_search",
+      "cwe": [],
+      "tags": [
+        "memory_util",
+        "tool_outcome",
+        "f141",
+        "federated_memory"
+      ],
+      "keywords": [
+        "archival_search",
+        "memory-tool"
+      ],
+      "path_basenames": [],
+      "hits": 1,
+      "tool_hits": 1,
+      "source": "memory_tool_util",
+      "tenants": 1,
+      "util_rate_bin": "hit"
+    },
+    {
+      "id": "memory-util-tool-torii_memory",
+      "theme": "memory-tool-torii_memory",
+      "cwe": [],
+      "tags": [
+        "memory_util",
+        "tool_outcome",
+        "f141",
+        "federated_memory"
+      ],
+      "keywords": [
+        "torii_memory",
+        "memory-tool"
+      ],
+      "path_basenames": [],
+      "hits": 1,
+      "tool_hits": 1,
+      "source": "memory_tool_util",
+      "tenants": 1,
+      "util_rate_bin": "hit"
+    },
+    {
+      "id": "memory-util-tool-torii_product_memory",
+      "theme": "memory-tool-torii_product_memory",
+      "cwe": [],
+      "tags": [
+        "memory_util",
+        "tool_outcome",
+        "f141",
+        "federated_memory"
+      ],
+      "keywords": [
+        "torii_product_memory",
+        "memory-tool"
+      ],
+      "path_basenames": [],
+      "hits": 1,
+      "tool_hits": 1,
+      "source": "memory_tool_util",
+      "tenants": 1,
+      "util_rate_bin": "hit"
+    }
+  ]
+}

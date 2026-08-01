@@ -1,5 +1,39 @@
 # Torii research → product log
 
+## 2026-08-01 — F168 refine dual multi-tenant federate + promote
+
+### Papers / posts
+- **FederatedSkill** (arXiv 2606.03143): multi-tenant promote only when clients agree.
+- SkillsBench/F167: local refine_tool_contribution_pp without federation is write-only.
+- F86 skill theme promote gate mirrored for GEPA refine dual metrics.
+- Loop Engineering: measure → score → promote under gate.
+
+### OSS design patterns stolen
+1. federate_refine_dual privacy-safe skill-refine-dual-signals (bins + tenant hash).
+2. promote_refine_dual_themes min_tenants=2 + min_pp; single-tenant blocked.
+3. soft fitness hub_priority_delta for promoted refine skills.
+4. hermes soft promote-refine-dual after F167; skill_loop refine_promote_ok.
+
+### Insight
+F167 paper metrics per run do not compound. Highest ROI: FederatedSkill gate on refine_pp so multi-tenant positive dual promotes always budget; single-tenant cannot free-ride promote.
+
+### Feature shipped (F168)
+- federate/promote-refine-dual + cycle-refine-promote
+- fixture f168_ok; hermes soft wire
+- PRODUCT + research note
+
+### Metric
+- Offline: dual fixture f168_ok (promote multi, block single)
+- Live local: recall=1.0 util_rate=1.0 refine_tool_pp=50.0 F168 hermes promote
+- Modal pytorch#191830 BIT3_OK ~89.6s POST_COMMENT=0 log_streaming=true
+
+### Loop-engineering / Hermes practice used
+**Federate → multi-tenant gate → promote** — FederatedSkill for GEPA refine dual.
+
+### SHA
+`(pending)`
+
+
 ## 2026-08-01 — F167 GEPA refine dual-rollout contribution_pp
 
 ### Papers / posts

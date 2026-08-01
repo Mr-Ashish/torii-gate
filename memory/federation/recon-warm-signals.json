@@ -1,0 +1,112 @@
+{
+  "schema_version": 1,
+  "feature": "F148",
+  "scope": "recon_warm",
+  "updated_at": "2026-08-01T11:56:51Z",
+  "count": 5,
+  "privacy": "themes_warm_bins_tenant_hash_only",
+  "privacy_ok": true,
+  "signals": [
+    {
+      "id": "recon-warm-ok",
+      "theme": "recon-warm-ok",
+      "cwe": [],
+      "tags": [
+        "recon_warm",
+        "archival_retrieve",
+        "f148",
+        "federated_memory"
+      ],
+      "keywords": [
+        "recon-warm",
+        "archival-promote",
+        "gte4"
+      ],
+      "path_basenames": [],
+      "hits": 36,
+      "source": "archival_reconsolidation",
+      "tenants": 1,
+      "warm_bin": "gte4"
+    },
+    {
+      "id": "recon-warm-theme-sql_injection",
+      "theme": "sql_injection",
+      "cwe": [],
+      "tags": [
+        "recon_warm",
+        "warm_theme",
+        "f148",
+        "federated_memory"
+      ],
+      "keywords": [
+        "sql_injection",
+        "recon-warm"
+      ],
+      "path_basenames": [],
+      "hits": 9,
+      "source": "archival_reconsolidation",
+      "tenants": 1,
+      "warm_bin": "theme"
+    },
+    {
+      "id": "recon-warm-theme-command_injection",
+      "theme": "command_injection",
+      "cwe": [],
+      "tags": [
+        "recon_warm",
+        "warm_theme",
+        "f148",
+        "federated_memory"
+      ],
+      "keywords": [
+        "command_injection",
+        "recon-warm"
+      ],
+      "path_basenames": [],
+      "hits": 9,
+      "source": "archival_reconsolidation",
+      "tenants": 1,
+      "warm_bin": "theme"
+    },
+    {
+      "id": "recon-warm-theme-secrets_exposure",
+      "theme": "secrets_exposure",
+      "cwe": [],
+      "tags": [
+        "recon_warm",
+        "warm_theme",
+        "f148",
+        "federated_memory"
+      ],
+      "keywords": [
+        "secrets_exposure",
+        "recon-warm"
+      ],
+      "path_basenames": [],
+      "hits": 9,
+      "source": "archival_reconsolidation",
+      "tenants": 1,
+      "warm_bin": "theme"
+    },
+    {
+      "id": "recon-warm-theme-insecure_deserialization",
+      "theme": "insecure_deserialization",
+      "cwe": [],
+      "tags": [
+        "recon_warm",
+        "warm_theme",
+        "f148",
+        "federated_memory"
+      ],
+      "keywords": [
+        "insecure_deserialization",
+        "recon-warm"
+      ],
+      "path_basenames": [],
+      "hits": 9,
+      "source": "archival_reconsolidation",
+      "tenants": 1,
+      "warm_bin": "theme"
+    }
+  ]
+}
