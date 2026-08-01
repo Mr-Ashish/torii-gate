@@ -30,7 +30,7 @@ Local chronic decay without federation cannot compound multi-tenant evidence. Hi
 **Federate → multi-tenant gate → amplify demote** — FederatedSkill for GEPA decay.
 
 ### SHA
-`(pending)`
+`327eeaaf9932ede49beab28ab105682bf9f1d46f`
 
 
 ## 2026-08-01 — F171 chronic refine dual_fail always-priority decay
