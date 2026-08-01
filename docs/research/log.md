@@ -30,7 +30,7 @@ JTBD (#3) · simplicity (#12) · merge-authority honesty
 gate contract pairs reason codes with measured spend path
 
 ### SHA
-`(pending push)`
+`631f61b8795dee697f6351a35ce0d56eff605aa2`
 
 
 ## 2026-08-01 — DAY2_COST_CLOSE: self-evolve cost first + public-eval cost refresh
