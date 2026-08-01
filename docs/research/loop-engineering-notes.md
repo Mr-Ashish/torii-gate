@@ -57,3 +57,4 @@ Also mirrored from LOOP.md budget/observability: each fire records metrics (reca
 - F160: skill-router synth for bench live (always recovery inject measurable when assemble skipped)
 - F161: multi-tenant hub-archival gap_pressure post-score → always prio + F157/F156 bias
 - F162: inject hub-archival hub pressure into prompt + demote-eval paper metric
+- F163: doctor/scorecard hub-archival compound loop + hermes soft fitness cycle after util

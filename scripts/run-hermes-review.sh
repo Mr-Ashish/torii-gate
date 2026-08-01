@@ -1036,6 +1036,11 @@ if [[ -f "$SKILL_ROUTER_HELPER" && $TIMED_OUT -eq 0 && "${HERMES_CLI_ARGV_BROKEN
       [[ -f "$LOOP_DIR/agent.log" ]] && _rec_score_args+=(--log "$LOOP_DIR/agent.log")
       python3 "$SKILL_ROUTER_HELPER" "${_rec_score_args[@]}" >/dev/null 2>&1 || true
       python3 "$SKILL_ROUTER_HELPER" util --out-dir "$OUT_DIR" >/dev/null 2>&1 || true
+      # F163: soft fitness cycle after util (chronic hub-archival federate heat)
+      if [[ -f "$TORII_ROOT/scripts/skill_fitness.py" ]]; then
+        python3 "$TORII_ROOT/scripts/skill_fitness.py" ingest-hub-archival --out-dir "$OUT_DIR" >/dev/null 2>&1 || true
+        python3 "$TORII_ROOT/scripts/skill_fitness.py" cycle --out-dir "$OUT_DIR" >/dev/null 2>&1 || true
+      fi
       # F136/F137: scorecard util before composite re-prompt decide
       python3 "$SKILL_ROUTER_HELPER" scorecard-util --out-dir "$OUT_DIR" >/dev/null 2>&1 || true
       _rrp_args=(reprompt-decide --out-dir "$OUT_DIR" --review "$RAW_OUT")

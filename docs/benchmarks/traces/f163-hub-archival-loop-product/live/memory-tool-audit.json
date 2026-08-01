@@ -1,0 +1,54 @@
+{
+  "feature": "F105",
+  "schema": 1,
+  "score": 1.0,
+  "level": "L3",
+  "hit_count": 6,
+  "tools_used": [
+    "archival_search",
+    "torii_product_memory"
+  ],
+  "by_tool": {
+    "archival_search": 4,
+    "torii_product_memory": 2
+  },
+  "cli_subcmds": {
+    "search": 3
+  },
+  "inject_offered": true,
+  "utilization_gap": false,
+  "tool_call_turns": 2,
+  "feedback": [
+    "memory_tools_used=2 hits=6 tools=['archival_search', 'torii_product_memory']"
+  ],
+  "scored_at": "2026-08-01T10:55:56Z",
+  "hits_detail": [
+    {
+      "tool": "archival_search",
+      "snip": "hra/Documents/experiments/torii/scripts/archival_memory_search.py 2>&1\"}"
+    },
+    {
+      "tool": "archival_search",
+      "snip": "hra/Documents/experiments/torii/scripts/archival_memory_search.py\", \"exit_code\": 0, \"error\": null}"
+    },
+    {
+      "tool": "torii_product_memory",
+      "snip": "ts/experiments/torii && python3 scripts/torii.py memory -- search -- -q \\\"auth OR sql OR pickle OR secret\\\" 2>&1\", \"timeout\": 30}"
+    },
+    {
+      "tool": "archival_search",
+      "snip": "ts/experiments/torii && python3 scripts/archival_memory_search.py auto --files demo/insecure/app.py 2>&1\", \"timeout\": 30}"
+    },
+    {
+      "tool": "torii_product_memory",
+      "snip": "ing findings, call: `python3 scripts/torii.py memory -- search -- -q \"auth OR sql OR pickle OR secret\"` or `python3 scripts/torii"
+    },
+    {
+      "tool": "archival_search",
+      "snip": "ines) - Hub-archival memory search via `archival_memory_search.py auto --files` \u2014 all 4 TP signatures (`sqli-search`, `cmdi-run`, `pickle-load`,"
+    }
+  ],
+  "out_dir": "docs/benchmarks/traces/f163-hub-archival-loop-product/live",
+  "loop_path": "docs/benchmarks/traces/f163-hub-archival-loop-product/live/agent-loop/agent-loop.json",
+  "enabled": true
+}

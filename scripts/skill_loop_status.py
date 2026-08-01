@@ -517,6 +517,11 @@ def assess(root: Path | None = None, *, deep: bool = True) -> dict[str, Any]:
             else ""
         ),
         "feature_hub_archival_hub_inject": "F162",
+        # F163: hermes soft fitness cycle after util
+        "hermes_hub_archival_fitness_cycle": "ingest-hub-archival" in hermes_sh
+        and "skill_fitness.py" in hermes_sh
+        and "F163" in hermes_sh,
+        "feature_hub_archival_loop": "F163",
         # F158: fitness ledger ingest/demote for hub-archival util
         "hub_archival_fitness_ok": "ingest_hub_archival_util" in (
             (root / "scripts" / "skill_fitness.py").read_text(
@@ -533,6 +538,53 @@ def assess(root: Path | None = None, *, deep: bool = True) -> dict[str, Any]:
             else ""
         ),
         "feature_hub_archival_fitness": "F158",
+        # F163 compound: full hub-archival loop wired (soft product/doctor surface)
+        "hub_archival_loop_ok": bool(
+            hub_archival_util_ok
+            and bool(wire.get("critic_hub_archival_util"))
+            and bool(wire.get("demote_eval_hub_archival"))
+            and "post_score_hub_archival_hub"
+            in (
+                (root / "scripts" / "skill_router.py").read_text(
+                    encoding="utf-8", errors="replace"
+                )
+                if (root / "scripts" / "skill_router.py").is_file()
+                else ""
+            )
+            and "inject_hub_archival_hub_into_prompt"
+            in (
+                (root / "scripts" / "skill_router.py").read_text(
+                    encoding="utf-8", errors="replace"
+                )
+                if (root / "scripts" / "skill_router.py").is_file()
+                else ""
+            )
+            and "ensure_skill_router_doc"
+            in (
+                (root / "scripts" / "skill_router.py").read_text(
+                    encoding="utf-8", errors="replace"
+                )
+                if (root / "scripts" / "skill_router.py").is_file()
+                else ""
+            )
+            and "ensure_adaptive_slot"
+            in (
+                (root / "scripts" / "reprompt_budget.py").read_text(
+                    encoding="utf-8", errors="replace"
+                )
+                if (root / "scripts" / "reprompt_budget.py").is_file()
+                else ""
+            )
+            and "ingest_hub_archival_util"
+            in (
+                (root / "scripts" / "skill_fitness.py").read_text(
+                    encoding="utf-8", errors="replace"
+                )
+                if (root / "scripts" / "skill_fitness.py").is_file()
+                else ""
+            )
+            and "ingest-hub-archival" in hermes_sh
+        ),
         "feature_scorecard_ops": "F135",
         "scorecard_active": scorecard_active,
         "scorecard_ops_ok": scorecard_ops_ok,
@@ -587,6 +639,8 @@ def to_markdown(report: dict[str, Any]) -> str:
             f"- Hub-archival multi-tenant hub pressure (F161): **{'ok' if report.get('hub_archival_hub_ok') else 'gap'}**",
             f"- Hub-archival hub inject + demote-eval (F162): **{'ok' if report.get('hub_archival_hub_inject_ok') else 'gap'}**",
             f"- Hub-archival fitness demote/boost (F158): **{'ok' if report.get('hub_archival_fitness_ok') else 'gap'}**",
+            f"- Hub-archival compound loop (F163): **{'ok' if report.get('hub_archival_loop_ok') else 'gap'}** "
+            f"(fitness cycle hermes: **{'ok' if report.get('hermes_hub_archival_fitness_cycle') else 'gap'}**)",
             f"- Recovery hub gap critic/demote-eval (F128): **{'ok' if report.get('recovery_hub_gap_ok') else 'gap'}**",
             f"- Recon-warm hub critic/demote-eval (F151): **{'ok' if report.get('recon_warm_hub_ok') else 'gap'}**",
             f"- Wiring (assemble/run/hermes/save-trace): **{'ok' if report.get('wiring_ok') else 'gap'}**",
@@ -647,6 +701,11 @@ def cmd_scorecard(args: argparse.Namespace) -> int:
                 "feature_hub_archival_fitness": report.get(
                     "feature_hub_archival_fitness"
                 ),
+                "hub_archival_loop_ok": report.get("hub_archival_loop_ok"),
+                "hermes_hub_archival_fitness_cycle": report.get(
+                    "hermes_hub_archival_fitness_cycle"
+                ),
+                "feature_hub_archival_loop": report.get("feature_hub_archival_loop"),
                 "feature_scorecard_ops": report.get("feature_scorecard_ops"),
                 "scorecard_ops_ok": report.get("scorecard_ops_ok"),
                 "scorecard_active": report.get("scorecard_active"),
@@ -717,6 +776,11 @@ def cmd_fixture(args: argparse.Namespace) -> int:
                 "feature_hub_archival_hub_inject": "F162",
                 "hub_archival_fitness_ok": report.get("hub_archival_fitness_ok"),
                 "feature_hub_archival_fitness": "F158",
+                "hub_archival_loop_ok": report.get("hub_archival_loop_ok"),
+                "hermes_hub_archival_fitness_cycle": report.get(
+                    "hermes_hub_archival_fitness_cycle"
+                ),
+                "feature_hub_archival_loop": "F163",
                 "wiring_ok": report["wiring_ok"],
                 "deep_ok": report["deep_ok"],
                 "ready": report["ready"],

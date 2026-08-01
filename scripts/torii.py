@@ -360,6 +360,12 @@ def cmd_doctor(args: argparse.Namespace) -> int:
     recon_warm_hub_ok: bool | None = None
     hub_archival_util_ok: bool | None = None
     hub_archival_util_critic_ok: bool | None = None
+    # F163: compound hub-archival loop surfaces (F159–F162)
+    hub_archival_hub_ok: bool | None = None
+    hub_archival_hub_inject_ok: bool | None = None
+    router_synth_ok: bool | None = None
+    reprompt_adaptive_ok: bool | None = None
+    hub_archival_fitness_ok: bool | None = None
 
     checks: list[tuple[str, list[str]]] = [
         ("memory", [sys.executable, str(_scripts_dir(root) / "torii_memory.py"), "status"]),
@@ -434,11 +440,22 @@ def cmd_doctor(args: argparse.Namespace) -> int:
                     hub_archival_util_ok = data.get("hub_archival_util_ok")
                     # F156: critic demote path soft surface
                     hub_archival_util_critic_ok = data.get("hub_archival_util_critic_ok")
+                    # F163: compound hub-archival loop (F159–F162) soft surfaces
+                    hub_archival_hub_ok = data.get("hub_archival_hub_ok")
+                    hub_archival_hub_inject_ok = data.get("hub_archival_hub_inject_ok")
+                    router_synth_ok = data.get("router_synth_ok")
+                    reprompt_adaptive_ok = data.get("reprompt_adaptive_ok")
+                    hub_archival_fitness_ok = data.get("hub_archival_fitness_ok")
             except (json.JSONDecodeError, TypeError):
                 recovery_hub_gap_ok = None
                 recon_warm_hub_ok = None
                 hub_archival_util_ok = None
                 hub_archival_util_critic_ok = None
+                hub_archival_hub_ok = None
+                hub_archival_hub_inject_ok = None
+                router_synth_ok = None
+                reprompt_adaptive_ok = None
+                hub_archival_fitness_ok = None
             entry: dict[str, Any] = {"check": name, "ok": ok, "rc": r.returncode}
             if name == "skill_loop":
                 entry["recovery_ok"] = recovery_ok
@@ -447,6 +464,11 @@ def cmd_doctor(args: argparse.Namespace) -> int:
                 entry["recon_warm_hub_ok"] = recon_warm_hub_ok
                 entry["hub_archival_util_ok"] = hub_archival_util_ok
                 entry["hub_archival_util_critic_ok"] = hub_archival_util_critic_ok
+                entry["hub_archival_hub_ok"] = hub_archival_hub_ok
+                entry["hub_archival_hub_inject_ok"] = hub_archival_hub_inject_ok
+                entry["router_synth_ok"] = router_synth_ok
+                entry["reprompt_adaptive_ok"] = reprompt_adaptive_ok
+                entry["hub_archival_fitness_ok"] = hub_archival_fitness_ok
             results.append(entry)
             if not ok:
                 all_ok = False
@@ -454,11 +476,16 @@ def cmd_doctor(args: argparse.Namespace) -> int:
             results.append({"check": name, "ok": False, "error": str(exc)[:120]})
             all_ok = False
 
-    # surface last recovery_hub_gap_ok / recon_warm_hub_ok / hub_archival_util_ok
+    # surface last recovery_hub_gap_ok / recon_warm_hub_ok / hub_archival_* loop
     hub_gap = None
     recon_warm = None
     hub_arch = None
     hub_arch_critic = None
+    hub_arch_hub = None
+    hub_arch_inject = None
+    router_synth = None
+    reprompt_adapt = None
+    hub_arch_fit = None
     for e in results:
         if e.get("check") == "skill_loop" and "recovery_hub_gap_ok" in e:
             hub_gap = e.get("recovery_hub_gap_ok")
@@ -468,8 +495,28 @@ def cmd_doctor(args: argparse.Namespace) -> int:
             hub_arch = e.get("hub_archival_util_ok")
         if e.get("check") == "skill_loop" and "hub_archival_util_critic_ok" in e:
             hub_arch_critic = e.get("hub_archival_util_critic_ok")
+        if e.get("check") == "skill_loop" and "hub_archival_hub_ok" in e:
+            hub_arch_hub = e.get("hub_archival_hub_ok")
+        if e.get("check") == "skill_loop" and "hub_archival_hub_inject_ok" in e:
+            hub_arch_inject = e.get("hub_archival_hub_inject_ok")
+        if e.get("check") == "skill_loop" and "router_synth_ok" in e:
+            router_synth = e.get("router_synth_ok")
+        if e.get("check") == "skill_loop" and "reprompt_adaptive_ok" in e:
+            reprompt_adapt = e.get("reprompt_adaptive_ok")
+        if e.get("check") == "skill_loop" and "hub_archival_fitness_ok" in e:
+            hub_arch_fit = e.get("hub_archival_fitness_ok")
     # F135: scorecard ops fitness panel (informational — does not fail doctor)
     sc_panel = _scorecard_ops_panel(root)
+    # F163: hub-archival compound loop readiness (soft product surface)
+    ha_loop_ok = bool(
+        hub_arch
+        and hub_arch_critic
+        and hub_arch_hub
+        and hub_arch_inject
+        and router_synth
+        and reprompt_adapt
+        and hub_arch_fit
+    )
     print(
         json.dumps(
             {
@@ -478,6 +525,7 @@ def cmd_doctor(args: argparse.Namespace) -> int:
                 "feature_recon_warm_hub": "F151",
                 "feature_hub_archival_util": "F155",
                 "feature_hub_archival_util_critic": "F156",
+                "feature_hub_archival_loop": "F163",
                 "feature_scorecard_ops": "F135",
                 "doctor_pass": all_ok,
                 "recovery_ok": recovery_ok,
@@ -486,6 +534,12 @@ def cmd_doctor(args: argparse.Namespace) -> int:
                 "recon_warm_hub_ok": recon_warm,
                 "hub_archival_util_ok": hub_arch,
                 "hub_archival_util_critic_ok": hub_arch_critic,
+                "hub_archival_hub_ok": hub_arch_hub,
+                "hub_archival_hub_inject_ok": hub_arch_inject,
+                "router_synth_ok": router_synth,
+                "reprompt_adaptive_ok": reprompt_adapt,
+                "hub_archival_fitness_ok": hub_arch_fit,
+                "hub_archival_loop_ok": ha_loop_ok,
                 "scorecard_ops": sc_panel,
                 "scorecard_ops_ok": sc_panel.get("scorecard_ops_ok"),
                 "results": results,
@@ -647,6 +701,50 @@ def product_scorecard(
             if skill.get("hub_archival_util_critic_ok") is not None
             else doctor.get("hub_archival_util_critic_ok")
         ),
+        # F163: compound hub-archival loop (util→reprompt→fitness→hub→inject)
+        "hub_archival_hub_ok": bool(
+            skill.get("hub_archival_hub_ok")
+            if skill.get("hub_archival_hub_ok") is not None
+            else doctor.get("hub_archival_hub_ok")
+        ),
+        "hub_archival_hub_inject_ok": bool(
+            skill.get("hub_archival_hub_inject_ok")
+            if skill.get("hub_archival_hub_inject_ok") is not None
+            else doctor.get("hub_archival_hub_inject_ok")
+        ),
+        "router_synth_ok": bool(
+            skill.get("router_synth_ok")
+            if skill.get("router_synth_ok") is not None
+            else doctor.get("router_synth_ok")
+        ),
+        "reprompt_adaptive_ok": bool(
+            skill.get("reprompt_adaptive_ok")
+            if skill.get("reprompt_adaptive_ok") is not None
+            else doctor.get("reprompt_adaptive_ok")
+        ),
+        "hub_archival_fitness_ok": bool(
+            skill.get("hub_archival_fitness_ok")
+            if skill.get("hub_archival_fitness_ok") is not None
+            else doctor.get("hub_archival_fitness_ok")
+        ),
+        "hub_archival_loop_ok": bool(
+            doctor.get("hub_archival_loop_ok")
+            if doctor.get("hub_archival_loop_ok") is not None
+            else (
+                skill.get("hub_archival_util_ok")
+                and skill.get("hub_archival_util_critic_ok")
+                and skill.get("hub_archival_hub_ok")
+                and skill.get("hub_archival_hub_inject_ok")
+                and skill.get("router_synth_ok")
+                and skill.get("reprompt_adaptive_ok")
+                and skill.get("hub_archival_fitness_ok")
+            )
+        ),
+        "hub_archival_hub_pressure_idle_demoted": demote.get(
+            "hub_archival_hub_pressure_demote_ok"
+        )
+        if demote
+        else None,
         "demote_eval_pass": demote_pass,
         "memory_tool_util_delta": mem_util_delta,
         "memory_tool_util_good": mem_util.get("good_score") if mem_util else None,
@@ -690,6 +788,7 @@ def product_scorecard(
         "feature_scorecard": "F129",
         "feature_memory_util": "F130",
         "feature_scorecard_ops": "F135",
+        "feature_hub_archival_loop": "F163",
         "schema": SCHEMA,
         "scored_at": _now(),
         "level": level,
@@ -698,7 +797,12 @@ def product_scorecard(
         "dual_compound": dual_compound,
         "one_liner": (
             "Measured gate readiness: dual compound (skill+memory) + workflow graph + "
-            f"demote_rate={demote_rate} + memory_util_delta={mem_util_delta}."
+            f"demote_rate={demote_rate} + memory_util_delta={mem_util_delta}"
+            + (
+                " + hub-archival loop (util→reprompt→fitness→hub inject)."
+                if metrics.get("hub_archival_loop_ok")
+                else "."
+            )
         ),
         "brand_lines": [
             f"Doctor pass: **{doctor_pass}** · recovery skills **{'ok' if recovery_ok else 'gap'}**",

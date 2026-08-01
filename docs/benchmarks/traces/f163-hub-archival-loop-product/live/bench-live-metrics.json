@@ -1,0 +1,302 @@
+{
+  "feature": "F70",
+  "mode": "live",
+  "at": "2026-08-01T10:55:57Z",
+  "model": "deepseek/deepseek-v4-pro",
+  "hermes_rc": 0,
+  "review": "docs/benchmarks/traces/f163-hub-archival-loop-product/live/review-bench-f70.md",
+  "score": {
+    "feature": "F70",
+    "pack_id": "insecure-demo",
+    "verdict": "REQUEST_CHANGES",
+    "expected_verdict": "REQUEST_CHANGES",
+    "verdict_ok": true,
+    "tp": 4,
+    "fn": 0,
+    "required_total": 4,
+    "recall": 1.0,
+    "precision_proxy": 0.75,
+    "cases": [
+      {
+        "case_id": "sqli-search",
+        "hit": true,
+        "matched_terms": [
+          "sql injection",
+          "sqli",
+          "f-string",
+          "f\"select",
+          "execute(f",
+          "cur.execute(f",
+          "cwe-89"
+        ],
+        "path_ok": true
+      },
+      {
+        "case_id": "pickle-load",
+        "hit": true,
+        "matched_terms": [
+          "pickle",
+          "deserialize",
+          "deserialization",
+          "cwe-502",
+          "pickle.loads"
+        ],
+        "path_ok": true
+      },
+      {
+        "case_id": "cmdi-run",
+        "hit": true,
+        "matched_terms": [
+          "command injection",
+          "shell=true",
+          "rce",
+          "subprocess",
+          "cwe-78"
+        ],
+        "path_ok": true
+      },
+      {
+        "case_id": "secret-exposure",
+        "hit": true,
+        "matched_terms": [
+          "secret",
+          "api key",
+          "api_key",
+          "openrouter",
+          "credential",
+          "exposure"
+        ],
+        "path_ok": true
+      }
+    ],
+    "path_hits": [
+      {
+        "path": "demo/insecure/app.py",
+        "line": null
+      },
+      {
+        "path": "demo/insecure/app.py",
+        "line": 14
+      },
+      {
+        "path": "demo/insecure/app.py",
+        "line": 22
+      },
+      {
+        "path": "demo/insecure/app.py",
+        "line": 18
+      },
+      {
+        "path": "demo/insecure/app.py",
+        "line": 27
+      },
+      {
+        "path": "archival_memory_search.py",
+        "line": null
+      },
+      {
+        "path": "torii.py",
+        "line": null
+      }
+    ],
+    "critic": {
+      "feature": "F70",
+      "pass": "dual_offline",
+      "effective_aware": true,
+      "graph_supersede_aware": true,
+      "graph_multi_hop": true,
+      "graph_supersede_edges": 0,
+      "graph_hop": {
+        "multi_hop": true,
+        "hops": 2,
+        "seed_n": 4,
+        "neighborhood_n": 4,
+        "seeds": [
+          "tp:cmdi-run",
+          "tp:pickle-load",
+          "tp:secret-exposure",
+          "tp:sqli-search"
+        ]
+      },
+      "effective_floor": 0.25,
+      "chunk_count": 8,
+      "likely_fp": 0,
+      "confirmed_tp": 5,
+      "stale_tp_match": 0,
+      "superseded_tp": 0,
+      "weak_evidence": 2,
+      "precision_proxy": 0.75,
+      "effective_precision": 0.649,
+      "findings": [
+        {
+          "index": 0,
+          "status": "weak_evidence",
+          "has_path": false,
+          "paths": [],
+          "tp_signature_hits": [],
+          "tp_effective_max": null,
+          "tp_effective_scores": [],
+          "demote_reason": "",
+          "graph_filtered": null,
+          "preview": "All four findings below block merge. Each has:"
+        },
+        {
+          "index": 1,
+          "status": "path_evidenced",
+          "has_path": true,
+          "paths": [
+            {
+              "path": "demo/insecure/app.py",
+              "line": null
+            }
+          ],
+          "tp_signature_hits": [],
+          "tp_effective_max": null,
+          "tp_effective_scores": [],
+          "demote_reason": "",
+          "graph_filtered": null,
+          "preview": "A **concrete path:line** in `demo/insecure/app.py`"
+        },
+        {
+          "index": 2,
+          "status": "weak_evidence",
+          "has_path": false,
+          "paths": [],
+          "tp_signature_hits": [],
+          "tp_effective_max": null,
+          "tp_effective_scores": [],
+          "demote_reason": "",
+          "graph_filtered": null,
+          "preview": "A **trigger scenario** an attacker can execute today"
+        },
+        {
+          "index": 3,
+          "status": "confirmed_tp",
+          "has_path": true,
+          "paths": [
+            {
+              "path": "demo/insecure/app.py",
+              "line": 14
+            },
+            {
+              "path": "demo/insecure/app.py",
+              "line": 22
+            },
+            {
+              "path": "demo/insecure/app.py",
+              "line": 18
+            },
+            {
+              "path": "demo/insecure/app.py",
+              "line": 27
+            }
+          ],
+          "tp_signature_hits": [
+            "sqli-search",
+            "pickle-load",
+            "cmdi-run",
+            "secret-exposure"
+          ],
+          "tp_effective_max": 0.9496,
+          "tp_effective_scores": [
+            0.9496,
+            0.9121,
+            0.9308,
+            0.9308
+          ],
+          "demote_reason": "",
+          "graph_filtered": null,
+          "preview": "A **CWE** and **severity**  No production system should ship any of these sinks.  ---    | Concern | CWE | Severity | Path | |---|---|---|---| | SQL injection | CWE-89 | Critical |"
+        },
+        {
+          "index": 4,
+          "status": "confirmed_tp",
+          "has_path": true,
+          "paths": [
+            {
+              "path": "demo/insecure/app.py",
+              "line": 14
+            }
+          ],
+          "tp_signature_hits": [
+            "sqli-search"
+          ],
+          "tp_effective_max": 0.9496,
+          "tp_effective_scores": [
+            0.9496
+          ],
+          "demote_reason": "",
+          "graph_filtered": null,
+          "preview": "**SQL injection \u2014 `demo/insecure/app.py:14`** (Critical, CWE-89)    `cur.execute(f\"SELECT * FROM items WHERE name = '{q}'\")`    Uses Python f-string to interpolate `request.args.ge"
+        },
+        {
+          "index": 5,
+          "status": "confirmed_tp",
+          "has_path": true,
+          "paths": [
+            {
+              "path": "demo/insecure/app.py",
+              "line": 22
+            }
+          ],
+          "tp_signature_hits": [
+            "cmdi-run"
+          ],
+          "tp_effective_max": 0.9308,
+          "tp_effective_scores": [
+            0.9308
+          ],
+          "demote_reason": "",
+          "graph_filtered": null,
+          "preview": "**Command injection (RCE) \u2014 `demo/insecure/app.py:22`** (Critical, CWE-78)    `subprocess.check_output(cmd, shell=True)` where `cmd = request.args.get(\"cmd\", \"echo hi\")`.    *Trigg"
+        },
+        {
+          "index": 6,
+          "status": "confirmed_tp",
+          "has_path": true,
+          "paths": [
+            {
+              "path": "demo/insecure/app.py",
+              "line": 18
+            }
+          ],
+          "tp_signature_hits": [
+            "pickle-load",
+            "cmdi-run"
+          ],
+          "tp_effective_max": 0.9308,
+          "tp_effective_scores": [
+            0.9121,
+            0.9308
+          ],
+          "demote_reason": "",
+          "graph_filtered": null,
+          "preview": "**Unsafe deserialization (RCE) \u2014 `demo/insecure/app.py:18`** (Critical, CWE-502)    `pickle.loads(data)` on untrusted `request.data` from a POST. Pickle can execute arbitrary code "
+        },
+        {
+          "index": 7,
+          "status": "confirmed_tp",
+          "has_path": true,
+          "paths": [
+            {
+              "path": "demo/insecure/app.py",
+              "line": 27
+            }
+          ],
+          "tp_signature_hits": [
+            "secret-exposure"
+          ],
+          "tp_effective_max": 0.9308,
+          "tp_effective_scores": [
+            0.9308
+          ],
+          "demote_reason": "",
+          "graph_filtered": null,
+          "preview": "**Secret exposure \u2014 `demo/insecure/app.py:27`** (High, CWE-200)    `os.environ.get(\"OPENROUTER_API_KEY\", \"missing\")` is returned in the response body to any caller.    *Trigger:* `"
+        }
+      ]
+    },
+    "score_pct": 100.0,
+    "passed": true
+  }
+}

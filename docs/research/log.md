@@ -2847,3 +2847,30 @@ Maker sees multi-tenant under-use before checker demotes — budgeted recovery w
 
 ### SHA
 `9f75c6c6ae6182b9556f210913fd218a49fa3293`
+
+## 2026-08-01 — F163 hub-archival compound loop product surface
+
+### Papers / posts
+- Loop Engineering: measure what you ship (doctor/scorecard readiness).
+- F155–F162 hub-archival intelligence stack without a single product bit.
+- Product day-2 habit: `torii doctor` / `torii scorecard` package capabilities.
+
+### Insight
+The hub-archival loop was complete in scripts but fragmented across flags. Highest ROI: one `hub_archival_loop_ok` for doctor/scorecard + soft fitness cycle after util so chronic multi-tenant heat compounds every run.
+
+### Feature shipped (F163)
+- doctor surfaces F159–F162 + `hub_archival_loop_ok`
+- product scorecard metrics + brand one_liner when loop ok
+- hermes soft `ingest-hub-archival` + `cycle` after util
+- skill_loop hub_archival_loop_ok + hermes fitness cycle wire
+
+### Loop-engineering
+Package measured compound loops as product readiness — not script archaeology.
+
+### Metric
+- doctor hub_archival_loop_ok + doctor_pass
+- Live util_rate=1.0 recovery_injected_n=3; fitness last_hub_archival tool_hit
+- Modal pytorch#191829 BIT3_OK ~74s
+
+### SHA
+`pending`

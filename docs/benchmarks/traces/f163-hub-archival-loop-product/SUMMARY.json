@@ -1,0 +1,33 @@
+{
+  "feature": "F163",
+  "title": "hub-archival compound loop product surface + soft fitness cycle",
+  "scored_at": "2026-08-01T10:57:47Z",
+  "live": {
+    "recall": 1.0,
+    "tp": 4,
+    "fn": 0,
+    "verdict": "REQUEST_CHANGES",
+    "passed": 1,
+    "model": "deepseek/deepseek-v4-pro",
+    "recovery_injected_n": 3,
+    "util_rate": 1.0,
+    "fitness_last_hub_archival_tool_hit": true
+  },
+  "doctor": {
+    "doctor_pass": true,
+    "hub_archival_loop_ok": true,
+    "hub_archival_hub_inject_ok": true,
+    "router_synth_ok": true,
+    "reprompt_adaptive_ok": true,
+    "hub_archival_fitness_ok": true,
+    "feature_hub_archival_loop": "F163"
+  },
+  "modal": {
+    "repo": "pytorch/pytorch",
+    "pr": 191829,
+    "outcome": "BIT3_OK",
+    "elapsed_s": 74.0,
+    "log_streaming": true,
+    "modal_url": "https://modal.com/apps/mr-ashish/main/ap-yYEXoI95N22peG1xqCE5lW"
+  }
+}
