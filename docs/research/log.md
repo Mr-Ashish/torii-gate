@@ -28,7 +28,7 @@ Soft re-prompts recover quality (F106 hits 0→1) but unbounded stacking is a co
 - pytest: 581 passed
 
 ### SHA
-_pending_
+`ad24098fb04bfd7cb5bffad52712e6f66407ee66`
 
 ## 2026-08-01 — F107 privacy-safe federate of integrity-gated compound TPs
 
