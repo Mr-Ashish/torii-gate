@@ -471,7 +471,8 @@ log "  2. Secret: OPENROUTER_API_KEY."
 log "  3. Branch protection: require status check **torii/gate**."
 log "  4. On a PR: @torii review this pr"
 log "  5. Day-2: python3 scripts/torii.py doctor"
-log "One CLI: python3 scripts/torii.py help|doctor|memory|gate  (not peer scripts on day one)"
+log "  6. Day-2 cost/PR: python3 scripts/torii.py ops -- status  (docs/ops/cost-pr-dashboard.md)"
+log "One CLI: python3 scripts/torii.py help|doctor|memory|gate|ops  (not peer scripts on day one)"
 if [[ "$MINIMAL" == "1" ]]; then
   log "Pack surface: minimal (gate/review). Re-install without --minimal for full compound-loop scripts."
 else
@@ -479,4 +480,5 @@ else
 fi
 log "  Tip: offline smoke: bash scripts/smoke-torii-gate.sh"
 log "  Tip: hub-managed thin caller: re-run with --caller"
+log "  Tip: measured dogfood cost is local vault only (never federated) — docs/enterprise/PRIVACY.md"
 log "Done."

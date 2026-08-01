@@ -42,7 +42,17 @@ Offline smoke still covers the gate path:
 1. **Install** pack → workflow files land in the app repo.  
 2. **Require** status check **`torii/gate`**.  
 3. **Review** runs the workflow stages (Hermes tools + checker + certificate).  
-4. **Measure** quieter / tool-use / cost on dogfood.
+4. **Measure** quieter / tool-use / **cost** on dogfood (offline workflow validate first — no OpenRouter $).
+
+```bash
+# free offline
+python3 scripts/torii.py workflow -- validate
+# after live dogfood (Modal/GHA): measured p50 cost + TTS
+python3 scripts/torii.py ops -- status
+python3 scripts/torii.py commercial -- status
+```
+
+Cost tables: [`ops/cost-pr-dashboard.md`](ops/cost-pr-dashboard.md) · commercial Cost honesty: [`benchmarks/commercial-scorecard.md`](benchmarks/commercial-scorecard.md). Telemetry stays in the **local vault** (not federated).
 
 Related: [`GOLDEN-PATH.md`](GOLDEN-PATH.md) · [`GATE.md`](GATE.md) · [`QUIETER.md`](QUIETER.md) · [`TOOL-USE.md`](TOOL-USE.md) · install: [`INSTALL.md`](INSTALL.md).
 

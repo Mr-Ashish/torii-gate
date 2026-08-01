@@ -1,0 +1,20 @@
+{
+  "feature": "INSTALL_COST_TIP",
+  "schema_version": 1,
+  "repo": "pytorch/pytorch",
+  "pr": "191840",
+  "model": "deepseek/deepseek-v4-pro",
+  "host": "modal",
+  "bit3": true,
+  "elapsed_s": 131.4,
+  "log_streaming": true,
+  "tool_call_turns": 8,
+  "post_comment": 0,
+  "verdict": "REQUEST_CHANGES",
+  "block": true,
+  "certificate_id": "gc-e7fe92916d5c3e59",
+  "notes": "INSTALL_COST_TIP day-2 cost/PR from install pack workflows",
+  "scored_at": "2026-08-01T17:03:09Z",
+  "modal_run": "https://modal.com/apps/mr-ashish/main/ap-9WnP9fu81ZBfdrjvqU522V",
+  "cost_usd": 0.013211675
+}

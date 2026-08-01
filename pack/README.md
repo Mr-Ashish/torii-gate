@@ -8,6 +8,8 @@ Default install (without `--caller`) still copies the full pack (`agent/`, runti
 
 **5-minute surface:** `./scripts/install-torii.sh --minimal DEST` ships gate/review runtime only (skips bench/eval/modal/heavy evolution scripts and skill proposals). Day-one CLI: `python3 scripts/torii.py doctor`. See [`docs/INSTALL.md`](../docs/INSTALL.md).
 
+**Day-2 cost honesty:** after live dogfood runs, `python3 scripts/torii.py ops -- status` writes measured cost/PR + time-to-signal under [`docs/ops/cost-pr-dashboard.md`](../docs/ops/cost-pr-dashboard.md) (local vault only — not federated). Soft budget: repo var `TORII_MAX_COST_USD`.
+
 ## Memory (F28)
 
 Pack install seeds **`.torii/MEMORY.md`** on the target. After each review Torii commits a slim run pack under `.torii/runs/{trace_id}/` on the target default branch (`contents: write`). Hub memory is optional (`TORII_MEMORY_MODE=both|hub` or `TORII_HUB_PUBLISH=1`). Fat traces remain Actions artifacts only.

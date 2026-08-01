@@ -76,6 +76,16 @@ def check(root: Path) -> dict[str, Any]:
         "install_sh_minimal": "--minimal" in sh and "MINIMAL_EXCLUDE" in sh,
         "install_sh_next_steps_one_cli": "One CLI" in sh or "torii.py help|doctor" in sh,
         "install_sh_no_dual_tip": "torii_memory.py help &&" not in sh,
+        # INSTALL_COST_TIP: day-2 cost visibility from install Next steps
+        "install_sh_cost_tip": bool(
+            re.search(r"cost/PR|cost-pr-dashboard|ops -- status", sh, re.I)
+            and "ops" in sh
+        ),
+        "pack_readme_cost": bool(
+            re.search(r"cost/PR|cost-pr-dashboard|ops -- status", _read(pack_readme), re.I)
+        )
+        if pack_readme.is_file()
+        else False,
         "torii_doctor_text": "render_doctor_text" in tp,
         "torii_doctor_json_flag": '"--json"' in tp or "'--json'" in tp,
         "golden_links_install": "INSTALL.md" in gd or "docs/INSTALL" in gd,

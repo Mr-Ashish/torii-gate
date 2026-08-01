@@ -1,4 +1,37 @@
 
+## 2026-08-01 — INSTALL_COST_TIP: day-2 cost/PR from install + pack + workflows
+
+### Papers / posts
+- Install UX dim 7: next-steps tips still stopped at doctor; cost honesty lived only in docs.
+- Pack README is what fleets copy; workflows doc already said “measure cost” without commands.
+- Loop Engineering: day-2 habit must be one CLI, not research archaeology.
+
+### Decide / copy / skip
+- **Copy:** install-torii.sh Next step 6 ops -- status + cost tip (local vault).
+- **Copy:** pack/README day-2 cost honesty; WORKFLOWS measure commands.
+- **Copy:** install_ux install_sh_cost_tip + pack_readme_cost.
+- **Skip:** F185+; no new scripts.
+
+### Feature shipped (INSTALL_COST_TIP)
+- install-torii.sh / pack README / WORKFLOWS.md cost day-2 path
+- install_ux fixture checks
+
+### Metric
+- Offline: install_ux 20/20 · commercial cost_honesty_ok · overall_est 8.5
+- Live Modal: pytorch#191840 BIT3_OK ~131.4s tools=8 POST_COMMENT=0 cert in vault
+- Traces: docs/benchmarks/traces/20260801-1700-pytorch-pytorch-PR191840-modal-install-cost-tip/
+- Modal: https://modal.com/apps/mr-ashish/main/ap-9WnP9fu81ZBfdrjvqU522V
+
+### scorecard_target
+install (#7) · simplicity (#12)
+
+### dim_lift
+install surface surfaces measured cost without Modal archaeology
+
+### SHA
+`(pending push)`
+
+
 ## 2026-08-01 — BRAND_FED_COST: brand scorecard cost rows + federation never-spend
 
 ### Papers / posts
