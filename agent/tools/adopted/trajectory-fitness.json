@@ -1,0 +1,26 @@
+{
+  "id": "trajectory-fitness",
+  "name": "Trajectory fitness + eval-trace vault (F73)",
+  "status": "adopted",
+  "source": "research_oss",
+  "kind": "workflow_tool",
+  "toolset": "terminal",
+  "script": "scripts/trajectory_fitness.py",
+  "rationale": "Hermes self-evolution multi-dim fitness + Loop Engineering verifier checklist + H9 trajectory packaging: score agent-loop procedure (tool_use/path/procedure/chain) and archive paper-safe slim traces under docs/benchmarks/traces/",
+  "eval": {
+    "scored_at": "2026-08-01T00:15:00Z",
+    "dims": {
+      "signal": 5,
+      "safety": 5,
+      "effort": 4,
+      "torii_fit": 5,
+      "cost": 5
+    },
+    "total": 24,
+    "max": 25,
+    "recommend": "adopt",
+    "notes": "offline good composite>=0.55; weak lower; inject marker; vault INDEX"
+  },
+  "adopted_at": "2026-08-01T00:15:00Z",
+  "feature": "F73"
+}

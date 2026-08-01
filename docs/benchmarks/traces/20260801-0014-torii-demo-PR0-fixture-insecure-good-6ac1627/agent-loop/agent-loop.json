@@ -1,0 +1,6 @@
+{
+  "schema_version": 1,
+  "note": "showcase loop reference for fixture",
+  "tool_call_turns": null,
+  "model": "openai/gpt-4.1-mini"
+}

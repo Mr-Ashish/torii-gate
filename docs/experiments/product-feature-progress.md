@@ -1,6 +1,6 @@
 # Product feature progress
 
-**Updated:** 2026-08-01 (F72 full-chain revalidation maker/checker)  
+**Updated:** 2026-08-01 (F73 trajectory fitness + eval-trace vault)  
 **Loop:** continuous product backlog
 
 ## SHIPPED
@@ -19,30 +19,31 @@
 | F70 | Labeled vuln bench + dual critic + TP sigs | agent_quality, memory, bench | **shipping** |
 | F71 | Taint prefilter + federated sanitized signals | agent_quality, tools, memory | **shipping** |
 | F72 | Full-chain revalidation maker/checker | agent_quality, tools, bench | **shipping** |
+| F73 | Trajectory fitness + paper-safe trace vault | agent_quality, memory, bench, tools | **shipping** |
 
 ## IN_PROGRESS
 
 | ID | Feature | Notes |
 |----|---------|-------|
-| — | — | open: Juice Shop vendor corpus, LLM second-agent critic on top of F72 |
+| — | — | open: Juice Shop vendor corpus; LLM second-agent critic; GEPA-style skill mutate from fitness_signals |
 
 ## LEFT
 
-— Juice Shop full cases; cross-tenant hub ingest of federated-signals; optional LLM checker atop F72 ladder
+— Juice Shop full cases; cross-tenant hub ingest of federated-signals; optional LLM checker atop F72; fitness-driven skill evolution
 
 ## Counts
 
-- **features_built_count:** 29 (F44–F72)
+- **features_built_count:** 30 (F44–F73)
 - **types_built:** agent_quality, product, memory, ops, bench, tools
 - **left_count:** open research
 - **progress_pct:** n/a (open research loop)
 - **eta:** open research only
 - **active_worktrees:** none
 - **federated_memory_note:** F65 tenant path; F70 TP local; F71 sanitized aggregate (theme/CWE/keywords)
-- **agent_design_note:** F70 dual-pass offline critic; F71 static-led prefilter; F72 maker/checker chain gate
-- **meta_loop_note:** bench + prefilter + chain revalidate measure→demote→scorecard
+- **agent_design_note:** F70 dual-pass offline critic; F71 static-led prefilter; F72 maker/checker; F73 procedure fitness vault
+- **meta_loop_note:** measure findings → chain gate → trajectory fitness → paper vault
 - **milvus_corpus:** 3 + complex #6 F67 e2e
 
 ## Status line
 
-`features_built_count=29 types_built=agent_quality,product,memory,ops,bench,tools f72=chain_revalidate_maker_checker`
+`features_built_count=30 types_built=agent_quality,product,memory,ops,bench,tools f73=trajectory_fitness_vault`

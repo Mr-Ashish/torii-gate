@@ -197,6 +197,36 @@ meta = {
 print(trace_dir)
 PY
 
+# F73: also write paper-safe vault entry under docs/benchmarks/traces/ (soft)
+if [[ -f "$(dirname "${BASH_SOURCE[0]}")/trajectory_fitness.py" ]]; then
+  case "${TORII_TRACE_VAULT:-1}" in
+    0|false|no|off) ;;
+    *)
+      _review_for_vault=""
+      if [[ -f "$TRACE_DIR/review.md" ]]; then
+        _review_for_vault="$TRACE_DIR/review.md"
+      elif [[ -f "$OUT_DIR/review-${PR_NUMBER}.md" ]]; then
+        _review_for_vault="$OUT_DIR/review-${PR_NUMBER}.md"
+      fi
+      if [[ -n "$_review_for_vault" ]]; then
+        python3 "$(dirname "${BASH_SOURCE[0]}")/trajectory_fitness.py" archive \
+          --out-dir "$OUT_DIR" \
+          --review "$_review_for_vault" \
+          --label "${TORII_TRACE_LABEL:-trace}" \
+          --repo "${REPO:-}" \
+          --pr "${PR_NUMBER:-}" \
+          --model "${MODEL:-}" \
+          --force \
+          >"$OUT_DIR/vault-archive.json" 2>"$OUT_DIR/vault-archive.stderr" || true
+        if [[ -f "$OUT_DIR/vault-archive.json" ]]; then
+          copy_if "$OUT_DIR/vault-archive.json" "$TRACE_DIR/vault-archive.json"
+          copy_if "$OUT_DIR/fitness.json" "$TRACE_DIR/fitness.json"
+        fi
+      fi
+      ;;
+  esac
+fi
+
 # Pointer for orchestrator / GITHUB_OUTPUT
 echo "$TRACE_DIR" >"$OUT_DIR/latest-trace-dir.txt"
 echo "TRACE_DIR=$TRACE_DIR"

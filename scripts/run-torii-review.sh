@@ -136,6 +136,34 @@ fi
 
 stage save_trace "$SCRIPTS/save-trace.sh" || true
 
+# F73: trajectory fitness score + paper-safe vault archive (soft)
+if [[ -f "$SCRIPTS/trajectory_fitness.py" ]]; then
+  case "${TORII_TRAJECTORY_FITNESS:-1}" in
+    0|false|no|off) ;;
+    *)
+      _f73_review=""
+      if [[ -n "${REVIEW_FILE:-}" && -f "${REVIEW_FILE}" ]]; then
+        _f73_review="$REVIEW_FILE"
+      elif [[ -f "$OUT_DIR/review-${PR_NUMBER:-}.md" ]]; then
+        _f73_review="$OUT_DIR/review-${PR_NUMBER}.md"
+      elif compgen -G "$OUT_DIR/review*.md" > /dev/null; then
+        _f73_review="$(ls -1 "$OUT_DIR"/review*.md 2>/dev/null | head -1)"
+      fi
+      if [[ -n "$_f73_review" ]]; then
+        stage traj_fitness \
+          python3 "$SCRIPTS/trajectory_fitness.py" pack \
+            --out-dir "$OUT_DIR" \
+            --review "$_f73_review" \
+            --label "${TORII_TRACE_LABEL:-e2e}" \
+            --repo "${REPO:-${GITHUB_REPOSITORY:-}}" \
+            --pr "${PR_NUMBER:-}" \
+            --model "${TORII_MODEL:-${OPENROUTER_MODEL:-}}" \
+            --promote || true
+      fi
+      ;;
+  esac
+fi
+
 # F69: package trajectory for self-evolution (soft; always ingest when loop exists)
 if [[ -f "$SCRIPTS/self_evolve.py" && -d "$OUT_DIR/agent-loop" ]]; then
   stage evolve_ingest \

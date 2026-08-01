@@ -1,5 +1,38 @@
 # Torii research → product log
 
+## 2026-08-01 — F73 trajectory fitness + eval-trace vault
+
+### Papers / posts / OSS
+- **Hermes Agent Self-Evolution** (NousResearch): GEPA reads execution traces; multi-dim FitnessScore (correctness / procedure / conciseness) + constraint gates before adopt.
+- **Loop Engineering** loop-verifier skill: independent checker, default REJECT until evidence; checklist (scope/intent/tests).
+- **H9** trajectory packaging backlog: offline eval datasets from agent-loop packages.
+- Prior Torii: F69 trajectory ingest, F70 label score, F72 chain checker — none scored *loop procedure* or paper-indexed vault.
+
+### OSS / eng patterns
+1. Hermes fitness weights → deterministic path/procedure/tool/chain composite (no LLM judge cost).
+2. Loop-verifier procedure contract injected into prompt as soft rubric.
+3. Paper-safe vault: redacted slim summary + INDEX; large agent.log truncated/gitignored.
+
+### Insight
+Detection quality (F70–F72) was measurable; **agent procedure quality** and **durable eval traces for paper** were not. Highest ROI: score every run’s tool_use/path/procedure/chain and archive under `docs/benchmarks/traces/`.
+
+### Feature shipped (F73)
+- `scripts/trajectory_fitness.py` — `score` / `archive` / `inject` / `fixture` / `promote` / `pack`
+- Multi-dim fitness + L0–L3 levels; evolution ledger `fitness_signals`
+- Prompt inject `<!-- torii-f73-trajectory-fitness -->`; assemble + run-torii-review + save-trace wire
+- Toggles `TORII_TRAJECTORY_FITNESS` / `TORII_TRACE_VAULT`; adopted tool `trajectory-fitness`
+
+### Loop-engineering / Hermes practice used
+**Verifier checklist + multi-dim fitness on traces** — independent post-run scorer; vault for GEPA-style future evolution.
+
+### Metric
+- Offline fixture: good composite=0.77 weak=0.38 delta=0.39; inject_ok; path deep vs basename
+- Live: pytorch/pytorch#191813 deepseek/deepseek-v4-pro composite=0.8694 L3 POST_COMMENT=0
+- pytest: 457 passed
+
+### SHA
+`86526364d531620a7c66fa8acb6eccb009eada28`
+
 ## 2026-08-01 — F72 full-chain revalidation (maker/checker)
 
 ### Papers / posts

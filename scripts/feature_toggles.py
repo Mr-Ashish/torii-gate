@@ -417,6 +417,24 @@ REGISTRY: list[ToggleSpec] = [
         "F72 full-chain maker/checker revalidation inject + post-review gate",
         "F72",
     ),
+    ToggleSpec(
+        "trajectory_fitness",
+        "TORII_TRAJECTORY_FITNESS",
+        "bool",
+        True,
+        "product",
+        "F73 trajectory multi-dim fitness rubric inject + post-run score",
+        "F73",
+    ),
+    ToggleSpec(
+        "trace_vault",
+        "TORII_TRACE_VAULT",
+        "bool",
+        True,
+        "product",
+        "F73 archive slim paper-safe traces under docs/benchmarks/traces/",
+        "F73",
+    ),
     # --- numeric knobs (still registry-documented) ---
     ToggleSpec(
         "issue_context_max",

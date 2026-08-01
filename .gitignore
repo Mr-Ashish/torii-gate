@@ -27,3 +27,14 @@ memory/evolution/trajectories/**
 .luffy/
 .luffy-out/
 .luffy-hermes-home/
+
+# F73 eval-trace vault: keep INDEX + summary/fitness; ignore huge raw agent logs if reintroduced
+docs/benchmarks/traces/**/agent-loop/agent.log
+docs/benchmarks/traces/**/agent-loop/sessions-export/
+memory/eval-traces/**
+!memory/eval-traces/.gitkeep
+!docs/benchmarks/traces/INDEX.md
+!docs/benchmarks/traces/**/summary.json
+!docs/benchmarks/traces/**/fitness.json
+!docs/benchmarks/traces/**/meta.json
+!docs/benchmarks/traces/**/review.md

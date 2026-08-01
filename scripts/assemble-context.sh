@@ -396,6 +396,23 @@ try:
 except Exception:
     chain_revalidate_on = "0"
 
+# F73: trajectory fitness procedure rubric (Hermes multi-dim / loop-verifier)
+trajectory_fitness_on = "0"
+try:
+    import sys as _sys_f73
+    _sys_f73.path.insert(0, str(torii_root / "scripts"))
+    from trajectory_fitness import (  # type: ignore
+        enabled as traj_enabled,
+        inject_into_prompt as inject_traj,
+    )
+
+    if traj_enabled():
+        if inject_traj(Path(os.environ["PROMPT_PATH"])):
+            trajectory_fitness_on = "1"
+            prompt = Path(os.environ["PROMPT_PATH"]).read_text(encoding="utf-8")
+except Exception:
+    trajectory_fitness_on = "0"
+
 # F57: Mermaid architecture from changed files (soft)
 mermaid_on = "0"
 mermaid_nodes = "0"
@@ -555,6 +572,7 @@ meta = {
     "TAINT_CANDIDATES": taint_candidates,
     "FEDERATED_SIGNALS": federated_signals_on,
     "CHAIN_REVALIDATE": chain_revalidate_on,
+    "TRAJECTORY_FITNESS": trajectory_fitness_on,
 }
 with open(os.environ["META_PATH"], "w") as fh:
     for k, v in meta.items():

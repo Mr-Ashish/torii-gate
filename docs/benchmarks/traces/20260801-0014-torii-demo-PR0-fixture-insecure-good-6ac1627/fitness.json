@@ -1,0 +1,33 @@
+{
+  "tool_use": 0.35,
+  "path_evidence": 0.75,
+  "procedure": 1.0,
+  "chain_quality": 1.0,
+  "conciseness": 1.0,
+  "length_penalty": 0.0,
+  "composite": 0.77,
+  "level": "L2",
+  "verdict": "REQUEST_CHANGES",
+  "path_hits": [
+    "demo/insecure/app.py"
+  ],
+  "tool_call_turns": 0,
+  "theme_hits": 24,
+  "trigger_hits": 6,
+  "review_chars": 1162,
+  "feedback": [
+    "no tool-turn evidence; neutral tool_use"
+  ],
+  "signals": {
+    "weights": {
+      "path_evidence": 0.4,
+      "procedure": 0.25,
+      "tool_use": 0.2,
+      "chain_quality": 0.15
+    },
+    "raw_before_penalty": 0.77
+  },
+  "feature": "F73",
+  "schema_version": 1,
+  "scored_at": "2026-08-01T00:14:28Z"
+}

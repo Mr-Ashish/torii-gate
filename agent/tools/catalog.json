@@ -124,6 +124,18 @@
       "status": "adopted",
       "feature": "F72",
       "script": "scripts/chain_revalidate.py"
+    },
+    {
+      "id": "trajectory-fitness",
+      "name": "Trajectory fitness + eval-trace vault (F73)",
+      "status": "adopted",
+      "source": "research_oss",
+      "kind": "workflow_tool",
+      "toolset": "terminal",
+      "script": "scripts/trajectory_fitness.py",
+      "rationale": "Hermes multi-dim fitness + loop-verifier procedure contract + paper-safe vault",
+      "feature": "F73",
+      "adopted_at": "2026-08-01T00:15:00Z"
     }
   ],
   "candidates": [

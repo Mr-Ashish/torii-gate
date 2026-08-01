@@ -1,0 +1,36 @@
+{
+  "schema_version": 1,
+  "feature": "F73",
+  "run_id": "20260801-0016-pytorch-pytorch-PR191813-pytorch-pr191813-172d21b",
+  "archived_at": "2026-08-01T00:16:02Z",
+  "repo": "pytorch/pytorch",
+  "pr_number": "191813",
+  "model": "deepseek/deepseek-v4-pro",
+  "label": "pytorch-pr191813",
+  "fitness": {
+    "composite": 0.8694,
+    "level": "L3",
+    "tool_use": 0.65,
+    "path_evidence": 1.0,
+    "procedure": 0.9375,
+    "chain_quality": 0.7,
+    "verdict": "REQUEST_CHANGES",
+    "tool_call_turns": 2
+  },
+  "artifacts": [
+    "review.md",
+    "fitness.json",
+    "timings.json",
+    "hermes-usage.json",
+    "meta.env",
+    "prompt.md",
+    "context.md",
+    "taint-candidates.json",
+    "agent-loop/agent-loop.json",
+    "agent-loop/agent-loop.md",
+    "agent-loop/usage.json",
+    "agent-loop/agent.log"
+  ],
+  "git_safe": true,
+  "notes": "Redacted slim vault entry for eval/paper; large blobs omitted/truncated"
+}

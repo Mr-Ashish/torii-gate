@@ -26,6 +26,18 @@
         "verdict_approve"
       ],
       "ingested_at": "2026-07-31T19:23:47Z"
+    },
+    {
+      "trajectory_id": "pr191813-20260801_054522_a280fe",
+      "path": "memory/evolution/trajectories/pr191813-20260801_054522_a280fe",
+      "repo": "pytorch/pytorch",
+      "pr_number": "191813",
+      "tool_call_turns": 2,
+      "signals": [
+        "f50_test_gap",
+        "verdict_request_changes"
+      ],
+      "ingested_at": "2026-08-01T00:16:02Z"
     }
   ],
   "proposals": [],
@@ -97,5 +109,27 @@
       "feature": "F69"
     }
   ],
-  "updated_at": "2026-07-31T19:23:47Z"
+  "updated_at": "2026-08-01T00:16:02Z",
+  "fitness_signals": [
+    {
+      "at": "2026-08-01T00:16:02Z",
+      "feature": "F73",
+      "run_id": "20260801-0016-pytorch-pytorch-PR191813-pytorch-pr191813-172d21b",
+      "repo": "pytorch/pytorch",
+      "pr": "191813",
+      "composite": 0.8694,
+      "level": "L3",
+      "tool_use": 0.65,
+      "path_evidence": 1.0,
+      "procedure": 0.9375,
+      "chain_quality": 0.7,
+      "verdict": "REQUEST_CHANGES",
+      "feedback": [
+        "no trigger/exploit scenario language",
+        "chain JSON absent; inferred from path+theme"
+      ],
+      "low_fitness": false,
+      "high_fitness": true
+    }
+  ]
 }

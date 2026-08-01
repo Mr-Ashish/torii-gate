@@ -1,0 +1,26 @@
+{
+  "schema_version": 1,
+  "feature": "F73",
+  "run_id": "20260801-0014-torii-demo-PR0-fixture-insecure-good-6ac1627",
+  "archived_at": "2026-08-01T00:14:28Z",
+  "repo": "torii/demo",
+  "pr_number": "0",
+  "model": "fixture",
+  "label": "fixture-insecure-good",
+  "fitness": {
+    "composite": 0.77,
+    "level": "L2",
+    "tool_use": 0.35,
+    "path_evidence": 0.75,
+    "procedure": 1.0,
+    "chain_quality": 1.0,
+    "verdict": "REQUEST_CHANGES",
+    "tool_call_turns": 0
+  },
+  "artifacts": [
+    "review.md",
+    "fitness.json"
+  ],
+  "git_safe": true,
+  "notes": "Redacted slim vault entry for eval/paper; large blobs omitted/truncated"
+}
