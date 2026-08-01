@@ -1,31 +1,28 @@
 # Torii Gate — first-principles product scorecard
 
-_Scored: `2026-08-01T18:57:17Z` · commercial **8.5** · overall **8.0** (cap until paid pilot)._
+_Scored: `2026-08-01T19:03:02Z` · commercial fixture **8.5** · overall **8.0** (cap until **paid** pilot closes)._
 
-## Highlights
+## Dims (selected)
 
-| Dim | Score | Note |
-|-----|------:|------|
-| #5 Evidence | **9** | Public eval freshness |
-| #9 Enterprise | **8.5** | Isolation proof |
-| #11 GTM | **8.5** | **Deployed landing** GitHub Pages URL |
-| #3 JTBD | **8.5** | Gate onboarding + quieter |
-| #10 Pricing | **7** | Open core (pre-revenue) |
+| # | Dim | Score | Note |
+|---|-----|------:|------|
+| 10 | Pricing / packaging | **7.5** | PRICING + **PILOT** design-partner path (still pre-revenue) |
+| 11 | GTM | **8.5** | Pages landing + pilot apply |
+| 2 | ICP | **8.5** | Clear partner persona |
+| 5 | Evidence | **9** | Freshness badge |
+| 9 | Enterprise | **8.5** | Isolation proof |
 
-**Overall:** **8.0** capped (raw ~8.3).
+**Overall:** **8.0** capped until first paid pilot updates traction table.
 
 ## Gaps
 
 | Rank | Gap | Status |
 |-----:|-----|--------|
-| 1–6 | help · pricing · quieter · isolation · freshness · gate onboarding | **shipped** |
-| 7 | Deployed landing | **shipped** `cfa5ab6` |
-| 8 | Paid pilot / revenue proof | next |
-| 9 | SARIF Trust | vision |
+| 1–7 | help · pricing · quieter · isolation · freshness · onboarding · pages | **shipped** |
+| 8 | Paid pilot / design-partner path | **this fire** (path shipped; revenue still $0) |
+| 9 | First closed paid pilot (unblocks commercial >8.5) | next · human |
 | 10 | No F185+ without customer win | standing |
 
 ```bash
-python3 scripts/build_landing_site.py build
-python3 scripts/build_landing_site.py fixture
-# Enable: Settings → Pages → GitHub Actions
+python3 scripts/pilot_surface.py fixture
 ```

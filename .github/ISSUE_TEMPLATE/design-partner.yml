@@ -1,0 +1,72 @@
+name: Design partner
+description: Apply to dogfood Torii Gate on a real repo (free) — no fake logos, honest feedback.
+title: "[design-partner] "
+labels: ["design-partner"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for interest in Torii Gate. We are **pre-revenue** and welcome design partners who will install on a **real** repo and require **`torii/gate`**.
+
+        Please do **not** invent company logos for us — we will not invent yours.
+  - type: input
+    id: org
+    attributes:
+      label: Organization / team
+      description: Who would run Torii (Platform / AppSec / eng lead)?
+      placeholder: Acme Platform Eng
+    validations:
+      required: true
+  - type: input
+    id: repo
+    attributes:
+      label: Target repo (can be private)
+      description: Owner/name you plan to install on (or “private — will share after NDA”).
+      placeholder: acme/payments-api
+    validations:
+      required: true
+  - type: dropdown
+    id: timeline
+    attributes:
+      label: When can you install?
+      options:
+        - Within 1 week
+        - Within 2 weeks
+        - Within 30 days
+        - Exploring only
+    validations:
+      required: true
+  - type: checkboxes
+    id: commit
+    attributes:
+      label: Partner commitments
+      options:
+        - label: I can require status check torii/gate (or explain blockers)
+          required: true
+        - label: I will share 1–2 short feedback notes after first runs
+          required: true
+        - label: Public “design partner” mention only if I opt in later
+          required: false
+  - type: textarea
+    id: pain
+    attributes:
+      label: Pain today
+      description: Why a security merge authority vs another review bot?
+      placeholder: AI PR volume, SAST noise, need required check with path evidence…
+    validations:
+      required: true
+  - type: textarea
+    id: success
+    attributes:
+      label: Success in 30 days looks like
+      placeholder: Required torii/gate on main · quieter false positives · known cost/PR…
+    validations:
+      required: true
+  - type: input
+    id: contact
+    attributes:
+      label: Best contact
+      description: GitHub handle is fine; optional email.
+      placeholder: @you
+    validations:
+      required: true

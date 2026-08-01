@@ -52,9 +52,12 @@ Docs: [`INSTALL.md`](INSTALL.md) · [`GOLDEN-PATH.md`](GOLDEN-PATH.md) · [`QUIE
 
 ## Contact / design partners
 
+**Design partner & paid pilot path (honest, pre-revenue):** [`PILOT.md`](PILOT.md)
+
+- Apply: [Design partner issue template](https://github.com/Mr-Ashish/torii-gate/issues/new?template=design-partner.yml)  
 - Repo: https://github.com/Mr-Ashish/torii-gate  
 - Product brief: [`PRODUCT.md`](../PRODUCT.md)  
-- Landing: [`docs/brand/landing.html`](brand/landing.html)  
+- Landing: https://mr-ashish.github.io/torii-gate/ · source [`docs/brand/landing.html`](brand/landing.html)  
 - Programme notes (not pricing SoT): [`docs/hub71/ACCESS-APPLY.md`](hub71/ACCESS-APPLY.md)
 
-*Replace this section with a real sales link when billing is live. Never invent customers or closed deals.*
+*Paid billing not live. Never invent customers or closed deals. Traction table lives in PILOT.md.*

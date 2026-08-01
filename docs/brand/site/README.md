@@ -12,4 +12,4 @@ Enable Pages: repo **Settings → Pages → GitHub Actions** (workflow `.github/
 
 Source HTML is rewritten so doc links open on `https://github.com/Mr-Ashish/torii-gate/blob/main/`.
 
-_Built: `2026-08-01T18:57:17Z` · feature **DEPLOYED_LANDING**_
+_Built: `2026-08-01T19:06:19Z` · feature **DEPLOYED_LANDING**_

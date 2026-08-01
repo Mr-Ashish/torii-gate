@@ -1,3 +1,33 @@
+## 2026-08-01 — PILOT_PATH: design partner + paid pilot surface (Phase B #8)
+
+### Papers / posts
+- Commercial honesty: empty traction + apply path beats fake logos.
+- Open-core SaaS: free core → design partner → paid Team/Business pilot.
+
+### Decide / copy / skip
+- **Copy:** docs/PILOT.md · design-partner issue template · pilot_surface fixture.
+- **Copy:** Wire PRICING/README/PRODUCT/landing; honesty gates (0 paid, never invent).
+- **Skip:** Stripe; inventing customers; F185+.
+
+### Feature shipped (PILOT_PATH)
+- Design partner apply path + paid pilot terms
+- pilot_surface 14/14 · rebuild landing site
+
+### Metric
+- Offline: pilot fixture_pass 14/14 · buyer pass
+- Live Modal: pytorch#191842 BIT3_OK ~172s · fail-closed 0-tool COMMENT · POST_COMMENT=0
+- Traces: docs/benchmarks/traces/20260801-1903-pytorch-pytorch-PR191842-modal-pilot-path/
+- Modal: https://modal.com/apps/mr-ashish/main/ap-AzZdPQG7VszfMAI8VoCVmX
+
+### scorecard_target
+pricing (#10) · GTM (#11)
+
+### dim_lift
+Clear path free→partner→pilot without fake ARR
+
+### SHA
+(pending)
+
 ## 2026-08-01 — DEPLOYED_LANDING: GitHub Pages site from landing.html (Phase B #7)
 
 ### Papers / posts

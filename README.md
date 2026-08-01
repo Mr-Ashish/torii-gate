@@ -102,6 +102,7 @@ Day-one path stays install → require **`torii/gate`** → first review. Everyt
 | Enterprise light | [`docs/enterprise/`](docs/enterprise/) · install `--tenant` | `python3 scripts/torii.py enterprise -- status` |
 | **Commercial rollup** | [`docs/benchmarks/commercial-scorecard.md`](docs/benchmarks/commercial-scorecard.md) | `python3 scripts/torii.py commercial -- status` |
 | **Pricing (open core)** | [`docs/PRICING.md`](docs/PRICING.md) | Open Gate free · Team · Business · Enterprise roadmap |
+| **Design partner / pilot** | [`docs/PILOT.md`](docs/PILOT.md) | Free design partner · optional paid pilot · **0 paid customers** (honest) |
 
 **Public labeled eval** (Juice Shop + NodeGoat + Django/Flask themes, fixed **seed 42**, model pin, freshness badge):  
 [`docs/benchmarks/public-eval/SCORECARD.md`](docs/benchmarks/public-eval/SCORECARD.md) · [`BADGE.md`](docs/benchmarks/public-eval/BADGE.md) · `python3 scripts/public_eval.py report` · `status` (age_hours / freshness_ok)
