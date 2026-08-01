@@ -30,7 +30,7 @@ Adopted scorecard skills without tool-hit measurement are dashboard theater. Hig
 **Measure mid-run tool utilization** — scorecard ops mirror recovery util F121/F124.
 
 ### SHA
-`PENDING`
+`dac45e1fe4433c468cd130be728d348df2ff020c`
 
 
 ## 2026-08-01 — F135 scorecard skill fitness ingest + doctor panel
