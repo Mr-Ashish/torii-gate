@@ -67,6 +67,15 @@ def check(root: Path) -> dict[str, Any]:
         "install_md_deeper_self_evolve": "SELF-EVOLVE" in im,
         "install_md_deeper_federation": "FEDERATION" in im,
         "install_md_deeper_memory": "MEMORY.md" in im,
+        # ENT_INSTALL_TENANT: enterprise light + quieter checklist on install
+        "install_md_enterprise_tenant": bool(
+            re.search(r"--tenant|TORII_MEMORY_TENANT|Enterprise light", im, re.I)
+            and ("enterprise/" in im or "enterprise -- status" in im)
+        ),
+        "install_md_quieter_checklist": bool(
+            re.search(r"quieter checklist|Own-repo quieter|quieter -- status", im, re.I)
+            and "torii/gate" in im
+        ),
         # LANDING_COST / day-2 cost visibility (dim 7 + ops)
         "install_md_cost_pr_day2": bool(
             re.search(r"Cost\s*/\s*PR|cost/PR", im, re.I)
@@ -91,6 +100,17 @@ def check(root: Path) -> dict[str, Any]:
         "install_sh_status_tip": bool(
             re.search(r"status\s+--text|status --text", sh)
             and ("one-screen" in sh.lower() or "Day-2" in sh)
+        ),
+        "install_sh_tenant_flag": bool(
+            re.search(r"--tenant", sh)
+            and "TORII_MEMORY_TENANT" in sh
+            and "tenant_id=" in sh
+        ),
+        "install_sh_enterprise_tip": bool(
+            re.search(r"enterprise light|enterprise -- status", sh, re.I)
+        ),
+        "install_sh_quieter_tip": bool(
+            re.search(r"quieter -- status|Quieter chart", sh, re.I)
         ),
         "pack_readme_cost": bool(
             re.search(r"cost/PR|cost-pr-dashboard|ops -- status", _read(pack_readme), re.I)

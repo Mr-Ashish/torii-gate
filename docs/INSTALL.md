@@ -19,6 +19,9 @@ install → secret → require torii/gate → @torii review this pr
 
 # hub-managed thin workflow (upgrades follow hub main):
 ./scripts/install-torii.sh --caller /path/to/your-app
+
+# optional enterprise light: stamp multi-org tenant id (repo-local memory still default)
+./scripts/install-torii.sh --tenant acme-platform /path/to/your-app
 ```
 
 ```bash
@@ -95,7 +98,7 @@ python3 scripts/torii.py doctor
 | [`ops/RELIABILITY.md`](ops/RELIABILITY.md) | fail-closed defaults · smoke CI · cost/PR |
 | [`WORKFLOWS.md`](WORKFLOWS.md) | pipelines-as-code (validate offline) |
 | [`QUIETER.md`](QUIETER.md) · [`TOOL-USE.md`](TOOL-USE.md) | quieter + tool-use charts |
-| [`FEDERATION.md`](FEDERATION.md) | privacy-safe multi-tenant heat |
+| [`enterprise/`](enterprise/) · [`FEDERATION.md`](FEDERATION.md) | enterprise light + multi-tenant privacy |
 | [`MEMORY.md`](MEMORY.md) | compound memory — FP die twice |
 | [`SELF-EVOLVE.md`](SELF-EVOLVE.md) | day-2 skill self-evolution (dual-gated) |
 | [`workflows/INSTALL-GUIDE.md`](workflows/INSTALL-GUIDE.md) | full capability matrix |
@@ -113,7 +116,16 @@ python3 scripts/torii.py quieter -- status
 python3 scripts/torii.py self-evolve -- status
 python3 scripts/torii.py ops -- status
 python3 scripts/torii.py golden-path -- status
+python3 scripts/torii.py enterprise -- status
 ```
+
+### Own-repo quieter checklist
+
+1. Required check **`torii/gate`** is on (step 3 above).  
+2. Review a few real PRs (`@torii review this pr`).  
+3. Measure: `python3 scripts/torii.py quieter -- status` → [`QUIETER.md`](QUIETER.md).  
+
+Buyer story: *the gate gets stricter and quieter over time — not noisier.*
 
 ### Cost / PR visibility (day-2)
 
@@ -127,5 +139,22 @@ python3 scripts/golden_path_metrics.py report
 ```
 
 Dogfood vault (Modal + Hermes, `POST_COMMENT=0`) feeds measured p50 cost/PR and time-to-signal. Soft budget: repo var `TORII_MAX_COST_USD` warns without failing by default. See [`ops/cost-pr-dashboard.md`](ops/cost-pr-dashboard.md) · [`ops/RELIABILITY.md`](ops/RELIABILITY.md).
+
+### Enterprise light (optional fleet)
+
+Day-one stays **repo-local** (`.torii/`). Multi-org fleets can stamp a tenant id:
+
+| Knob | What |
+|------|------|
+| `./scripts/install-torii.sh --tenant <id> DEST` | Writes `tenant_id=` on `.torii-install-stamp` + `.torii/tenant.env` (`TORII_MEMORY_TENANT`) |
+| Repo var / secret `TORII_MEMORY_TENANT` | Same id without re-install |
+| Hub publish | **Opt-in** (`TORII_HUB_PUBLISH=1`) — themes only, never paths/snippets/USD |
+
+```bash
+python3 scripts/torii.py enterprise -- status
+python3 scripts/torii.py enterprise -- fixture
+```
+
+Privacy: cost/PR dogfood stays **local vault only** — never federated. Docs: [`enterprise/ORG-ISOLATION.md`](enterprise/ORG-ISOLATION.md) · [`enterprise/PRIVACY.md`](enterprise/PRIVACY.md) · [`FEDERATION.md`](FEDERATION.md).
 
 Memory keeps the next PR quieter (path-evidenced FP/TP store). Self-evolution proposes skills from measured gaps; adopt stays dual-gated. Details: [`MEMORY.md`](MEMORY.md) · [`SELF-EVOLVE.md`](SELF-EVOLVE.md).

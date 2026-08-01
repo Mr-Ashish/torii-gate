@@ -3,7 +3,7 @@
   "schema": 1,
   "scorecard_target": "enterprise",
   "dim_lift": "enterprise light (dim 9) multi-tenant product surface",
-  "scored_at": "2026-08-01T16:42:44Z",
+  "scored_at": "2026-08-01T17:43:57Z",
   "one_liner": "Org isolation + federation privacy as product docs and audit CLI \u2014 themes only, no paths/snippets/raw tenant IDs",
   "tenants": [
     {
@@ -176,7 +176,11 @@
     "org_diagram": true,
     "federation_buyer_doc": true,
     "federation_buyer_mentions_privacy": true,
-    "federation_buyer_mentions_gate": true
+    "federation_buyer_mentions_gate": true,
+    "federation_buyer_cost_local": true,
+    "install_sh_tenant_flag": true,
+    "install_md_enterprise_light": true,
+    "org_mentions_install_tenant": true
   },
   "federated_hub_fixture": {
     "available": true,

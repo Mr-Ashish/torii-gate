@@ -7,7 +7,7 @@
 | Layer | What | Isolation |
 |-------|------|-----------|
 | **GitHub org / repo** | Where the required check `torii/gate` runs | Repo secrets, labels, branch protection stay in that org |
-| **Tenant id** | Optional `TORII_MEMORY_TENANT` (or install stamp) | Sanitized id → `memory/tenants/<tenant>/` tree |
+| **Tenant id** | Optional `TORII_MEMORY_TENANT` or `./scripts/install-torii.sh --tenant <id>` (stamp + `.torii/tenant.env`) | Sanitized id → `memory/tenants/<tenant>/` tree when hub mode is on |
 | **Repo-local memory** | `.torii/` on the target default branch | Never copied to another customer’s tree |
 | **Hub federation** | `memory/federation/*.json` on the hub | Themes + CWE + basenames + **tenant hashes** only |
 

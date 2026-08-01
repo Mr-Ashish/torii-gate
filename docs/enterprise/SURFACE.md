@@ -2,7 +2,7 @@
 
 # Enterprise surface inventory
 
-_Generated: `2026-08-01T16:42:44Z` · **enterprise_ok=True**_
+_Generated: `2026-08-01T17:43:57Z` · **enterprise_ok=True**_
 
 Org isolation + federation privacy as product docs and audit CLI — themes only, no paths/snippets/raw tenant IDs
 

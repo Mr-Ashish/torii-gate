@@ -1,4 +1,38 @@
 
+## 2026-08-01 — ENT_INSTALL_TENANT: install --tenant + enterprise/quieter install path
+
+### Papers / posts
+- Enterprise dim 9: multi-tenant product surface without SaaS control plane.
+- ORG-ISOLATION promised “install stamp” tenant id — stamp had no tenant field.
+- JTBD quieter: INSTALL required check path but no own-repo quieter checklist.
+
+### Decide / copy / skip
+- **Copy:** `install-torii.sh --tenant` → stamp `tenant_id=` + `.torii/tenant.env` (TORII_MEMORY_TENANT).
+- **Copy:** INSTALL enterprise light + own-repo quieter checklist; enterprise fixture gates install path.
+- **Skip:** F185+; no hub auto-publish; default remains repo-local memory.
+
+### Feature shipped (ENT_INSTALL_TENANT)
+- install-torii --tenant sanitize + write_tenant_env + stamp fields
+- INSTALL.md enterprise light + quieter checklist
+- enterprise_surface + install_ux checks
+
+### Metric
+- Offline: enterprise fixture · install_ux 28/28 · commercial 8.5
+- Live Modal: pytorch#191840 BIT3_OK ~300s wall / ~131s timed · tools=5 POST_COMMENT=0
+- cert=`gc-f77c5e29fda99ab8` · cost≈$0.016
+- Traces: docs/benchmarks/traces/20260801-1743-pytorch-pytorch-PR191840-modal-ent-install-tenant/
+- Modal: https://modal.com/apps/mr-ashish/main/ap-vMdc8Gmvbd7Qs35NqLwwct
+
+### scorecard_target
+enterprise (#9) · install (#7) · JTBD quieter (#3)
+
+### dim_lift
+install path stamps tenant + quieter/enterprise day-2 without research archaeology
+
+### SHA
+_pending_
+
+
 ## 2026-08-01 — STATUS_DAY2: buyer one-screen on status/doctor
 
 ### Papers / posts

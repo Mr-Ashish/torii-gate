@@ -1,0 +1,32 @@
+{
+  "started_at": "2026-08-01T17:44:35Z",
+  "ended_at": "2026-08-01T17:46:46Z",
+  "total_seconds": 131,
+  "stages": [
+    {
+      "name": "preload_memory",
+      "seconds": 2,
+      "exit_code": 0
+    },
+    {
+      "name": "assemble",
+      "seconds": 5,
+      "exit_code": 0
+    },
+    {
+      "name": "hermes",
+      "seconds": 124,
+      "exit_code": 0
+    },
+    {
+      "name": "distill",
+      "seconds": 0,
+      "exit_code": 0
+    },
+    {
+      "name": "fp_resolve_update",
+      "seconds": 0,
+      "exit_code": 0
+    }
+  ]
+}

@@ -143,6 +143,16 @@ def docs_surface(root: Path) -> dict[str, bool]:
     )
     fed_buyer = root / "docs" / "FEDERATION.md"
     fed_txt = fed_buyer.read_text(encoding="utf-8") if fed_buyer.is_file() else ""
+    install_sh = (
+        (root / "scripts" / "install-torii.sh").read_text(encoding="utf-8", errors="replace")
+        if (root / "scripts" / "install-torii.sh").is_file()
+        else ""
+    )
+    install_md = (
+        (root / "docs" / "INSTALL.md").read_text(encoding="utf-8", errors="replace")
+        if (root / "docs" / "INSTALL.md").is_file()
+        else ""
+    )
     # ENTERPRISE_COST_PRIVACY: cost/PR dogfood is local vault, not federated
     privacy_cost_local = bool(
         re.search(r"Cost\s*/\s*PR telemetry|cost/PR telemetry", privacy_txt, re.I)
@@ -179,6 +189,23 @@ def docs_surface(root: Path) -> dict[str, bool]:
         "federation_buyer_cost_local": bool(
             re.search(r"cost/PR|cost\s*/\s*PR|USD|hermes", fed_txt, re.I)
             and re.search(r"never|local vault|not federat", fed_txt, re.I)
+        ),
+        # ENT_INSTALL_TENANT: install path stamps tenant + INSTALL documents enterprise light
+        "install_sh_tenant_flag": bool(
+            re.search(r"--tenant", install_sh)
+            and "TORII_MEMORY_TENANT" in install_sh
+            and "tenant_id=" in install_sh
+        ),
+        "install_md_enterprise_light": bool(
+            re.search(r"Enterprise light|--tenant|TORII_MEMORY_TENANT", install_md, re.I)
+            and (
+                "enterprise/" in install_md
+                or "enterprise -- status" in install_md
+                or "ORG-ISOLATION" in install_md
+            )
+        ),
+        "org_mentions_install_tenant": bool(
+            re.search(r"install-torii|--tenant|tenant\.env", org_txt, re.I)
         ),
     }
 
@@ -255,6 +282,8 @@ def build_report(root: Path | None = None) -> dict[str, Any]:
         and docs.get("privacy")
         and docs.get("org_diagram")
         and docs.get("privacy_cost_telemetry_local")
+        and docs.get("install_sh_tenant_flag")
+        and docs.get("install_md_enterprise_light")
         and fed.get("all_ok")
         and hub.get("fixture_pass")
     )
@@ -362,6 +391,9 @@ def cmd_fixture(args: argparse.Namespace) -> int:
         "docs_federation_buyer_privacy": bool(docs.get("federation_buyer_mentions_privacy")),
         "docs_federation_buyer_gate": bool(docs.get("federation_buyer_mentions_gate")),
         "docs_federation_buyer_cost_local": bool(docs.get("federation_buyer_cost_local")),
+        "install_sh_tenant_flag": bool(docs.get("install_sh_tenant_flag")),
+        "install_md_enterprise_light": bool(docs.get("install_md_enterprise_light")),
+        "org_mentions_install_tenant": bool(docs.get("org_mentions_install_tenant")),
         "federation_audited": int(fed.get("files_n") or 0) >= 1,
         "federation_all_ok": bool(fed.get("all_ok")),
         "hub_fixture": bool(hub.get("fixture_pass")),

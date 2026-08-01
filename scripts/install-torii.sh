@@ -17,6 +17,7 @@
 #   --dest DIR          Target repo root (required unless positional DIR)
 #   --caller            Hub-managed thin workflow only (no agent/scripts copy)
 #   --minimal           5-minute pack: runtime gate scripts only (no bench/eval/modal)
+#   --tenant ID         Optional enterprise-light tenant id (stamp + .torii/tenant.env)
 #   --dry-run           Print actions; do not write
 #   --force             Overwrite existing files without prompting
 #   --with-hub-ingest   Also copy ingest-torii-run.yml (hub repo only; pack mode)
@@ -35,13 +36,14 @@ WITH_INGEST=0
 WITH_RUNNER=0
 CALLER_MODE=0
 MINIMAL=0
+TENANT=""
 
 log() { printf '%s\n' "$*" >&2; }
 die() { log "ERROR: $*"; exit 1; }
 
 usage() {
   # Header comment only (stop before set -euo pipefail)
-  sed -n '2,26p' "$0" | sed 's/^# \{0,1\}//'
+  sed -n '2,28p' "$0" | sed 's/^# \{0,1\}//'
   exit "${1:-0}"
 }
 
@@ -59,6 +61,10 @@ while [[ $# -gt 0 ]]; do
     --force) FORCE=1; shift ;;
     --caller) CALLER_MODE=1; shift ;;
     --minimal) MINIMAL=1; shift ;;
+    --tenant)
+      TENANT="${2:-}"
+      shift 2
+      ;;
     --with-hub-ingest) WITH_INGEST=1; shift ;;
     --with-runner-build) WITH_RUNNER=1; shift ;;
     -h | --help) usage 0 ;;
@@ -255,13 +261,45 @@ copy_tree_files() {
   done
 }
 
+# Sanitize tenant id for stamp / env (enterprise light — no paths/snippets).
+sanitize_tenant() {
+  local raw="${1:-}"
+  # allow alnum . _ - only; collapse others to -
+  raw="$(printf '%s' "$raw" | tr '[:upper:]' '[:lower:]' | sed -E 's/[^a-z0-9._-]+/-/g; s/^-+//; s/-+$//; s/-{2,}/-/g')"
+  # cap length for filesystem safety
+  printf '%s' "${raw:0:64}"
+}
+
+write_tenant_env() {
+  # Optional enterprise-light: stamp TORII_MEMORY_TENANT for multi-org fleets.
+  # Default remains repo-local .torii/ with no tenant id required.
+  local tid
+  tid="$(sanitize_tenant "${TENANT}")"
+  [[ -n "$tid" ]] || return 0
+  local envf="$DEST/.torii/tenant.env"
+  if [[ "$DRY_RUN" == "1" ]]; then
+    log "DRY  would write $envf TORII_MEMORY_TENANT=$tid"
+    return 0
+  fi
+  mkdir -p "$DEST/.torii"
+  {
+    echo "# Torii enterprise light — optional multi-org tenant id"
+    echo "# Repo-local memory stays under .torii/; hub federation (opt-in) uses a tenant hash only."
+    echo "# Docs: docs/enterprise/ORG-ISOLATION.md · docs/enterprise/PRIVACY.md"
+    echo "TORII_MEMORY_TENANT=$tid"
+  } >"$envf"
+  log "OK   $envf (TORII_MEMORY_TENANT=$tid)"
+}
+
 write_stamp() {
   local mode="$1"
   local STAMP="$DEST/.torii-install-stamp"
   local VERSION
+  local tid
   VERSION="$(git -C "$SRC" rev-parse --short HEAD 2>/dev/null || echo unknown)"
+  tid="$(sanitize_tenant "${TENANT}")"
   if [[ "$DRY_RUN" == "1" ]]; then
-    log "DRY  would write $STAMP (mode=$mode source_sha=$VERSION)"
+    log "DRY  would write $STAMP (mode=$mode source_sha=$VERSION tenant_id=${tid:-none})"
     return 0
   fi
   {
@@ -269,6 +307,9 @@ write_stamp() {
     echo "source_sha=$VERSION"
     echo "source_path=$SRC"
     echo "mode=$mode"
+    echo "memory_default=repo-local"
+    echo "tenant_id=${tid:-}"
+    echo "enterprise_docs=docs/enterprise/"
     if [[ "$mode" == "caller" ]]; then
       echo "pack=torii-pr-review-caller.yml (hub-managed F10)"
     else
@@ -292,6 +333,7 @@ if [[ "$CALLER_MODE" == "1" ]]; then
     "$SRC/pack/torii-pr-review-caller.yml" \
     "$DEST/.github/workflows/torii-pr-review.yml"
   write_stamp "caller"
+  write_tenant_env
   log ""
   log "Next steps (hub-managed / F10 caller):"
   log "  1. Commit .github/workflows/torii-pr-review.yml and push to the default branch."
@@ -300,11 +342,13 @@ if [[ "$CALLER_MODE" == "1" ]]; then
   log "  4. Optional vars: TORII_MODEL, TORII_HERMES_COMMIT, TORII_COOLDOWN_SECONDS, TORII_RUNNER_IMAGE, TORII_MEMORY_PATH."
   log "  5. Branch protection: require status check context torii/gate (security-aware merge signal)."
   log "  6. On a PR, comment: @torii review this pr"
-log "  7. Capability matrix: python3 scripts/workflow_as_code.py install-guide"
-log "  8. Offline smoke: ./scripts/smoke-torii-gate.sh && python3 scripts/workflow_as_code.py validate"
+  log "  7. Capability matrix: python3 scripts/workflow_as_code.py install-guide"
+  log "  8. Offline smoke: ./scripts/smoke-torii-gate.sh && python3 scripts/workflow_as_code.py validate"
   log "  Runtime agent/scripts are fetched from Mr-Ashish/torii-gate@main each run."
   log "  Tip: pin the uses: ref to a commit SHA (not @main) to avoid blast radius from hub main."
   log "  Tip: seed .torii/MEMORY.md on the target default branch (or re-install pack mode once)."
+  log "  Tip: enterprise light — optional --tenant acme-org → TORII_MEMORY_TENANT (docs/enterprise/)."
+  log "  Tip: quieter-over-time after torii/gate: python3 scripts/torii.py quieter -- status"
   log "Done."
   exit 0
 fi
@@ -463,6 +507,7 @@ EOF
 seed_local_memory
 
 write_stamp "pack"
+write_tenant_env
 
 log ""
 log "Next steps (5-minute path — see docs/INSTALL.md):"
@@ -473,7 +518,8 @@ log "  4. On a PR: @torii review this pr"
 log "  5. Day-2: python3 scripts/torii.py status --text  (one-screen commercial · cost · cert · quieter)"
 log "  6. Day-2 doctor: python3 scripts/torii.py doctor"
 log "  7. Day-2 cost/PR: python3 scripts/torii.py ops -- status  (docs/ops/cost-pr-dashboard.md)"
-log "One CLI: python3 scripts/torii.py help|status|doctor|memory|gate|ops  (not peer scripts on day one)"
+log "  8. Quieter chart (own repo): python3 scripts/torii.py quieter -- status  (docs/QUIETER.md)"
+log "One CLI: python3 scripts/torii.py help|status|doctor|memory|gate|ops|enterprise  (not peer scripts on day one)"
 if [[ "$MINIMAL" == "1" ]]; then
   log "Pack surface: minimal (gate/review). Re-install without --minimal for full compound-loop scripts."
 else
@@ -482,4 +528,6 @@ fi
 log "  Tip: offline smoke: bash scripts/smoke-torii-gate.sh"
 log "  Tip: hub-managed thin caller: re-run with --caller"
 log "  Tip: measured dogfood cost is local vault only (never federated) — docs/enterprise/PRIVACY.md"
+log "  Tip: enterprise light multi-org: --tenant <id> or TORII_MEMORY_TENANT · python3 scripts/torii.py enterprise -- status"
+log "  Tip: install stamp records tenant_id= + memory_default=repo-local (.torii-install-stamp)"
 log "Done."

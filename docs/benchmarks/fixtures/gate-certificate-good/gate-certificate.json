@@ -4,7 +4,7 @@
   "one_liner": "Deterministic merge-authority certificate: reason codes + path evidence, not chat.",
   "scorecard_target": "evidence / simplicity (dim 12)",
   "dim_lift": "merge-authority evidence + tools-as-code vs LLM prose",
-  "at": "2026-08-01T17:39:20Z",
+  "at": "2026-08-01T17:49:50Z",
   "review": "/Users/ashishmishra/Documents/experiments/torii/docs/benchmarks/fixtures/insecure-demo-good-review.md",
   "review_name": "insecure-demo-good-review.md",
   "certificate_id": "gc-bbbbbb72db7f8678",
