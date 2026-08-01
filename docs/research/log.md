@@ -30,7 +30,7 @@ Local federation compounds one org; **hub multi-tenant promote** is what turns e
 - pytest: 476 passed
 
 ### SHA
-`(pending push)`
+`ad9338d7ab461eb30e02c62338af278b7fdf07ff`
 
 ## 2026-08-01 — F76 multi-corpus bench + Juice Shop synthetic
 
