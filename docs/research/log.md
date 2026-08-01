@@ -26,7 +26,7 @@ Close measure → re-prompt → fitness — dual-loop heat compounds intelligenc
 - Live Modal: pytorch#191836 BIT3_OK ~46.2s POST_COMMENT=0 log_streaming=true F185 soft wire
 
 ### SHA
-`f634f64f82dfd8c825aba1935be3b99c628b25a0`
+`df5bb4ee370d8b28ccbc30f8c946e5fe37e0ae5e`
 
 ## 2026-08-01 — F184 GEPA + hub×GEPA compound full EVAL pack (F165–F183)
 
