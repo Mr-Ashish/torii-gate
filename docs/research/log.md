@@ -29,7 +29,7 @@ Scorecards without the pipeline graph under-claim install readiness. Highest ROI
 **Workflows as code + readiness scorecard** — pipeline graph is first-class product metric.
 
 ### SHA
-`PENDING`
+`4ce3a252c3572073f837760837f147ceb0f8d866`
 
 ## 2026-08-01 — F130 memory util-eval → product scorecard
 
