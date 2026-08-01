@@ -29,7 +29,7 @@ Measured demote/recovery metrics only compound adoption when the product front d
 **Front-door scorecard** — install-day and brand-day same numbers.
 
 ### SHA
-`PENDING`
+`f8fbd01863ae3ee859b4a323c4e253eeb7220ebb`
 
 ## 2026-08-01 — F128 doctor recovery_hub_gap_ok + demote-eval paper metric
 
