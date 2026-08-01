@@ -31,7 +31,7 @@ Always-budget demote without verdict demote still ships free-rider APPROVE. High
 **Hub pressure → checker demote** — multi-tenant decay compounds into verdict.
 
 ### SHA
-`(pending)`
+`02d1bd1e5d8b5e8eeb1e7cbbef7c4b54d184070b`
 
 
 ## 2026-08-01 — F172 multi-tenant federate chronic dual_fail decay
