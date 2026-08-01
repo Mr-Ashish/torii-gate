@@ -1,3 +1,33 @@
+## 2026-08-01 — F181 hub×GEPA compound prompt inject
+
+### Papers / posts
+- F162 hub-archival hub pressure inject: maker must see multi-tenant heat.
+- F180 compound demote without prompt surface is checker-only archaeology.
+- Loop Engineering: observability before demote.
+
+### OSS design patterns stolen
+1. `assess_hub_gepa_compound` mirrors F180 critic signals privacy-safe.
+2. Prompt markers `<!-- torii-f181-hub-gepa-compound -->` after F169 refine hub.
+3. Soft wire in `inject_into_prompt`; always Δprio fuel when compound high.
+4. skill_loop hub_gepa_compound_inject_ok; refine_loop_ok AND F181.
+
+### Insight
+F180 demotes when dual loops heat, but agents never saw the compound signal. Highest ROI: inject privacy-safe compound section into prompt.
+
+### Feature shipped (F181)
+- assess/render/inject hub×GEPA compound
+- hermes F181 notice; scorecard inject_ok; PRODUCT F181 line
+
+### Loop-engineering
+Maker sees dual-loop free-rider heat before checker demotes.
+
+### Metric
+- Offline: inject fixture high+marker; refine_loop_ok L3
+- Live Modal: pytorch#191836 BIT3_OK ~48.1s POST_COMMENT=0 log_streaming=true F181 soft wire
+
+### SHA
+`22515a1388a30ca4e47ac04144f80c58fc577057`
+
 ## 2026-08-01 — F180 hub-archival × GEPA compound demote
 
 ### Papers / posts

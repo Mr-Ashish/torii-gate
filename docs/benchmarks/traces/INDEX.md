@@ -120,3 +120,5 @@ Paper/eval-safe slim traces (redacted). Large raw logs may be gitignored; always
 | F179 | revive LOO attribution floor | `f179-revive-loo-floor/` | Modal pytorch#191836 BIT3_OK ~44s |
 
 | F180 | hub-archival × GEPA compound demote | `f180-hub-gepa-compound/` | Modal pytorch#191836 BIT3_OK |
+
+| F181 | hub×GEPA compound prompt inject | `f181-hub-gepa-compound-inject/` | Modal pytorch#191836 BIT3_OK ~48s |

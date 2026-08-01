@@ -359,9 +359,19 @@ def refine_dual_hub_enabled() -> bool:
     return raw not in _FALSEY
 
 
+def hub_gepa_compound_inject_enabled() -> bool:
+    """F181: inject hub-archival × GEPA compound pressure into prompt (default on)."""
+    raw = (os.environ.get("TORII_HUB_GEPA_COMPOUND_INJECT") or "1").strip().lower()
+    return raw not in _FALSEY
+
+
 REFINE_DUAL_HUB_MARKER_OPEN = "<!-- torii-f169-refine-dual-hub -->"
 REFINE_DUAL_HUB_MARKER_CLOSE = "<!-- /torii-f169-refine-dual-hub -->"
 FEATURE_REFINE_DUAL_HUB = "F169"
+
+HUB_GEPA_MARKER_OPEN = "<!-- torii-f181-hub-gepa-compound -->"
+HUB_GEPA_MARKER_CLOSE = "<!-- /torii-f181-hub-gepa-compound -->"
+FEATURE_HUB_GEPA_COMPOUND = "F181"
 
 
 def hub_archival_hub_pressure_threshold() -> float:
@@ -1294,6 +1304,293 @@ def render_refine_dual_hub_section(hub: dict[str, Any]) -> str:
         )
     lines.append(REFINE_DUAL_HUB_MARKER_CLOSE)
     return "\n".join(lines) + "\n"
+
+
+
+def assess_hub_gepa_compound(
+    root: Path | None = None,
+    out_dir: Path | None = None,
+) -> dict[str, Any]:
+    """F181: privacy-safe dual-loop pressure for prompt inject (mirrors F180 critic)."""
+    root = root or _root()
+    od = out_dir
+    if od is None:
+        raw = (os.environ.get("OUT_DIR") or "").strip()
+        od = Path(raw) if raw else None
+    ha_gap = False
+    ha_reasons: list[str] = []
+    gepa_pressure = False
+    gepa_reasons: list[str] = []
+    themes: list[str] = []
+
+    try:
+        if od is not None:
+            util_p = Path(od) / "recovery-skill-util.json"
+            if util_p.is_file():
+                util = json.loads(util_p.read_text(encoding="utf-8"))
+                if util.get("hub_archival_util_gap") or util.get("hub_archival_idle"):
+                    ha_gap = True
+                    ha_reasons.append("recovery_util_gap")
+            hits_p = Path(od) / "skill-hits.json"
+            router_p = Path(od) / "skill-router.json"
+            if hits_p.is_file() and router_p.is_file():
+                hits = json.loads(hits_p.read_text(encoding="utf-8"))
+                router = json.loads(router_p.read_text(encoding="utf-8"))
+                always = [
+                    str(x)
+                    for x in (router.get("always_selected") or router.get("selected") or [])
+                    if "hub-archival" in str(x) or "hub_archival" in str(x)
+                ]
+                hit_map = {
+                    str(h.get("id") or ""): h
+                    for h in (hits.get("hits") or [])
+                    if isinstance(h, dict)
+                }
+                for sid in always:
+                    h = hit_map.get(sid) or {}
+                    if not h.get("tool_hit"):
+                        ha_gap = True
+                        ha_reasons.append("always_hub_archival_idle")
+                        themes.append(sid)
+    except (OSError, json.JSONDecodeError, TypeError, ValueError):
+        pass
+
+    try:
+        fit_path = root / ".torii" / "skill-fitness.json"
+        envf = (os.environ.get("TORII_SKILL_FITNESS_FILE") or "").strip()
+        if envf:
+            fit_path = Path(envf)
+        if fit_path.is_file():
+            fit = json.loads(fit_path.read_text(encoding="utf-8"))
+            for sid, ent in (fit.get("skills") or {}).items():
+                if not isinstance(ent, dict):
+                    continue
+                sid_s = str(sid)
+                if "hub-archival" in sid_s or "hub_archival" in sid_s:
+                    if ent.get("demoted") or float(ent.get("util_rate") or 1) < 0.34:
+                        if int(ent.get("gap_n") or 0) >= 2 or ent.get("chronic_gap"):
+                            ha_gap = True
+                            ha_reasons.append("fitness_hub_archival_gap")
+                            themes.append(sid_s)
+                if ent.get("multi_tenant_decay") or ent.get("refine_dual_chronic_fail"):
+                    gepa_pressure = True
+                    gepa_reasons.append("multi_tenant_or_chronic_decay")
+                    themes.append(sid_s)
+                if ent.get("free_rider_revive_blocked") or ent.get(
+                    "local_revive_pending_mt"
+                ):
+                    gepa_pressure = True
+                    gepa_reasons.append("free_rider_revive_pending")
+                if ent.get("revive_pp_blocked"):
+                    gepa_pressure = True
+                    gepa_reasons.append("revive_pp_blocked")
+                if ent.get("revive_loo_blocked"):
+                    gepa_pressure = True
+                    gepa_reasons.append("revive_loo_blocked")
+    except (OSError, json.JSONDecodeError, TypeError, ValueError):
+        pass
+
+    try:
+        fed = root / "memory" / "federation" / "hub-archival-util-signals.json"
+        if fed.is_file():
+            data = json.loads(fed.read_text(encoding="utf-8"))
+            for s in data.get("signals") or []:
+                if not isinstance(s, dict):
+                    continue
+                tags = [str(x).lower() for x in (s.get("tags") or [])]
+                if (
+                    s.get("hub_archival_idle")
+                    or s.get("util_rate_bin") == "gap"
+                    or "utilization_gap" in tags
+                ):
+                    if int(s.get("tenants") or 0) >= 2 or int(s.get("hits") or 0) >= 2:
+                        ha_gap = True
+                        ha_reasons.append("federated_hub_archival_gap")
+    except (OSError, json.JSONDecodeError, TypeError, ValueError):
+        pass
+
+    try:
+        prom = (
+            root / "memory" / "federation" / "promoted-refine-dual-decay-themes.json"
+        )
+        if prom.is_file():
+            data = json.loads(prom.read_text(encoding="utf-8"))
+            n = int(data.get("promoted_n") or len(data.get("signals") or []))
+            if n >= 1:
+                gepa_pressure = True
+                gepa_reasons.append("promoted_refine_decay_themes")
+    except (OSError, json.JSONDecodeError, TypeError, ValueError):
+        pass
+
+    high = bool(ha_gap and gepa_pressure)
+    priority_deltas: dict[str, int] = {}
+    if high:
+        for sid in themes or ["skill-prefer-hub-archival-early"]:
+            if (
+                "hub-archival" in sid
+                or "hub_archival" in sid
+                or sid.startswith("skill-prefer-hub")
+            ):
+                priority_deltas[sid] = max(int(priority_deltas.get(sid) or 0), 24)
+
+    blob = json.dumps(
+        {
+            "ha_reasons": ha_reasons[:8],
+            "gepa_reasons": gepa_reasons[:8],
+            "themes": themes[:8],
+        }
+    )
+    privacy_ok = "/Users/" not in blob and "/home/" not in blob
+    return {
+        "feature": FEATURE_HUB_GEPA_COMPOUND,
+        "enabled": hub_gepa_compound_inject_enabled(),
+        "high": high,
+        "ha_gap": ha_gap,
+        "gepa_pressure": gepa_pressure,
+        "ha_reasons": ha_reasons[:8],
+        "gepa_reasons": gepa_reasons[:8],
+        "themes": list(dict.fromkeys(themes))[:8],
+        "priority_deltas": priority_deltas,
+        "privacy_ok": privacy_ok,
+        "reason": "hub_archival_x_gepa_compound" if high else "no_compound_pressure",
+    }
+
+
+def render_hub_gepa_compound_section(report: dict[str, Any]) -> str:
+    """F181: privacy-safe prompt section for dual-loop compound pressure."""
+    lines = [
+        HUB_GEPA_MARKER_OPEN,
+        "## Hub-archival × GEPA compound pressure (F180/F181)",
+        "",
+        "Dual-loop free-rider risk (bins/skill ids only; no paths/bodies):",
+    ]
+    if report.get("high"):
+        lines.append(
+            f"- **COMPOUND HIGH** — hub-archival util gap **and** GEPA refine pressure "
+            f"co-occur (`{report.get('reason')}`)."
+        )
+        if report.get("ha_reasons"):
+            lines.append(
+                "- Hub-archival: "
+                + ", ".join(str(x) for x in report.get("ha_reasons")[:4])
+            )
+        if report.get("gepa_reasons"):
+            lines.append(
+                "- GEPA: " + ", ".join(str(x) for x in report.get("gepa_reasons")[:4])
+            )
+        lines.append(
+            "- Fire `archival_memory_search` / hub_boost **and** recovery refine tools "
+            "before APPROVE — dual compound demote will escalate weak APPROVE."
+        )
+    else:
+        lines.append(
+            "- No dual compound pressure (need both hub-archival gap and GEPA decay/revive gates)."
+        )
+    for sid in (report.get("themes") or [])[:4]:
+        lines.append(f"- theme `{sid}`")
+    lines.append(HUB_GEPA_MARKER_CLOSE)
+    return "\n".join(lines) + "\n"
+
+
+def inject_hub_gepa_compound_into_prompt(
+    prompt: Path,
+    report: dict[str, Any] | None = None,
+    *,
+    root: Path | None = None,
+    out_dir: Path | None = None,
+) -> dict[str, Any]:
+    """F181: inject/replace hub×GEPA compound section into prompt."""
+    root = root or _root()
+    if not hub_gepa_compound_inject_enabled():
+        return {
+            "feature": FEATURE_HUB_GEPA_COMPOUND,
+            "injected": 0,
+            "reason": "off",
+        }
+    report = (
+        report
+        if report is not None
+        else assess_hub_gepa_compound(root=root, out_dir=out_dir)
+    )
+    if (
+        not report.get("high")
+        and not report.get("ha_gap")
+        and not report.get("gepa_pressure")
+    ):
+        return {
+            "feature": FEATURE_HUB_GEPA_COMPOUND,
+            "injected": 0,
+            "reason": "no_pressure",
+            "report": report,
+        }
+    section = render_hub_gepa_compound_section(report)
+    if "/Users/" in section or "/home/" in section:
+        return {
+            "feature": FEATURE_HUB_GEPA_COMPOUND,
+            "injected": 0,
+            "reason": "privacy_block",
+            "report": report,
+        }
+    try:
+        original = prompt.read_text(encoding="utf-8", errors="replace")
+    except OSError as exc:
+        return {
+            "feature": FEATURE_HUB_GEPA_COMPOUND,
+            "injected": 0,
+            "error": str(exc)[:120],
+        }
+    if HUB_GEPA_MARKER_OPEN in original:
+        new = re.sub(
+            rf"{re.escape(HUB_GEPA_MARKER_OPEN)}.*?{re.escape(HUB_GEPA_MARKER_CLOSE)}\n?",
+            section,
+            original,
+            count=1,
+            flags=re.DOTALL,
+        )
+    else:
+        if REFINE_DUAL_HUB_MARKER_CLOSE in original:
+            new = original.replace(
+                REFINE_DUAL_HUB_MARKER_CLOSE,
+                REFINE_DUAL_HUB_MARKER_CLOSE + "\n" + section,
+                1,
+            )
+        elif HA_HUB_MARKER_CLOSE in original:
+            new = original.replace(
+                HA_HUB_MARKER_CLOSE,
+                HA_HUB_MARKER_CLOSE + "\n" + section,
+                1,
+            )
+        else:
+            new = original.rstrip() + "\n\n" + section
+    try:
+        prompt.write_text(new if new.endswith("\n") else new + "\n", encoding="utf-8")
+    except OSError as exc:
+        return {
+            "feature": FEATURE_HUB_GEPA_COMPOUND,
+            "injected": 0,
+            "error": str(exc)[:120],
+        }
+    od = (os.environ.get("OUT_DIR") or "").strip()
+    art = None
+    if od:
+        try:
+            ap = Path(od) / "hub-gepa-compound.json"
+            ap.parent.mkdir(parents=True, exist_ok=True)
+            ap.write_text(json.dumps(report, indent=2) + "\n", encoding="utf-8")
+            art = str(ap)
+        except OSError:
+            pass
+    return {
+        "feature": FEATURE_HUB_GEPA_COMPOUND,
+        "injected": 1,
+        "high": bool(report.get("high")),
+        "ha_gap": report.get("ha_gap"),
+        "gepa_pressure": report.get("gepa_pressure"),
+        "priority_deltas": report.get("priority_deltas"),
+        "privacy_ok": report.get("privacy_ok"),
+        "artifact": art,
+        "report": report,
+    }
 
 
 def inject_refine_dual_hub_into_prompt(
@@ -2771,6 +3068,13 @@ def inject_into_prompt(
             rd_hub_inj = inject_refine_dual_hub_into_prompt(dest, root=root)
         except Exception as exc:
             rd_hub_inj = {"injected": 0, "soft_error": str(exc)[:80]}
+    # F181: inject hub-archival × GEPA compound pressure (soft)
+    hgc_inj: dict[str, Any] = {"injected": 0}
+    if hub_gepa_compound_inject_enabled():
+        try:
+            hgc_inj = inject_hub_gepa_compound_into_prompt(dest, root=root)
+        except Exception as exc:
+            hgc_inj = {"injected": 0, "soft_error": str(exc)[:80]}
 
     result = {
         "feature": FEATURE,
@@ -2817,6 +3121,11 @@ def inject_into_prompt(
         else None,
         # F169
         "refine_dual_hub_injected": int(rd_hub_inj.get("injected") or 0),
+        "hub_gepa_compound_injected": int(hgc_inj.get("injected") or 0),
+        "hub_gepa_compound_high": bool(hgc_inj.get("high")),
+        "feature_hub_gepa_compound_inject": FEATURE_HUB_GEPA_COMPOUND
+        if hub_gepa_compound_inject_enabled()
+        else None,
         "refine_dual_hub_fail_pressure": rd_hub_inj.get("fail_pressure")
         if rd_hub_inj.get("injected")
         else selection.get("refine_dual_hub_fail_pressure"),

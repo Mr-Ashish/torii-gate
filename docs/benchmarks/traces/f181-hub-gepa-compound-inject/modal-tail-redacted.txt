@@ -1,0 +1,50 @@
+without workspace tools (`zero_tools_multi_file_code_nontarget_verdict`). Re-run
+so the agent reads changed files, or treat findings as low-trust.
+
+### Summary
+Agent output did not match the review contract (missing: **Verdict:**, 
+**Score:**, ### Summary, ### Blocking, ### Security audit, ### Tests & risk). 
+Raw content preserved below.
+
+### Walkthrough
+- Contract repair only — re-run for a full structured review
+
+### Architecture diag
+BIT3_OK
+================================================================
+[torii/review_preview] review-191836.md
+================================================================
+[review] <!-- torii-review pr=191836 run=local head=0bcf6af4932f6b5e2fb65cad8218241502549320 -->
+[review] ## 🏴‍☠️ Torii Review — PR #191836
+[review] 
+[review] **Verdict:** COMMENT
+[review] **Confidence:** low
+[review] **Score:** 40/100
+[review] **Review effort:** 2/5
+[review] 
+[review] > ⚠️ **Incomplete agentic review (F45):** Hermes recorded **0 tool turns** on a multi-file code PR (5 files). Torii fail-closed: **APPROVE is not allowed** without workspace tools (`zero_tools_multi_file_code_nontarget_verdict`). Re-run so the agent reads changed files, or treat findings as low-trust.
+[review] 
+[review] ### Summary
+[review] Agent output did not match the review contract (missing: **Verdict:**, **Score:**, ### Summary, ### Blocking, ### Security audit, ### Tests & risk). Raw content preserved below.
+[review] 
+[review] ### Walkthrough
+[review] - Contract repair only — re-run for a full structured review
+[review] 
+[review] ### Architecture diagram
+[review] <!-- torii-mermaid -->
+[review] 
+[review] _Auto-generated from 5 changed file(s) (F57). Edges between groups are adjacency, not proven runtime dependencies._
+[review] 
+[review] ```mermaid
+[review] flowchart LR
+[review]   %% PR changed modules (5 files, 4 groups)
+[review]   subgraph g_aten["aten"]
+[review]     f_aten_src_ATen_native_mps_kernels_LinearAlgebra_metal["LinearAlgebra.metal"]
+[review]     %% aten/src/ATen/native/mps/kernels/LinearAlgebra.metal
+[review]     f_aten_src_ATen
+================================================================
+[torii/done] ok=True orch_rc=0 elapsed_s=48.1 review=True
+================================================================
+Stopping app - local entrypoint completed.
+✓ App completed. View run at 
+https://modal.com/apps/mr-ashish/main/ap-fZSElLBM2huhJYweKqkwtP
