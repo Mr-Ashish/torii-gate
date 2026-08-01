@@ -34,7 +34,7 @@ F70/F71 measure and surface evidence; the agent could still **self-approve** wea
 - pytest: 451 passed
 
 ### SHA
-_(filled after push)_
+`dcbe5314c66c5b469e0c1e944cbe0107bfd73f05`
 
 ## 2026-08-01 — F71 deterministic taint prefilter + federated sanitized signals
 
