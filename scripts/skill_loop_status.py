@@ -37,7 +37,7 @@ from typing import Any
 FEATURE = "F91"
 SCHEMA = 1
 
-# Skill compound loop stages (F84–F89)
+# Skill compound loop stages (F84–F89 + F114–F116 tool outcomes)
 LOOP_STAGES: list[dict[str, Any]] = [
     {
         "id": "route",
@@ -47,29 +47,29 @@ LOOP_STAGES: list[dict[str, Any]] = [
     },
     {
         "id": "hit",
-        "feature": "F84",
+        "feature": "F84/F114",
         "script": "skill_router.py",
         "cmd": ["score", "--help"],
-        "one_liner": "Post-run skill keyword hit scoring",
+        "one_liner": "Post-run prose + tool-outcome hit scoring",
         "soft_cmd": True,
     },
     {
         "id": "fitness",
-        "feature": "F85",
+        "feature": "F85/F116",
         "script": "skill_fitness.py",
-        "one_liner": "Hit-rate ledger demotes zombies",
+        "one_liner": "Hit-rate ledger; tool-hit demote shield + federate",
     },
     {
         "id": "dual",
-        "feature": "F86",
+        "feature": "F86/F115",
         "script": "skill_dual_rollout.py",
-        "one_liner": "With vs ablated contribution_pp",
+        "one_liner": "With vs ablated contribution_pp + tool contrib",
     },
     {
         "id": "attr",
-        "feature": "F88",
+        "feature": "F88/F115",
         "script": "skill_attribution.py",
-        "one_liner": "LOO free-rider attribution + adopt gate",
+        "one_liner": "LOO free-rider + tool_hit attribution + adopt gate",
     },
     {
         "id": "inject",

@@ -1,0 +1,45 @@
+{
+  "feature": "F84",
+  "schema": 1,
+  "f114": true,
+  "tool_outcome": true,
+  "scored_at": "2026-08-01T05:24:06Z",
+  "selected_n": 2,
+  "hit_n": 1,
+  "hit_rate": 0.5,
+  "prose_hit_n": 1,
+  "tool_hit_n": 1,
+  "tool_hit_rate": 0.5,
+  "hits": [
+    {
+      "id": "skill-prefer-memory-cli-early",
+      "hit": true,
+      "matched": [
+        "path:line"
+      ],
+      "n_matched": 1,
+      "prose_hit": true,
+      "tool_hit": true,
+      "tool_matched": [
+        "torii.py memory"
+      ]
+    },
+    {
+      "id": "skill-tool-depth-hunks",
+      "hit": false,
+      "matched": [],
+      "n_matched": 0,
+      "prose_hit": false,
+      "tool_hit": false,
+      "tool_matched": []
+    }
+  ],
+  "review": "docs/benchmarks/traces/f116-tool-fitness/review.md",
+  "federated_skill_themes": [
+    "skill-prefer-memory-cli-early"
+  ],
+  "tool_outcome_skills": [
+    "skill-prefer-memory-cli-early"
+  ],
+  "artifact": "docs/benchmarks/traces/f116-tool-fitness/skill-hits.json"
+}

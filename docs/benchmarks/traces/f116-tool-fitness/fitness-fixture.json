@@ -1,0 +1,25 @@
+{
+  "feature": "F85",
+  "feature_tool": "F116",
+  "f116": true,
+  "fixture_pass": true,
+  "zombie_demoted": true,
+  "good_not_demoted": true,
+  "good_boost": 2.0,
+  "zombie_boost": -2.0,
+  "privacy_ok": true,
+  "good_in_fed": true,
+  "zombie_not_fed": true,
+  "tool_shielded": true,
+  "tool_boost_ok": true,
+  "tool_in_fed": true,
+  "tool_outcome_fed_n": 1,
+  "tool_skills": [
+    "skill-prefer-memory-cli-early"
+  ],
+  "demoted": [
+    "skill-zombie-docs"
+  ],
+  "cycle_fed_n": 2,
+  "ledger": "/var/folders/2b/l8r1b38n75jd77wtd44p4ycr0000gn/T/tmp_iutpqbx/.torii/skill-fitness.json"
+}

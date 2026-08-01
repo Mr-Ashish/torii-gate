@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""F85: Skill fitness ledger from hit scores — demote zombies + federate themes.
+"""F85/F116: Skill fitness ledger — demote zombies + tool-hit shield + federate.
 
 Research drivers (2026):
   - FederatedSkill (arXiv 2606.03143): skill library as federation unit; share
@@ -7,6 +7,11 @@ Research drivers (2026):
   - Agent Skill Evaluation & Evolution (arXiv 2606.11435): longitudinal skill
     quality tracking; dual-rollout with/without skills; drop skills that never
     contribute (dead library entries).
+  - Trajectory eval 2026 / Mem2Act: tool trajectory is a first-class quality
+    signal — F114 tool_hit_n must compound into demote/boost/federate, not
+    sit as an inert counter.
+  - SigLeak / contrastive skill signatures: tool-outcome themes are portable
+    skill evidence without raw trajectories.
   - MUSE-Autoskill: skill lifecycle create → evaluate → refine/demote.
   - Prior Torii F84: skill-hits.json per run — no durable ledger, no demote,
     no hub federation of skill themes.
@@ -14,17 +19,18 @@ Research drivers (2026):
 Product thesis:
   Measure (F84) without action is theater. Highest ROI: compound hit rates into
   a local fitness ledger, **soft-demote** chronically low-hit skills from full
-  progressive inject (index-only), boost high-hit skills in the router, and
-  emit F77-compatible federated skill themes (id + hits only).
+  progressive inject (index-only), **shield tool-effective recovery skills**
+  (F116), boost high-hit + tool-hit skills in the router, and emit F77-compatible
+  federated skill themes (id + hits + tool_outcome tags only).
 
 Commands:
   ingest   — fold skill-hits.json into .torii/skill-fitness.json
   status   — ledger summary
-  demote   — mark low hit_rate skills after min samples
-  boosts   — per-skill score deltas for skill_router
+  demote   — mark low hit_rate skills after min samples (tool-shielded)
+  boosts   — per-skill score deltas for skill_router (+ tool bonus)
   federate — write privacy-safe skill theme signals → hub ingest path
   cycle    — ingest → demote → federate (soft post-run)
-  fixture  — hermetic: hit skill boosts; zombie demotes; privacy_ok
+  fixture  — hermetic: hit skill boosts; zombie demotes; tool shield; privacy_ok
   apply    — print demoted + boosts JSON for assemble/router
 
 Env:
@@ -34,6 +40,7 @@ Env:
   TORII_SKILL_FITNESS_MIN_N     default 3 samples before demote
   TORII_SKILL_FITNESS_DEMOTE    default 0.25 hit_rate threshold
   TORII_SKILL_FITNESS_BOOST     default 2.0 max path-score bonus
+  TORII_SKILL_FITNESS_TOOL      1 (default) | 0 — F116 tool_hit shield/boost/federate
   TORII_MEMORY_TENANT           optional for federate tenant hash
 """
 
@@ -51,6 +58,7 @@ from pathlib import Path
 from typing import Any
 
 FEATURE = "F85"
+FEATURE_TOOL = "F116"
 SCHEMA = 1
 LEDGER_NAME = "skill-fitness.json"
 
@@ -71,6 +79,12 @@ def _now() -> str:
 
 def enabled() -> bool:
     raw = (os.environ.get("TORII_SKILL_FITNESS") or "1").strip().lower()
+    return raw not in _FALSEY
+
+
+def tool_fitness_enabled() -> bool:
+    """F116: tool_hit_n shields demote, boosts router, federates tool themes."""
+    raw = (os.environ.get("TORII_SKILL_FITNESS_TOOL") or "1").strip().lower()
     return raw not in _FALSEY
 
 
@@ -179,6 +193,10 @@ def ingest_hits(
             ent["tool_hit_n"] = int(ent.get("tool_hit_n") or 0) + 1
         sel = int(ent["selected_n"])
         ent["hit_rate"] = round(int(ent["hit_n"]) / sel, 4) if sel else 0.0
+        # F116: tool_hit_rate for demote shield + federate
+        ent["tool_hit_rate"] = (
+            round(int(ent.get("tool_hit_n") or 0) / sel, 4) if sel else 0.0
+        )
         ent["last_seen"] = _now()
 
     hist = ledger.setdefault("history", [])
@@ -189,6 +207,8 @@ def ingest_hits(
             "hit_rate": hits_doc.get("hit_rate"),
             "selected_n": hits_doc.get("selected_n"),
             "hit_n": hits_doc.get("hit_n"),
+            "tool_hit_n": hits_doc.get("tool_hit_n"),
+            "tool_hit_rate": hits_doc.get("tool_hit_rate"),
             "themes": list(hits_doc.get("federated_skill_themes") or [])[:16],
         }
     )
@@ -196,21 +216,48 @@ def ingest_hits(
     return ledger
 
 
+def _effective_rate(ent: dict[str, Any]) -> float:
+    """F116: demote uses max(prose/combined hit_rate, tool_hit_rate)."""
+    rate = float(ent.get("hit_rate") or 0.0)
+    if not tool_fitness_enabled():
+        return rate
+    tool_rate = float(ent.get("tool_hit_rate") or 0.0)
+    if tool_rate <= 0:
+        n = int(ent.get("selected_n") or 0)
+        tool_n = int(ent.get("tool_hit_n") or 0)
+        tool_rate = (tool_n / n) if n else 0.0
+    return max(rate, tool_rate)
+
+
 def apply_demotions(ledger: dict[str, Any]) -> dict[str, Any]:
     min_n = _int_env("TORII_SKILL_FITNESS_MIN_N", 3)
     thr = _float_env("TORII_SKILL_FITNESS_DEMOTE", 0.25)
     demoted: list[str] = []
     revived: list[str] = []
+    shielded: list[str] = []
     for sid, ent in (ledger.get("skills") or {}).items():
         n = int(ent.get("selected_n") or 0)
         rate = float(ent.get("hit_rate") or 0.0)
+        eff = _effective_rate(ent)
+        tool_n = int(ent.get("tool_hit_n") or 0)
         was = bool(ent.get("demoted"))
+        # F116: tool-effective skills (any tool_hit with samples) never demote
+        tool_shield = bool(tool_fitness_enabled() and tool_n >= 1 and n >= 1)
+        if tool_shield and was:
+            ent["demoted"] = False
+            revived.append(sid)
+            shielded.append(sid)
+            continue
+        if tool_shield:
+            ent["demoted"] = False
+            shielded.append(sid)
+            continue
         # never demote always-on core by id heuristic — skill_router still
         # respects always flag; ledger may still mark low performers for info
-        if n >= min_n and rate < thr:
+        if n >= min_n and eff < thr:
             ent["demoted"] = True
             demoted.append(sid)
-        elif n >= min_n and rate >= thr + 0.15:
+        elif n >= min_n and eff >= thr + 0.15:
             # revive on sustained recovery
             if was:
                 revived.append(sid)
@@ -225,16 +272,19 @@ def apply_demotions(ledger: dict[str, Any]) -> dict[str, Any]:
         "threshold": thr,
         "newly_demoted": demoted,
         "revived": revived,
+        "tool_shielded": shielded,
         "demoted_n": len(ledger["demoted"]),
+        "feature_tool": FEATURE_TOOL if tool_fitness_enabled() else None,
     }
     return ledger
 
 
 def fitness_boosts(ledger: dict[str, Any] | None = None) -> dict[str, float]:
-    """Score deltas for skill_router: positive for high hit_rate, negative demoted."""
+    """Score deltas for skill_router: hit_rate + F116 tool bonus; demoted negative."""
     ledger = ledger if ledger is not None else load_ledger()
     max_boost = _float_env("TORII_SKILL_FITNESS_BOOST", 2.0)
     out: dict[str, float] = {}
+    use_tool = tool_fitness_enabled()
     for sid, ent in (ledger.get("skills") or {}).items():
         n = int(ent.get("selected_n") or 0)
         if n < 1:
@@ -245,7 +295,13 @@ def fitness_boosts(ledger: dict[str, Any] | None = None) -> dict[str, float]:
             continue
         # map hit_rate [0,1] → [0, max_boost] after min 1 sample; stronger after 3
         conf = min(1.0, n / 3.0)
-        out[sid] = round(rate * max_boost * conf, 3)
+        score = rate * max_boost * conf
+        if use_tool:
+            tool_n = int(ent.get("tool_hit_n") or 0)
+            tool_rate = tool_n / n if n else 0.0
+            # half-weight tool bonus so recovery skills rank above prose-only peers
+            score += tool_rate * max_boost * 0.5 * conf
+        out[sid] = round(score, 3)
     return out
 
 
@@ -259,35 +315,46 @@ def federate_signals(
     *,
     tenant: str = "",
 ) -> list[dict[str, Any]]:
-    """Privacy-safe F77-shaped signals for high-hit skills (ids only)."""
+    """Privacy-safe F77-shaped signals for high-hit / tool-hit skills (ids only)."""
     ledger = ledger if ledger is not None else load_ledger()
     tenant = tenant or (os.environ.get("TORII_MEMORY_TENANT") or "").strip()
     th = ""
     if tenant:
         th = hashlib.sha256(tenant.encode("utf-8")).hexdigest()[:12]
     signals: list[dict[str, Any]] = []
+    use_tool = tool_fitness_enabled()
     for sid, ent in (ledger.get("skills") or {}).items():
         if _PATH_RX.search(sid) or "/" in sid:
             continue
         hit_n = int(ent.get("hit_n") or 0)
-        if hit_n < 1:
+        tool_n = int(ent.get("tool_hit_n") or 0)
+        # F116: tool-only contributors still federate (even if prose hit_n=0)
+        if hit_n < 1 and not (use_tool and tool_n >= 1):
             continue
         if ent.get("demoted"):
             continue
         theme = f"skill:{sid}" if not sid.startswith("skill") else sid
         # F77 theme is free-form lower slug
         theme_slug = re.sub(r"[^a-z0-9._-]+", "-", theme.lower())[:64]
+        tags = ["skill_hit", "f85", "federated_skill"]
+        keywords = [sid.replace("skill-", "")[:48], "skill-fitness"]
+        if use_tool and tool_n >= 1:
+            tags.extend(["tool_outcome", "f116"])
+            keywords.append("tool-outcome")
         sig: dict[str, Any] = {
             "id": theme_slug,
             "theme": theme_slug,
             "cwe": [],
-            "tags": ["skill_hit", "f85", "federated_skill"],
-            "keywords": [sid.replace("skill-", "")[:48], "skill-fitness"],
+            "tags": tags,
+            "keywords": keywords,
             "path_basenames": [],  # never paths
-            "hits": max(1, hit_n),
+            "hits": max(1, hit_n, tool_n),
             "source": "skill_fitness",
             "tenants": 1,
         }
+        if use_tool and tool_n >= 1:
+            # privacy-safe count only — no commands/paths
+            sig["tool_hits"] = tool_n
         if th:
             sig["tenant_hashes"] = [th]
             sig["tenant_hash"] = th
@@ -310,12 +377,15 @@ def write_fed_file(
         if "/Users/" in blob or "/home/" in blob:
             issues.append(s.get("id"))
     clean = [s for s in signals if s.get("id") not in issues]
+    tool_n = sum(1 for s in clean if "tool_outcome" in (s.get("tags") or []))
     doc = {
         "schema_version": SCHEMA,
         "feature": FEATURE,
+        "feature_tool": FEATURE_TOOL if tool_fitness_enabled() else None,
         "scope": "skill_fitness",
         "updated_at": _now(),
         "count": len(clean),
+        "tool_outcome_n": tool_n,
         "privacy": "skill_id_hits_tenant_hash_only",
         "privacy_ok": len(issues) == 0,
         "privacy_issues": issues,
@@ -360,15 +430,26 @@ def cycle(out_dir: Path | None = None, root: Path | None = None) -> dict[str, An
     except Exception as exc:  # soft
         hub_result = {"soft_error": str(exc)[:120]}
 
+    tool_skills = [
+        sid
+        for sid, e in (ledger.get("skills") or {}).items()
+        if int(e.get("tool_hit_n") or 0) >= 1
+    ]
     return {
         "feature": FEATURE,
+        "feature_tool": FEATURE_TOOL if tool_fitness_enabled() else None,
         "ingested": ingested,
         "hits_path": str(hits_path) if hits_path else None,
         "ledger": str(path),
         "demoted": list(ledger.get("demoted") or []),
+        "tool_shielded": list((ledger.get("last_demote") or {}).get("tool_shielded") or []),
+        "tool_skills": tool_skills,
         "boosts": fitness_boosts(ledger),
         "fed_path": str(fed_path),
         "fed_n": len(signals),
+        "tool_outcome_fed_n": sum(
+            1 for s in signals if "tool_outcome" in (s.get("tags") or [])
+        ),
         "hub": hub_result,
         "privacy_ok": True,
     }
@@ -576,6 +657,53 @@ def cmd_fixture(args: argparse.Namespace) -> int:
         # simulate select preference: good boost > zombie
         order_ok = boosts.get(good, 0) > boosts.get(zombie, -99)
 
+        # F116: tool-only recovery skill — low prose hit_rate but tool_hit_n>0 → shield
+        tool_skill = "skill-prefer-memory-cli-early"
+        for i in range(4):
+            ledger = ingest_hits(
+                {
+                    "hits": [
+                        {
+                            "id": tool_skill,
+                            # combined hit via tool (F114) may still be True;
+                            # stress shield even when hit True only via tools
+                            "hit": True,
+                            "tool_hit": True,
+                            "prose_hit": False,
+                            "matched": [],
+                        }
+                    ],
+                    "tool_hit_n": 1,
+                    "tool_hit_rate": 1.0,
+                    "hit_n": 1,
+                    "selected_n": 1,
+                    "hit_rate": 1.0,
+                },
+                ledger,
+                run_id=f"tool-run-{i}",
+            )
+        # adversarial: force low hit_rate with tool hits still present
+        ent_t = (ledger.get("skills") or {}).get(tool_skill) or {}
+        ent_t["hit_rate"] = 0.1  # would demote without shield
+        ent_t["selected_n"] = 4
+        ent_t["hit_n"] = 1
+        ent_t["tool_hit_n"] = 3
+        ent_t["tool_hit_rate"] = 0.75
+        ent_t["demoted"] = True  # was wrongly demoted pre-F116
+        (ledger.setdefault("skills", {}))[tool_skill] = ent_t
+        ledger = apply_demotions(ledger)
+        tool_shielded = tool_skill not in demoted_set(ledger)
+        tool_boost = fitness_boosts(ledger).get(tool_skill, 0) > fitness_boosts(ledger).get(
+            zombie, -99
+        )
+        tool_sigs = federate_signals(ledger, tenant="fixture-tenant-a")
+        tool_in_fed = any(
+            tool_skill in str(s.get("id") or s.get("theme") or "")
+            and "tool_outcome" in (s.get("tags") or [])
+            for s in tool_sigs
+        )
+        tool_privacy = "/Users/" not in json.dumps(tool_sigs)
+
         # cycle with out_dir skill-hits
         out_dir = root / "out"
         out_dir.mkdir()
@@ -585,11 +713,20 @@ def cmd_fixture(args: argparse.Namespace) -> int:
                     "hits": [
                         {"id": good, "hit": True, "matched": ["chain"]},
                         {"id": zombie, "hit": False, "matched": []},
+                        {
+                            "id": tool_skill,
+                            "hit": True,
+                            "tool_hit": True,
+                            "prose_hit": False,
+                            "matched": [],
+                        },
                     ],
-                    "hit_rate": 0.5,
-                    "selected_n": 2,
-                    "hit_n": 1,
-                    "federated_skill_themes": [good],
+                    "hit_rate": 0.67,
+                    "selected_n": 3,
+                    "hit_n": 2,
+                    "tool_hit_n": 1,
+                    "tool_hit_rate": 0.33,
+                    "federated_skill_themes": [good, tool_skill],
                 }
             ),
             encoding="utf-8",
@@ -608,12 +745,20 @@ def cmd_fixture(args: argparse.Namespace) -> int:
                 order_ok,
                 cyc.get("ingested") is True,
                 path.is_file(),
+                tool_shielded,
+                tool_boost,
+                tool_in_fed,
+                tool_privacy,
+                int(cyc.get("tool_outcome_fed_n") or 0) >= 1
+                or tool_skill in (cyc.get("tool_skills") or []),
             ]
         )
         print(
             json.dumps(
                 {
                     "feature": FEATURE,
+                    "feature_tool": FEATURE_TOOL,
+                    "f116": True,
                     "fixture_pass": fixture_pass,
                     "zombie_demoted": zombie_demoted,
                     "good_not_demoted": good_not_demoted,
@@ -622,7 +767,12 @@ def cmd_fixture(args: argparse.Namespace) -> int:
                     "privacy_ok": privacy_ok,
                     "good_in_fed": good_in_fed,
                     "zombie_not_fed": zombie_not_fed,
-                    "demoted": sorted(demoted),
+                    "tool_shielded": tool_shielded,
+                    "tool_boost_ok": tool_boost,
+                    "tool_in_fed": tool_in_fed,
+                    "tool_outcome_fed_n": cyc.get("tool_outcome_fed_n"),
+                    "tool_skills": cyc.get("tool_skills"),
+                    "demoted": sorted(demoted_set(ledger)),
                     "cycle_fed_n": cyc.get("fed_n"),
                     "ledger": str(path),
                 },

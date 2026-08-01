@@ -1,0 +1,32 @@
+{
+  "signals": [
+    {
+      "id": "skill-prefer-memory-cli-early",
+      "theme": "skill-prefer-memory-cli-early",
+      "cwe": [],
+      "tags": [
+        "skill_hit",
+        "f85",
+        "federated_skill",
+        "tool_outcome",
+        "f116"
+      ],
+      "keywords": [
+        "prefer-memory-cli-early",
+        "skill-fitness",
+        "tool-outcome"
+      ],
+      "path_basenames": [],
+      "hits": 1,
+      "source": "skill_fitness",
+      "tenants": 1,
+      "tool_hits": 1,
+      "tenant_hashes": [
+        "5f43a0675ce7"
+      ],
+      "tenant_hash": "5f43a0675ce7"
+    }
+  ],
+  "feature": "F116",
+  "tool_outcome_n": 1
+}

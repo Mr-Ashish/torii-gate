@@ -258,7 +258,7 @@ if [[ -f "$SCRIPTS/skill_auto_adopt.py" ]]; then
   esac
 fi
 
-# F84: progressive skill hit scoring (measure what was selected/injected)
+# F84/F114: progressive skill hit scoring (+ tool outcomes from agent-loop)
 if [[ -f "$SCRIPTS/skill_router.py" ]]; then
   case "${TORII_SKILL_ROUTER:-1}" in
     0|false|no|off) ;;
@@ -268,16 +268,26 @@ if [[ -f "$SCRIPTS/skill_router.py" ]]; then
         if [[ -f "$_c" ]]; then _f84_review="$_c"; break; fi
       done
       if [[ -n "$_f84_review" ]]; then
+        # F114/F116: explicit agent-loop + hermes log for tool-outcome probes
+        _f84_args=(score --review "$_f84_review" --out-dir "$OUT_DIR")
+        if [[ -f "$OUT_DIR/agent-loop/agent-loop.json" ]]; then
+          _f84_args+=(--agent-loop "$OUT_DIR/agent-loop/agent-loop.json")
+        elif [[ -f "$OUT_DIR/agent-loop.json" ]]; then
+          _f84_args+=(--agent-loop "$OUT_DIR/agent-loop.json")
+        fi
+        if [[ -f "$OUT_DIR/agent-loop/agent.log" ]]; then
+          _f84_args+=(--log "$OUT_DIR/agent-loop/agent.log")
+        elif [[ -f "$OUT_DIR/hermes.log" ]]; then
+          _f84_args+=(--log "$OUT_DIR/hermes.log")
+        fi
         stage skill_router_score \
-          python3 "$SCRIPTS/skill_router.py" score \
-            --review "$_f84_review" \
-            --out-dir "$OUT_DIR" || true
+          python3 "$SCRIPTS/skill_router.py" "${_f84_args[@]}" || true
       fi
       ;;
   esac
 fi
 
-# F88/F89: per-skill attribution → durable ledger for next inject ranking
+# F88/F89/F115: per-skill attribution → durable ledger (tool LOO from agent-loop)
 if [[ -f "$SCRIPTS/skill_attribution.py" ]]; then
   case "${TORII_SKILL_ATTRIBUTION:-1}" in
     0|false|no|off) ;;
@@ -287,16 +297,25 @@ if [[ -f "$SCRIPTS/skill_attribution.py" ]]; then
         if [[ -f "$_c" ]]; then _f88_review="$_c"; break; fi
       done
       if [[ -n "$_f88_review" ]]; then
+        _f88_args=(cycle --review "$_f88_review" --out-dir "$OUT_DIR")
+        if [[ -f "$OUT_DIR/agent-loop/agent-loop.json" ]]; then
+          _f88_args+=(--agent-loop "$OUT_DIR/agent-loop/agent-loop.json")
+        elif [[ -f "$OUT_DIR/agent-loop.json" ]]; then
+          _f88_args+=(--agent-loop "$OUT_DIR/agent-loop.json")
+        fi
+        if [[ -f "$OUT_DIR/agent-loop/agent.log" ]]; then
+          _f88_args+=(--log "$OUT_DIR/agent-loop/agent.log")
+        elif [[ -f "$OUT_DIR/hermes.log" ]]; then
+          _f88_args+=(--log "$OUT_DIR/hermes.log")
+        fi
         stage skill_attribution \
-          python3 "$SCRIPTS/skill_attribution.py" cycle \
-            --review "$_f88_review" \
-            --out-dir "$OUT_DIR" || true
+          python3 "$SCRIPTS/skill_attribution.py" "${_f88_args[@]}" || true
       fi
       ;;
   esac
 fi
 
-# F85: skill fitness ledger — demote zombies + federate skill themes
+# F85/F116: skill fitness ledger — demote zombies + tool-hit shield + federate themes
 if [[ -f "$SCRIPTS/skill_fitness.py" ]]; then
   case "${TORII_SKILL_FITNESS:-1}" in
     0|false|no|off) ;;

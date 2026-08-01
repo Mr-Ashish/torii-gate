@@ -1,6 +1,38 @@
 # Torii research → product log
 
 
+## 2026-08-01 — F116 tool-fitness compound (demote shield + federate + live wire)
+
+### Papers / posts
+- Trajectory eval 2026 / Mem2Act: tool path is first-class quality signal.
+- FederatedSkill: privacy-safe skill themes not raw trajectories.
+- SigLeak / contrastive skill signatures: portable tool-outcome evidence.
+- Gap after F114/F115: tool_hit_n tracked in fitness ledger but ignored for demote/boost/federate; live score/attr lacked explicit agent-loop args.
+
+### OSS design patterns stolen
+1. Demote shield: tool_hit_n≥1 never zombie-demote recovery skills.
+2. Boost: +0.5×max_boost × tool_hit_rate for router ranking.
+3. Federate tags tool_outcome + f116; tool_hits count only (no commands/paths).
+4. Live wire: run-torii-review score + attr pass agent-loop/agent-loop.json + agent.log.
+
+### Insight
+Measuring tool hits without acting on them is theater. Highest ROI: compound tool_hit into demote/boost/federate so F113 recovery skills stay full-body inject and multi-tenant promote.
+
+### Feature shipped (F116)
+- `skill_fitness.py` F116 tool shield/boost/federate; TORII_SKILL_FITNESS_TOOL
+- `run-torii-review.sh` explicit --agent-loop/--log for F114 score + F115 attr
+- skill_loop_status stage labels F114–F116; PRODUCT one-liner
+- traces `docs/benchmarks/traces/f116-tool-fitness/`
+
+### Metric
+- Offline: fixture tool_shielded + tool_in_fed; compound summary tool_hit_n=1
+- pytest 595; Modal pytorch#191813 BIT3_OK ~57s log_streaming=true POST_COMMENT=0
+
+### Loop-engineering / Hermes practice used
+**Verifier fitness gate on trajectories** — demote default REJECT unless tool or prose evidence compounds.
+
+### SHA
+`a8e134fa16b8eeb2c4e7b520bbf1bd03901756d3`
 ## 2026-08-01 — F115 tool-outcome LOO attribution + dual tool contribution
 
 ### Papers / posts

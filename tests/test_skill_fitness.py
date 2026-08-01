@@ -37,12 +37,65 @@ class SkillFitnessTests(unittest.TestCase):
         self.assertTrue(data["zombie_demoted"])
         self.assertTrue(data["good_not_demoted"])
         self.assertTrue(data["privacy_ok"])
+        # F116 tool-fitness compound
+        self.assertEqual(data.get("feature_tool"), "F116")
+        self.assertTrue(data.get("tool_shielded"), data)
+        self.assertTrue(data.get("tool_in_fed"), data)
+        self.assertTrue(data.get("tool_boost_ok"), data)
 
     def test_status(self):
         r = _run(["status"])
         self.assertEqual(r.returncode, 0, r.stderr + r.stdout)
         data = json.loads(r.stdout)
         self.assertEqual(data["feature"], "F85")
+
+    def test_f116_tool_shield_unit(self):
+        """Tool-effective skill with low prose hit_rate is not demoted."""
+        import importlib.util
+
+        path = ROOT / "scripts" / "skill_fitness.py"
+        spec = importlib.util.spec_from_file_location("skill_fitness", path)
+        mod = importlib.util.module_from_spec(spec)
+        assert spec and spec.loader
+        spec.loader.exec_module(mod)
+        ledger = {
+            "skills": {
+                "skill-prefer-memory-cli-early": {
+                    "id": "skill-prefer-memory-cli-early",
+                    "selected_n": 5,
+                    "hit_n": 1,
+                    "miss_n": 4,
+                    "hit_rate": 0.2,
+                    "tool_hit_n": 4,
+                    "tool_hit_rate": 0.8,
+                    "demoted": True,
+                },
+                "skill-zombie-docs": {
+                    "id": "skill-zombie-docs",
+                    "selected_n": 5,
+                    "hit_n": 0,
+                    "miss_n": 5,
+                    "hit_rate": 0.0,
+                    "tool_hit_n": 0,
+                    "tool_hit_rate": 0.0,
+                    "demoted": False,
+                },
+            },
+            "demoted": [],
+        }
+        out = mod.apply_demotions(ledger)
+        dem = set(out.get("demoted") or [])
+        self.assertNotIn("skill-prefer-memory-cli-early", dem)
+        self.assertIn("skill-zombie-docs", dem)
+        boosts = mod.fitness_boosts(out)
+        self.assertGreater(boosts.get("skill-prefer-memory-cli-early", 0), 0)
+        sigs = mod.federate_signals(out, tenant="t-a")
+        mem = next(
+            s for s in sigs if "memory" in str(s.get("id") or s.get("theme") or "")
+        )
+        self.assertIn("tool_outcome", mem.get("tags") or [])
+        self.assertIn("f116", mem.get("tags") or [])
+        self.assertNotIn("/Users/", json.dumps(sigs))
 
     def test_install_ships_script(self):
         with tempfile.TemporaryDirectory() as td:

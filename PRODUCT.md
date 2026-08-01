@@ -128,6 +128,8 @@ compound → write → consolidate → effective_critic → federate → scoped_
 
 **Tool-aware attribution (F115):** dual-rollout and LOO attribution credit **tool_hit** (weight 1.5) so recovery skills that only fire in the terminal are not free-rider demoted; durable ledger tracks `tool_hits` for router ranking.
 
+**Tool-fitness compound (F116):** fitness ledger **shields** skills with `tool_hit_n≥1` from zombie demote, adds tool boosts for next inject, and federates privacy-safe `tool_outcome` themes; post-run score/attr pass explicit agent-loop paths.
+
 **Ops:** `python3 scripts/memory_loop_status.py scorecard` → L0–L3. Smoke requires L3 on the hub tree. CI job summary annotates readiness; optional advisory `torii/memory-loop` via `TORII_MEMORY_LOOP_STATUS_COMMIT=1`.
 
 ---

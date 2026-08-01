@@ -1,0 +1,55 @@
+{
+  "schema_version": 1,
+  "feature": "F85",
+  "updated_at": "2026-08-01T05:24:06Z",
+  "skills": {
+    "skill-prefer-memory-cli-early": {
+      "id": "skill-prefer-memory-cli-early",
+      "selected_n": 1,
+      "hit_n": 1,
+      "miss_n": 0,
+      "hit_rate": 1.0,
+      "demoted": false,
+      "last_seen": "2026-08-01T05:24:06Z",
+      "tool_hit_n": 1,
+      "tool_hit_rate": 1.0
+    },
+    "skill-tool-depth-hunks": {
+      "id": "skill-tool-depth-hunks",
+      "selected_n": 1,
+      "hit_n": 0,
+      "miss_n": 1,
+      "hit_rate": 0.0,
+      "demoted": false,
+      "last_seen": "2026-08-01T05:24:06Z",
+      "tool_hit_rate": 0.0
+    }
+  },
+  "history": [
+    {
+      "at": "2026-08-01T05:24:06Z",
+      "run_id": "docs/benchmarks/traces/f116-tool-fitness/review.md",
+      "hit_rate": 0.5,
+      "selected_n": 2,
+      "hit_n": 1,
+      "tool_hit_n": 1,
+      "tool_hit_rate": 0.5,
+      "themes": [
+        "skill-prefer-memory-cli-early"
+      ]
+    }
+  ],
+  "demoted": [],
+  "last_demote": {
+    "at": "2026-08-01T05:24:06Z",
+    "min_n": 3,
+    "threshold": 0.25,
+    "newly_demoted": [],
+    "revived": [],
+    "tool_shielded": [
+      "skill-prefer-memory-cli-early"
+    ],
+    "demoted_n": 0,
+    "feature_tool": "F116"
+  }
+}

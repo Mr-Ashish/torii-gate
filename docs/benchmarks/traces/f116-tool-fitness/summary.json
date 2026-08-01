@@ -1,0 +1,15 @@
+{
+  "tool_hit_n": 1,
+  "tool_hit_rate": 0.5,
+  "attr_tool_contributors": [
+    "skill-prefer-memory-cli-early"
+  ],
+  "tool_shielded": [
+    "skill-prefer-memory-cli-early"
+  ],
+  "fed_tool_n": 1,
+  "boosts": {
+    "skill-prefer-memory-cli-early": 1.0,
+    "skill-tool-depth-hunks": 0.0
+  }
+}
