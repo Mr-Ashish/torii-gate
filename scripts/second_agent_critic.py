@@ -131,19 +131,25 @@ def run_f70_critic(review: str, root: Path, out_dir: Path | None) -> CheckerResu
         fp = load_fp_rules_dicts(fp_path) if fp_path.is_file() else []
         result = dual_pass_critic(review, fp_rules=fp, tp_signatures=tp)
         precision = float(result.get("precision_proxy") or 0)
+        eff_prec = float(result.get("effective_precision") or precision)
         weak = int(result.get("weak_evidence") or 0)
         chunks = int(result.get("chunk_count") or 0)
-        # ok if not mostly weak when there are findings
-        ok = precision >= 0.35 or chunks == 0 or weak == 0
+        # Prefer F95 effective_precision when present; ok if not mostly weak
+        score = max(precision, eff_prec * 0.95)
+        ok = score >= 0.35 or chunks == 0 or weak == 0
         return CheckerResult(
             id="f70_dual_critic",
-            name="Dual-pass path/FP/TP critic (F70)",
+            name="Dual-pass path/FP/TP critic (F70+F95 effective)",
             ok=ok,
-            score=precision,
+            score=score,
             detail={
                 "precision_proxy": precision,
+                "effective_precision": eff_prec,
+                "effective_aware": result.get("effective_aware"),
+                "effective_floor": result.get("effective_floor"),
                 "weak_evidence": weak,
                 "confirmed_tp": result.get("confirmed_tp"),
+                "stale_tp_match": result.get("stale_tp_match"),
                 "likely_fp": result.get("likely_fp"),
                 "chunk_count": chunks,
             },

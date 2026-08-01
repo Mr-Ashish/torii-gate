@@ -562,6 +562,15 @@ REGISTRY: list[ToggleSpec] = [
         "F94",
     ),
     ToggleSpec(
+        "memory_fed_effective",
+        "TORII_MEMORY_FED_EFFECTIVE",
+        "bool",
+        True,
+        "product",
+        "F95 export consolidated effective_score themes to hub federation",
+        "F95",
+    ),
+    ToggleSpec(
         "trace_vault",
         "TORII_TRACE_VAULT",
         "bool",

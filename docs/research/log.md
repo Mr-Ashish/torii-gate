@@ -1,6 +1,36 @@
 # Torii research → product log
 
 
+## 2026-08-01 — F95 effective-aware dual-pass critic + federated strength
+
+### Papers / posts / OSS
+- Agent memory 2026: high-hit **stale** facts poison ranking; strength must enter checkers not only stores.
+- F94 effective_score; F77 multi-tenant privacy; F70 dual_pass treated all TP hits equal.
+- Federated learning privacy patterns: share aggregates (floats), not paths/snippets.
+
+### OSS / eng patterns
+1. dual_pass: confirm TP only if max matching `effective_score ≥ floor` (default 0.25); else `stale_tp_match`.
+2. Federated sanitize/merge keeps max `effective_score`; promote optional `min_effective`.
+3. `memory_consolidate federate` exports privacy-safe strength signals post-review.
+
+### Insight
+Consolidation without checker integration leaves stale TP boosting precision. Highest ROI: **effective-aware critic + federated strength**.
+
+### Feature shipped (F95)
+- dual_pass_critic effective floor + effective_precision
+- federated_hub_ingest effective merge/promote/INDEX
+- consolidate federate stage; F78 panel detail; PRODUCT F95
+
+### Loop-engineering practice used
+**Checker uses the same measured signal as memory** — effective_score is tools-as-code evidence for confirm vs stale.
+
+### Metric
+- Offline: federated fixture effective_max+eff_promote; bench fixture; 539 pytest; smoke PASS
+- Live: **Modal** pytorch#191813 deepseek/deepseek-v4-pro BIT3_OK ~157s; log_streaming=true; tool_call_turns=20; POST_COMMENT=0
+
+### SHA
+PENDING
+
 ## 2026-08-01 — F94 memory consolidation (importance · merge · decay · eviction)
 
 ### Papers / posts / OSS

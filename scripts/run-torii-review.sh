@@ -318,6 +318,16 @@ if [[ -f "$SCRIPTS/memory_consolidate.py" ]]; then
     *)
       stage memory_consolidate \
         python3 "$SCRIPTS/memory_consolidate.py" run --kind both || true
+      # F95: export effective_score theme signals → hub federation (privacy-safe)
+      case "${TORII_MEMORY_FED_EFFECTIVE:-1}" in
+        0|false|no|off) ;;
+        *)
+          stage memory_fed_effective \
+            python3 "$SCRIPTS/memory_consolidate.py" federate \
+              --tenant "${TORII_MEMORY_TENANT:-}" \
+              --repo "${REPO:-${GITHUB_REPOSITORY:-}}" || true
+          ;;
+      esac
       ;;
   esac
 fi

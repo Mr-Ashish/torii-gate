@@ -238,6 +238,26 @@ def score_review(review_text: str, pack: dict[str, Any]) -> ScoreReport:
     )
 
 
+def _tp_effective(sig: dict[str, Any]) -> float:
+    """F95: 0–1 effective score from F94 annotations (or neutral legacy default)."""
+    for key in ("effective_score", "effective"):
+        if sig.get(key) is not None:
+            try:
+                return max(0.0, min(1.0, float(sig[key])))
+            except (TypeError, ValueError):
+                pass
+    # No consolidation annotation → neutral (preserves pre-F95 confirm behavior)
+    return 0.55
+
+
+def _effective_confirm_floor() -> float:
+    raw = (os.environ.get("TORII_TP_EFFECTIVE_FLOOR") or "0.25").strip()
+    try:
+        return max(0.0, min(1.0, float(raw)))
+    except ValueError:
+        return 0.25
+
+
 def dual_pass_critic(
     review_text: str,
     *,
@@ -247,6 +267,10 @@ def dual_pass_critic(
     """Pass-1 extract chunks; Pass-2 validate path evidence + FP demote + TP boost.
 
     Deterministic offline critic (no LLM) — cheap gate before optional live dual-agent.
+
+    F95: TP boost is **effective-aware** — signatures with F94 `effective_score` below
+    ``TORII_TP_EFFECTIVE_FLOOR`` (default 0.25) match as ``stale_tp_match`` (not confirmed),
+    so decayed/low-importance memory cannot inflate precision.
     """
     chunks = extract_finding_chunks(review_text)
     fp_rules = fp_rules or []
@@ -255,6 +279,9 @@ def dual_pass_critic(
     likely_fp = 0
     confirmed_tp = 0
     weak_evidence = 0
+    stale_tp = 0
+    floor = _effective_confirm_floor()
+    weighted_tp = 0.0
 
     for i, ch in enumerate(chunks):
         low = _norm(ch)
@@ -269,19 +296,34 @@ def dual_pass_critic(
                 demoted = True
                 demote_reason = f"fp_rule:{rpath}"
                 break
-        # TP boost: keyword signature match
+        # TP boost: keyword signature match, weighted by F94 effective_score
         tp_hits: list[str] = []
+        tp_effs: list[float] = []
+        best_eff = 0.0
         for sig in tp_signatures:
+            if not isinstance(sig, dict):
+                continue
+            if sig.get("deleted") or sig.get("evicted"):
+                continue
             kws = [str(k).lower() for k in (sig.get("keywords") or []) if k]
             if kws and any(k in low for k in kws):
-                tp_hits.append(str(sig.get("id") or sig.get("theme") or "sig"))
+                sid = str(sig.get("id") or sig.get("theme") or "sig")
+                eff = _tp_effective(sig)
+                tp_hits.append(sid)
+                tp_effs.append(eff)
+                best_eff = max(best_eff, eff)
         status = "candidate"
         if demoted:
             status = "likely_fp"
             likely_fp += 1
-        elif tp_hits and has_path:
+        elif tp_hits and has_path and best_eff >= floor:
             status = "confirmed_tp"
             confirmed_tp += 1
+            weighted_tp += best_eff
+        elif tp_hits and has_path and best_eff < floor:
+            # Stale / low-importance memory — path only, do not confirm
+            status = "stale_tp_match"
+            stale_tp += 1
         elif has_path and len(ch) > 40:
             status = "path_evidenced"
         else:
@@ -295,6 +337,8 @@ def dual_pass_critic(
                 "has_path": has_path,
                 "paths": paths[:5],
                 "tp_signature_hits": tp_hits,
+                "tp_effective_max": round(best_eff, 4) if tp_hits else None,
+                "tp_effective_scores": [round(e, 4) for e in tp_effs] if tp_effs else [],
                 "demote_reason": demote_reason,
                 "preview": ch[:180].replace("\n", " "),
             }
@@ -306,14 +350,28 @@ def dual_pass_critic(
         / total,
         4,
     )
+    # F95: effective-weighted precision (confirmed weighted by best_eff)
+    eff_precision = round(
+        (
+            weighted_tp
+            + 0.5 * sum(1 for v in validated if v["status"] == "path_evidenced")
+            + 0.15 * stale_tp
+        )
+        / total,
+        4,
+    )
     return {
         "feature": FEATURE,
         "pass": "dual_offline",
+        "effective_aware": True,
+        "effective_floor": floor,
         "chunk_count": len(chunks),
         "likely_fp": likely_fp,
         "confirmed_tp": confirmed_tp,
+        "stale_tp_match": stale_tp,
         "weak_evidence": weak_evidence,
         "precision_proxy": precision_proxy,
+        "effective_precision": eff_precision,
         "findings": validated,
     }
 

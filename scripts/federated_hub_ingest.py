@@ -167,6 +167,13 @@ def sanitize_signal(s: dict[str, Any], *, tenant: str = "") -> dict[str, Any] | 
         "hits": max(1, int(s.get("hits") or 1)),
         "source": str(s.get("source") or "hub_ingest")[:32],
     }
+    # F95: privacy-safe memory strength (no paths/snippets) — F94 effective scores
+    for score_key in ("effective_score", "importance_score", "decay_weight"):
+        if s.get(score_key) is not None:
+            try:
+                out[score_key] = round(max(0.0, min(1.0, float(s[score_key]))), 4)
+            except (TypeError, ValueError):
+                pass
     # unique tenant hashes for multi-tenant count
     th_set: list[str] = []
     if s.get("tenant_hashes") and isinstance(s["tenant_hashes"], list):
@@ -243,12 +250,42 @@ def merge_signals(
         cur["tags"] = list(
             dict.fromkeys(list(cur.get("tags") or []) + list(clean.get("tags") or []))
         )[:10]
+        # F95: keep max effective/importance across tenants (privacy-safe floats only)
+        for score_key in ("effective_score", "importance_score"):
+            try:
+                a = float(cur.get(score_key)) if cur.get(score_key) is not None else None
+            except (TypeError, ValueError):
+                a = None
+            try:
+                b = float(clean.get(score_key)) if clean.get(score_key) is not None else None
+            except (TypeError, ValueError):
+                b = None
+            if a is None and b is None:
+                continue
+            cur[score_key] = round(max(a or 0.0, b or 0.0), 4)
+        if clean.get("decay_weight") is not None:
+            try:
+                # freshest decay (higher weight) wins
+                cur["decay_weight"] = round(
+                    max(
+                        float(cur.get("decay_weight") or 0.0),
+                        float(clean.get("decay_weight") or 0.0),
+                    ),
+                    4,
+                )
+            except (TypeError, ValueError):
+                pass
         # prefer richer source label
         if clean.get("source") and clean["source"] != cur.get("source"):
             cur["source"] = f"{cur.get('source')}+{clean['source']}"[:48]
     out = sorted(
         by_id.values(),
-        key=lambda x: (-int(x.get("tenants") or 0), -int(x.get("hits") or 0), str(x.get("id"))),
+        key=lambda x: (
+            -float(x.get("effective_score") or 0.0),
+            -int(x.get("tenants") or 0),
+            -int(x.get("hits") or 0),
+            str(x.get("id")),
+        ),
     )
     return out
 
@@ -382,13 +419,15 @@ def ingest(
         "",
         f"**Global signals:** {len(merged)}  ·  privacy_ok={gdoc.get('privacy_ok')}",
         "",
-        "| Theme | Tenants | Hits | CWE |",
-        "|-------|--------:|-----:|-----|",
+        "| Theme | Tenants | Hits | Eff | CWE |",
+        "|-------|--------:|-----:|----:|-----|",
     ]
     for s in top:
+        eff = s.get("effective_score")
+        eff_s = f"{float(eff):.2f}" if eff is not None else "—"
         lines.append(
             f"| `{s.get('theme')}` | {s.get('tenants') or 1} | {s.get('hits') or 1} | "
-            f"{','.join(s.get('cwe') or []) or 'n/a'} |"
+            f"{eff_s} | {','.join(s.get('cwe') or []) or 'n/a'} |"
         )
     lines.append("")
     idx.write_text("\n".join(lines) + "\n", encoding="utf-8")
@@ -406,29 +445,70 @@ def ingest(
     }
 
 
+def _float_env(name: str, default: float) -> float:
+    raw = (os.environ.get(name) or "").strip()
+    if not raw:
+        return default
+    try:
+        return float(raw)
+    except ValueError:
+        return default
+
+
 def promote(
     root: Path,
     *,
     min_tenants: int | None = None,
     min_hits: int | None = None,
+    min_effective: float | None = None,
     dest: Path | None = None,
 ) -> dict[str, Any]:
-    """Filter global signals by multi-tenant / hit thresholds."""
+    """Filter global signals by multi-tenant / hit / optional effective thresholds."""
     min_t = min_tenants if min_tenants is not None else _int_env("TORII_FED_MIN_TENANTS", 2)
     min_h = min_hits if min_hits is not None else _int_env("TORII_FED_MIN_HITS", 2)
+    # F95: default 0.0 keeps legacy promote; set TORII_FED_MIN_EFFECTIVE to raise bar
+    min_e = (
+        min_effective
+        if min_effective is not None
+        else _float_env("TORII_FED_MIN_EFFECTIVE", 0.0)
+    )
     gpath = global_fed_path(root)
     sigs = load_signals(gpath)
-    promoted = [
-        s
-        for s in sigs
-        if int(s.get("tenants") or 1) >= min_t and int(s.get("hits") or 1) >= min_h
-    ]
+    promoted = []
+    for s in sigs:
+        if int(s.get("tenants") or 1) < min_t:
+            continue
+        if int(s.get("hits") or 1) < min_h:
+            continue
+        if min_e > 0:
+            try:
+                eff = float(s.get("effective_score")) if s.get("effective_score") is not None else 0.0
+            except (TypeError, ValueError):
+                eff = 0.0
+            # Signals without scores pass only if min_e is 0 (legacy)
+            if eff < min_e:
+                continue
+        promoted.append(s)
+    # Prefer high-effective themes first
+    promoted.sort(
+        key=lambda x: (
+            -float(x.get("effective_score") or 0.0),
+            -int(x.get("tenants") or 0),
+            -int(x.get("hits") or 0),
+        )
+    )
     out = dest or (root / GLOBAL_REL / "promoted-signals.json")
     doc = write_store(
         out,
         promoted,
         scope="promoted",
-        extra={"min_tenants": min_t, "min_hits": min_h, "source_count": len(sigs)},
+        extra={
+            "min_tenants": min_t,
+            "min_hits": min_h,
+            "min_effective": min_e,
+            "source_count": len(sigs),
+            "feature_note": "F95 effective-aware promote",
+        },
     )
     return {
         "feature": FEATURE,
@@ -436,9 +516,14 @@ def promote(
         "promoted_count": len(promoted),
         "min_tenants": min_t,
         "min_hits": min_h,
+        "min_effective": min_e,
         "path": str(out),
         "privacy_ok": doc.get("privacy_ok"),
         "themes": [s.get("theme") for s in promoted[:16]],
+        "top_effective": [
+            {"theme": s.get("theme"), "effective_score": s.get("effective_score")}
+            for s in promoted[:5]
+        ],
     }
 
 
@@ -521,6 +606,7 @@ def cmd_promote(args: argparse.Namespace) -> int:
         root,
         min_tenants=args.min_tenants,
         min_hits=args.min_hits,
+        min_effective=args.min_effective,
         dest=Path(args.out) if args.out else None,
     )
     print(json.dumps(result, indent=2))
@@ -583,6 +669,8 @@ def cmd_fixture(args: argparse.Namespace) -> int:
             "path_basenames": ["app.py"],
             "hits": 3,
             "source": "tp_signature",
+            "effective_score": 0.55,
+            "importance_score": 0.6,
         },
         {
             "id": "xss",
@@ -592,6 +680,7 @@ def cmd_fixture(args: argparse.Namespace) -> int:
             "path_basenames": ["routes.js"],
             "hits": 1,
             "source": "taint_prefilter",
+            "effective_score": 0.2,
         },
     ]
     # tenant B: overlap sqli + unique cmdi + poison attempt
@@ -604,6 +693,8 @@ def cmd_fixture(args: argparse.Namespace) -> int:
             "path_basenames": ["query.py"],
             "hits": 2,
             "source": "tp_signature",
+            "effective_score": 0.82,  # F95: max-merge should keep 0.82
+            "importance_score": 0.9,
         },
         {
             "id": "command_injection",
@@ -613,6 +704,7 @@ def cmd_fixture(args: argparse.Namespace) -> int:
             "path_basenames": ["routes.js"],
             "hits": 4,
             "source": "taint_prefilter",
+            "effective_score": 0.7,
         },
         {
             "id": "poison",
@@ -635,6 +727,12 @@ def cmd_fixture(args: argparse.Namespace) -> int:
     privacy_file_ok = "/Users/" not in raw and "sk-or-v1" not in raw and "snippet" not in raw
     # multi-tenant: sqli should have tenants>=2
     multi_ok = bool(sqli and int(sqli.get("tenants") or 0) >= 2)
+    # F95: max effective across tenants
+    try:
+        sqli_eff = float((sqli or {}).get("effective_score") or 0)
+    except (TypeError, ValueError):
+        sqli_eff = 0.0
+    effective_max_ok = sqli_eff >= 0.82
     # poison keywords stripped or theme dropped
     poison_ok = True
     if poison:
@@ -647,6 +745,11 @@ def cmd_fixture(args: argparse.Namespace) -> int:
     # promote only multi-tenant
     prom_themes = set(prom.get("themes") or [])
     promote_ok = "sql_injection" in prom_themes and "xss" not in prom_themes
+    # F95 min_effective promote filter
+    prom_eff = promote(td, min_tenants=1, min_hits=1, min_effective=0.75)
+    prom_eff_themes = set(prom_eff.get("themes") or [])
+    # sqli (0.82) and maybe cmdi (0.7) — only sqli should pass 0.75
+    eff_promote_ok = "sql_injection" in prom_eff_themes and "xss" not in prom_eff_themes
 
     fixture_pass = (
         r_a.get("privacy_ok")
@@ -655,22 +758,29 @@ def cmd_fixture(args: argparse.Namespace) -> int:
         and multi_ok
         and poison_ok
         and promote_ok
+        and effective_max_ok
+        and eff_promote_ok
         and int(prom.get("promoted_count") or 0) >= 1
     )
     print(
         json.dumps(
             {
                 "feature": FEATURE,
+                "feature_f95": True,
                 "fixture_pass": fixture_pass,
                 "tmpdir": str(td),
                 "global_count": len(g),
                 "sqli_tenants": (sqli or {}).get("tenants"),
                 "sqli_hits": (sqli or {}).get("hits"),
+                "sqli_effective": sqli_eff,
                 "privacy_file_ok": privacy_file_ok,
                 "multi_ok": multi_ok,
                 "poison_ok": poison_ok,
                 "promote_ok": promote_ok,
+                "effective_max_ok": effective_max_ok,
+                "eff_promote_ok": eff_promote_ok,
                 "promoted": prom.get("themes"),
+                "promoted_eff": prom_eff.get("themes"),
                 "ingest_a": r_a,
                 "ingest_b": {k: r_b[k] for k in ("global_count", "privacy_ok", "top_themes") if k in r_b},
             },
@@ -699,9 +809,15 @@ def main(argv: list[str] | None = None) -> int:
     pi.add_argument("--no-tenant-write", action="store_true")
     pi.set_defaults(func=cmd_ingest)
 
-    pp = sub.add_parser("promote", help="Filter by min tenants/hits")
+    pp = sub.add_parser("promote", help="Filter by min tenants/hits/effective (F95)")
     pp.add_argument("--min-tenants", type=int, default=None)
     pp.add_argument("--min-hits", type=int, default=None)
+    pp.add_argument(
+        "--min-effective",
+        type=float,
+        default=None,
+        help="F95 min effective_score (default env TORII_FED_MIN_EFFECTIVE or 0)",
+    )
     pp.add_argument("--out", default="")
     pp.set_defaults(func=cmd_promote)
 

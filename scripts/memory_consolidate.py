@@ -19,6 +19,7 @@ Commands:
   apply        — apply a plan JSON to a store file
   run          — plan+apply on TP (and optional FP) stores
   score        — print importance/decay/effective for each item
+  federate     — F95: emit privacy-safe theme signals with effective_score → hub
   inject       — budgeted prompt note of top effective memories (optional)
   fixture      — hermetic merge + decay rank + eviction
   status       — store summary with consolidation meta
@@ -634,6 +635,118 @@ def cmd_inject(args: argparse.Namespace) -> int:
     return 0
 
 
+def export_federated_signals(
+    items: list[dict[str, Any]],
+    *,
+    tenant: str = "",
+    now: datetime | None = None,
+) -> list[dict[str, Any]]:
+    """F95: privacy-safe signals carrying effective_score (no paths/snippets)."""
+    now = now or _now_dt()
+    out: list[dict[str, Any]] = []
+    for it in items:
+        if not isinstance(it, dict) or it.get("deleted") or it.get("evicted"):
+            continue
+        theme = _theme(it)
+        if not theme:
+            continue
+        # basenames only — never full paths
+        bases: list[str] = []
+        for p in it.get("path_globs") or []:
+            name = Path(str(p)).name
+            if name and "/" not in name:
+                bases.append(name[:64])
+        bases = list(dict.fromkeys(bases))[:6]
+        imp = importance_score(it)
+        dec = decay_weight(it, now=now)
+        eff = effective_score(it, now=now)
+        sig: dict[str, Any] = {
+            "id": re.sub(r"[^a-z0-9._-]+", "-", _id(it).lower())[:64] or theme,
+            "theme": theme,
+            "keywords": list(it.get("keywords") or [])[:12],
+            "cwe": list(it.get("cwe") or [])[:8] if isinstance(it.get("cwe"), list) else [],
+            "path_basenames": bases,
+            "hits": max(1, int(it.get("hits") or 1)),
+            "importance_score": round(imp, 4),
+            "decay_weight": round(dec, 4),
+            "effective_score": round(eff, 4),
+            "source": "f94_consolidate",
+            "tags": ["memory_effective", "f95"],
+        }
+        if tenant:
+            sig["tenant"] = tenant  # stripped by federated sanitize → tenant_hash
+        out.append(sig)
+    return out
+
+
+def cmd_federate(args: argparse.Namespace) -> int:
+    """Export consolidated TP effective scores into F77 hub (privacy-safe)."""
+    if not enabled() and not args.force:
+        print(json.dumps({"feature": FEATURE, "enabled": False, "skipped": True}))
+        return 0
+    root = _root()
+    path = Path(args.store) if args.store else default_tp_path(root)
+    store = load_store(path)
+    items = [i for i in (store.get("items") or []) if not i.get("deleted") and not i.get("evicted")]
+    # ensure scores present
+    now = _now_dt()
+    for it in items:
+        it.setdefault("importance_score", round(importance_score(it), 4))
+        it.setdefault("decay_weight", round(decay_weight(it, now=now), 4))
+        it.setdefault("effective_score", round(effective_score(it, now=now), 4))
+    signals = export_federated_signals(items, tenant=args.tenant or "", now=now)
+    result: dict[str, Any] = {
+        "feature": "F95",
+        "source_feature": FEATURE,
+        "store": str(path),
+        "signal_count": len(signals),
+        "top": [
+            {
+                "theme": s.get("theme"),
+                "effective_score": s.get("effective_score"),
+                "hits": s.get("hits"),
+            }
+            for s in sorted(signals, key=lambda x: -float(x.get("effective_score") or 0))[:8]
+        ],
+    }
+    if args.dry_run or not signals:
+        result["dry_run"] = bool(args.dry_run) or not signals
+        print(json.dumps(result, indent=2))
+        return 0
+    # soft ingest via federated_hub_ingest
+    try:
+        import importlib.util
+
+        fed_path = Path(__file__).resolve().parent / "federated_hub_ingest.py"
+        if fed_path.is_file():
+            spec = importlib.util.spec_from_file_location("federated_hub_ingest", fed_path)
+            if spec and spec.loader:
+                mod = importlib.util.module_from_spec(spec)
+                sys.modules["federated_hub_ingest"] = mod
+                spec.loader.exec_module(mod)
+                if mod.enabled():
+                    hub_root = Path(args.hub_root).resolve() if args.hub_root else root
+                    tenant = args.tenant or os.environ.get("TORII_MEMORY_TENANT") or ""
+                    ing = mod.ingest(
+                        hub_root,
+                        signals,
+                        tenant=tenant,
+                        source_repo=args.repo or "",
+                        write_tenant=bool(tenant),
+                    )
+                    result["ingest"] = {
+                        "global_count": ing.get("global_count"),
+                        "privacy_ok": ing.get("privacy_ok"),
+                        "global_path": ing.get("global_path"),
+                        "top_themes": ing.get("top_themes"),
+                    }
+                    result["privacy_ok"] = ing.get("privacy_ok")
+    except Exception as exc:
+        result["ingest_error"] = str(exc)[:200]
+    print(json.dumps(result, indent=2))
+    return 0 if result.get("privacy_ok", True) else 1
+
+
 def cmd_status(args: argparse.Namespace) -> int:
     root = _root()
     tp = load_store(default_tp_path(root))
@@ -837,6 +950,15 @@ def main(argv: list[str] | None = None) -> int:
     pi.add_argument("--limit", type=int, default=8)
     pi.add_argument("--out", default="")
     pi.set_defaults(func=cmd_inject)
+
+    pfed = sub.add_parser("federate", help="F95 export effective scores to hub federation")
+    pfed.add_argument("--store", default="")
+    pfed.add_argument("--tenant", default="")
+    pfed.add_argument("--repo", default="")
+    pfed.add_argument("--hub-root", default="")
+    pfed.add_argument("--dry-run", action="store_true")
+    pfed.add_argument("--force", action="store_true")
+    pfed.set_defaults(func=cmd_federate)
 
     pf = sub.add_parser("fixture", help="Hermetic consolidation fixture")
     pf.set_defaults(func=cmd_fixture)

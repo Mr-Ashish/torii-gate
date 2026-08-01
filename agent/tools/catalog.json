@@ -1,8 +1,8 @@
 {
   "schema_version": 1,
-  "feature": "F94",
+  "feature": "F95",
   "description": "Torii agent tool catalog \u2014 research \u2192 eval \u2192 adopt pipeline",
-  "updated_at": "2026-08-01T02:38:33Z",
+  "updated_at": "2026-08-01T02:45:51Z",
   "tools": [
     {
       "id": "terminal",
@@ -335,6 +335,19 @@
       "status": "adopted",
       "script": "scripts/memory_consolidate.py",
       "feature": "F94",
+      "source": "memory_oss",
+      "adopted_at": "2026-08-01"
+    },
+    {
+      "id": "effective-federated-critic",
+      "name": "Effective-aware TP critic + federated strength (F95)",
+      "status": "adopted",
+      "script": "scripts/bench_security_gate.py",
+      "related": [
+        "scripts/memory_consolidate.py",
+        "scripts/federated_hub_ingest.py"
+      ],
+      "feature": "F95",
       "source": "memory_oss",
       "adopted_at": "2026-08-01"
     }

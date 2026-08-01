@@ -1,0 +1,6 @@
+{
+  "id": "effective-federated-critic",
+  "feature": "F95",
+  "status": "adopted",
+  "one_liner": "Confirm TP only above effective floor; federate privacy-safe strength scores"
+}
