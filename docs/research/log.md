@@ -30,7 +30,7 @@ Dual-gate adopt without always budget still fails to inject recovery skills. Hig
 **Context budget as a loop constraint** — always inject is rationed, not vibes.
 
 ### SHA
-`157ae365dfaedcb21a9aa985bbcab463ed517e00`
+`e397f577f453b8abe0b5765c28578823131fd768`
 ## 2026-08-01 — F118 tool-aware dual-gate adopt of F117 product-cli/critic skills
 
 ### Papers / posts
