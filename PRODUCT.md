@@ -92,9 +92,14 @@ Validated skill proposals enter `agent/skills/active/` only after offline regres
 | Evidence + measured contribution | “Zero false positives” theater |
 | Pipeline-native AppSec (install pack) | Day-one ASPM suite |
 
-## Skill loop readiness (F91)
+## Skill loop readiness (F91/F92)
 
-Ops scorecard: `python3 scripts/skill_loop_status.py scorecard` → L0–L3 for `route → hit → fitness → dual → attr → inject`. Embedded in install-guide and `workflow_as_code.py scorecard`. Does not change merge exit codes.
+Ops scorecard: `python3 scripts/skill_loop_status.py scorecard` → L0–L3 for
+`route → hit → fitness → dual → attr → inject`. Embedded in install-guide and
+`workflow_as_code.py scorecard`. **Smoke** requires L3 on the hub tree.
+CI job summary annotates readiness; optional advisory commit status
+`torii/skill-loop` via `TORII_SKILL_LOOP_STATUS_COMMIT=1` (never the merge gate —
+that remains `torii/gate`).
 
 ## Live proof
 Modal + Hermes + DeepSeek V4 Pro on real open-source PRs (e.g. pytorch), `POST_COMMENT=0` for dogfood, log streaming to Modal UI, redacted traces under `docs/benchmarks/traces/`.

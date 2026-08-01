@@ -1,0 +1,21 @@
+=== Torii Gate offline smoke ===
+[1/6] security pack default
+  ok  active_pack_id=security
+[2/6] demo/insecure dogfood fixture
+  ok  pattern present: f"SELECT
+  ok  pattern present: pickle.loads
+  ok  pattern present: shell=True
+[3/6] torii_gate_status decision map
+  ok  APPROVE opens gate (strict rc=0)
+  ok  REQUEST CHANGES closes gate (strict rc=1)
+  ok  security concern closes gate (strict rc=1)
+  ok  status context=torii/gate
+[4/6] reusable workflow torii/gate post-step
+  ok  workflow references torii_gate_status.py and torii/gate
+  ok  named post-step present
+[5/6] workflows-as-code (F79)
+  ok  workflow_as_code fixture L3
+[6/6] skill compound loop readiness (F91)
+  ok  skill_loop fixture L3
+  ok  torii_gate_status --skill-loop-only ready
+=== SMOKE PASSED ===

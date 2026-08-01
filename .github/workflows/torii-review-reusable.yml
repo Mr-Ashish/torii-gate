@@ -742,6 +742,57 @@ jobs:
             echo "Skip torii/gate status (disabled or missing REPO/PR)"
           fi
 
+          # F92: skill compound loop readiness annotation (job summary; optional commit status)
+          # Default: summary only (does not block merge). Set TORII_SKILL_LOOP_STATUS_COMMIT=1 to post
+          # advisory context torii/skill-loop (success|neutral) — never required for merge by default.
+          if [[ -f "$TORII_ROOT/scripts/skill_loop_status.py" ]]; then
+            set +e
+            SL_JSON="$(python3 "$TORII_ROOT/scripts/skill_loop_status.py" scorecard --shallow 2>/dev/null)"
+            SL_RC=$?
+            set -e
+            if [[ -n "${SL_JSON:-}" ]]; then
+              SL_LEVEL="$(python3 -c 'import json,sys; print(json.load(sys.stdin).get("level",""))' <<<"$SL_JSON" 2>/dev/null || true)"
+              SL_READY="$(python3 -c 'import json,sys; print("true" if json.load(sys.stdin).get("ready") else "false")' <<<"$SL_JSON" 2>/dev/null || echo false)"
+              SL_STAGES="$(python3 -c 'import json,sys; print(json.load(sys.stdin).get("stages_ok",""))' <<<"$SL_JSON" 2>/dev/null || true)"
+              SL_SKILLS="$(python3 -c 'import json,sys; print(json.load(sys.stdin).get("skills_n",""))' <<<"$SL_JSON" 2>/dev/null || true)"
+              if [[ -n "${GITHUB_STEP_SUMMARY:-}" ]]; then
+                {
+                  echo "### Skill compound loop (\`route→hit→fitness→dual→attr→inject\`)"
+                  echo "- **Level:** \`$SL_LEVEL\` · **Ready:** \`$SL_READY\`"
+                  echo "- **Stages:** \`$SL_STAGES\` · **Active skills:** \`$SL_SKILLS\`"
+                  echo "- **Ops:** \`python3 scripts/skill_loop_status.py scorecard\`"
+                  echo
+                } >> "$GITHUB_STEP_SUMMARY"
+              fi
+              echo "skill_loop level=$SL_LEVEL ready=$SL_READY stages=$SL_STAGES skills=$SL_SKILLS rc=$SL_RC"
+              case "${TORII_SKILL_LOOP_STATUS_COMMIT:-0}" in
+                1|true|TRUE|on|ON|yes|YES)
+                  if [[ "$STATUS_ON" == "1" && -n "$REPO" && -n "${PR_NUMBER:-}" ]]; then
+                    HEAD_SHA_SL="$(
+                      gh pr view "$PR_NUMBER" --repo "$REPO" --json headRefOid --jq '.headRefOid' 2>/dev/null || true
+                    )"
+                    if [[ -n "${HEAD_SHA_SL:-}" ]]; then
+                      SL_STATE="success"
+                      [[ "$SL_READY" == "true" ]] || SL_STATE="neutral"
+                      TARGET_SL="${GITHUB_SERVER_URL:-https://github.com}/${REPO}/actions/runs/${GITHUB_RUN_ID:-}"
+                      DESC_SL="skill-loop ${SL_LEVEL} stages=${SL_STAGES}"
+                      DESC_SL="${DESC_SL:0:140}"
+                      gh api --method POST \
+                        -H "Accept: application/vnd.github+json" \
+                        "/repos/${REPO}/statuses/${HEAD_SHA_SL}" \
+                        -f state="$SL_STATE" \
+                        -f context="torii/skill-loop" \
+                        -f description="$DESC_SL" \
+                        -f target_url="$TARGET_SL" >/dev/null 2>&1 \
+                        && echo "Posted $SL_STATE status on ${HEAD_SHA_SL:0:12} (torii/skill-loop)" \
+                        || echo "warn: torii/skill-loop status post failed"
+                    fi
+                  fi
+                  ;;
+              esac
+            fi
+          fi
+
           # Optional hard fail for required-check workflows (default soft)
           STRICT="${TORII_GATE_STRICT:-0}"
           case "${STRICT}" in

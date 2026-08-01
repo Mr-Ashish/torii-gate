@@ -1,5 +1,34 @@
 # Torii research → product log
 
+## 2026-08-01 — F92 smoke skill-loop L3 + CI job-summary annotation
+
+### Papers / posts / OSS
+- Loop Engineering: readiness must be in smoke/CI, not only CLI.
+- Prior F91 scorecard existed; smoke stopped at F79; CI never showed skill-loop.
+
+### OSS / eng patterns
+1. smoke step 6: skill_loop fixture L3 + gate --skill-loop-only.
+2. Reusable workflow job summary for skill loop after torii/gate.
+3. Optional advisory commit status `torii/skill-loop` (TORII_SKILL_LOOP_STATUS_COMMIT=1).
+
+### Insight
+Scorecards that are not in smoke rot. Highest ROI: **smoke L3 + CI annotation**.
+
+### Feature shipped (F92)
+- smoke-torii-gate.sh [6/6] skill loop
+- torii-review-reusable.yml skill-loop summary (+ optional status)
+- PRODUCT F91/F92 note
+
+### Loop-engineering practice used
+**Verifier in the default path** — smoke fails if skill loop not L3.
+
+### Metric
+- Offline: smoke PASS with skill_loop L3; 527 pytest
+- Live: **Modal** pytorch#191813 deepseek/deepseek-v4-pro BIT3_OK ~91s; log_streaming=true; POST_COMMENT=0
+
+### SHA
+_PENDING_
+
 ## 2026-08-01 — F91 skill compound loop readiness scorecard
 
 ### Papers / posts / OSS

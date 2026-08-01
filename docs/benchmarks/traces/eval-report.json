@@ -1,11 +1,11 @@
 {
   "schema_version": 1,
   "feature": "F83",
-  "generated_at": "2026-08-01T02:21:39Z",
+  "generated_at": "2026-08-01T02:26:21Z",
   "vault": "/Users/ashishmishra/Documents/experiments/torii/docs/benchmarks/traces",
   "aggregate": {
-    "n_runs": 20,
-    "n_modal": 12,
+    "n_runs": 21,
+    "n_modal": 13,
     "n_local": 8,
     "n_log_streaming": 4,
     "n_with_composite": 8,
@@ -20,7 +20,7 @@
       "modal-f81-llm-critic": 1,
       "modal-f82-skills": 1,
       "modal-f83-pack-eval": 1,
-      "\u2014": 8
+      "\u2014": 9
     },
     "models": [
       "deepseek/deepseek-v4-pro",
@@ -360,6 +360,23 @@
       "model": "deepseek/deepseek-v4-pro",
       "label": "",
       "feature": "F91",
+      "host": "modal",
+      "composite": null,
+      "level": "",
+      "log_streaming": null,
+      "elapsed_s": null,
+      "tool_call_turns": null,
+      "git_safe": true
+    },
+    {
+      "dir": "20260801-0225-pytorch-pytorch-PR191813-modal-f92",
+      "run_id": "20260801-0225-pytorch-pytorch-PR191813-modal-f92",
+      "archived_at": "",
+      "repo": "pytorch/pytorch",
+      "pr": "191813",
+      "model": "deepseek/deepseek-v4-pro",
+      "label": "",
+      "feature": "F92",
       "host": "modal",
       "composite": null,
       "level": "",
