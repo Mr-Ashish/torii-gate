@@ -276,6 +276,7 @@ def render_help_text() -> str:
         "Examples:",
         "```bash",
         "python3 scripts/torii.py help",
+        "python3 scripts/torii.py status --text   # day-2 one-screen (no F-IDs)",
         "python3 scripts/torii.py doctor          # human summary (TTY default)",
         "python3 scripts/torii.py doctor --json   # machine JSON",
         "python3 scripts/torii.py scorecard",
@@ -342,60 +343,191 @@ def run_group(group: str, passthrough: list[str], *, root: Path | None = None) -
         return 2
 
 
-def cmd_status(args: argparse.Namespace) -> int:
-    root = _root()
+def _soft_script_json(
+    root: Path, script: str, argv: list[str], *, timeout: int = 45
+) -> dict[str, Any] | None:
+    """Best-effort peer script JSON (never fails status/doctor)."""
+    path = _scripts_dir(root) / script
+    if not path.is_file():
+        return None
+    try:
+        r = subprocess.run(
+            [sys.executable, str(path), *argv],
+            cwd=str(root),
+            capture_output=True,
+            text=True,
+            timeout=timeout,
+            env={**os.environ, "TORII_ROOT": str(root)},
+        )
+        if r.returncode != 0 or not (r.stdout or "").strip():
+            return None
+        data = json.loads(r.stdout)
+        return data if isinstance(data, dict) else None
+    except Exception:
+        return None
+
+
+def build_status_payload(root: Path | None = None) -> dict[str, Any]:
+    """Day-2 product status payload (machine + buyer day-2 panel fields)."""
+    root = root or _root()
     present = {}
     for name, meta in GROUPS.items():
         present[name] = (_scripts_dir(root) / meta["script"]).is_file()
     extras: dict[str, Any] = {}
-    # soft memory loop peek
-    try:
-        r = subprocess.run(
-            [
-                sys.executable,
-                str(_scripts_dir(root) / "memory_loop_status.py"),
-                "scorecard",
-                "--shallow",
-            ],
-            cwd=str(root),
-            capture_output=True,
-            text=True,
-            timeout=60,
-            env={**os.environ, "TORII_ROOT": str(root)},
-        )
-        if r.returncode == 0 and r.stdout.strip():
-            extras["memory_loop"] = json.loads(r.stdout)
-    except Exception as exc:
-        extras["memory_loop_error"] = str(exc)[:120]
-    try:
-        r = subprocess.run(
-            [sys.executable, str(_scripts_dir(root) / "reprompt_budget.py"), "status"],
-            cwd=str(root),
-            capture_output=True,
-            text=True,
-            timeout=30,
-            env={**os.environ, "TORII_ROOT": str(root)},
-        )
-        if r.returncode == 0 and r.stdout.strip():
-            extras["reprompt_budget"] = json.loads(r.stdout)
-    except Exception as exc:
-        extras["budget_error"] = str(exc)[:120]
-    print(
-        json.dumps(
-            {
-                "feature": FEATURE,
-                "enabled": enabled(),
-                "root": str(root),
-                "groups_present": present,
-                "all_present": all(present.values()),
-                "memory_cli": (_scripts_dir(root) / "torii_memory.py").is_file(),
-                "extras": extras,
-                "scored_at": _now(),
-            },
-            indent=2,
-        )
+    ml = _soft_script_json(
+        root, "memory_loop_status.py", ["scorecard", "--shallow"], timeout=60
     )
-    return 0 if all(present.values()) else 1
+    if ml:
+        extras["memory_loop"] = {
+            "level": ml.get("level"),
+            "ready": ml.get("ready"),
+            "stages_ok": ml.get("stages_ok"),
+        }
+    budget = _soft_script_json(root, "reprompt_budget.py", ["status"], timeout=30)
+    if budget:
+        st = budget.get("state") if isinstance(budget.get("state"), dict) else {}
+        extras["reprompt_budget"] = {
+            "enabled": budget.get("enabled"),
+            "remaining": st.get("remaining"),
+            "max_extra": st.get("max_extra") or budget.get("env_max_extra"),
+        }
+
+    # Buyer day-2 panel (soft — never blocks status)
+    day2: dict[str, Any] = {}
+    commercial = _soft_script_json(
+        root, "commercial_scorecard.py", ["status"], timeout=60
+    )
+    if commercial:
+        day2["commercial_ok"] = commercial.get("commercial_ok")
+        day2["overall_est"] = commercial.get("overall_est")
+        day2["cost_honesty_ok"] = commercial.get("cost_honesty_ok")
+        day2["cost_p50_usd"] = commercial.get("cost_p50_usd")
+        day2["surfaces_pass"] = commercial.get("surfaces_pass")
+    cert = _soft_script_json(root, "gate_certificate.py", ["status"], timeout=45)
+    if cert:
+        day2["cert_vault_n"] = cert.get("vault_n")
+        day2["cert_vault_cost_p50"] = cert.get("vault_cost_p50_usd")
+        day2["cert_vault_ok"] = cert.get("vault_ok")
+    quieter = _soft_script_json(root, "quieter_over_time.py", ["status"], timeout=45)
+    if quieter:
+        day2["quieter_ok"] = quieter.get("quieter_ok")
+        day2["getting_quieter"] = quieter.get("getting_quieter")
+        day2["quiet_score_all"] = quieter.get("quiet_score_all")
+    ops = _soft_script_json(root, "ops_dashboard.py", ["status"], timeout=45)
+    if ops:
+        day2["ops_ok"] = ops.get("ops_ok")
+        day2["cost_ok"] = ops.get("cost_ok")
+        if day2.get("cost_p50_usd") is None:
+            day2["cost_p50_usd"] = ops.get("cost_p50")
+
+    groups_n = sum(1 for v in present.values() if v)
+    return {
+        "feature": FEATURE,
+        "enabled": enabled(),
+        "root": str(root),
+        "groups_present": present,
+        "groups_n": groups_n,
+        "groups_total": len(present),
+        "all_present": all(present.values()) if present else False,
+        "memory_cli": (_scripts_dir(root) / "torii_memory.py").is_file(),
+        "extras": extras,
+        "day2": day2,
+        "one_liner": (
+            "Day-2 one screen: commercial · cost/PR · cert vault · quieter · "
+            "require torii/gate."
+        ),
+        "scored_at": _now(),
+    }
+
+
+def render_status_text(payload: dict[str, Any]) -> str:
+    """Human day-2 one-screen status (install UX — hide F-stack)."""
+    day2 = payload.get("day2") if isinstance(payload.get("day2"), dict) else {}
+    ok = bool(payload.get("all_present"))
+    lines = [
+        f"# Torii status · {'READY' if ok else 'GAPS'}",
+        f"scored_at: {payload.get('scored_at')}",
+        f"CLI groups: {payload.get('groups_n')}/{payload.get('groups_total')} present",
+        "",
+        "## Day-2 readiness (buyer)",
+    ]
+    if day2:
+        if day2.get("overall_est") is not None:
+            lines.append(
+                f"- commercial: overall_est={day2.get('overall_est')} · "
+                f"ok={day2.get('commercial_ok')} · "
+                f"surfaces={day2.get('surfaces_pass')}"
+            )
+        if day2.get("cost_p50_usd") is not None or day2.get("cost_ok") is not None:
+            p50 = day2.get("cost_p50_usd")
+            p50_s = f"${float(p50):.3f}" if isinstance(p50, (int, float)) else "—"
+            lines.append(
+                f"- cost honesty: p50={p50_s}/PR · "
+                f"cost_ok={day2.get('cost_ok')} · "
+                f"honesty={day2.get('cost_honesty_ok')} "
+                f"(local vault only)"
+            )
+        if day2.get("cert_vault_n") is not None:
+            cp = day2.get("cert_vault_cost_p50")
+            cp_s = f"${float(cp):.3f}" if isinstance(cp, (int, float)) else "—"
+            lines.append(
+                f"- gate certificates in vault: n={day2.get('cert_vault_n')} · "
+                f"cost p50={cp_s} · ok={day2.get('cert_vault_ok')}"
+            )
+        if day2.get("quieter_ok") is not None:
+            lines.append(
+                f"- quieter-over-time: ok={day2.get('quieter_ok')} · "
+                f"getting_quieter={day2.get('getting_quieter')} · "
+                f"score={day2.get('quiet_score_all')}"
+            )
+        if day2.get("ops_ok") is not None:
+            lines.append(f"- ops: ok={day2.get('ops_ok')}")
+    else:
+        lines.append("- _(soft day-2 peeks unavailable — run doctor / commercial -- fixture)_")
+
+    ml = (payload.get("extras") or {}).get("memory_loop") or {}
+    if ml:
+        lines.append(
+            f"- memory loop: level={ml.get('level')} ready={ml.get('ready')}"
+        )
+    lines += [
+        "",
+        "## Next",
+        "- Require status check **torii/gate** (merge authority)",
+        "- `python3 scripts/torii.py doctor` · `ops -- status` · `certificate -- report`",
+        "- `python3 scripts/torii.py quieter -- status` · `commercial -- status`",
+        "- JSON: `python3 scripts/torii.py status --json`",
+        "",
+        str(payload.get("one_liner") or ""),
+        "",
+    ]
+    return "\n".join(lines)
+
+
+def cmd_status(args: argparse.Namespace) -> int:
+    payload = build_status_payload()
+    want_json = bool(getattr(args, "json", False))
+    want_text = bool(getattr(args, "text", False))
+    env_json = (os.environ.get("TORII_STATUS_JSON") or "").strip().lower() in {
+        "1",
+        "true",
+        "yes",
+    }
+    env_text = (os.environ.get("TORII_STATUS_TEXT") or "").strip().lower() in {
+        "1",
+        "true",
+        "yes",
+    }
+    # Default human text on TTY; JSON when piped, --json, or TORII_STATUS_JSON=1
+    # Force text with --text / TORII_STATUS_TEXT even when non-TTY (install check).
+    use_text = want_text or env_text or (
+        not want_json and not env_json and sys.stdout.isatty()
+    )
+    if use_text and not want_json and not env_json:
+        print(render_status_text(payload))
+    else:
+        print(json.dumps(payload, indent=2))
+    return 0 if payload.get("all_present") else 1
 
 
 def _scorecard_ops_panel(root: Path) -> dict[str, Any]:
@@ -677,6 +809,14 @@ def cmd_doctor(args: argparse.Namespace) -> int:
             and refine_dual_hub
         )
     )
+    # Soft day-2 buyer panel (commercial / cert vault / quieter) — no hard fail
+    day2: dict[str, Any] = {}
+    try:
+        st = build_status_payload(root)
+        day2 = st.get("day2") if isinstance(st.get("day2"), dict) else {}
+    except Exception:
+        day2 = {}
+
     payload: dict[str, Any] = {
         "feature": FEATURE,
         "feature_recovery": "F128",
@@ -707,28 +847,39 @@ def cmd_doctor(args: argparse.Namespace) -> int:
         "refine_loop_ok": refine_loop_ok,
         "scorecard_ops": sc_panel,
         "scorecard_ops_ok": sc_panel.get("scorecard_ops_ok"),
+        "day2": day2,
         "results": results,
         "scored_at": _now(),
         "cli": "python3 scripts/torii.py",
         "install_doc": "docs/INSTALL.md",
     }
     want_json = bool(getattr(args, "json", False))
+    want_text = bool(getattr(args, "text", False))
     env_json = (os.environ.get("TORII_DOCTOR_JSON") or "").strip().lower() in {
         "1",
         "true",
         "yes",
     }
+    env_text = (os.environ.get("TORII_DOCTOR_TEXT") or "").strip().lower() in {
+        "1",
+        "true",
+        "yes",
+    }
     # Default human text on TTY; JSON when piped, --json, or TORII_DOCTOR_JSON=1
-    if want_json or env_json or not sys.stdout.isatty():
-        print(json.dumps(payload, indent=2))
-    else:
+    use_text = want_text or env_text or (
+        not want_json and not env_json and sys.stdout.isatty()
+    )
+    if use_text and not want_json and not env_json:
         print(render_doctor_text(payload))
+    else:
+        print(json.dumps(payload, indent=2))
     return 0 if all_ok else 1
 
 
 def render_doctor_text(payload: dict[str, Any]) -> str:
     """Human day-2 doctor summary (install UX — hide F-stack by default)."""
     ok = bool(payload.get("doctor_pass"))
+    day2 = payload.get("day2") if isinstance(payload.get("day2"), dict) else {}
     lines = [
         f"# Torii doctor · {'PASS' if ok else 'FAIL'}",
         f"scored_at: {payload.get('scored_at')}",
@@ -750,6 +901,38 @@ def render_doctor_text(payload: dict[str, Any]) -> str:
         f"- hub-archival loop: {payload.get('hub_archival_loop_ok')}",
         f"- refine loop: {payload.get('refine_loop_ok')}",
         "",
+        "## Day-2 scoreboard (measured)",
+    ]
+    if day2:
+        if day2.get("overall_est") is not None:
+            lines.append(
+                f"- commercial overall_est={day2.get('overall_est')} · "
+                f"ok={day2.get('commercial_ok')}"
+            )
+        p50 = day2.get("cost_p50_usd")
+        if p50 is not None or day2.get("cost_honesty_ok") is not None:
+            p50_s = f"${float(p50):.3f}" if isinstance(p50, (int, float)) else "—"
+            lines.append(
+                f"- cost/PR p50={p50_s} · honesty={day2.get('cost_honesty_ok')} "
+                f"(local vault only)"
+            )
+        if day2.get("cert_vault_n") is not None:
+            lines.append(
+                f"- gate cert vault n={day2.get('cert_vault_n')} · "
+                f"ok={day2.get('cert_vault_ok')}"
+            )
+        if day2.get("getting_quieter") is not None:
+            lines.append(
+                f"- quieter-over-time getting_quieter={day2.get('getting_quieter')} · "
+                f"ok={day2.get('quieter_ok')}"
+            )
+    else:
+        lines.append(
+            "- Run `python3 scripts/torii.py status --text` for commercial · "
+            "cost · cert · quieter one-screen"
+        )
+    lines += [
+        "",
         "## Cost honesty (day-2)",
         "- Measured dogfood cost/PR + time-to-signal: "
         "`python3 scripts/torii.py ops -- status` · "
@@ -760,7 +943,8 @@ def render_doctor_text(payload: dict[str, Any]) -> str:
         "",
         "## Next",
         "- Install: docs/INSTALL.md · require status **torii/gate**",
-        "- One CLI: python3 scripts/torii.py help|doctor|memory|gate|ops",
+        "- One CLI: python3 scripts/torii.py help|status|doctor|memory|gate|ops",
+        "- One-screen: python3 scripts/torii.py status --text",
         "- JSON: python3 scripts/torii.py doctor --json",
         "",
     ]
@@ -1575,13 +1759,30 @@ def main(argv: list[str] | None = None) -> int:
         pre = []
 
     if cmd == "status":
-        return cmd_status(argparse.Namespace())
+        p = argparse.ArgumentParser(prog="torii.py status")
+        p.add_argument(
+            "--json",
+            action="store_true",
+            help="Print full JSON (default: human text on TTY)",
+        )
+        p.add_argument(
+            "--text",
+            action="store_true",
+            help="Force human day-2 one-screen (even when piped)",
+        )
+        ns, _ = p.parse_known_args(pre + passthrough)
+        return cmd_status(ns)
     if cmd == "doctor":
         p = argparse.ArgumentParser(prog="torii.py doctor")
         p.add_argument(
             "--json",
             action="store_true",
             help="Print full JSON (default: human text on TTY)",
+        )
+        p.add_argument(
+            "--text",
+            action="store_true",
+            help="Force human day-2 summary (even when piped)",
         )
         ns, _ = p.parse_known_args(pre + passthrough)
         return cmd_doctor(ns)

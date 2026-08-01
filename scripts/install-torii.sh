@@ -470,9 +470,10 @@ log "  1. Commit installed pack + .torii/MEMORY.md; push default branch."
 log "  2. Secret: OPENROUTER_API_KEY."
 log "  3. Branch protection: require status check **torii/gate**."
 log "  4. On a PR: @torii review this pr"
-log "  5. Day-2: python3 scripts/torii.py doctor"
-log "  6. Day-2 cost/PR: python3 scripts/torii.py ops -- status  (docs/ops/cost-pr-dashboard.md)"
-log "One CLI: python3 scripts/torii.py help|doctor|memory|gate|ops  (not peer scripts on day one)"
+log "  5. Day-2: python3 scripts/torii.py status --text  (one-screen commercial · cost · cert · quieter)"
+log "  6. Day-2 doctor: python3 scripts/torii.py doctor"
+log "  7. Day-2 cost/PR: python3 scripts/torii.py ops -- status  (docs/ops/cost-pr-dashboard.md)"
+log "One CLI: python3 scripts/torii.py help|status|doctor|memory|gate|ops  (not peer scripts on day one)"
 if [[ "$MINIMAL" == "1" ]]; then
   log "Pack surface: minimal (gate/review). Re-install without --minimal for full compound-loop scripts."
 else

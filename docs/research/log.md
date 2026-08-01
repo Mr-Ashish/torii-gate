@@ -1,4 +1,38 @@
 
+## 2026-08-01 — STATUS_DAY2: buyer one-screen on status/doctor
+
+### Papers / posts
+- Loop Engineering: day-2 habit must be one screen, not research archaeology.
+- Simplicity #12: doctor/status JSON leaked F-IDs; install still pointed only at doctor.
+- CERT_VAULT + commercial cost honesty shipped — not visible on `torii.py status`.
+
+### Decide / copy / skip
+- **Copy:** `status --text` / `doctor --text` human panels (commercial · cost · cert vault · quieter).
+- **Copy:** INSTALL + install-torii Next steps one-screen tip; install_ux checks.
+- **Skip:** F185+; no new compound loops; machine JSON still default when piped.
+
+### Feature shipped (STATUS_DAY2)
+- torii.py build_status_payload + render_status_text + day2 doctor scoreboard
+- INSTALL.md / install-torii.sh day-2 status tip
+- install_ux + test_status_text_one_screen
+
+### Metric
+- Offline: install_ux 23/23 · status --text zero F-IDs · commercial 8.5
+- Live Modal: pytorch#191840 BIT3_OK ~318s wall / timed ~167s · tools=7 POST_COMMENT=0
+- cert=`gc-4bb950ef6114e730` · cost≈$0.013
+- Traces: docs/benchmarks/traces/20260801-1728-pytorch-pytorch-PR191840-modal-status-day2/
+- Modal: https://modal.com/apps/mr-ashish/main/ap-mZvypaY9aisSoXtQLt2xp7
+
+### scorecard_target
+simplicity (#12) · install (#7) · JTBD day-2
+
+### dim_lift
+operators get commercial · cost · cert · quieter without Modal archaeology
+
+### SHA
+_pending_
+
+
 ## 2026-08-01 — CERT_VAULT_DOGFOOD: gate-certificate vault cert × cost
 
 ### Papers / posts

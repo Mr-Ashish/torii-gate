@@ -2,7 +2,7 @@
 
 # Gate certificate surface
 
-_Generated: `2026-08-01T17:23:22Z` · schema **2** · **fixture_pass=True** · target **evidence / dim 12**_
+_Generated: `2026-08-01T17:39:18Z` · schema **2** · **fixture_pass=True** · target **evidence / dim 12**_
 
 Deterministic merge-authority certificate: reason codes + path evidence, not chat — dogfood vault pairs cert × cost on one surface.
 
@@ -40,13 +40,14 @@ Live Modal/local dogfood rows that already minted a gate certificate. **Local va
 
 | Metric | Value |
 |--------|------:|
-| certificates in vault | 23 |
-| with cost (hermes-usage) | 23 |
-| cost/PR p50 (USD) | 0.0183 |
+| certificates in vault | 24 |
+| with cost (hermes-usage) | 24 |
+| cost/PR p50 (USD) | 0.0178 |
 | privacy | local vault only |
 
 | trace | pr | verdict | block | path | t_s | cost_usd | certificate | reason codes (head) |
 |-------|---:|---------|:-----:|-----:|----:|---------:|-------------|---------------------|
+| `20260801-1728-pytorch-pytorch-PR191840-modal-sta` | 191840 | APPROVE | False | 1.0 | 167 | 0.0132 | `gc-4bb950ef6114e730` | `verdict_approve_open`, `strong_path_evidence`, `blocking_with_paths` |
 | `20260801-1719-pytorch-pytorch-PR191840-modal-cer` | 191840 | APPROVE | False | 1.0 | 130 | 0.0131 | `gc-5010f8293ba0375a` | `verdict_approve_open`, `strong_path_evidence`, `blocking_with_paths` |
 | `20260801-1712-pytorch-pytorch-PR191840-modal-gat` | 191840 | APPROVE | False | 1.0 | 68 | 0.0112 | `gc-e9a820f99efec661` | `verdict_approve_open`, `strong_path_evidence`, `blocking_with_paths` |
 | `20260801-1706-pytorch-pytorch-PR191840-modal-day` | 191840 | APPROVE | False | 1.0 | 89 | 0.0185 | `gc-58da0b7175c81ccd` | `verdict_approve_open`, `strong_path_evidence`, `blocking_with_paths` |
@@ -56,7 +57,6 @@ Live Modal/local dogfood rows that already minted a gate certificate. **Local va
 | `20260801-1642-pytorch-pytorch-PR191840-modal-ent` | 191840 | APPROVE | False | 1.0 | 97 | 0.0218 | `gc-7d4a3cd3ec21d7e6` | `verdict_approve_open`, `strong_path_evidence`, `blocking_with_paths` |
 | `20260801-1636-pytorch-pytorch-PR191840-modal-rea` | 191840 | APPROVE | False | 1.0 | 112 | 0.0173 | `gc-c44356ac39c273bc` | `verdict_approve_open`, `strong_path_evidence`, `blocking_with_paths` |
 | `20260801-1630-pytorch-pytorch-PR191840-modal-pro` | 191840 | APPROVE | False | 1.0 | 122 | 0.0196 | `gc-c1d8088ce9649d7a` | `verdict_approve_open`, `strong_path_evidence`, `blocking_with_paths` |
-| `20260801-1624-pytorch-pytorch-PR191840-modal-lan` | 191840 | REQUEST_CHANGES | True | 1.0 | 117 | 0.0238 | `gc-c9f317b2365e7643` | `verdict_request_changes`, `strong_path_evidence`, `blocking_with_paths` |
 
 Ops rollup (same vault): [ops/cost-pr-dashboard.md](../ops/cost-pr-dashboard.md) · `python3 scripts/torii.py ops -- status`
 

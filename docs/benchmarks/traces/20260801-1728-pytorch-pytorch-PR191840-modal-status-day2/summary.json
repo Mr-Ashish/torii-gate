@@ -1,0 +1,20 @@
+{
+  "feature": "STATUS_DAY2",
+  "schema_version": 1,
+  "repo": "pytorch/pytorch",
+  "pr": "191840",
+  "model": "deepseek/deepseek-v4-pro",
+  "host": "modal",
+  "bit3": true,
+  "elapsed_s": 167.0,
+  "log_streaming": true,
+  "tool_call_turns": 7,
+  "post_comment": 0,
+  "verdict": "APPROVE",
+  "block": false,
+  "certificate_id": "gc-4bb950ef6114e730",
+  "notes": "STATUS_DAY2: torii.py status/doctor day-2 one-screen (no F-IDs)",
+  "scored_at": "2026-08-01T17:39:07Z",
+  "modal_run": "https://modal.com/apps/mr-ashish/main/ap-mZvypaY9aisSoXtQLt2xp7",
+  "cost_usd": 0.013160548
+}

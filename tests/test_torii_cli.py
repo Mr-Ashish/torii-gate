@@ -39,6 +39,20 @@ class ToriiProductCliTests(unittest.TestCase):
         data = json.loads(r.stdout)
         self.assertEqual(data["feature"], "F110")
         self.assertTrue(data.get("all_present"), data)
+        self.assertIn("day2", data)
+
+    def test_status_text_one_screen(self):
+        """STATUS_DAY2: human one-screen hides research feature IDs."""
+        r = _run(["status", "--text"])
+        self.assertEqual(r.returncode, 0, r.stderr + r.stdout)
+        body = r.stdout
+        self.assertIn("Torii status", body)
+        self.assertIn("Day-2 readiness", body)
+        # no dense F-stack (F110 may appear only if someone regresses)
+        import re
+
+        f_ids = re.findall(r"\bF\d{2,3}\b", body)
+        self.assertEqual(f_ids, [], f"human status leaked feature IDs: {f_ids}")
 
     def test_fixture(self):
         r = _run(["fixture"], timeout=240)

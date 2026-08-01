@@ -60,6 +60,10 @@ def check(root: Path) -> dict[str, Any]:
         "install_md_one_cli": ("torii.py" in im)
         and (("One CLI" in im) or ("one front door" in im.lower())),
         "install_md_doctor": "doctor" in im,
+        "install_md_status_day2": bool(
+            re.search(r"status\s+--text|status --text", im)
+            and ("one-screen" in im.lower() or "day-2" in im.lower())
+        ),
         "install_md_deeper_self_evolve": "SELF-EVOLVE" in im,
         "install_md_deeper_federation": "FEDERATION" in im,
         "install_md_deeper_memory": "MEMORY.md" in im,
@@ -74,12 +78,19 @@ def check(root: Path) -> dict[str, Any]:
             )
         ),
         "install_sh_minimal": "--minimal" in sh and "MINIMAL_EXCLUDE" in sh,
-        "install_sh_next_steps_one_cli": "One CLI" in sh or "torii.py help|doctor" in sh,
+        "install_sh_next_steps_one_cli": "One CLI" in sh
+        or "torii.py help|doctor" in sh
+        or "torii.py help|status|doctor" in sh,
         "install_sh_no_dual_tip": "torii_memory.py help &&" not in sh,
         # INSTALL_COST_TIP: day-2 cost visibility from install Next steps
         "install_sh_cost_tip": bool(
             re.search(r"cost/PR|cost-pr-dashboard|ops -- status", sh, re.I)
             and "ops" in sh
+        ),
+        # STATUS_DAY2: one-screen status tip from install Next steps
+        "install_sh_status_tip": bool(
+            re.search(r"status\s+--text|status --text", sh)
+            and ("one-screen" in sh.lower() or "Day-2" in sh)
         ),
         "pack_readme_cost": bool(
             re.search(r"cost/PR|cost-pr-dashboard|ops -- status", _read(pack_readme), re.I)
@@ -87,6 +98,7 @@ def check(root: Path) -> dict[str, Any]:
         if pack_readme.is_file()
         else False,
         "torii_doctor_text": "render_doctor_text" in tp,
+        "torii_status_text": "render_status_text" in tp,
         "torii_doctor_json_flag": '"--json"' in tp or "'--json'" in tp,
         "golden_links_install": "INSTALL.md" in gd or "docs/INSTALL" in gd,
         "install_script_exists": install_sh.is_file(),

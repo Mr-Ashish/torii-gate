@@ -55,14 +55,16 @@ Or: **Actions → Torii Gate → Run workflow** (PR number).
 
 Expect: PR comment + labels + commit status **`torii/gate`**.
 
-## 5. Doctor (day-2 habit)
+## 5. Doctor + status (day-2 habit)
 
 ```bash
-python3 scripts/torii.py doctor          # human summary (default)
+python3 scripts/torii.py status --text   # one-screen: commercial · cost · cert · quieter
+python3 scripts/torii.py doctor          # human summary (default on TTY)
 python3 scripts/torii.py doctor --json   # machine JSON
 python3 scripts/torii.py help
 ```
 
+`status --text` is the buyer day-2 one-screen (no research feature IDs).  
 `doctor_pass: true` means product surfaces are wired. Failures print the failing check names.
 
 ## CLI confusion — use one front door
