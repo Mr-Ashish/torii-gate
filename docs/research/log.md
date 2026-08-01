@@ -29,7 +29,7 @@ Passive memory inject is theater. Highest ROI: fold measured tool utilization de
 **Score the loop** — memory tools must fire; scorecard fails closed otherwise.
 
 ### SHA
-`PENDING`
+`f763a9a286ef6abe82f631e687fde94e46ab5101`
 
 ## 2026-08-01 — F129 product scorecard brand packaging
 
