@@ -1,0 +1,25 @@
+{
+  "feature": "F157",
+  "feature_hub_gap": "F126",
+  "feature_hub_archival_reprompt": "F157",
+  "reprompt": 1,
+  "enabled": true,
+  "reason": "hub_archival_util_gap",
+  "utilization_gap": false,
+  "recovery_injected_n": 2,
+  "tool_hit_n": 1,
+  "tool_call_turns": 3,
+  "already_reprompted": false,
+  "util_rate": 0.5,
+  "inject_chars": 720,
+  "idle_ids": [
+    "skill-prefer-hub-archival-early"
+  ],
+  "hub_gap_pressure": 0.05,
+  "hub_gap_thr": 0.34,
+  "hub_gap_bias": 0,
+  "hub_archival_util_gap": 1,
+  "hub_archival_injected": 1,
+  "hub_archival_tool_hit": 0,
+  "budget_kind": "f157"
+}

@@ -2680,3 +2680,30 @@ Maker/Checker: agent may APPROVE; F156 checker recomputes util slice offline and
 
 ### SHA
 `57df1b8f85a14d5fd4c336bb6f39d5912f066a14`
+
+## 2026-08-01 — F157 hub-archival util soft re-prompt under F108
+
+### Papers / posts
+- Assay / Mem2Act: recover idle always skills before demote-only critics.
+- Agent cost guides: shared re-prompt budgets prevent multi-kind stack burn.
+- Live F155/F156: partial recovery util (memory hit, hub-archival idle) skipped F122 full-gap re-prompt.
+
+### Insight
+F156 demotes APPROVE after the fact. Highest ROI: F157 decides soft re-prompt on `hub_archival_util_gap` with `budget_kind=f157` under F108, so the agent gets one paid recovery turn for hub_boost archival before demote.
+
+### Feature shipped (F157)
+- `decide_recovery_reprompt` hub_archival_util_gap → reprompt + budget_kind=f157
+- F108 KINDS + hermes allow/consume f157
+- `build_recovery_reprompt_suffix` F157 title + hub_boost nudge
+- fixture f157_ok; skill_loop hub_archival_reprompt_ok
+
+### Loop-engineering
+Budgeted recovery (F108) before checker demote (F156) — maker gets one chance.
+
+### Metric
+- Offline fixture f157_ok; decide demo reprompt=1 budget_kind=f157
+- Live insecure-demo recall=1.0 (F106 used F108 slot; no recovery inject this run)
+- Modal pytorch#191829 BIT3_OK ~132s log_streaming
+
+### SHA
+`pending`

@@ -62,6 +62,7 @@ FEATURE = "F84"
 FEATURE_HUB = "F125"
 FEATURE_SCORECARD_HUB = "F138"
 FEATURE_HUB_ARCHIVAL_UTIL = "F155"
+FEATURE_HUB_ARCHIVAL_REPROMPT = "F157"
 SCHEMA = 1
 MARKER_OPEN = "<!-- torii-f84-skill-router -->"
 MARKER_CLOSE = "<!-- /torii-f84-skill-router -->"
@@ -2206,6 +2207,12 @@ def hub_archival_util_enabled() -> bool:
     return raw not in _FALSEY
 
 
+def hub_archival_reprompt_enabled() -> bool:
+    """F157: soft re-prompt when hub-archival inject ≠ hub_boost tools (default on)."""
+    raw = (os.environ.get("TORII_HUB_ARCHIVAL_REPROMPT") or "1").strip().lower()
+    return raw not in _FALSEY
+
+
 def score_recovery_util(
     out_dir: Path | None = None,
     *,
@@ -2998,11 +3005,13 @@ def decide_recovery_reprompt(
     hub: dict[str, Any] | None = None,
     root: Path | None = None,
 ) -> dict[str, Any]:
-    """F122/F126: re-prompt on local util gap or hub gap_pressure with idle recovery.
+    """F122/F126/F157: re-prompt on util gap, hub gap_pressure, or hub-archival idle.
 
     F122: recovery injected + tools ran + zero recovery tool hits → re-prompt.
     F126: partial util (some idle) + hub gap_pressure ≥ thr → re-prompt idle skills
     so multi-tenant gap themes bias the paid recovery attempt under F108.
+    F157: hub-archival specifically idle (partial recovery util) → re-prompt for
+    hub_boost archival even when memory/product CLIs already fired (live F155).
     """
     on = recovery_reprompt_enabled() if reprompt_on is None else bool(reprompt_on)
     gap = bool(util.get("utilization_gap"))
@@ -3010,6 +3019,8 @@ def decide_recovery_reprompt(
     tool_n = int(util.get("tool_hit_n") or 0)
     idle = list(util.get("idle_ids") or [])
     util_rate = float(util.get("util_rate") or 0.0)
+    ha_gap = bool(util.get("hub_archival_util_gap"))
+    ha_reprompt_on = hub_archival_reprompt_enabled()
 
     # F126: hub gap pressure (soft load)
     hub_report = hub
@@ -3025,6 +3036,9 @@ def decide_recovery_reprompt(
     out: dict[str, Any] = {
         "feature": "F122",
         "feature_hub_gap": "F126" if hub_bias_on else None,
+        "feature_hub_archival_reprompt": FEATURE_HUB_ARCHIVAL_REPROMPT
+        if ha_reprompt_on
+        else None,
         "reprompt": 0,
         "enabled": on,
         "reason": "ok",
@@ -3039,6 +3053,10 @@ def decide_recovery_reprompt(
         "hub_gap_pressure": gap_pressure,
         "hub_gap_thr": thr,
         "hub_gap_bias": 0,
+        "hub_archival_util_gap": int(ha_gap),
+        "hub_archival_injected": int(bool(util.get("hub_archival_injected"))),
+        "hub_archival_tool_hit": int(bool(util.get("hub_archival_tool_hit"))),
+        "budget_kind": "f122",
     }
     if not on:
         out["reason"] = "reprompt_off"
@@ -3061,6 +3079,10 @@ def decide_recovery_reprompt(
         if hub_bias_on and gap_pressure >= thr:
             out["hub_gap_bias"] = 1
             out["reason"] = "recovery_utilization_gap+hub_gap_pressure"
+        # full gap that includes hub-archival still tags f157 for hermes budget kind
+        if ha_gap and ha_reprompt_on:
+            out["budget_kind"] = "f157"
+            out["reason"] = f"{out['reason']}+hub_archival_util_gap"
         return out
 
     # F126: partial util — some recovery tools used, some idle; hub says gap common
@@ -3074,6 +3096,17 @@ def decide_recovery_reprompt(
         out["reprompt"] = 1
         out["hub_gap_bias"] = 1
         out["reason"] = "hub_gap_pressure_idle"
+        if ha_gap and ha_reprompt_on:
+            out["budget_kind"] = "f157"
+            out["reason"] = "hub_gap_pressure_idle+hub_archival_util_gap"
+        return out
+
+    # F157: hub-archival inject ≠ hub_boost while other recovery tools may have fired
+    if ha_reprompt_on and ha_gap:
+        out["reprompt"] = 1
+        out["reason"] = "hub_archival_util_gap"
+        out["budget_kind"] = "f157"
+        out["feature"] = FEATURE_HUB_ARCHIVAL_REPROMPT
         return out
 
     if tool_n >= 1 and not idle:
@@ -3097,6 +3130,7 @@ def build_recovery_reprompt_suffix(
     inject_chars: int = 0,
     hub_gap_pressure: float = 0.0,
     hub_gap_bias: bool = False,
+    hub_archival_util_gap: bool = False,
 ) -> str:
     idle = idle_ids or sorted(RECOVERY_SKILL_IDS)
     idle_s = ", ".join(f"`{i}`" for i in idle[:6])
@@ -3107,18 +3141,24 @@ def build_recovery_reprompt_suffix(
             "other tenants also under-use recovery CLIs; treat this as a hard "
             "tool call before finalizing.\n"
         )
-    # F155: when hub-archival idle, nudge hub_boost archival specifically
+    # F155/F157: when hub-archival idle, nudge hub_boost archival specifically
     ha_line = ""
-    if HUB_ARCHIVAL_SKILL_ID in (idle_ids or []) or HUB_ARCHIVAL_SKILL_ID in idle:
+    ha_idle = (
+        hub_archival_util_gap
+        or HUB_ARCHIVAL_SKILL_ID in (idle_ids or [])
+        or HUB_ARCHIVAL_SKILL_ID in idle
+    )
+    if ha_idle:
         ha_line = (
-            "\n**F155 hub-archival:** call `archival_memory_search` with hub warm "
+            "\n**F157 hub-archival util gap:** call `archival_memory_search` with hub warm "
             "themes so `hub_boost` evidence appears (generic memory CLI is not enough).\n"
         )
-    title = (
-        "## Recovery skill soft re-prompt (F122/F126)\n\n"
-        if hub_gap_bias
-        else "## Recovery skill soft re-prompt (F122)\n\n"
-    )
+    if hub_archival_util_gap and not hub_gap_bias:
+        title = "## Hub-archival recovery soft re-prompt (F157)\n\n"
+    elif hub_gap_bias:
+        title = "## Recovery skill soft re-prompt (F122/F126)\n\n"
+    else:
+        title = "## Recovery skill soft re-prompt (F122)\n\n"
     return (
         "\n\n---\n\n"
         f"{RECOVERY_REPROMPT_MARKER}\n\n"
@@ -3149,6 +3189,7 @@ def write_recovery_reprompt_prompt(
     inject_chars: int = 0,
     hub_gap_pressure: float = 0.0,
     hub_gap_bias: bool = False,
+    hub_archival_util_gap: bool = False,
     scorecard_idle_ids: list[str] | None = None,
     scorecard_gap: bool = False,
     hub_scorecard_util_gap: bool = False,
@@ -3163,6 +3204,7 @@ def write_recovery_reprompt_prompt(
             inject_chars=inject_chars,
             hub_gap_pressure=hub_gap_pressure,
             hub_gap_bias=hub_gap_bias,
+            hub_archival_util_gap=hub_archival_util_gap,
         )
     # F137: append scorecard ops nudge when scorecard util gap
     if scorecard_gap and SCORECARD_REPROMPT_MARKER not in text:
@@ -3280,8 +3322,19 @@ def cmd_reprompt_decide(args: argparse.Namespace) -> int:
     print(f"scorecard_idle_ids={','.join(sc_dec.get('idle_ids') or [])}")
     print(f"hub_scorecard_util_gap={int(sc_dec.get('hub_scorecard_util_gap') or 0)}")
     print(f"scorecard_only={int(composite.get('scorecard_only') or 0)}")
+    print(f"hub_archival_util_gap={int(composite.get('hub_archival_util_gap') or 0)}")
+    print(f"hub_archival_injected={int(composite.get('hub_archival_injected') or 0)}")
+    print(f"hub_archival_tool_hit={int(composite.get('hub_archival_tool_hit') or 0)}")
+    print(f"budget_kind={composite.get('budget_kind') or 'f122'}")
+    print(
+        f"feature_hub_archival_reprompt={composite.get('feature_hub_archival_reprompt') or ''}"
+    )
     print("feature=F122")
     print("feature_scorecard=F137")
+    if str(composite.get("budget_kind") or "") == "f157" or int(
+        composite.get("hub_archival_util_gap") or 0
+    ):
+        print(f"feature_f157={FEATURE_HUB_ARCHIVAL_REPROMPT}")
     # soft write decide artifacts for traces
     try:
         (od / "recovery-reprompt-decide.json").write_text(
@@ -3465,6 +3518,14 @@ def cmd_reprompt_write(args: argparse.Namespace) -> int:
     # if scorecard idle provided without flag, still include scorecard section
     if sc_idle:
         sc_gap = True
+    # F157: hub-archival util gap from CLI/env
+    ha_gap = False
+    if _flag_true(getattr(args, "hub_archival_util_gap", "0")):
+        ha_gap = True
+    if _flag_true(os.environ.get("TORII_HUB_ARCHIVAL_UTIL_GAP")):
+        ha_gap = True
+    if HUB_ARCHIVAL_SKILL_ID in idle:
+        ha_gap = True
     path = write_recovery_reprompt_prompt(
         prompt_in=Path(args.prompt_in),
         prompt_out=Path(args.prompt_out),
@@ -3473,6 +3534,7 @@ def cmd_reprompt_write(args: argparse.Namespace) -> int:
         inject_chars=int(args.inject_chars or 0),
         hub_gap_pressure=hub_gp,
         hub_gap_bias=hub_bias,
+        hub_archival_util_gap=ha_gap,
         scorecard_idle_ids=sc_idle or None,
         scorecard_gap=sc_gap,
         hub_scorecard_util_gap=hub_sc_gap,
@@ -3485,11 +3547,16 @@ def cmd_reprompt_write(args: argparse.Namespace) -> int:
                 "feature": "F122",
                 "feature_scorecard": "F137" if sc_gap else None,
                 "feature_hub_gap": "F126" if hub_bias or hub_gp > 0 else None,
+                "feature_hub_archival_reprompt": FEATURE_HUB_ARCHIVAL_REPROMPT
+                if ha_gap
+                else None,
                 "prompt_out": str(path),
                 "hub_gap_pressure": hub_gp,
                 "hub_gap_bias": int(hub_bias),
+                "hub_archival_util_gap": int(ha_gap),
                 "scorecard_gap": int(sc_gap),
                 "scorecard_marker": int(SCORECARD_REPROMPT_MARKER in text),
+                "f157_marker": int("F157" in text),
                 "ok": path.is_file(),
             }
         )
@@ -4080,6 +4147,73 @@ Call second-agent critic tools when uncertain.
 
         f126_ok = hub_gap_decide_ok and fit_ok
 
+        # F157: hub-archival util gap → soft re-prompt even with partial recovery util
+        os.environ["TORII_HUB_ARCHIVAL_REPROMPT"] = "1"
+        util_ha_partial = {
+            "recovery_injected_n": 2,
+            "tool_hit_n": 1,
+            "util_rate": 0.5,
+            "utilization_gap": False,
+            "idle_ids": [HUB_ARCHIVAL_SKILL_ID],
+            "inject_chars": 720,
+            "hub_archival_util_gap": True,
+            "hub_archival_injected": True,
+            "hub_archival_tool_hit": False,
+        }
+        # low hub pressure so F126 does not steal the decision
+        hub_low = {
+            "enabled": True,
+            "gap_pressure": 0.05,
+            "priority_deltas": {},
+            "skills": {},
+            "privacy_ok": True,
+        }
+        dec_ha = decide_recovery_reprompt(
+            util_ha_partial, tool_call_turns=3, hub=hub_low, root=root
+        )
+        util_ha_ok = {
+            "recovery_injected_n": 2,
+            "tool_hit_n": 2,
+            "util_rate": 1.0,
+            "utilization_gap": False,
+            "idle_ids": [],
+            "inject_chars": 720,
+            "hub_archival_util_gap": False,
+            "hub_archival_injected": True,
+            "hub_archival_tool_hit": True,
+        }
+        dec_ha_ok = decide_recovery_reprompt(
+            util_ha_ok, tool_call_turns=3, hub=hub_low, root=root
+        )
+        dec_ha_zero = decide_recovery_reprompt(
+            util_ha_partial, tool_call_turns=0, hub=hub_low, root=root
+        )
+        prompt_ha = root / "prompt-ha-reprompt.md"
+        prompt_ha.write_text("# Review\nDo security review.\n", encoding="utf-8")
+        prompt_ha_out = root / "prompt-ha-reprompt-out.md"
+        write_recovery_reprompt_prompt(
+            prompt_in=prompt_ha,
+            prompt_out=prompt_ha_out,
+            idle_ids=[HUB_ARCHIVAL_SKILL_ID],
+            tool_call_turns=3,
+            inject_chars=720,
+            hub_archival_util_gap=True,
+            include_recovery=True,
+        )
+        ha_text = prompt_ha_out.read_text(encoding="utf-8")
+        f157_ok = (
+            int(dec_ha.get("reprompt") or 0) == 1
+            and "hub_archival_util_gap" in str(dec_ha.get("reason") or "")
+            and str(dec_ha.get("budget_kind") or "") == "f157"
+            and int(dec_ha_ok.get("reprompt") or 0) == 0
+            and int(dec_ha_zero.get("reprompt") or 0) == 0
+            and dec_ha_zero.get("reason") == "zero_tools_defer_f49"
+            and "F157" in ha_text
+            and "hub_boost" in ha_text
+            and "archival_memory_search" in ha_text
+            and "/Users/" not in ha_text
+        )
+
         # F136: scorecard util — tool hits ok; idle scorecard skill → gap; none → ok
         sc_util_out = root / "sc-util-out"
         sc_util_out.mkdir(exist_ok=True)
@@ -4314,6 +4448,7 @@ Call `python3 scripts/torii.py doctor` and scorecard early.
                 f137_ok,
                 f138_ok,
                 f155_ok,
+                f157_ok,
             ]
         )
         payload = {
@@ -4326,7 +4461,9 @@ Call `python3 scripts/torii.py doctor` and scorecard early.
             "f137": True,
             "f138": True,
             "f155": True,
+            "f157": True,
             "feature_hub_archival_util": FEATURE_HUB_ARCHIVAL_UTIL,
+            "feature_hub_archival_reprompt": FEATURE_HUB_ARCHIVAL_REPROMPT,
             "feature_always_budget": "F119",
             "feature_compact": "F120",
             "feature_util": "F121",
@@ -4411,6 +4548,12 @@ Call `python3 scripts/torii.py doctor` and scorecard early.
             "f155_generic_archival_not_enough": len(ha_match_weak) == 0,
             "f155_fed_n": ha_fed.get("fed_n"),
             "f155_fed_privacy": ha_fed.get("privacy_ok"),
+            "f157_ok": f157_ok,
+            "f157_reprompt": dec_ha.get("reprompt"),
+            "f157_reason": dec_ha.get("reason"),
+            "f157_budget_kind": dec_ha.get("budget_kind"),
+            "f157_ok_no_reprompt": int(dec_ha_ok.get("reprompt") or 0),
+            "f157_prompt_has_f157": "F157" in ha_text,
         }
         print(json.dumps(payload, indent=2))
         return 0 if fixture_pass else 1
@@ -4505,6 +4648,11 @@ def main(argv: list[str] | None = None) -> int:
         "--scorecard-only",
         default="0",
         help="F137: 1 to write scorecard section without recovery section",
+    )
+    prw.add_argument(
+        "--hub-archival-util-gap",
+        default="0",
+        help="F157: 1 if hub-archival skill inject ≠ hub_boost tools",
     )
     prw.set_defaults(func=cmd_reprompt_write)
 

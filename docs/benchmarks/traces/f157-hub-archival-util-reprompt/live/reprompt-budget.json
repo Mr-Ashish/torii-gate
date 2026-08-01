@@ -1,0 +1,18 @@
+{
+  "schema": 1,
+  "feature": "F108",
+  "enabled": true,
+  "max_extra": 1,
+  "used": 1,
+  "remaining": 0,
+  "attempts": [
+    {
+      "kind": "f106",
+      "at": "2026-08-01T10:12:38Z",
+      "recovered": true,
+      "note": "hits 0\u219221"
+    }
+  ],
+  "blocked": [],
+  "updated_at": "2026-08-01T10:13:03Z"
+}

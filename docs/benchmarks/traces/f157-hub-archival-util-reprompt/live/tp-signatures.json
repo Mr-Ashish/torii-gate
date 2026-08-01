@@ -1,0 +1,158 @@
+{
+  "schema_version": 1,
+  "feature": "F70",
+  "updated_at": "2026-08-01T10:13:03Z",
+  "count": 4,
+  "signatures": [
+    {
+      "id": "sqli-search",
+      "theme": "sql_injection",
+      "cwe": [
+        "CWE-89"
+      ],
+      "tags": [
+        "sqli",
+        "injection",
+        "security"
+      ],
+      "keywords": [
+        "sql injection",
+        "sqli",
+        "f-string",
+        "f\"select",
+        "string-formatted",
+        "execute(f",
+        "cur.execute(f",
+        "cwe-89"
+      ],
+      "path_globs": [
+        "demo/insecure/app.py",
+        "insecure/app.py",
+        "app.py"
+      ],
+      "source": "bench_promote",
+      "hits": 1,
+      "promoted_at": "2026-08-01T10:13:03Z",
+      "kind": "tp",
+      "created_at": "2026-08-01T10:13:03Z",
+      "event": "ADD",
+      "importance_score": 0.7138,
+      "decay_weight": 1.0,
+      "effective_score": 0.7138,
+      "age_days": 0.0,
+      "last_consolidated_at": "2026-08-01T10:13:03Z"
+    },
+    {
+      "id": "pickle-load",
+      "theme": "insecure_deserialization",
+      "cwe": [
+        "CWE-502"
+      ],
+      "tags": [
+        "pickle",
+        "deserialize",
+        "security"
+      ],
+      "keywords": [
+        "pickle",
+        "deserialize",
+        "deserialization",
+        "unsafe load",
+        "cwe-502",
+        "pickle.loads"
+      ],
+      "path_globs": [
+        "demo/insecure/app.py",
+        "insecure/app.py",
+        "app.py"
+      ],
+      "source": "bench_promote",
+      "hits": 1,
+      "promoted_at": "2026-08-01T10:13:03Z",
+      "kind": "tp",
+      "created_at": "2026-08-01T10:13:03Z",
+      "event": "ADD",
+      "importance_score": 0.6763,
+      "decay_weight": 1.0,
+      "effective_score": 0.6763,
+      "age_days": 0.0,
+      "last_consolidated_at": "2026-08-01T10:13:03Z"
+    },
+    {
+      "id": "cmdi-run",
+      "theme": "command_injection",
+      "cwe": [
+        "CWE-78"
+      ],
+      "tags": [
+        "command_injection",
+        "rce",
+        "shell",
+        "security"
+      ],
+      "keywords": [
+        "command injection",
+        "shell=true",
+        "os command",
+        "rce",
+        "subprocess",
+        "cwe-78",
+        "shell injection"
+      ],
+      "path_globs": [
+        "demo/insecure/app.py",
+        "insecure/app.py",
+        "app.py"
+      ],
+      "source": "bench_promote",
+      "hits": 1,
+      "promoted_at": "2026-08-01T10:13:03Z",
+      "kind": "tp",
+      "created_at": "2026-08-01T10:13:03Z",
+      "event": "ADD",
+      "importance_score": 0.6951,
+      "decay_weight": 1.0,
+      "effective_score": 0.6951,
+      "age_days": 0.0,
+      "last_consolidated_at": "2026-08-01T10:13:03Z"
+    },
+    {
+      "id": "secret-exposure",
+      "theme": "secrets_exposure",
+      "cwe": [
+        "CWE-200",
+        "CWE-798"
+      ],
+      "tags": [
+        "secrets",
+        "api_key",
+        "security"
+      ],
+      "keywords": [
+        "secret",
+        "api key",
+        "api_key",
+        "openrouter",
+        "credential",
+        "exposes",
+        "exposure"
+      ],
+      "path_globs": [
+        "demo/insecure/app.py",
+        "insecure/app.py",
+        "app.py"
+      ],
+      "source": "bench_promote",
+      "hits": 1,
+      "promoted_at": "2026-08-01T10:13:03Z",
+      "kind": "tp",
+      "created_at": "2026-08-01T10:13:03Z",
+      "event": "ADD",
+      "importance_score": 0.6951,
+      "decay_weight": 1.0,
+      "effective_score": 0.6951,
+      "age_days": 0.0,
+      "last_consolidated_at": "2026-08-01T10:13:03Z"
+    }
+  ]
+}

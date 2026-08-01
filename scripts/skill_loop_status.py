@@ -303,6 +303,9 @@ def assess(root: Path | None = None, *, deep: bool = True) -> dict[str, Any]:
         "run_scorecard_hub": "scorecard-hub-score" in run_sh or "scorecard_hub" in run_sh,
         "save_trace_scorecard_hub": "scorecard-hub-score.json" in save_tr,
         "hermes_f122_reprompt": "F122" in hermes_sh or "recovery-skill-reprompt" in hermes_sh,
+        # F157: hub-archival util soft re-prompt under F108
+        "hermes_f157_reprompt": "F157" in hermes_sh or "hub_archival_util_gap" in hermes_sh
+        or "f157" in hermes_sh,
         "save_trace_recovery": "recovery-skill-util.json" in save_tr,
         # F125: hub recovery post-score compound (router inject path + trace archive)
         "save_trace_recovery_hub": "recovery-hub-score.json" in save_tr,
@@ -434,6 +437,8 @@ def assess(root: Path | None = None, *, deep: bool = True) -> dict[str, Any]:
         "hub_archival_util_critic_ok": bool(wire.get("critic_hub_archival_util"))
         and bool(wire.get("demote_eval_hub_archival")),
         "feature_hub_archival_util_critic": "F156",
+        "hub_archival_reprompt_ok": bool(wire.get("hermes_f157_reprompt")),
+        "feature_hub_archival_reprompt": "F157",
         "feature_scorecard_ops": "F135",
         "scorecard_active": scorecard_active,
         "scorecard_ops_ok": scorecard_ops_ok,
@@ -482,6 +487,7 @@ def to_markdown(report: dict[str, Any]) -> str:
             f"({', '.join(report.get('recovery_active') or []) or 'none'})",
             f"- Hub-archival recovery util (F155): **{'ok' if report.get('hub_archival_util_ok') else 'gap'}**",
             f"- Hub-archival util critic/demote-eval (F156): **{'ok' if report.get('hub_archival_util_critic_ok') else 'gap'}**",
+            f"- Hub-archival util soft re-prompt (F157): **{'ok' if report.get('hub_archival_reprompt_ok') else 'gap'}**",
             f"- Recovery hub gap critic/demote-eval (F128): **{'ok' if report.get('recovery_hub_gap_ok') else 'gap'}**",
             f"- Recon-warm hub critic/demote-eval (F151): **{'ok' if report.get('recon_warm_hub_ok') else 'gap'}**",
             f"- Wiring (assemble/run/hermes/save-trace): **{'ok' if report.get('wiring_ok') else 'gap'}**",
@@ -523,6 +529,10 @@ def cmd_scorecard(args: argparse.Namespace) -> int:
                 "hub_archival_util_critic_ok": report.get("hub_archival_util_critic_ok"),
                 "feature_hub_archival_util_critic": report.get(
                     "feature_hub_archival_util_critic"
+                ),
+                "hub_archival_reprompt_ok": report.get("hub_archival_reprompt_ok"),
+                "feature_hub_archival_reprompt": report.get(
+                    "feature_hub_archival_reprompt"
                 ),
                 "feature_scorecard_ops": report.get("feature_scorecard_ops"),
                 "scorecard_ops_ok": report.get("scorecard_ops_ok"),
@@ -582,6 +592,8 @@ def cmd_fixture(args: argparse.Namespace) -> int:
                 "feature_hub_archival_util": "F155",
                 "hub_archival_util_critic_ok": report.get("hub_archival_util_critic_ok"),
                 "feature_hub_archival_util_critic": "F156",
+                "hub_archival_reprompt_ok": report.get("hub_archival_reprompt_ok"),
+                "feature_hub_archival_reprompt": "F157",
                 "wiring_ok": report["wiring_ok"],
                 "deep_ok": report["deep_ok"],
                 "ready": report["ready"],

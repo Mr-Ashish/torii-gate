@@ -51,3 +51,4 @@ Also mirrored from LOOP.md budget/observability: each fire records metrics (reca
 - F154: cycle-hub-archival adopt + always_priority 95 under F119 budget
 - F155: hub-archival joins recovery util stack (Assay inject≠use + F121) — always skill measured for hub_boost tool outcomes; federate multi-tenant util themes
 - F156: hub-archival util gap critic demote APPROVE (partial recovery idle) + LOO floor from federated hub_archival hits (Assay)
+- F157: hub-archival util soft re-prompt under F108 (recover hub_boost before F156 demote-only)
