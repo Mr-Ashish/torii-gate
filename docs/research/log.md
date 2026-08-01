@@ -30,7 +30,7 @@ F103/F104 shipped front door + compound write. Without measuring mid-review retr
 - pytest: 574 passed
 
 ### SHA
-_pending_
+`c29d9e14281a379a08bc424bb3799e93bbb1ebbf`
 
 ## 2026-08-01 — F104 integrity-gated post-review memory compound write
 
