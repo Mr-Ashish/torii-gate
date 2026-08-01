@@ -18,7 +18,7 @@ class SmokeToriiGateTests(unittest.TestCase):
             cwd=str(ROOT),
             capture_output=True,
             text=True,
-            timeout=60,
+            timeout=180,
         )
         self.assertEqual(
             r.returncode,

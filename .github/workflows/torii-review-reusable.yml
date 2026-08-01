@@ -843,6 +843,27 @@ jobs:
             fi
           fi
 
+          # F111: product CLI doctor annotation (job summary)
+          if [[ -f "$TORII_ROOT/scripts/torii.py" ]]; then
+            set +e
+            DOC_JSON="$(python3 "$TORII_ROOT/scripts/torii.py" doctor 2>/dev/null)"
+            DOC_RC=$?
+            set -e
+            if [[ -n "${DOC_JSON:-}" ]]; then
+              DOC_PASS="$(python3 -c 'import json,sys; print("true" if json.load(sys.stdin).get("doctor_pass") else "false")' <<<"$DOC_JSON" 2>/dev/null || echo false)"
+              DOC_N="$(python3 -c 'import json,sys; print(len(json.load(sys.stdin).get("results") or []))' <<<"$DOC_JSON" 2>/dev/null || echo 0)"
+              if [[ -n "${GITHUB_STEP_SUMMARY:-}" ]]; then
+                {
+                  echo "### Product CLI doctor (F110/F111)"
+                  echo "- **doctor_pass:** \`$DOC_PASS\` · **checks:** \`$DOC_N\` · **rc:** \`$DOC_RC\`"
+                  echo "- **Ops:** \`python3 scripts/torii.py doctor\` · \`python3 scripts/torii.py help\`"
+                  echo
+                } >> "$GITHUB_STEP_SUMMARY"
+              fi
+              echo "product_cli doctor_pass=$DOC_PASS checks=$DOC_N rc=$DOC_RC"
+            fi
+          fi
+
           # Optional hard fail for required-check workflows (default soft)
           STRICT="${TORII_GATE_STRICT:-0}"
           case "${STRICT}" in

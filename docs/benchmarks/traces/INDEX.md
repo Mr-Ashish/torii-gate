@@ -43,3 +43,4 @@ Paper/eval-safe slim traces (redacted). Large raw logs may be gitignored; always
 | 2026-08-01T04:24:00Z | pytorch/pytorch | 191813 | deepseek/deepseek-v4-pro | modal+f108 | budget max=1 F106 only | `20260801-0424-pytorch-pytorch-PR191813-modal-f108` |
 | 2026-08-01T04:29:00Z | pytorch/pytorch | 191813 | deepseek/deepseek-v4-pro | modal+f109 | brand pack F103–F108 | `20260801-0429-pytorch-pytorch-PR191813-modal-f109` |
 | 2026-08-01T04:35:00Z | pytorch/pytorch | 191813 | deepseek/deepseek-v4-pro | modal+f110 | product CLI | `20260801-0435-pytorch-pytorch-PR191813-modal-f110` |
+| 2026-08-01T04:41:00Z | pytorch/pytorch | 191813 | deepseek/deepseek-v4-pro | modal+f111 | smoke doctor+fed≥1 | `20260801-0441-pytorch-pytorch-PR191813-modal-f111` |

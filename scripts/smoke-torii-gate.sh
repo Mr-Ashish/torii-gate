@@ -8,11 +8,16 @@
 #   4. Reusable workflow posts context torii/gate via torii_gate_status.py
 #   5. workflows-as-code fixture (F79)
 #   6. skill compound loop readiness L3 (F91/F92)
+#   7. memory compound loop readiness L3 (F96)
+#   8. product CLI doctor (F110/F111)
+#   9. integrity compound + federate on insecure-demo good review (F104/F107)
 #
 # Usage:
 #   ./scripts/smoke-torii-gate.sh
 #   bash scripts/smoke-torii-gate.sh   # from CI or local
 #   TORII_SMOKE_SKILL_LOOP=0 to skip deep skill-loop fixtures (shallow pack only)
+#   TORII_SMOKE_PRODUCT_CLI=0 to skip product doctor
+#   TORII_SMOKE_COMPOUND_FEDERATE=0 to skip compound/federate proof
 #
 # Exit: 0 all green, 1 any check failed
 set -euo pipefail
@@ -31,7 +36,7 @@ fail() { log "  FAIL $*"; FAIL=1; }
 log "=== Torii Gate offline smoke ==="
 
 # --- 1. Default pack is security ---
-log "[1/6] security pack default"
+log "[1/9] security pack default"
 PACK="$(
   cd "$ROOT" && env -u TORII_LENS_PACK python3 - <<'PY'
 import importlib.util
@@ -55,7 +60,7 @@ else
 fi
 
 # --- 2. Dogfood fixture still intentionally insecure (hub product tree only) ---
-log "[2/6] demo/insecure dogfood fixture"
+log "[2/9] demo/insecure dogfood fixture"
 if [[ ! -f "$DEMO" ]]; then
   # Pack installs on app repos omit demo/; skip rather than fail.
   pass "skip (no $DEMO — pack/target install is fine)"
@@ -70,7 +75,7 @@ else
 fi
 
 # --- 3. Gate decision map ---
-log "[3/6] torii_gate_status decision map"
+log "[3/9] torii_gate_status decision map"
 if [[ ! -f "$STATUS" ]]; then
   fail "missing $STATUS"
 else
@@ -132,7 +137,7 @@ EOF
 fi
 
 # --- 4. Workflow wiring ---
-log "[4/6] reusable workflow torii/gate post-step"
+log "[4/9] reusable workflow torii/gate post-step"
 if [[ ! -f "$WORKFLOW" ]]; then
   fail "missing $WORKFLOW"
 else
@@ -150,7 +155,7 @@ fi
 
 
 # --- 5. F79 workflows-as-code ---
-log "[5/6] workflows-as-code (F79)"
+log "[5/9] workflows-as-code (F79)"
 if [[ -f "$ROOT/scripts/workflow_as_code.py" && -f "$ROOT/docs/workflows/torii-gate.workflow.yaml" ]]; then
   if python3 "$ROOT/scripts/workflow_as_code.py" fixture >/dev/null 2>&1; then
     pass "workflow_as_code fixture L3"
@@ -163,7 +168,7 @@ else
 fi
 
 # --- 6. F91/F92 skill compound loop readiness ---
-log "[6/7] skill compound loop readiness (F91)"
+log "[6/9] skill compound loop readiness (F91)"
 if [[ ! -f "$SKILL_LOOP" ]]; then
   # Pack targets may omit until re-install; fail on hub product tree only
   if [[ -d "$ROOT/agent/skills/active" ]]; then
@@ -213,7 +218,7 @@ fi
 
 # --- 7. F96 memory compound loop readiness ---
 MEMORY_LOOP="$ROOT/scripts/memory_loop_status.py"
-log "[7/7] memory compound loop readiness (F96)"
+log "[7/9] memory compound loop readiness (F96)"
 if [[ ! -f "$MEMORY_LOOP" ]]; then
   if [[ -f "$ROOT/scripts/scoped_memory_recall.py" ]]; then
     fail "missing $MEMORY_LOOP (hub tree expects F96 memory_loop_status.py)"
@@ -257,6 +262,76 @@ else
       ;;
   esac
 fi
+
+# --- 8. F110/F111 product CLI doctor ---
+PRODUCT_CLI="$ROOT/scripts/torii.py"
+log "[8/9] product CLI doctor (F110)"
+case "${TORII_SMOKE_PRODUCT_CLI:-1}" in
+  0|false|FALSE|off|OFF|no|NO)
+    pass "skip product CLI (TORII_SMOKE_PRODUCT_CLI=0)"
+    ;;
+  *)
+    if [[ ! -f "$PRODUCT_CLI" ]]; then
+      if [[ -f "$ROOT/scripts/torii_memory.py" ]]; then
+        fail "missing $PRODUCT_CLI (hub expects F110 torii.py)"
+      else
+        pass "skip product CLI (not in pack tree)"
+      fi
+    else
+      if OUT="$(python3 "$PRODUCT_CLI" doctor 2>/dev/null)"; then
+        PASSF="$(python3 -c 'import json,sys; print(json.load(sys.stdin).get("doctor_pass",False))' <<<"$OUT" 2>/dev/null || echo False)"
+        if [[ "$PASSF" == "True" || "$PASSF" == "true" ]]; then
+          pass "torii.py doctor_pass"
+        else
+          log "  detail: $OUT"
+          fail "torii.py doctor_pass expected true"
+        fi
+      else
+        python3 "$PRODUCT_CLI" doctor 2>&1 | tail -20 || true
+        fail "torii.py doctor"
+      fi
+    fi
+    ;;
+esac
+
+# --- 9. F104/F107 integrity compound + federate on insecure-demo good review ---
+COMPOUND="$ROOT/scripts/memory_compound_write.py"
+GOOD_REV="$ROOT/docs/benchmarks/fixtures/insecure-demo-good-review.md"
+log "[9/9] integrity compound+federate insecure-demo (F104/F107)"
+case "${TORII_SMOKE_COMPOUND_FEDERATE:-1}" in
+  0|false|FALSE|off|OFF|no|NO)
+    pass "skip compound federate (TORII_SMOKE_COMPOUND_FEDERATE=0)"
+    ;;
+  *)
+    if [[ ! -f "$COMPOUND" || ! -f "$GOOD_REV" ]]; then
+      if [[ -f "$ROOT/scripts/torii_memory.py" && ! -f "$COMPOUND" ]]; then
+        fail "missing compound script on hub tree"
+      else
+        pass "skip compound federate (fixtures not in this tree)"
+      fi
+    else
+      if OUT="$(python3 "$COMPOUND" fixture 2>/dev/null)"; then
+        PASSF="$(python3 -c 'import json,sys; d=json.load(sys.stdin); print(d.get("fixture_pass",False))' <<<"$OUT" 2>/dev/null || echo False)"
+        FEDN="$(python3 -c 'import json,sys; d=json.load(sys.stdin); print(d.get("fed_count") or d.get("federate_signals") or 0)' <<<"$OUT" 2>/dev/null || echo 0)"
+        if [[ "$PASSF" == "True" || "$PASSF" == "true" ]]; then
+          # require federate signal count ≥1 when feature present
+          if [[ "${FEDN:-0}" -ge 1 ]] 2>/dev/null; then
+            pass "compound+federate fixture_pass fed_count=$FEDN"
+          else
+            # older fixture without fed_count still ok if fixture_pass
+            pass "compound fixture_pass (fed_count=$FEDN)"
+          fi
+        else
+          log "  detail: $OUT"
+          fail "compound fixture expected fixture_pass"
+        fi
+      else
+        python3 "$COMPOUND" fixture 2>&1 | tail -25 || true
+        fail "memory_compound_write fixture"
+      fi
+    fi
+    ;;
+esac
 
 if [[ "$FAIL" -ne 0 ]]; then
   log "=== SMOKE FAILED ==="

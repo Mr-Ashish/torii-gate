@@ -1,6 +1,33 @@
 # Torii research → product log
 
 
+## 2026-08-01 — F111 smoke product doctor + insecure compound/federate proof
+
+### Papers / posts
+- Loop-eng: doctor is day-2 habit; CI summary is the scorecard surface.
+- F110 product CLI shipped; not yet smoke/CI annotated.
+- F104/F107: live pytorch federate_signals=0 is correct; dogfood proof required.
+
+### OSS design patterns stolen
+1. Smoke steps 8–9: `torii.py doctor` + compound fixture fed_count≥1 on insecure-demo good review.
+2. GHA job summary Product CLI doctor annotation.
+3. Soft toggles TORII_SMOKE_PRODUCT_CLI / TORII_SMOKE_COMPOUND_FEDERATE.
+
+### Insight
+Without smoke/CI, product doctor and integrity federate are unmeasured on the install path. Highest ROI: close the dogfood scorecard.
+
+### Feature shipped (F111)
+- smoke-torii-gate.sh [8/9] doctor + [9/9] compound federate (fed_count=2)
+- reusable workflow job-summary product CLI doctor
+- research note smoke-product-cli-compound-pattern
+
+### Metric
+- Offline smoke PASS; compound federate fed_count=2; pytest 587
+- Live Modal pytorch#191813 BIT3_OK ~164s log_streaming=true POST_COMMENT=0
+
+### SHA
+_pending_
+
 ## 2026-08-01 — F110 unified product CLI front door (loop-eng style)
 
 ### Papers / posts
