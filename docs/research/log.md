@@ -29,7 +29,7 @@ Hub post-score without critic demote is dashboard. Highest ROI: F127-style panel
 **Maker/checker demote on multi-tenant gap** — scorecard ops mirror recovery F127.
 
 ### SHA
-`PENDING`
+`8c3c537e8327f1ff2d52e371fc79c626d0e52030`
 
 
 ## 2026-08-01 — F138 scorecard hub post-score compound
