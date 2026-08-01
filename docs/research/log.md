@@ -30,7 +30,7 @@ Evolution without adopt is theater. Highest ROI: **safe auto-adopt with offline 
 - pytest: 497 passed
 
 ### SHA
-`(pending push)`
+`224a37c9818a6d1c5fc54219687c1f1c8dbdb919`
 
 ## 2026-08-01 — F81 optional LLM checker atop F78
 
