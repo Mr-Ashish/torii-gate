@@ -32,7 +32,7 @@ Tool-outcome scoring without evolution is a closed set. Highest ROI: mine only s
 **Trajectory packaging → bounded evolve** — allowlist constraints before any adopt.
 
 ### SHA
-`fbff5de9e9e8816b66d6f26a6ce9a9c145b1e031`
+`2ed41613acc2c0db900e40c5f6dc3487c94fc276`
 ## 2026-08-01 — F116 tool-fitness compound (demote shield + federate + live wire)
 
 ### Papers / posts
