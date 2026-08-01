@@ -28,7 +28,7 @@ enterprise (#9) · JTBD (#3)
 federation privacy as buyer merge-authority surface
 
 ### SHA
-_pending_
+`4895ab7e6a2b0ad06c4caa081eb8e7eea90ca873`
 
 
 ## 2026-08-01 — WORKFLOWS: buyer surface + commercial workflow L3
