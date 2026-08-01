@@ -1,5 +1,35 @@
 # Torii research → product log
 
+## 2026-08-01 — F133 dual-gate adopt of scorecard-gap skills
+
+### Papers / posts
+- SkillOpt dual-gate: default REJECT until dual contribution + attribution.
+- F132 propose-scorecard without adopt leaves readiness proposals inert.
+- Loop-eng verifier before merge into active skills; Mem2Act tool_blob for ops skills.
+
+### OSS design patterns stolen
+1. cycle-scorecard: propose_from_scorecard → list_candidates(scorecard_only) → dual-gate adopt.
+2. PROPOSAL_TOOL_BLOBS for F132 scorecard/doctor/demote/util/workflow skills.
+3. Fixture hermetic: scorecard-gap skill tool-attr adopts; malicious blocked.
+4. Optional post-run TORII_SKILL_AUTO_ADOPT_SCORECARD=1.
+
+### Insight
+Proposals without dual-gate adopt are backlog theater. Highest ROI: close F132 with the same adopt gates as F118 recovery skills.
+
+### Feature shipped (F133)
+- skill_auto_adopt cycle-scorecard + tool blobs + scorecard_only candidates
+- fixture f133_*; PRODUCT + research; traces f133-scorecard-dual-adopt/
+
+### Metric
+- Offline: fixture f133_adopt_ok; pytest
+- Live: Modal pytorch e2e POST_COMMENT=0
+
+### Loop-engineering / Hermes practice used
+**Verifier before merge** — scorecard-gap skills enter active only after dual+attr gates.
+
+### SHA
+`PENDING`
+
 ## 2026-08-01 — F132 self-evolve from scorecard gap themes
 
 ### Papers / posts

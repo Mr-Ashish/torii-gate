@@ -182,6 +182,8 @@ budget always → compact body → score tool_hit → util gap? → budgeted re-
 
 **Scorecard self-evolution (F132):** `self_evolve.py propose-scorecard` turns brand_ready metric gaps into skill proposals (hub-gap critic, demote-eval, memory util, workflow graph, dual-compound ops). Install guide documents the dual-compound day-2 habit and the propose-scorecard close-the-loop command.
 
+**Scorecard dual-gate adopt (F133):** `skill_auto_adopt.py cycle-scorecard` proposes then dual-gate+tool-attr adopts F132 scorecard-gap skills (synthetic allowlisted tool blobs for scorecard/doctor/demote/util/workflow). Default REJECT until gates pass; optional post-run via `TORII_SKILL_AUTO_ADOPT_SCORECARD=1`.
+
 **Ops:** `python3 scripts/memory_loop_status.py scorecard` → L0–L3. Smoke requires L3 on the hub tree. CI job summary annotates readiness; optional advisory `torii/memory-loop` via `TORII_MEMORY_LOOP_STATUS_COMMIT=1`.
 
 ---

@@ -229,6 +229,17 @@ if [[ -f "$SCRIPTS/second_agent_critic.py" ]]; then
             ;;
         esac
       fi
+      # F133: dual-gate auto-adopt scorecard-gap skills (soft; default on for cycle-scorecard CLI)
+      if [[ -f "$SCRIPTS/skill_auto_adopt.py" ]]; then
+        case "${TORII_SKILL_AUTO_ADOPT_SCORECARD:-0}" in
+          1|true|yes|on)
+            stage skill_auto_adopt_scorecard \
+              python3 "$SCRIPTS/skill_auto_adopt.py" cycle-scorecard \
+                --scorecard "$OUT_DIR/product-scorecard.json" \
+                --max 2 || true
+            ;;
+        esac
+      fi
       ;;
   esac
 fi

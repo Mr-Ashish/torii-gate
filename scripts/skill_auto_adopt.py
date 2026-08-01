@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""F82/F87/F113/F118: Safe skill auto-adopt with dual + tool-aware attribution gates.
+"""F82/F87/F113/F118/F133: Safe skill auto-adopt with dual + tool-aware gates.
 
 Research drivers:
   - SkillOpt / Hermes self-evolution: adopt only when held-out score improves
@@ -8,18 +8,21 @@ Research drivers:
   - Mem2Act / F114–F117: tool-only skills free-ride on prose LOO unless adopt
     gates pass a synthetic allowlisted tool_blob for the proposal id
   - Prior Torii F74 proposals sit at validated_adopt but never enter active/
+  - F132 scorecard gaps → proposals; F133 closes the loop with dual-gate adopt
 
 Product thesis:
   Closing the evolution loop without regression: before copying a proposal into
   agent/skills/active/, re-run offline gates (F78 critic, F86 dual contribution,
   F88/F115 tool-aware attribution, optional corpus). Malicious / zero-contribution
   skills stay out of active/. F117 product-cli/critic proposals adopt when tools prove.
+  F133: scorecard-gap ops skills adopt under the same dual+tool gates.
 
 Commands:
-  candidates — list F74/F112/F117 proposals eligible for adopt
+  candidates — list F74/F112/F117/F132 proposals eligible for adopt
   gate       — run regression gates (critic + dual-rollout [+ corpus])
   adopt      — adopt one or all candidates if gates pass
   cycle      — candidates → gate → adopt (soft default no force)
+  cycle-scorecard — F133 propose-scorecard → dual-gate adopt scorecard gaps
   fixture    — hermetic: validated good adopts; F118 product-cli tool-attr; malicious blocked
   status     — active vs proposals summary
 
@@ -29,6 +32,7 @@ Env:
   TORII_SKILL_AUTO_ADOPT_DUAL    1 (default) | 0 — require F86 dual contribution_pp>0
   TORII_SKILL_AUTO_ADOPT_ATTR    1 (default) | 0 — require F88 per-skill attribution>0
   TORII_SKILL_AUTO_ADOPT_TOOL    1 (default) | 0 — F118 tool_blob for skill-prefer-* attr
+  TORII_SKILL_AUTO_ADOPT_SCORECARD 1 (default) | 0 — F133 cycle-scorecard soft post-run
   TORII_SKILL_AUTO_ADOPT_MAX     default 3 skills per cycle
   TORII_ROOT
 """
@@ -49,11 +53,12 @@ from typing import Any
 
 FEATURE = "F82"
 FEATURE_TOOL = "F118"
+FEATURE_SCORECARD = "F133"
 SCHEMA = 1
 
 _FALSEY = frozenset({"0", "false", "no", "off", "disabled", "n", "none", ""})
 
-# F118: synthetic allowlisted tool transcripts for tool-only skill attribution
+# F118/F133: synthetic allowlisted tool transcripts for tool-only skill attribution
 PROPOSAL_TOOL_BLOBS: dict[str, str] = {
     "skill-prefer-memory-cli-early": (
         "tool_call: terminal\n"
@@ -70,6 +75,43 @@ PROPOSAL_TOOL_BLOBS: dict[str, str] = {
         "tool_call: terminal\n"
         "python3 scripts/second_agent_critic.py score --review review.md\n"
         "python3 scripts/chain_revalidate.py score --review review.md\n"
+    ),
+    # F133: scorecard-gap ops skills (F132 proposals)
+    "skill-prefer-product-scorecard": (
+        "tool_call: terminal\n"
+        "python3 scripts/torii.py doctor\n"
+        "python3 scripts/torii.py scorecard --shallow\n"
+    ),
+    "skill-prefer-demote-eval-check": (
+        "tool_call: terminal\n"
+        "python3 scripts/second_agent_critic.py demote-eval\n"
+        "python3 scripts/second_agent_critic.py score --review review.md\n"
+    ),
+    "skill-prefer-memory-util-eval": (
+        "tool_call: terminal\n"
+        "python3 scripts/memory_tool_audit.py util-eval\n"
+        "python3 scripts/torii.py memory -- search -- -q auth\n"
+    ),
+    "skill-prefer-workflow-scorecard": (
+        "tool_call: terminal\n"
+        "python3 scripts/torii.py workflow -- scorecard\n"
+        "python3 scripts/workflow_as_code.py validate\n"
+    ),
+    "skill-prefer-hub-gap-critic": (
+        "tool_call: terminal\n"
+        "python3 scripts/second_agent_critic.py demote-eval\n"
+        "python3 scripts/skill_router.py hub-score\n"
+    ),
+    "skill-prefer-dual-compound-ops": (
+        "tool_call: terminal\n"
+        "python3 scripts/torii.py scorecard --shallow\n"
+        "python3 scripts/skill_loop_status.py scorecard --shallow\n"
+        "python3 scripts/memory_loop_status.py scorecard --shallow\n"
+    ),
+    "skill-prefer-recovery-skills-active": (
+        "tool_call: terminal\n"
+        "python3 scripts/torii.py doctor\n"
+        "python3 scripts/skill_loop_status.py scorecard --shallow\n"
     ),
 }
 
@@ -173,12 +215,13 @@ def _candidate_globs() -> list[str]:
     ]
 
 
-def list_candidates(root: Path) -> list[dict[str, Any]]:
+def list_candidates(root: Path, *, scorecard_only: bool = False) -> list[dict[str, Any]]:
     """Proposals eligible: glob match + validate recommend=adopt + not already active.
 
     F82: skill-f74-* fitness-gate proposals.
     F113: also F112 self-evolve memory-CLI recovery skills (skill-prefer-*).
     F118: F117 product-cli / critic-early skills with tool-aware attribution.
+    F133: F132 scorecard-gap ops skills (source=scorecard_gap).
     """
     _ensure_path()
     from fitness_gate_evolve import validate_proposal  # type: ignore
@@ -188,6 +231,15 @@ def list_candidates(root: Path) -> list[dict[str, Any]]:
     active_ids = {p.stem for p in active_dir.glob("*.md")} if active_dir.is_dir() else set()
     ledger = _load_ledger(root)
     out: list[dict[str, Any]] = []
+    scorecard_ids = set(PROPOSAL_TOOL_BLOBS.keys()) | {
+        "skill-prefer-product-scorecard",
+        "skill-prefer-demote-eval-check",
+        "skill-prefer-memory-util-eval",
+        "skill-prefer-workflow-scorecard",
+        "skill-prefer-hub-gap-critic",
+        "skill-prefer-dual-compound-ops",
+        "skill-prefer-recovery-skills-active",
+    }
 
     files: list[Path] = []
     if prop_dir.is_dir():
@@ -212,22 +264,42 @@ def list_candidates(root: Path) -> list[dict[str, Any]]:
             "skill-test-gap-blocking",
         ):
             continue
-        vr = validate_proposal(root, pid)
         meta = next(
             (p for p in (ledger.get("proposals") or []) if p.get("id") == pid),
             {},
         )
+        is_scorecard = (
+            meta.get("source") == "scorecard_gap"
+            or meta.get("feature") == "F132"
+            or pid in scorecard_ids
+            or "scorecard" in pid
+            or "dual-compound" in pid
+            or "demote-eval" in pid
+            or "memory-util" in pid
+            or "hub-gap" in pid
+        )
+        if scorecard_only and not is_scorecard:
+            continue
+        vr = validate_proposal(root, pid)
         if vr.recommend != "adopt":
             continue
+        try:
+            rel = str(fp.relative_to(root))
+        except ValueError:
+            rel = fp.name
         out.append(
             {
                 "id": pid,
-                "path": str(fp.relative_to(root)),
+                "path": rel,
                 "recommend": vr.recommend,
                 "total": vr.total,
                 "weak_dims": meta.get("weak_dims") or vr.reasons,
                 "title": meta.get("title") or pid,
-                "source": "f113" if "memory-cli" in pid or "prefer-" in pid else "f74",
+                "source": (
+                    "f133_scorecard"
+                    if is_scorecard
+                    else ("f113" if "memory-cli" in pid or "prefer-" in pid else "f74")
+                ),
             }
         )
     return out
@@ -462,6 +534,139 @@ def adopt_one(root: Path, proposal_id: str, *, force: bool = False) -> dict[str,
     return result
 
 
+def scorecard_adopt_enabled() -> bool:
+    """F133: soft post-run dual-gate adopt of scorecard-gap skills (default on for CLI)."""
+    raw = (os.environ.get("TORII_SKILL_AUTO_ADOPT_SCORECARD") or "1").strip().lower()
+    return raw not in _FALSEY
+
+
+def cycle_scorecard(
+    root: Path,
+    *,
+    scorecard: dict[str, Any] | Path | None = None,
+    max_n: int | None = None,
+    skip_gates: bool = False,
+    force: bool = False,
+    propose: bool = True,
+) -> dict[str, Any]:
+    """F133: propose-from-scorecard → dual+tool-attr gates → adopt scorecard-gap skills.
+
+    Closes F132 dashboard gap: measured brand_ready failures become active skills
+    only after fitness_gate recommend=adopt + F88 tool attribution + F87 dual gates.
+    """
+    root = Path(root)
+    max_n = max_n if max_n is not None else _int_env("TORII_SKILL_AUTO_ADOPT_MAX", 3)
+    propose_report: dict[str, Any] | None = None
+    if propose:
+        try:
+            sys.path.insert(0, str(_scripts()))
+            from self_evolve import propose_from_scorecard  # type: ignore
+
+            sc_doc: dict[str, Any] | None = None
+            if isinstance(scorecard, Path) and scorecard.is_file():
+                sc_doc = json.loads(scorecard.read_text(encoding="utf-8"))
+            elif isinstance(scorecard, dict):
+                sc_doc = scorecard
+            elif scorecard is None:
+                for cand in (
+                    root / ".torii" / "product-scorecard.json",
+                ):
+                    if cand.is_file():
+                        try:
+                            sc_doc = json.loads(cand.read_text(encoding="utf-8"))
+                            break
+                        except (OSError, json.JSONDecodeError):
+                            continue
+            propose_report = propose_from_scorecard(
+                root, sc_doc, limit=max_n, write=True
+            )
+        except Exception as exc:
+            propose_report = {"error": str(exc)[:160], "created_n": 0}
+
+    # dual-gate cycle but only scorecard-gap candidates
+    max_n = max_n if max_n is not None else _int_env("TORII_SKILL_AUTO_ADOPT_MAX", 3)
+    candidates = list_candidates(root, scorecard_only=True)[:max_n]
+    gates: dict[str, Any] | None = None
+    if not skip_gates:
+        gates = run_regression_gates(root)
+        if not gates.get("passed") and not force:
+            return {
+                "feature": FEATURE_SCORECARD,
+                "feature_base": FEATURE,
+                "ok": False,
+                "error": "regression_gates_failed",
+                "propose": propose_report,
+                "candidates": [c["id"] for c in candidates],
+                "gates": gates,
+                "adopted": [],
+            }
+
+    adopted = []
+    rejected = []
+    for c in candidates:
+        res = adopt_one(root, c["id"], force=force)
+        if res.get("ok"):
+            adopted.append(res)
+        else:
+            rejected.append(res)
+
+    post_gates = None
+    if adopted and not skip_gates:
+        post_gates = run_regression_gates(root)
+        if not post_gates.get("passed") and not force:
+            active = root / "agent" / "skills" / "active"
+            for a in adopted:
+                pid = a.get("id")
+                if not pid:
+                    continue
+                path = active / f"{pid}.md"
+                if path.is_file():
+                    path.unlink()
+            return {
+                "feature": FEATURE_SCORECARD,
+                "ok": False,
+                "error": "post_adopt_regression",
+                "rolled_back": [a.get("id") for a in adopted],
+                "propose": propose_report,
+                "gates_pre": gates,
+                "gates_post": post_gates,
+                "adopted": [],
+            }
+
+    return {
+        "feature": FEATURE_SCORECARD,
+        "feature_base": FEATURE,
+        "f87": True,
+        "f118": True,
+        "ok": True,
+        "propose": propose_report,
+        "candidates": [c["id"] for c in candidates],
+        "adopted": adopted,
+        "rejected": rejected,
+        "gates_pre": gates,
+        "gates_post": post_gates,
+        "dual_contribution_pp": (gates or {}).get("dual_contribution_pp"),
+        "active_scorecard": sorted(
+            p.stem
+            for p in (root / "agent" / "skills" / "active").glob("skill-prefer-*.md")
+            if any(
+                x in p.stem
+                for x in (
+                    "scorecard",
+                    "demote-eval",
+                    "memory-util",
+                    "workflow",
+                    "hub-gap",
+                    "dual-compound",
+                    "recovery-skills",
+                )
+            )
+        )
+        if (root / "agent" / "skills" / "active").is_dir()
+        else [],
+    }
+
+
 def cycle(
     root: Path,
     *,
@@ -569,6 +774,22 @@ def cmd_adopt(args: argparse.Namespace) -> int:
     res = adopt_one(root, args.proposal_id, force=args.force)
     print(json.dumps(res, indent=2))
     return 0 if res.get("ok") else 1
+
+
+def cmd_cycle_scorecard(args: argparse.Namespace) -> int:
+    """F133: propose-scorecard → dual-gate adopt scorecard-gap skills."""
+    root = _root()
+    sc_path = Path(args.scorecard) if getattr(args, "scorecard", None) and args.scorecard else None
+    report = cycle_scorecard(
+        root,
+        scorecard=sc_path,
+        max_n=int(getattr(args, "max", 0) or _int_env("TORII_SKILL_AUTO_ADOPT_MAX", 3)),
+        skip_gates=bool(getattr(args, "skip_gates", False)),
+        force=bool(getattr(args, "force", False)),
+        propose=not bool(getattr(args, "no_propose", False)),
+    )
+    print(json.dumps(report, indent=2))
+    return 0 if report.get("ok") else 1
 
 
 def cmd_cycle(args: argparse.Namespace) -> int:
@@ -819,6 +1040,62 @@ When the product umbrella CLI is available (F110):
                 td_path / "agent/skills/active" / f"{prod_id}.md"
             ).is_file()
 
+            # F133: scorecard-gap proposal + tool-attr dual-gate adopt
+            for name in ("self_evolve.py",):
+                src = root / "scripts" / name
+                if src.is_file():
+                    shutil.copy2(src, td_path / "scripts" / name)
+            sc_id = "skill-prefer-workflow-scorecard"
+            sc_body = f"""---
+id: {sc_id}
+feature: F132
+status: proposal
+source: scorecard_gap
+themes: scorecard,ops,readiness,f132
+title: Validate workflows-as-code graph readiness
+---
+
+## Skill: prefer-workflow-scorecard (F132)
+
+When workflow_ok is false:
+1. `python3 scripts/torii.py workflow -- scorecard`
+2. `python3 scripts/workflow_as_code.py validate`
+3. Fix missing stage scripts before claiming install readiness.
+"""
+            (td_path / "agent/skills/proposals" / f"{sc_id}.md").write_text(
+                sc_body, encoding="utf-8"
+            )
+            # ledger mark as scorecard_gap
+            led_path = td_path / "memory" / "evolution" / "ledger.json"
+            try:
+                led = json.loads(led_path.read_text(encoding="utf-8")) if led_path.is_file() else {}
+            except (OSError, json.JSONDecodeError):
+                led = {}
+            props = led.get("proposals") or []
+            props = [p for p in props if p.get("id") != sc_id]
+            props.append(
+                {
+                    "id": sc_id,
+                    "source": "scorecard_gap",
+                    "feature": "F132",
+                    "title": "Validate workflows-as-code",
+                    "status": "proposed",
+                }
+            )
+            led["proposals"] = props
+            led_path.parent.mkdir(parents=True, exist_ok=True)
+            led_path.write_text(json.dumps(led, indent=2) + "\n", encoding="utf-8")
+            attr_sc = _proposal_attribution(td_path, sc_id)
+            sc_attr_ok = (
+                not attr_sc.get("free_rider")
+                and float(attr_sc.get("contribution") or 0) > 0
+            )
+            # adopt without full dual pack gates (isolated tree lacks dual scripts)
+            ad_sc = adopt_one(td_path, sc_id, force=False)
+            sc_active = (td_path / "agent/skills/active" / f"{sc_id}.md").is_file()
+            sc_cands = list_candidates(td_path, scorecard_only=True)
+            sc_cand_ok = any(c["id"] == sc_id for c in sc_cands) or sc_active
+
             fixture_pass = (
                 good_v.recommend == "adopt"
                 and bad_v.recommend == "reject"
@@ -831,13 +1108,18 @@ When the product umbrella CLI is available (F110):
                 and tool_attr_ok
                 and ad_prod.get("ok") is True
                 and prod_active
+                and sc_attr_ok
+                and ad_sc.get("ok") is True
+                and sc_active
             )
             print(
                 json.dumps(
                     {
                         "feature": FEATURE,
                         "feature_tool": FEATURE_TOOL,
+                        "feature_scorecard": FEATURE_SCORECARD,
                         "f118": True,
+                        "f133": True,
                         "fixture_pass": fixture_pass,
                         "good_recommend": good_v.recommend,
                         "bad_recommend": bad_v.recommend,
@@ -849,6 +1131,10 @@ When the product umbrella CLI is available (F110):
                         "f118_tool_attr_ok": tool_attr_ok,
                         "f118_adopt_ok": ad_prod.get("ok"),
                         "f118_prod_active": prod_active,
+                        "f133_attr_ok": sc_attr_ok,
+                        "f133_adopt_ok": ad_sc.get("ok"),
+                        "f133_active": sc_active,
+                        "f133_cand_ok": sc_cand_ok,
                         "f118_attr": {
                             k: attr_yes.get(k)
                             for k in (
@@ -876,6 +1162,16 @@ def main(argv: list[str] | None = None) -> int:
     sub = p.add_subparsers(dest="cmd", required=True)
     sub.add_parser("candidates").set_defaults(func=cmd_candidates)
     sub.add_parser("gate").set_defaults(func=cmd_gate)
+    psc = sub.add_parser(
+        "cycle-scorecard",
+        help="F133 propose-scorecard → dual-gate adopt scorecard-gap skills",
+    )
+    psc.add_argument("--scorecard", default="", help="product-scorecard.json path")
+    psc.add_argument("--max", type=int, default=0)
+    psc.add_argument("--force", action="store_true")
+    psc.add_argument("--skip-gates", action="store_true")
+    psc.add_argument("--no-propose", action="store_true")
+    psc.set_defaults(func=cmd_cycle_scorecard)
     pa = sub.add_parser("adopt")
     pa.add_argument("proposal_id", nargs="?", default="")
     pa.add_argument("--all", action="store_true")
