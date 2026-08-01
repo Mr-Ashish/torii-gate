@@ -29,7 +29,7 @@ Live F105 showed inject offered but zero memory hits. Measuring gap is insuffici
 - pytest: 576 passed
 
 ### SHA
-_pending_
+`c8ec797c3b625560665d640f46e53de7b1b5a2f3`
 
 ## 2026-08-01 — F105 mid-review memory tool utilization audit
 
