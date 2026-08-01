@@ -31,7 +31,7 @@ F168 promote is write-only without router inject + critic. Highest ROI: promoted
 **Promote → inject always budget → checker demote** — close GEPA refine compound loop.
 
 ### SHA
-`(pending)`
+`0868c884484e9023b42e718aed4003f797479135`
 
 
 ## 2026-08-01 — F168 refine dual multi-tenant federate + promote
