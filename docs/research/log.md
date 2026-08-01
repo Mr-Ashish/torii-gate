@@ -29,7 +29,7 @@ JTBD (#3) · install (#7)
 Customer measures quieter from .torii/runs without hub archaeology
 
 ### SHA
-(pending)
+`2db184f08719020ba01350b461b13329713a8af2`
 
 ## 2026-08-01 — PRICING_PACKAGING: open-core buyer SKU surface (Phase B #2)
 

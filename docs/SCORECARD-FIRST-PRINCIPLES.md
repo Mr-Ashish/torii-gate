@@ -49,7 +49,7 @@ Cap honest overall **≤8.0** until live revenue / paid pilot proof.
 |-----:|-----|-------|--------|-----|--------|
 | 1 | CLI cognitive-load collapse | #12 | S | 🔥 | **shipped** `2325be7` |
 | 2 | Pricing / packaging product surface | #10 | S | 🔥 | **shipped** `7a5c0ca` |
-| 3 | Own-repo quieter path after pack install | #3 · #7 | M | 🔥 | **this fire** |
+| 3 | Own-repo quieter path after pack install | #3 · #7 | M | 🔥 | **shipped** `2db184f` |
 | 4 | Enterprise isolation hermetic proof | #9 | S | med | next |
 | 5 | Public eval freshness badge | #5 · #11 | XS | med | later |
 | 6 | Required-check onboarding in GH Actions summary | #3 · #7 | S | med | later |
