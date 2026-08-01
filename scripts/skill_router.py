@@ -409,11 +409,48 @@ def _load_fitness() -> tuple[dict[str, float], set[str]]:
         if spec is None or spec.loader is None:
             return {}, set()
         mod = importlib.util.module_from_spec(spec)
+        # register for dataclasses safety
+        import sys as _sys
+
+        _sys.modules.setdefault("skill_fitness", mod)
         spec.loader.exec_module(mod)
         if not mod.enabled():
             return {}, set()
         ledger = mod.load_ledger()
         return mod.fitness_boosts(ledger), mod.demoted_set(ledger)
+    except Exception:
+        return {}, set()
+
+
+def _load_attribution() -> tuple[dict[str, float], set[str]]:
+    """F89: contribution boosts + free-rider skip set from skill_attribution ledger."""
+    raw = (os.environ.get("TORII_SKILL_ATTRIBUTION") or "1").strip().lower()
+    if raw in _FALSEY:
+        return {}, set()
+    # allow disabling router-side only
+    raw_r = (os.environ.get("TORII_SKILL_ATTR_ROUTER") or "1").strip().lower()
+    if raw_r in _FALSEY:
+        return {}, set()
+    try:
+        import importlib.util
+        import sys as _sys
+
+        path = Path(__file__).resolve().parent / "skill_attribution.py"
+        if not path.is_file():
+            return {}, set()
+        if "skill_attribution" in _sys.modules:
+            mod = _sys.modules["skill_attribution"]
+        else:
+            spec = importlib.util.spec_from_file_location("skill_attribution", path)
+            if spec is None or spec.loader is None:
+                return {}, set()
+            mod = importlib.util.module_from_spec(spec)
+            _sys.modules["skill_attribution"] = mod
+            spec.loader.exec_module(mod)
+        if not mod.enabled():
+            return {}, set()
+        ledger = mod.load_ledger()
+        return mod.router_boosts(ledger), mod.free_rider_set(ledger)
     except Exception:
         return {}, set()
 
@@ -424,6 +461,7 @@ def score_skill(
     paths: list[str],
     *,
     fitness_boost: float = 0.0,
+    attr_boost: float = 0.0,
 ) -> float:
     if card.always:
         return 1000.0
@@ -446,6 +484,8 @@ def score_skill(
         score += 1.0
     # F85 fitness from historical hit rates
     score += float(fitness_boost or 0.0)
+    # F89 attribution contribution ranking
+    score += float(attr_boost or 0.0)
     return score
 
 
@@ -457,26 +497,37 @@ def select_skills(
     max_full = max_full if max_full is not None else _int_env("TORII_SKILL_ROUTER_MAX", 4)
     path_themes = themes_from_paths(paths)
     boosts, demoted = _load_fitness()
+    attr_boosts, free_riders = _load_attribution()
+    # free-riders join demote set for full-body skip (always still allowed)
+    skip_full = set(demoted) | set(free_riders)
     ranked: list[tuple[float, SkillCard]] = []
     for c in cards:
         s = score_skill(
-            c, path_themes, paths, fitness_boost=boosts.get(c.id, 0.0)
+            c,
+            path_themes,
+            paths,
+            fitness_boost=boosts.get(c.id, 0.0),
+            attr_boost=attr_boosts.get(c.id, 0.0),
         )
         ranked.append((s, c))
     ranked.sort(key=lambda x: (-x[0], x[1].id))
 
     selected: list[SkillCard] = []
     skipped_demoted: list[str] = []
-    # always first (never blocked by demote)
+    skipped_free_riders: list[str] = []
+    # always first (never blocked by demote/free-rider)
     for s, c in ranked:
         if c.always and c not in selected:
             selected.append(c)
-    # then top by score until max_full; demoted → index-only (skip full body)
+    # then top by score until max_full; demoted/free-rider → index-only
     for s, c in ranked:
         if c in selected:
             continue
-        if c.id in demoted and not c.always:
-            skipped_demoted.append(c.id)
+        if c.id in skip_full and not c.always:
+            if c.id in free_riders:
+                skipped_free_riders.append(c.id)
+            if c.id in demoted:
+                skipped_demoted.append(c.id)
             continue
         if s <= 0 and len(selected) >= 1:
             continue
@@ -484,18 +535,19 @@ def select_skills(
             break
         selected.append(c)
 
-    # if nothing selected, take top 2 non-demoted by score or first always
+    # if nothing selected, take top 2 non-skipped by score or first always
     if not selected and ranked:
         fallback = [
             c
             for _, c in ranked
-            if c.always or c.id not in demoted
+            if c.always or c.id not in skip_full
         ][: min(2, len(ranked))]
         selected = fallback or [c for _, c in ranked[: min(2, len(ranked))]]
 
     return {
         "feature": FEATURE,
         "schema": SCHEMA,
+        "f89": True,
         "path_themes": sorted(path_themes),
         "paths_n": len(paths),
         "max_full": max_full,
@@ -503,13 +555,18 @@ def select_skills(
         "selected": [c.id for c in selected],
         "selected_cards": selected,
         "demoted_skipped": skipped_demoted,
+        "free_rider_skipped": skipped_free_riders,
         "fitness_boosts": {k: boosts[k] for k in boosts if any(c.id == k for c in cards)},
+        "attr_boosts": {
+            k: attr_boosts[k] for k in attr_boosts if any(c.id == k for c in cards)
+        },
         "ranking": [
             {
                 "id": c.id,
                 "score": round(s, 2),
                 "always": c.always,
                 "demoted": c.id in demoted and not c.always,
+                "free_rider": c.id in free_riders and not c.always,
             }
             for s, c in ranked
         ],

@@ -31,6 +31,10 @@ Platform / AppSec engineer who needs every PR checked for security without drown
 
 **Measured gate.** Multi-corpus labeled benches (Python insecure-demo + Juice Shop synthetic) score recall before shipping harness changes.
 
+## Attribution-ranked inject (F89)
+
+Post-run LOO attribution compounds into `.torii/skill-attribution.json`. The progressive skill router **boosts high-contribution skills** and treats historical free-riders as index-only (no full body) on the next PR.
+
 ## Per-skill attribution (F88)
 
 Pack-level dual-rollout is necessary but not sufficient. Leave-one-out + unique keyword attribution identifies **free-rider** skills that never solo-hit; auto-adopt rejects them even when F74 validate says adopt.

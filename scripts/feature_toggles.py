@@ -463,6 +463,15 @@ REGISTRY: list[ToggleSpec] = [
         "F88",
     ),
     ToggleSpec(
+        "skill_attr_router",
+        "TORII_SKILL_ATTR_ROUTER",
+        "bool",
+        True,
+        "product",
+        "F89 feed attribution ledger into skill_router rank (boost/skip free-riders)",
+        "F89",
+    ),
+    ToggleSpec(
         "skill_auto_adopt_attr",
         "TORII_SKILL_AUTO_ADOPT_ATTR",
         "bool",

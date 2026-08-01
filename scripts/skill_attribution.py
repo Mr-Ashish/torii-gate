@@ -41,6 +41,7 @@ from typing import Any
 
 FEATURE = "F88"
 SCHEMA = 1
+LEDGER_NAME = "skill-attribution.json"
 
 _FALSEY = frozenset({"0", "false", "no", "off", "disabled", "n", "none", ""})
 
@@ -299,6 +300,168 @@ def filter_contributing(
     return [i for i in ids if i in ok]
 
 
+# --- F89 durable ledger for router inject ranking ---
+
+
+def ledger_path(root: Path | None = None) -> Path:
+    env = (os.environ.get("TORII_SKILL_ATTR_FILE") or "").strip()
+    if env:
+        return Path(env).resolve()
+    return (root or _root()) / ".torii" / LEDGER_NAME
+
+
+def empty_ledger() -> dict[str, Any]:
+    return {
+        "schema_version": SCHEMA,
+        "feature": "F89",
+        "updated_at": _now(),
+        "skills": {},
+        "free_riders": [],
+        "history": [],
+    }
+
+
+def load_ledger(path: Path | None = None) -> dict[str, Any]:
+    p = path or ledger_path()
+    if not p.is_file():
+        return empty_ledger()
+    try:
+        data = json.loads(p.read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError):
+        return empty_ledger()
+    if not isinstance(data, dict):
+        return empty_ledger()
+    data.setdefault("skills", {})
+    data.setdefault("free_riders", [])
+    data.setdefault("history", [])
+    return data
+
+
+def save_ledger(ledger: dict[str, Any], path: Path | None = None) -> Path:
+    p = path or ledger_path()
+    p.parent.mkdir(parents=True, exist_ok=True)
+    ledger["updated_at"] = _now()
+    ledger["feature"] = "F89"
+    ledger["schema_version"] = SCHEMA
+    p.write_text(json.dumps(ledger, indent=2) + "\n", encoding="utf-8")
+    return p
+
+
+def ingest_attribute(
+    attr: dict[str, Any],
+    ledger: dict[str, Any] | None = None,
+) -> dict[str, Any]:
+    """Compound per-skill contribution into durable ledger for router F89."""
+    ledger = ledger if ledger is not None else load_ledger()
+    skills = ledger.setdefault("skills", {})
+    for row in attr.get("skills") or []:
+        sid = str(row.get("id") or "").strip()
+        if not sid or "/" in sid:
+            continue
+        ent = skills.get(sid) or {
+            "id": sid,
+            "n": 0,
+            "contribution_sum": 0.0,
+            "solo_hits": 0,
+            "free_rider_n": 0,
+            "avg_contribution": 0.0,
+            "free_rider": False,
+        }
+        ent["n"] = int(ent.get("n") or 0) + 1
+        c = float(row.get("contribution") or 0)
+        ent["contribution_sum"] = float(ent.get("contribution_sum") or 0) + c
+        if row.get("solo_hit"):
+            ent["solo_hits"] = int(ent.get("solo_hits") or 0) + 1
+        if row.get("free_rider"):
+            ent["free_rider_n"] = int(ent.get("free_rider_n") or 0) + 1
+        n = int(ent["n"])
+        ent["avg_contribution"] = round(float(ent["contribution_sum"]) / n, 4)
+        # free-rider if majority free_rider samples and low avg
+        fr_rate = int(ent["free_rider_n"]) / n
+        ent["free_rider"] = bool(fr_rate >= 0.5 and float(ent["avg_contribution"]) < 0.5)
+        ent["last_seen"] = _now()
+        skills[sid] = ent
+    ledger["free_riders"] = sorted(
+        sid for sid, e in skills.items() if e.get("free_rider")
+    )
+    hist = ledger.setdefault("history", [])
+    hist.append(
+        {
+            "at": _now(),
+            "n_contributing": attr.get("n_contributing"),
+            "n_free_riders": attr.get("n_free_riders"),
+            "hit_rate_full": attr.get("hit_rate_full"),
+            "contributing": list(attr.get("contributing") or [])[:16],
+        }
+    )
+    ledger["history"] = hist[-80:]
+    return ledger
+
+
+def router_boosts(ledger: dict[str, Any] | None = None) -> dict[str, float]:
+    """Score deltas for skill_router: high avg contribution → boost."""
+    ledger = ledger if ledger is not None else load_ledger()
+    max_boost = _float_env("TORII_SKILL_ATTR_ROUTER_BOOST", 3.0)
+    out: dict[str, float] = {}
+    for sid, ent in (ledger.get("skills") or {}).items():
+        n = int(ent.get("n") or 0)
+        if n < 1:
+            continue
+        avg = float(ent.get("avg_contribution") or 0)
+        if ent.get("free_rider"):
+            out[sid] = -max_boost
+            continue
+        # map avg contribution (0..~2.5) into [0, max_boost]
+        conf = min(1.0, n / 2.0)
+        out[sid] = round(min(max_boost, avg * conf), 3)
+    return out
+
+
+def free_rider_set(ledger: dict[str, Any] | None = None) -> set[str]:
+    ledger = ledger if ledger is not None else load_ledger()
+    return set(ledger.get("free_riders") or [])
+
+
+def cycle_from_review(
+    review: Path,
+    *,
+    root: Path | None = None,
+    paths: list[str] | None = None,
+    out_dir: Path | None = None,
+) -> dict[str, Any]:
+    root = root or _root()
+    text = ""
+    if review.is_file():
+        text = review.read_text(encoding="utf-8", errors="replace")
+    text = enrich_review(text)
+    # prefer selected from out_dir skill-router.json
+    selected = None
+    if out_dir and (Path(out_dir) / "skill-router.json").is_file():
+        try:
+            selected = json.loads(
+                (Path(out_dir) / "skill-router.json").read_text(encoding="utf-8")
+            ).get("selected")
+        except (OSError, json.JSONDecodeError):
+            selected = None
+    attr = attribute(text, root=root, paths=paths, selected=selected)
+    ledger = ingest_attribute(attr, load_ledger(ledger_path(root)))
+    path = save_ledger(ledger, ledger_path(root))
+    if out_dir:
+        Path(out_dir).mkdir(parents=True, exist_ok=True)
+        (Path(out_dir) / "skill-attribution.json").write_text(
+            json.dumps(attr, indent=2) + "\n", encoding="utf-8"
+        )
+    return {
+        "feature": "F89",
+        "attr_feature": FEATURE,
+        "ledger": str(path),
+        "free_riders": list(ledger.get("free_riders") or []),
+        "boosts": router_boosts(ledger),
+        "n_contributing": attr.get("n_contributing"),
+        "artifact": str(Path(out_dir) / "skill-attribution.json") if out_dir else None,
+    }
+
+
 def cmd_attribute(args: argparse.Namespace) -> int:
     root = _root()
     if args.review:
@@ -350,12 +513,18 @@ def cmd_filter(args: argparse.Namespace) -> int:
 
 
 def cmd_status(args: argparse.Namespace) -> int:
+    ledger = load_ledger()
     print(
         json.dumps(
             {
                 "feature": FEATURE,
+                "f89": True,
                 "enabled": enabled(),
                 "min_contribution": _float_env("TORII_SKILL_ATTR_MIN", 0.01),
+                "ledger": str(ledger_path()),
+                "skills_n": len(ledger.get("skills") or {}),
+                "free_riders": list(ledger.get("free_riders") or []),
+                "boosts": router_boosts(ledger),
             },
             indent=2,
         )
@@ -363,8 +532,65 @@ def cmd_status(args: argparse.Namespace) -> int:
     return 0
 
 
+def cmd_ingest(args: argparse.Namespace) -> int:
+    root = _root()
+    path = Path(args.attr) if args.attr else None
+    if path is None and args.out_dir:
+        path = Path(args.out_dir) / "skill-attribution.json"
+    if path is None or not path.is_file():
+        print(json.dumps({"feature": "F89", "ingested": 0, "reason": "no attr json"}))
+        return 0
+    attr = json.loads(path.read_text(encoding="utf-8"))
+    ledger = ingest_attribute(attr, load_ledger(ledger_path(root)))
+    lp = save_ledger(ledger, ledger_path(root))
+    print(
+        json.dumps(
+            {
+                "feature": "F89",
+                "ingested": 1,
+                "ledger": str(lp),
+                "free_riders": ledger.get("free_riders"),
+                "boosts": router_boosts(ledger),
+            },
+            indent=2,
+        )
+    )
+    return 0
+
+
+def cmd_cycle(args: argparse.Namespace) -> int:
+    if not enabled() and not getattr(args, "force", False):
+        print(json.dumps({"feature": "F89", "skipped": 1, "reason": "disabled"}))
+        return 0
+    root = _root()
+    out_dir = Path(args.out_dir) if args.out_dir else None
+    if out_dir is None and (os.environ.get("OUT_DIR") or "").strip():
+        out_dir = Path(os.environ["OUT_DIR"])
+    review = Path(args.review) if args.review else None
+    if review is None and out_dir:
+        for name in ("review.md", "review.normalized.md", "hermes-review.md"):
+            cand = out_dir / name
+            if cand.is_file():
+                review = cand
+                break
+    if review is None:
+        # fall back to good fixture for offline dogfood
+        review = root / DEFAULT_GOOD
+    if not review.is_file():
+        print(json.dumps({"feature": "F89", "error": "no_review", "ok": False}))
+        return 1
+    result = cycle_from_review(
+        review,
+        root=root,
+        paths=args.paths,
+        out_dir=out_dir,
+    )
+    print(json.dumps(result, indent=2))
+    return 0
+
+
 def cmd_fixture(args: argparse.Namespace) -> int:
-    """Hermetic: real skill contributes; synthetic free-rider does not."""
+    """Hermetic: real skill contributes; free-rider ledger skips in router."""
     root = _root()
     # real pack attribution
     gp = root / DEFAULT_GOOD
@@ -389,17 +615,72 @@ def cmd_fixture(args: argparse.Namespace) -> int:
     )
     good_ok = good_p["solo_hit"] is True and good_p["contribution"] > 0
 
-    fixture_pass = has_contrib and free_rider_ok and good_ok
+    # F89: durable ledger + router boosts/skip
+    with tempfile.TemporaryDirectory() as td:
+        td_path = Path(td)
+        os.environ["TORII_ROOT"] = str(td_path)
+        os.environ["TORII_SKILL_ATTR_FILE"] = str(td_path / ".torii" / LEDGER_NAME)
+        # seed attr with free-rider row synthetic
+        synth = dict(attr)
+        skills = list(synth.get("skills") or [])
+        skills.append(
+            {
+                "id": "skill-zombie-free-rider",
+                "solo_hit": False,
+                "matched": [],
+                "unique": [],
+                "n_unique": 0,
+                "contribution": 0.0,
+                "free_rider": True,
+                "always": False,
+            }
+        )
+        # force a known contributor with high score
+        skills.append(
+            {
+                "id": "skill-f74-prefer-chain-json",
+                "solo_hit": True,
+                "matched": ["chain", "taint"],
+                "unique": ["chain"],
+                "n_unique": 1,
+                "contribution": 2.0,
+                "free_rider": False,
+                "always": False,
+            }
+        )
+        synth["skills"] = skills
+        ledger = empty_ledger()
+        # ingest twice so free_rider majority sticks
+        for _ in range(2):
+            ledger = ingest_attribute(synth, ledger)
+        lp = save_ledger(ledger, ledger_path(td_path))
+        boosts = router_boosts(ledger)
+        fr_set = free_rider_set(ledger)
+        zombie_skipped = "skill-zombie-free-rider" in fr_set
+        chain_boosted = boosts.get("skill-f74-prefer-chain-json", 0) > 0
+        zombie_pen = boosts.get("skill-zombie-free-rider", 0) < 0
+        # restore TORII_ROOT for outer tests
+        os.environ["TORII_ROOT"] = str(root)
+        os.environ.pop("TORII_SKILL_ATTR_FILE", None)
+
+    fixture_pass = all(
+        [has_contrib, free_rider_ok, good_ok, zombie_skipped, chain_boosted, zombie_pen]
+    )
     print(
         json.dumps(
             {
                 "feature": FEATURE,
+                "f89": True,
                 "fixture_pass": fixture_pass,
                 "n_contributing": attr["n_contributing"],
                 "contributing": attr["contributing"],
                 "free_riders_active": attr["free_riders"],
                 "proposal_free_rider": fr,
                 "proposal_good": good_p,
+                "zombie_skipped": zombie_skipped,
+                "chain_boost": boosts.get("skill-f74-prefer-chain-json"),
+                "zombie_boost": boosts.get("skill-zombie-free-rider"),
+                "ledger": str(lp),
             },
             indent=2,
         )
@@ -408,7 +689,9 @@ def cmd_fixture(args: argparse.Namespace) -> int:
 
 
 def main(argv: list[str] | None = None) -> int:
-    p = argparse.ArgumentParser(description="F88 per-skill contribution attribution")
+    p = argparse.ArgumentParser(
+        description="F88/F89 per-skill contribution attribution + router ledger"
+    )
     sub = p.add_subparsers(dest="cmd", required=True)
 
     pa = sub.add_parser("attribute", help="LOO + unique attribution")
@@ -428,6 +711,18 @@ def main(argv: list[str] | None = None) -> int:
     pf.add_argument("--paths", nargs="*", default=None)
     pf.add_argument("--ids", default="")
     pf.set_defaults(func=cmd_filter)
+
+    pi = sub.add_parser("ingest", help="Ingest attr JSON into durable ledger")
+    pi.add_argument("--attr", default="")
+    pi.add_argument("--out-dir", default="")
+    pi.set_defaults(func=cmd_ingest)
+
+    pc = sub.add_parser("cycle", help="Attribute review → ledger (F89 router fuel)")
+    pc.add_argument("--review", default="")
+    pc.add_argument("--out-dir", default="")
+    pc.add_argument("--paths", nargs="*", default=None)
+    pc.add_argument("--force", action="store_true")
+    pc.set_defaults(func=cmd_cycle)
 
     sub.add_parser("status").set_defaults(func=cmd_status)
     sub.add_parser("fixture").set_defaults(func=cmd_fixture)

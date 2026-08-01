@@ -1,5 +1,35 @@
 # Torii research → product log
 
+## 2026-08-01 — F89 attribution-ranked skill inject (router free-rider skip)
+
+### Papers / posts / OSS
+- Assay / Not All Skills Help: mask inert skills at inference, not only at adopt.
+- Prior F88: LOO at adopt; inject still path-only — free-riders could re-enter full bodies.
+- F85 demote pattern: durable ledger → router score delta.
+
+### OSS / eng patterns
+1. skill_attribution cycle → `.torii/skill-attribution.json` (avg contribution).
+2. skill_router attr_boost + free_rider_skipped (index-only).
+3. Soft post-run stage after skill_router_score.
+
+### Insight
+Attribution that never ranks inject is half a loop. Highest ROI: **feed LOO ledger into progressive router**.
+
+### Feature shipped (F89)
+- skill_attribution ledger/ingest/cycle/router_boosts
+- skill_router select uses attr boosts + free-rider skip
+- run-torii-review stage; PRODUCT + tests
+
+### Loop-engineering practice used
+**Ship the feedback path** — measure → durable ledger → next-run inject policy.
+
+### Metric
+- Offline: fixture_pass; free_rider_skipped; chain boost>0; 522 pytest
+- Live: **Modal** pytorch#191813 deepseek/deepseek-v4-pro BIT3_OK ~92s; log_streaming=true; POST_COMMENT=0
+
+### SHA
+_PENDING_
+
 ## 2026-08-01 — F88 per-skill LOO attribution (reject free-riders)
 
 ### Papers / posts / OSS

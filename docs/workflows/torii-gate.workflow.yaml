@@ -95,6 +95,13 @@ stages:
     feature: F84
     command: score
     note: measure selected skill keyword hits in review
+  - id: skill_attribution_cycle
+    script: scripts/skill_attribution.py
+    soft: true
+    phase: memory
+    feature: F89
+    command: cycle
+    note: LOO attr → durable ledger for next inject ranking
   - id: skill_fitness
     script: scripts/skill_fitness.py
     soft: true
@@ -203,6 +210,10 @@ capabilities:
     feature: F88
     script: scripts/skill_attribution.py
     one_liner: Per-skill LOO attribution; reject free-riders before adopt
+  - id: skill_attr_router
+    feature: F89
+    script: scripts/skill_router.py
+    one_liner: Attribution ledger ranks inject; free-riders index-only
   - id: eval_trace_report
     feature: F83
     script: scripts/eval_trace_report.py

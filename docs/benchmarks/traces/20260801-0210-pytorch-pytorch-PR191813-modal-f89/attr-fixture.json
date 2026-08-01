@@ -1,0 +1,40 @@
+{
+  "feature": "F88",
+  "f89": true,
+  "fixture_pass": true,
+  "n_contributing": 4,
+  "contributing": [
+    "skill-tool-depth-hunks",
+    "skill-f74-exploit-scenario",
+    "skill-f74-prefer-chain-json",
+    "skill-preserve-deep-tools"
+  ],
+  "free_riders_active": [],
+  "proposal_free_rider": {
+    "id": "skill-f74-free-rider-lorem",
+    "solo_hit": false,
+    "matched": [],
+    "n_matched": 0,
+    "contribution": 0.0,
+    "free_rider": true,
+    "probes_n": 3
+  },
+  "proposal_good": {
+    "id": "skill-f74-path-evidence",
+    "solo_hit": true,
+    "matched": [
+      "path:line",
+      "unvalidated",
+      "path",
+      "evidence"
+    ],
+    "n_matched": 4,
+    "contribution": 2.5,
+    "free_rider": false,
+    "probes_n": 5
+  },
+  "zombie_skipped": true,
+  "chain_boost": 2.5,
+  "zombie_boost": -3.0,
+  "ledger": "/private/var/folders/2b/l8r1b38n75jd77wtd44p4ycr0000gn/T/tmp6uvbvhp1/.torii/skill-attribution.json"
+}

@@ -259,6 +259,25 @@ if [[ -f "$SCRIPTS/skill_router.py" ]]; then
   esac
 fi
 
+# F88/F89: per-skill attribution → durable ledger for next inject ranking
+if [[ -f "$SCRIPTS/skill_attribution.py" ]]; then
+  case "${TORII_SKILL_ATTRIBUTION:-1}" in
+    0|false|no|off) ;;
+    *)
+      _f88_review=""
+      for _c in "$OUT_DIR/review.md" "$OUT_DIR/review.normalized.md" "$OUT_DIR/hermes-review.md"; do
+        if [[ -f "$_c" ]]; then _f88_review="$_c"; break; fi
+      done
+      if [[ -n "$_f88_review" ]]; then
+        stage skill_attribution \
+          python3 "$SCRIPTS/skill_attribution.py" cycle \
+            --review "$_f88_review" \
+            --out-dir "$OUT_DIR" || true
+      fi
+      ;;
+  esac
+fi
+
 # F85: skill fitness ledger — demote zombies + federate skill themes
 if [[ -f "$SCRIPTS/skill_fitness.py" ]]; then
   case "${TORII_SKILL_FITNESS:-1}" in
