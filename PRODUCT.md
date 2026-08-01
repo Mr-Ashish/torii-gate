@@ -276,6 +276,34 @@ always inject → util score → critic demote → soft re-prompt → fitness �
 
 ---
 
+## Mental model E — GEPA refine compound loop (F165–F169)
+
+Torii does not leave recovery skill bodies static after util gaps. Skills **evolve from traces under gates**, then prove contribution and multi-tenant promote before they rank always budget:
+
+```text
+util gap → GEPA refine body → dual-gate LOO floor → dual contribution_pp
+       → federate+promote → always Δprio + dual_fail critic
+```
+
+| Stage | Feature | Customer-facing meaning |
+|-------|---------|-------------------------|
+| **Refine** | F165 | Trace-reflective tool-first skill body mutate (size/probe gates) |
+| **Dual-gate floor** | F166 | Constraint-passed refine LOO-floored + fitness shield |
+| **Dual-rollout** | F167 | with-refine vs ablated `refine_tool_contribution_pp` paper metric |
+| **Federate promote** | F168 | Multi-tenant min_tenants gate on refine_pp bins |
+| **Hub + critic** | F169 | Promoted refine boosts always slots; dual_fail demotes APPROVE |
+| **Product bit** | F170 | `refine_loop_ok` on doctor/scorecard — one readiness flag |
+
+**One-liner (eng):** *Skills that fail tool util get refined, measured, and multi-tenant promoted — or they stay out of always budget.*
+
+**One-liner (AppSec):** *Idle recovery skills cannot silently APPROVE after GEPA refine inject.*
+
+**Brand pack (F170):** PRODUCT + landing + scorecard-metrics surface `refine_loop_ok`; paper EVAL pack rolls F165–F169 live Modal proofs.
+
+**Ops:** `python3 scripts/torii.py doctor` / `scorecard` → `refine_loop_ok` next to `hub_archival_loop_ok`.
+
+---
+
 ## Self-evolution (F82 + F87/F88)
 
 Validated skill proposals enter `agent/skills/active/` only after offline regression gates (critic + fitness + dual contribution + per-skill attribution). Default off (`TORII_SKILL_AUTO_ADOPT=0`). Force exists for emergencies; product default is REJECT until measured.

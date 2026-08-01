@@ -1,5 +1,38 @@
 # Torii research → product log
 
+## 2026-08-01 — F170 GEPA refine brand + paper EVAL pack
+
+### Papers / posts
+- Loop Engineering: design the loop, get a score — package measured compound loops as product readiness.
+- F165–F169 GEPA refine stack complete offline; brand/EVAL surfaces lagged doctor flags (F163→F164 pattern).
+- SkillsBench dual + FederatedSkill promote need a single `refine_loop_ok` readiness bit.
+
+### OSS design patterns stolen
+1. skill_loop refine_loop_ok AND of F165–F169 wires.
+2. doctor/scorecard surface refine_* metrics + brand_md rows.
+3. PRODUCT Mental model E + landing/TORII one-liners.
+4. f170 EVAL pack rolls F165–F169 live Modal proofs.
+
+### Insight
+Intelligence without brand packaging is script archaeology. Highest ROI after F169: one `refine_loop_ok` product bit + paper EVAL pack operators actually read.
+
+### Feature shipped (F170)
+- refine_loop_ok doctor/scorecard/skill_loop
+- PRODUCT Mental model E; landing + TORII; scorecard-metrics
+- f170-gepa-refine-eval-pack/
+
+### Metric
+- Offline: doctor refine_loop_ok; scorecard brand_ready L3
+- Live local: recall=1.0 util_rate=1.0 F165–F168 hermes chain
+- Modal pytorch#191829 BIT3_OK ~115.3s POST_COMMENT=0 log_streaming=true
+
+### Loop-engineering / Hermes practice used
+**Package measured readiness into surfaces operators and papers read.**
+
+### SHA
+`(pending)`
+
+
 ## 2026-08-01 — F169 refine dual hub always-priority + dual_fail critic
 
 ### Papers / posts

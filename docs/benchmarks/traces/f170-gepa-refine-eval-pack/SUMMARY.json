@@ -1,0 +1,116 @@
+{
+  "feature": "F170",
+  "title": "GEPA refine compound loop brand + paper EVAL pack (F165\u2013F169)",
+  "scored_at": "2026-08-01T12:10:49Z",
+  "brand": {
+    "refine_loop_ok": true,
+    "product_mental_model": "E",
+    "scorecard_metrics": "docs/brand/scorecard-metrics.md",
+    "landing": "docs/brand/landing.html"
+  },
+  "pack": {
+    "fires": [
+      "F165",
+      "F166",
+      "F167",
+      "F168",
+      "F169"
+    ],
+    "trace_dirs": [
+      "f165-gepa-lite-skill-refine",
+      "f166-gepa-refine-dual-gate-attr",
+      "f167-gepa-refine-dual-rollout",
+      "f168-refine-dual-federate-promote",
+      "f169-refine-dual-hub-critic"
+    ],
+    "modal_bit3_ok_n": 5
+  },
+  "doctor": {
+    "doctor_pass": true,
+    "refine_loop_ok": true,
+    "hub_archival_loop_ok": true
+  },
+  "scorecard": {
+    "brand_ready": true,
+    "level": "L3",
+    "refine_loop_ok": true,
+    "refine_dual_fail_idle_demoted": true
+  },
+  "rows": [
+    {
+      "feature": "F165",
+      "dir": "f165-gepa-lite-skill-refine",
+      "title": "GEPA-lite skill refine-from-util",
+      "recall": 1.0,
+      "util_rate": 1.0,
+      "refine_tool_contribution_pp": null,
+      "pr": 191831,
+      "outcome": "BIT3_OK",
+      "elapsed_s": 89.6,
+      "log_streaming": true
+    },
+    {
+      "feature": "F166",
+      "dir": "f166-gepa-refine-dual-gate-attr",
+      "title": "dual-gate LOO floor + fitness shield",
+      "recall": 1.0,
+      "util_rate": 1.0,
+      "refine_tool_contribution_pp": null,
+      "pr": 191829,
+      "outcome": "BIT3_OK",
+      "elapsed_s": 84.1,
+      "log_streaming": true
+    },
+    {
+      "feature": "F167",
+      "dir": "f167-gepa-refine-dual-rollout",
+      "title": "dual-rollout contribution_pp",
+      "recall": 1.0,
+      "util_rate": 1.0,
+      "refine_tool_contribution_pp": 50.0,
+      "pr": 191832,
+      "outcome": "BIT3_OK",
+      "elapsed_s": 172.0,
+      "log_streaming": true
+    },
+    {
+      "feature": "F168",
+      "dir": "f168-refine-dual-federate-promote",
+      "title": "multi-tenant federate+promote",
+      "recall": 1.0,
+      "util_rate": 1.0,
+      "refine_tool_contribution_pp": 50.0,
+      "pr": 191830,
+      "outcome": "BIT3_OK",
+      "elapsed_s": 89.6,
+      "log_streaming": true
+    },
+    {
+      "feature": "F169",
+      "dir": "f169-refine-dual-hub-critic",
+      "title": "hub always-prio + dual_fail critic",
+      "recall": 1.0,
+      "util_rate": 1.0,
+      "refine_tool_contribution_pp": 50.0,
+      "pr": 191836,
+      "outcome": "BIT3_OK",
+      "elapsed_s": 122.3,
+      "log_streaming": true
+    }
+  ],
+  "live_local": {
+    "recall": 1.0,
+    "tp": 4,
+    "verdict": "COMMENT",
+    "util_rate": 1.0,
+    "recovery_injected_n": 3,
+    "model": "deepseek/deepseek-v4-pro"
+  },
+  "modal_f170": {
+    "repo": "pytorch/pytorch",
+    "pr": 191829,
+    "outcome": "BIT3_OK",
+    "elapsed_s": 115.3,
+    "log_streaming": true
+  }
+}

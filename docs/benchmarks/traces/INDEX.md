@@ -98,6 +98,7 @@ Paper/eval-safe slim traces (redacted). Large raw logs may be gitignored; always
 - `f153-hub-archival-self-evolve/` — F153 hub-archival skill from F152; Modal pytorch e2e POST_COMMENT=0
 - `f154-hub-archival-cycle-adopt/` — F154 hub-archival dual-gate always adopt; Modal pytorch e2e POST_COMMENT=0
 - `f164-hub-archival-eval-pack/` — F164 brand + paper EVAL pack F155–F163 (hub_archival_loop_ok); Modal pytorch e2e POST_COMMENT=0
+| f170-gepa-refine-eval-pack | F170 | GEPA refine brand+EVAL pack F165–F169 | refine_loop_ok + Modal proofs |
 | f169-refine-dual-hub-critic | F169 | refine dual hub + dual_fail critic | local + Modal pytorch#191836 BIT3_OK |
 | f168-refine-dual-federate-promote | F168 | refine dual federate+promote | local + Modal pytorch#191830 BIT3_OK |
 | f167-gepa-refine-dual-rollout | F167 | GEPA refine dual contribution_pp | local + Modal pytorch#191832 BIT3_OK |

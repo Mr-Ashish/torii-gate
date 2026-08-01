@@ -1,0 +1,23 @@
+{
+  "feature": "F166",
+  "scored_at": "2026-08-01T12:11:38Z",
+  "enabled": true,
+  "refine_floored_ids": [
+    "skill-prefer-memory-cli-early"
+  ],
+  "n": 1,
+  "skills": {
+    "skill-prefer-memory-cli-early": {
+      "refined_n": 2,
+      "constraint_ok": true,
+      "kind": "gepa_refine",
+      "reasons": [
+        "ledger_refine",
+        "active_marker"
+      ],
+      "hub_priority_delta": 12,
+      "tool_hit_n": 0
+    }
+  },
+  "ok": true
+}

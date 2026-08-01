@@ -446,6 +446,13 @@ def cmd_doctor(args: argparse.Namespace) -> int:
                     router_synth_ok = data.get("router_synth_ok")
                     reprompt_adaptive_ok = data.get("reprompt_adaptive_ok")
                     hub_archival_fitness_ok = data.get("hub_archival_fitness_ok")
+                    # F165–F170 GEPA refine compound loop soft surfaces
+                    skill_refine_ok = data.get("skill_refine_ok")
+                    skill_refine_attr_ok = data.get("skill_refine_attr_ok")
+                    refine_dual_ok = data.get("refine_dual_ok")
+                    refine_promote_ok = data.get("refine_promote_ok")
+                    refine_dual_hub_ok = data.get("refine_dual_hub_ok")
+                    refine_loop_ok = data.get("refine_loop_ok")
             except (json.JSONDecodeError, TypeError):
                 recovery_hub_gap_ok = None
                 recon_warm_hub_ok = None
@@ -456,6 +463,12 @@ def cmd_doctor(args: argparse.Namespace) -> int:
                 router_synth_ok = None
                 reprompt_adaptive_ok = None
                 hub_archival_fitness_ok = None
+                skill_refine_ok = None
+                skill_refine_attr_ok = None
+                refine_dual_ok = None
+                refine_promote_ok = None
+                refine_dual_hub_ok = None
+                refine_loop_ok = None
             entry: dict[str, Any] = {"check": name, "ok": ok, "rc": r.returncode}
             if name == "skill_loop":
                 entry["recovery_ok"] = recovery_ok
@@ -469,6 +482,12 @@ def cmd_doctor(args: argparse.Namespace) -> int:
                 entry["router_synth_ok"] = router_synth_ok
                 entry["reprompt_adaptive_ok"] = reprompt_adaptive_ok
                 entry["hub_archival_fitness_ok"] = hub_archival_fitness_ok
+                entry["skill_refine_ok"] = skill_refine_ok
+                entry["skill_refine_attr_ok"] = skill_refine_attr_ok
+                entry["refine_dual_ok"] = refine_dual_ok
+                entry["refine_promote_ok"] = refine_promote_ok
+                entry["refine_dual_hub_ok"] = refine_dual_hub_ok
+                entry["refine_loop_ok"] = refine_loop_ok
             results.append(entry)
             if not ok:
                 all_ok = False
@@ -476,7 +495,7 @@ def cmd_doctor(args: argparse.Namespace) -> int:
             results.append({"check": name, "ok": False, "error": str(exc)[:120]})
             all_ok = False
 
-    # surface last recovery_hub_gap_ok / recon_warm_hub_ok / hub_archival_* loop
+    # surface last recovery_hub_gap_ok / recon_warm_hub_ok / hub_archival_* / refine_* loop
     hub_gap = None
     recon_warm = None
     hub_arch = None
@@ -486,6 +505,12 @@ def cmd_doctor(args: argparse.Namespace) -> int:
     router_synth = None
     reprompt_adapt = None
     hub_arch_fit = None
+    skill_refine = None
+    skill_refine_attr = None
+    refine_dual = None
+    refine_promote = None
+    refine_dual_hub = None
+    refine_loop = None
     for e in results:
         if e.get("check") == "skill_loop" and "recovery_hub_gap_ok" in e:
             hub_gap = e.get("recovery_hub_gap_ok")
@@ -505,6 +530,18 @@ def cmd_doctor(args: argparse.Namespace) -> int:
             reprompt_adapt = e.get("reprompt_adaptive_ok")
         if e.get("check") == "skill_loop" and "hub_archival_fitness_ok" in e:
             hub_arch_fit = e.get("hub_archival_fitness_ok")
+        if e.get("check") == "skill_loop" and "skill_refine_ok" in e:
+            skill_refine = e.get("skill_refine_ok")
+        if e.get("check") == "skill_loop" and "skill_refine_attr_ok" in e:
+            skill_refine_attr = e.get("skill_refine_attr_ok")
+        if e.get("check") == "skill_loop" and "refine_dual_ok" in e:
+            refine_dual = e.get("refine_dual_ok")
+        if e.get("check") == "skill_loop" and "refine_promote_ok" in e:
+            refine_promote = e.get("refine_promote_ok")
+        if e.get("check") == "skill_loop" and "refine_dual_hub_ok" in e:
+            refine_dual_hub = e.get("refine_dual_hub_ok")
+        if e.get("check") == "skill_loop" and "refine_loop_ok" in e:
+            refine_loop = e.get("refine_loop_ok")
     # F135: scorecard ops fitness panel (informational — does not fail doctor)
     sc_panel = _scorecard_ops_panel(root)
     # F163: hub-archival compound loop readiness (soft product surface)
@@ -517,6 +554,18 @@ def cmd_doctor(args: argparse.Namespace) -> int:
         and reprompt_adapt
         and hub_arch_fit
     )
+    # F170: GEPA refine compound loop (F165–F169) — soft product surface
+    refine_loop_ok = bool(
+        refine_loop
+        if refine_loop is not None
+        else (
+            skill_refine
+            and skill_refine_attr
+            and refine_dual
+            and refine_promote
+            and refine_dual_hub
+        )
+    )
     print(
         json.dumps(
             {
@@ -526,6 +575,7 @@ def cmd_doctor(args: argparse.Namespace) -> int:
                 "feature_hub_archival_util": "F155",
                 "feature_hub_archival_util_critic": "F156",
                 "feature_hub_archival_loop": "F163",
+                "feature_refine_loop": "F170",
                 "feature_scorecard_ops": "F135",
                 "doctor_pass": all_ok,
                 "recovery_ok": recovery_ok,
@@ -540,6 +590,12 @@ def cmd_doctor(args: argparse.Namespace) -> int:
                 "reprompt_adaptive_ok": reprompt_adapt,
                 "hub_archival_fitness_ok": hub_arch_fit,
                 "hub_archival_loop_ok": ha_loop_ok,
+                "skill_refine_ok": skill_refine,
+                "skill_refine_attr_ok": skill_refine_attr,
+                "refine_dual_ok": refine_dual,
+                "refine_promote_ok": refine_promote,
+                "refine_dual_hub_ok": refine_dual_hub,
+                "refine_loop_ok": refine_loop_ok,
                 "scorecard_ops": sc_panel,
                 "scorecard_ops_ok": sc_panel.get("scorecard_ops_ok"),
                 "results": results,
@@ -740,6 +796,50 @@ def product_scorecard(
                 and skill.get("hub_archival_fitness_ok")
             )
         ),
+        # F170: GEPA refine compound loop (F165–F169)
+        "skill_refine_ok": bool(
+            skill.get("skill_refine_ok")
+            if skill.get("skill_refine_ok") is not None
+            else doctor.get("skill_refine_ok")
+        ),
+        "skill_refine_attr_ok": bool(
+            skill.get("skill_refine_attr_ok")
+            if skill.get("skill_refine_attr_ok") is not None
+            else doctor.get("skill_refine_attr_ok")
+        ),
+        "refine_dual_ok": bool(
+            skill.get("refine_dual_ok")
+            if skill.get("refine_dual_ok") is not None
+            else doctor.get("refine_dual_ok")
+        ),
+        "refine_promote_ok": bool(
+            skill.get("refine_promote_ok")
+            if skill.get("refine_promote_ok") is not None
+            else doctor.get("refine_promote_ok")
+        ),
+        "refine_dual_hub_ok": bool(
+            skill.get("refine_dual_hub_ok")
+            if skill.get("refine_dual_hub_ok") is not None
+            else doctor.get("refine_dual_hub_ok")
+        ),
+        "refine_loop_ok": bool(
+            doctor.get("refine_loop_ok")
+            if doctor.get("refine_loop_ok") is not None
+            else (
+                skill.get("refine_loop_ok")
+                if skill.get("refine_loop_ok") is not None
+                else (
+                    skill.get("skill_refine_ok")
+                    and skill.get("skill_refine_attr_ok")
+                    and skill.get("refine_dual_ok")
+                    and skill.get("refine_promote_ok")
+                    and skill.get("refine_dual_hub_ok")
+                )
+            )
+        ),
+        "refine_dual_fail_idle_demoted": demote.get("refine_dual_fail_demote_ok")
+        if demote
+        else None,
         "hub_archival_hub_pressure_idle_demoted": demote.get(
             "hub_archival_hub_pressure_demote_ok"
         )
@@ -789,6 +889,7 @@ def product_scorecard(
         "feature_memory_util": "F130",
         "feature_scorecard_ops": "F135",
         "feature_hub_archival_loop": "F163",
+        "feature_refine_loop": "F170",
         "schema": SCHEMA,
         "scored_at": _now(),
         "level": level,
@@ -819,6 +920,11 @@ def product_scorecard(
             (
                 f"Hub-archival loop: **{'ok' if metrics.get('hub_archival_loop_ok') else 'gap'}** "
                 f"(util→critic→reprompt→fitness→hub inject · F155–F163)"
+            ),
+            # F170: GEPA refine compound loop (F165–F169)
+            (
+                f"GEPA refine loop: **{'ok' if metrics.get('refine_loop_ok') else 'gap'}** "
+                f"(refine→dual-gate→dual_pp→promote→hub critic · F165–F169)"
             ),
         ],
         "doctor": {
@@ -901,7 +1007,7 @@ def product_scorecard(
     brand_md = root / "docs" / "brand" / "scorecard-metrics.md"
     try:
         lines = [
-            "# Torii Gate — measured scorecard (F129/F130/F164)",
+            "# Torii Gate — measured scorecard (F129/F130/F164/F170)",
             "",
             f"_Generated: `{report['scored_at']}` · level **{level}** · brand_ready={brand_ready}_",
             "",
@@ -935,8 +1041,16 @@ def product_scorecard(
             f"| router_synth_ok | {metrics.get('router_synth_ok')} |",
             f"| hub_archival_loop_ok | {metrics.get('hub_archival_loop_ok')} |",
             f"| hub_archival_hub_pressure_idle_demoted | {metrics.get('hub_archival_hub_pressure_idle_demoted')} |",
+            # F170: GEPA refine compound loop (F165–F169) brand surface
+            f"| skill_refine_ok | {metrics.get('skill_refine_ok')} |",
+            f"| skill_refine_attr_ok | {metrics.get('skill_refine_attr_ok')} |",
+            f"| refine_dual_ok | {metrics.get('refine_dual_ok')} |",
+            f"| refine_promote_ok | {metrics.get('refine_promote_ok')} |",
+            f"| refine_dual_hub_ok | {metrics.get('refine_dual_hub_ok')} |",
+            f"| refine_loop_ok | {metrics.get('refine_loop_ok')} |",
+            f"| refine_dual_fail_idle_demoted | {metrics.get('refine_dual_fail_idle_demoted')} |",
             "",
-            "Source: `python3 scripts/torii.py scorecard` · workflow F131 · demote F128/F151 · util F130 · hub-archival F155–F163 (F164 brand pack).",
+            "Source: `python3 scripts/torii.py scorecard` · workflow F131 · demote F128/F151 · util F130 · hub-archival F155–F163 (F164) · GEPA refine F165–F169 (F170 brand pack).",
             "",
             "These are **measured** offline/ops metrics — not marketing pass rates.",
             "",

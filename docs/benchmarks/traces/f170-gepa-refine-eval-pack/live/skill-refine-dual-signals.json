@@ -1,0 +1,38 @@
+{
+  "schema_version": 1,
+  "feature": "F168",
+  "scope": "skill_refine_dual",
+  "updated_at": "2026-08-01T12:11:38Z",
+  "privacy": "skill_id_bins_tenant_hash_only",
+  "privacy_ok": true,
+  "signals": [
+    {
+      "id": "refine-dual-skill-prefer-memory-cli-early",
+      "theme": "skill-prefer-memory-cli-early",
+      "skill_id": "skill-prefer-memory-cli-early",
+      "tags": [
+        "refine_dual",
+        "f167",
+        "f168",
+        "gepa",
+        "federated_skill",
+        "skill_hit",
+        "dual_pass"
+      ],
+      "source": "skill_refine_dual",
+      "hits": 6,
+      "tenants": 1,
+      "tenant_hash": "601826366b68",
+      "tenant_hashes": [
+        "601826366b68"
+      ],
+      "tool_contrib_pp": 50.0,
+      "skill_contrib_pp": 0.0,
+      "probe_delta": 3,
+      "util_rate_bin": "high",
+      "dual_pass": true,
+      "updated_at": "2026-08-01T12:11:38Z",
+      "feature": "F168"
+    }
+  ]
+}

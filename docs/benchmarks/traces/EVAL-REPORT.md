@@ -131,3 +131,8 @@ Generated: `2026-08-01T09:45:56Z`
 - Offline demote-eval refine_dual_fail_idle_demoted; hub Δprio
 - Live F169 prompt inject + priority deltas; recall=1.0
 - Modal pytorch#191836 BIT3_OK ~122s POST_COMMENT=0
+
+## F170 GEPA refine brand + paper EVAL pack (F165–F169)
+- doctor/scorecard refine_loop_ok; Mental model E
+- EVAL pack rolls F165–F169 live Modal BIT3 proofs
+- scorecard-metrics.md GEPA refine rows

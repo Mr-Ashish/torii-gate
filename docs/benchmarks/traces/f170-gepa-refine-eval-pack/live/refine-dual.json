@@ -1,0 +1,58 @@
+{
+  "feature": "F167",
+  "feature_parent": "F86",
+  "schema": 1,
+  "pack_id": "insecure-demo",
+  "enabled": true,
+  "synthetic_bodies": false,
+  "refined_skill_ids": [
+    "skill-prefer-memory-cli-early"
+  ],
+  "refined_n": 1,
+  "selected": [
+    "skill-prefer-memory-cli-early",
+    "skill-prefer-hub-archival-early",
+    "skill-prefer-product-cli",
+    "skill-f74-exploit-scenario"
+  ],
+  "paths": [
+    "demo/insecure/app.py",
+    "demo/insecure/db.py"
+  ],
+  "tool_dual": true,
+  "with_refine": {
+    "hit_rate": 1.0,
+    "hit_n": 4,
+    "tool_hit_n": 2,
+    "tool_hit_rate": 0.5,
+    "recall": 1.0,
+    "score_pct": 100.0,
+    "passed": true,
+    "refine_probe_n": 3
+  },
+  "ablated_refine": {
+    "hit_rate": 1.0,
+    "hit_n": 4,
+    "tool_hit_n": 0,
+    "tool_hit_rate": 0.0,
+    "recall": 1.0,
+    "score_pct": 100.0,
+    "passed": true,
+    "refine_probe_n": 0
+  },
+  "refine_contribution": 0.0,
+  "refine_contribution_pp": 0.0,
+  "refine_tool_contribution": 0.5,
+  "refine_tool_contribution_pp": 50.0,
+  "refine_probe_delta": 3,
+  "recall_hold": true,
+  "refine_dual_pass": true,
+  "paper": {
+    "metric": "refine_skill_contribution_pp",
+    "value": 0.0,
+    "tool_metric": "refine_tool_contribution_pp",
+    "tool_value": 50.0,
+    "notes": "SkillsBench/GEPA dual-rollout: with F165 refine block+tools vs ablated baseline; positive pp = refine helps"
+  },
+  "scored_at": "2026-08-01T12:11:38Z"
+}
