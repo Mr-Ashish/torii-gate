@@ -34,7 +34,7 @@ Publish the eval loop customers can re-run — seed + model + chart.
 technical trust (public labeled eval)
 
 ### SHA
-`(fill after push)`
+`6d439d37708ad797678a15f18badd7260b139bbd`
 
 ## 2026-08-01 — BUYER narrative: one diagram, F-IDs under Advanced
 
