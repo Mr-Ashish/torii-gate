@@ -31,7 +31,7 @@ ops
 reliability/ops (dim 8)
 
 ### SHA
-`(fill after push)`
+`f198a7c33ea013faac8f5bb05d560596f3e8177a`
 
 ## 2026-08-01 — INSTALL_UX: 5-min path, --minimal pack, doctor text defaults
 
