@@ -26,7 +26,7 @@ JTBD (#3) · install (#7)
 First Actions run teaches merge authority without docs archaeology
 
 ### SHA
-(pending)
+`a1365a00056646c9e818349ba7662afa75714b8d`
 
 ## 2026-08-01 — PUBLIC_EVAL_FRESHNESS: seed/model/age badge (Phase B #5)
 

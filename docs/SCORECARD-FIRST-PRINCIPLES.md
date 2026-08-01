@@ -20,7 +20,7 @@ _Scored: `2026-08-01T18:51:12Z` · commercial **8.5** · buyer adoption · overa
 | Rank | Gap | Status |
 |-----:|-----|--------|
 | 1–5 | help · pricing · quieter · isolation · public-eval freshness | **shipped** |
-| 6 | Required-check onboarding in GH Actions summary | **this fire** |
+| 6 | Required-check onboarding in GH Actions summary | **shipped** `a1365a0` |
 | 7 | Deployed landing | next |
 | 8 | Paid pilot | later |
 | 9 | SARIF Trust layer | vision |
