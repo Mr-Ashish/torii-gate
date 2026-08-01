@@ -2,9 +2,9 @@
 
 # Enterprise surface inventory
 
-_Generated: `2026-08-01T17:43:57Z` · **enterprise_ok=True**_
+_Generated: `2026-08-01T18:39:54Z` · **enterprise_ok=True**_
 
-Org isolation + federation privacy as product docs and audit CLI — themes only, no paths/snippets/raw tenant IDs
+Org isolation + federation privacy as product docs and audit CLI — themes only, no paths/snippets/raw tenant IDs; hermetic cross-tenant inject proof
 
 ## Guarantees
 
@@ -13,6 +13,7 @@ Org isolation + federation privacy as product docs and audit CLI — themes only
 - promote requires min_tenants (default 2)
 - repo-local .torii/ default; hub opt-in
 - cost/PR dogfood vault stays local (never federated USD/tokens)
+- hermetic: tenant-A canaries never inject into tenant-B scoped recall
 
 ## Tenants (`memory/tenants/`) — n=6
 
@@ -53,6 +54,10 @@ Org isolation + federation privacy as product docs and audit CLI — themes only
 - [../ops/cost-pr-dashboard.md](../ops/cost-pr-dashboard.md) — measured cost (not federated)
 
 Cost telemetry documented as local vault only: **True**
+
+## Isolation proof (hermetic)
+
+**ok:** `True` — Hermetic: tenant-A private path/snippet never appears in tenant-B scoped inject; federation sanitize strips paths/snippets/raw tenant ids
 
 ## Refresh
 

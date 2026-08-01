@@ -1,3 +1,34 @@
+## 2026-08-01 — ENT_ISOLATION_PROOF: hermetic cross-tenant inject (Phase B #4)
+
+### Papers / posts
+- Multi-tenant RAG isolation: path/snippet leakage is the failure mode.
+- Enterprise dim 9: docs promised isolation; missing measurable inject proof.
+- FederatedSkill privacy: sanitize strips paths; tenant ids hashed.
+
+### Decide / copy / skip
+- **Copy:** hermetic_cross_tenant_isolation in enterprise_surface (temp dual tenant + scoped inject + sanitize).
+- **Copy:** fixture gates isolation_proof_ok · ORG-ISOLATION hermetic section.
+- **Skip:** SaaS control plane; F185+.
+
+### Feature shipped (ENT_ISOLATION_PROOF)
+- enterprise schema 2 · isolation_ok on status · enterprise_ok ANDs proof
+- first-principles dim9 7.5→8.5 · overall cap 8.0
+
+### Metric
+- Offline: enterprise fixture_pass · isolation all checks true · commercial 8.5
+- Live Modal: pytorch#191842 BIT3_OK ~176s · fail-closed 0-tool COMMENT · POST_COMMENT=0
+- Traces: docs/benchmarks/traces/20260801-1836-pytorch-pytorch-PR191842-modal-ent-isolation-proof/
+- Modal: https://modal.com/apps/mr-ashish/main/ap-kosBs9Z7tZAV0MfWC6PAmj
+
+### scorecard_target
+enterprise (#9)
+
+### dim_lift
+Tenant-A canaries never appear in tenant-B inject; federation sanitize strips path/snippet
+
+### SHA
+(pending)
+
 ## 2026-08-01 — OWN_REPO_QUIETER: .torii/runs customer vault (Phase B #3)
 
 ### Papers / posts

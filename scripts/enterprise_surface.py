@@ -23,8 +23,13 @@ from pathlib import Path
 from typing import Any
 
 FEATURE = "ENTERPRISE"
-SCHEMA = 1
+SCHEMA = 2
 OUT_REL = Path("docs/enterprise")
+# Canary tokens for hermetic isolation (must never appear in tenant-B inject)
+_ISOLATION_SECRET_PATH = "/Users/acme-corp-secret/private/payments_leak.py"
+_ISOLATION_SECRET_SNIPPET = "API_KEY=sk-tenantA-secret-canary-9911"
+_ISOLATION_TENANT_A = "tenant-iso-a"
+_ISOLATION_TENANT_B = "tenant-iso-b"
 
 _HOME_PATH_RX = re.compile(
     r"(?:/Users/[\w.-]+|/home/[\w.-]+|C:\\\\Users\\\\|\\\\Users\\\\)",
@@ -239,12 +244,202 @@ def federated_hub_fixture(root: Path) -> dict[str, Any]:
         return {"available": True, "fixture_pass": False, "error": str(exc)}
 
 
+def hermetic_cross_tenant_isolation(root: Path | None = None) -> dict[str, Any]:
+    """Prove tenant-A private path/snippet never injects into tenant-B prompt.
+
+    ENT_ISOLATION_PROOF (dim 9): temp dual-tenant tree + scoped recall inject +
+    federation sanitize. No network. Fail-closed on any canary leak.
+    """
+    import importlib.util
+    import tempfile
+
+    root = root or _root()
+    scripts = root / "scripts"
+    issues: list[str] = []
+    checks: dict[str, bool] = {
+        "scoped_module": False,
+        "fed_module": False,
+        "tenant_b_no_secret_path": False,
+        "tenant_b_no_secret_snippet": False,
+        "tenant_b_no_raw_tenant_a": False,
+        "tenant_b_loads_own_theme": False,
+        "fed_sanitize_strips_path": False,
+        "fed_sanitize_hashes_tenant": False,
+        "fed_sanitize_strips_snippet": False,
+    }
+
+    try:
+        with tempfile.TemporaryDirectory(prefix="torii-ent-iso-") as td:
+            fake = Path(td)
+            # Tenant A: private canary path + secret snippet
+            ta = fake / "memory" / "tenants" / _ISOLATION_TENANT_A
+            ta.mkdir(parents=True)
+            (ta / "tp-signatures.json").write_text(
+                json.dumps(
+                    {
+                        "schema_version": 1,
+                        "count": 1,
+                        "signatures": [
+                            {
+                                "id": "tenant-a-private-sqli",
+                                "theme": "sql_injection",
+                                "keywords": ["tenant-a-only-theme-canary"],
+                                "path_globs": [_ISOLATION_SECRET_PATH],
+                                "path": _ISOLATION_SECRET_PATH,
+                                "snippet": _ISOLATION_SECRET_SNIPPET,
+                                "hits": 9,
+                                "kind": "tp",
+                            }
+                        ],
+                    }
+                ),
+                encoding="utf-8",
+            )
+            # Tenant B: benign public-ish theme only
+            tb = fake / "memory" / "tenants" / _ISOLATION_TENANT_B
+            tb.mkdir(parents=True)
+            (tb / "tp-signatures.json").write_text(
+                json.dumps(
+                    {
+                        "schema_version": 1,
+                        "count": 1,
+                        "signatures": [
+                            {
+                                "id": "tenant-b-xss",
+                                "theme": "xss",
+                                "keywords": ["tenant-b-public-theme"],
+                                "path_globs": ["app/views.py"],
+                                "hits": 2,
+                                "kind": "tp",
+                            }
+                        ],
+                    }
+                ),
+                encoding="utf-8",
+            )
+
+            # --- scoped recall as tenant B ---
+            sm_path = scripts / "scoped_memory_recall.py"
+            checks["scoped_module"] = sm_path.is_file()
+            if sm_path.is_file():
+                mod_name = "torii_scoped_memory_iso"
+                spec = importlib.util.spec_from_file_location(mod_name, sm_path)
+                assert spec and spec.loader
+                sm = importlib.util.module_from_spec(spec)
+                sys.modules[mod_name] = sm
+                old_env = {
+                    k: os.environ.get(k)
+                    for k in (
+                        "TORII_ROOT",
+                        "TORII_MEMORY_TENANT",
+                        "TORII_SCOPED_MEMORY",
+                        "REPO",
+                    )
+                }
+                try:
+                    os.environ["TORII_ROOT"] = str(fake)
+                    os.environ["TORII_MEMORY_TENANT"] = _ISOLATION_TENANT_B
+                    os.environ["TORII_SCOPED_MEMORY"] = "1"
+                    os.environ["REPO"] = "acme/app-b"
+                    spec.loader.exec_module(sm)
+                    store = fake / ".torii" / "scoped-memory-b.json"
+                    sm.ingest(fake, repo="acme/app-b", store_path=store)
+                    items = sm.load_store(store, root=fake)
+                    result = sm.recall(items, ["app/views.py"], include_federated=True)
+                    inject_text = sm.render_section(result)
+                    blob = inject_text + "\n" + json.dumps(result, default=str)
+                    checks["tenant_b_no_secret_path"] = _ISOLATION_SECRET_PATH not in blob
+                    checks["tenant_b_no_secret_snippet"] = (
+                        _ISOLATION_SECRET_SNIPPET not in blob
+                        and "sk-tenantA-secret" not in blob
+                    )
+                    checks["tenant_b_no_raw_tenant_a"] = _ISOLATION_TENANT_A not in blob
+                    checks["tenant_b_loads_own_theme"] = (
+                        "tenant-b-public-theme" in blob or "xss" in blob.lower()
+                    )
+                    if not checks["tenant_b_no_secret_path"]:
+                        issues.append("secret_path_in_tenant_b_inject")
+                    if not checks["tenant_b_no_secret_snippet"]:
+                        issues.append("secret_snippet_in_tenant_b_inject")
+                    if not checks["tenant_b_no_raw_tenant_a"]:
+                        issues.append("raw_tenant_a_in_tenant_b_inject")
+                    if not checks["tenant_b_loads_own_theme"]:
+                        issues.append("tenant_b_theme_missing")
+                finally:
+                    for k, v in old_env.items():
+                        if v is None:
+                            os.environ.pop(k, None)
+                        else:
+                            os.environ[k] = v
+                    sys.modules.pop(mod_name, None)
+
+            # --- federation sanitize of tenant A poison ---
+            fed_path = scripts / "federated_hub_ingest.py"
+            checks["fed_module"] = fed_path.is_file()
+            if fed_path.is_file():
+                mod_name = "torii_fed_iso"
+                spec = importlib.util.spec_from_file_location(mod_name, fed_path)
+                assert spec and spec.loader
+                fed = importlib.util.module_from_spec(spec)
+                sys.modules[mod_name] = fed
+                try:
+                    spec.loader.exec_module(fed)
+                    dirty = {
+                        "theme": "sql_injection",
+                        "path": _ISOLATION_SECRET_PATH,
+                        "snippet": _ISOLATION_SECRET_SNIPPET,
+                        "keywords": ["select", "from"],
+                        "tenant": _ISOLATION_TENANT_A,
+                    }
+                    clean = fed.sanitize_signal(dirty, tenant=_ISOLATION_TENANT_A)
+                    clean_blob = json.dumps(clean or {})
+                    checks["fed_sanitize_strips_path"] = bool(
+                        clean is not None and _ISOLATION_SECRET_PATH not in clean_blob
+                    )
+                    checks["fed_sanitize_strips_snippet"] = bool(
+                        clean is not None
+                        and _ISOLATION_SECRET_SNIPPET not in clean_blob
+                        and "sk-tenantA" not in clean_blob
+                    )
+                    checks["fed_sanitize_hashes_tenant"] = bool(
+                        clean is not None
+                        and _ISOLATION_TENANT_A not in clean_blob
+                        and (
+                            "tenant_hash" in clean_blob
+                            or "tenant_hashes" in clean_blob
+                            or not clean.get("tenant")
+                        )
+                    )
+                    if not checks["fed_sanitize_strips_path"]:
+                        issues.append("fed_path_leak")
+                    if not checks["fed_sanitize_strips_snippet"]:
+                        issues.append("fed_snippet_leak")
+                    if not checks["fed_sanitize_hashes_tenant"]:
+                        issues.append("fed_raw_tenant")
+                finally:
+                    sys.modules.pop(mod_name, None)
+    except Exception as exc:
+        issues.append(f"exception:{type(exc).__name__}:{exc}")
+
+    ok = all(checks.values()) and not issues
+    return {
+        "ok": ok,
+        "checks": checks,
+        "issues": issues,
+        "one_liner": (
+            "Hermetic: tenant-A private path/snippet never appears in tenant-B "
+            "scoped inject; federation sanitize strips paths/snippets/raw tenant ids"
+        ),
+    }
+
+
 def build_report(root: Path | None = None) -> dict[str, Any]:
     root = root or _root()
     tenants = list_tenants(root)
     fed = audit_all_federation(root)
     docs = docs_surface(root)
     hub = federated_hub_fixture(root)
+    isolation = hermetic_cross_tenant_isolation(root)
 
     report = {
         "feature": FEATURE,
@@ -254,19 +449,21 @@ def build_report(root: Path | None = None) -> dict[str, Any]:
         "scored_at": _now(),
         "one_liner": (
             "Org isolation + federation privacy as product docs and audit CLI — "
-            "themes only, no paths/snippets/raw tenant IDs"
+            "themes only, no paths/snippets/raw tenant IDs; hermetic cross-tenant inject proof"
         ),
         "tenants": tenants,
         "tenant_n": len(tenants),
         "federation_audit": fed,
         "docs": docs,
         "federated_hub_fixture": hub,
+        "isolation_proof": isolation,
         "guarantees": [
             "no cross-tenant path inject via federation",
             "tenant hashes only in global aggregates",
             "promote requires min_tenants (default 2)",
             "repo-local .torii/ default; hub opt-in",
             "cost/PR dogfood vault stays local (never federated USD/tokens)",
+            "hermetic: tenant-A canaries never inject into tenant-B scoped recall",
         ],
         "paths": {
             "readme": str(OUT_REL / "README.md"),
@@ -286,6 +483,7 @@ def build_report(root: Path | None = None) -> dict[str, Any]:
         and docs.get("install_md_enterprise_light")
         and fed.get("all_ok")
         and hub.get("fixture_pass")
+        and isolation.get("ok")
     )
     return report
 
@@ -345,6 +543,11 @@ def render_surface_md(report: dict[str, Any]) -> str:
         "",
         f"Cost telemetry documented as local vault only: **{cost_ok}**",
         "",
+        "## Isolation proof (hermetic)",
+        "",
+        f"**ok:** `{(report.get('isolation_proof') or {}).get('ok')}` — "
+        f"{(report.get('isolation_proof') or {}).get('one_liner')}",
+        "",
         "## Refresh",
         "",
         "```bash",
@@ -358,6 +561,7 @@ def render_surface_md(report: dict[str, Any]) -> str:
 
 def cmd_status(args: argparse.Namespace) -> int:
     report = build_report(_root())
+    iso = report.get("isolation_proof") or {}
     print(
         json.dumps(
             {
@@ -365,6 +569,7 @@ def cmd_status(args: argparse.Namespace) -> int:
                 "enterprise_ok": report.get("enterprise_ok"),
                 "tenant_n": report.get("tenant_n"),
                 "federation_all_ok": (report.get("federation_audit") or {}).get("all_ok"),
+                "isolation_ok": iso.get("ok"),
                 "docs": report.get("docs"),
                 "at": report.get("scored_at"),
             },
@@ -380,6 +585,7 @@ def cmd_fixture(args: argparse.Namespace) -> int:
     docs = report.get("docs") or {}
     fed = report.get("federation_audit") or {}
     hub = report.get("federated_hub_fixture") or {}
+    iso = report.get("isolation_proof") or {}
     checks = {
         "docs_readme": bool(docs.get("readme")),
         "docs_org": bool(docs.get("org_isolation")),
@@ -398,6 +604,9 @@ def cmd_fixture(args: argparse.Namespace) -> int:
         "federation_all_ok": bool(fed.get("all_ok")),
         "hub_fixture": bool(hub.get("fixture_pass")),
         "script_present": (root / "scripts" / "enterprise_surface.py").is_file(),
+        "isolation_proof_ok": bool(iso.get("ok")),
+        "isolation_no_path_leak": bool((iso.get("checks") or {}).get("tenant_b_no_secret_path")),
+        "isolation_fed_sanitize": bool((iso.get("checks") or {}).get("fed_sanitize_strips_path")),
     }
     fixture_pass = all(checks.values())
     print(
@@ -407,6 +616,7 @@ def cmd_fixture(args: argparse.Namespace) -> int:
                 "schema": SCHEMA,
                 "fixture_pass": fixture_pass,
                 "checks": checks,
+                "isolation_proof": iso,
                 "tenant_n": report.get("tenant_n"),
                 "scorecard_target": "enterprise",
                 "at": _now(),

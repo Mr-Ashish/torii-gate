@@ -44,13 +44,27 @@
 | **AppSec** | Read PR comments + labels | Federation themes only for shared patterns |
 | **Compliance** | Read [PRIVACY.md](PRIVACY.md) | Audit `privacy_ok` on federation files |
 
+## Hermetic isolation proof
+
+`enterprise_surface.py fixture` builds a **temp dual-tenant tree**:
+
+1. Tenant A gets a canary **absolute path** + **secret snippet** in `tp-signatures.json`.  
+2. Tenant B runs scoped memory ingest + inject with `TORII_MEMORY_TENANT=tenant-iso-b`.  
+3. **Pass only if** A’s path/snippet/raw tenant id never appear in B’s inject.  
+4. Federation `sanitize_signal` must strip path/snippet and hash the tenant id.
+
+```bash
+python3 scripts/enterprise_surface.py fixture   # isolation_proof_ok must be true
+python3 scripts/enterprise_surface.py status    # isolation_ok
+```
+
 ## Commands
 
 ```bash
 # List tenant trees + federation privacy posture
 python3 scripts/enterprise_surface.py status
 
-# Hermetic privacy audit (no secrets in output)
+# Hermetic privacy audit + cross-tenant inject proof (no secrets in output)
 python3 scripts/enterprise_surface.py fixture
 
 # Two-tenant federate fixture (engine)
