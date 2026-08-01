@@ -1,0 +1,100 @@
+    "hermes-run.log": 2401,
+    "hermes-usage.json": 380,
+    "timings.json": 535,
+    "agent-loop/agent-loop.json": 34339,
+    "agent-loop/agent-loop.md": 2547,
+    "review-191831.md": 4115,
+    "agent_loop": {
+      "tool_call_turns": null,
+      "messages_or_turns": 1,
+      "keys": [
+        "agent_log_bytes",
+        "agent_log_sha256",
+        "captured_at",
+        "hermes_home",
+        "message_count",
+        "messages",
+        "model",
+        "provider",
+        "schema_version",
+        "session_id",
+        "sessions_files",
+        "steps",
+        "tool_call_turns",
+        "usage"
+      ]
+    },
+    "hermes_run_log_bytes": 2401,
+    "hermes_stderr_bytes": 60323
+  },
+  "elapsed_s": 39.2,
+  "trace_volume_path": "/traces/pytorch--pytorch-pr191831-1785595306",
+  "trace_volume_error": null,
+  "resources": "default-min (no cpu/memory reservation)",
+  "log_streaming": true,
+  "stream_note": "Live logs streamed to Modal UI via print+flush; Hermes 
+agent.log / hermes stderr tailed during orchestrator"
+[torii/traces] committed volume path=/traces/pytorch--pytorch-pr191831-1785595306
+}
+--- preview ---
+<!-- torii-review pr=191831 run=local 
+head=1d361b7f57079f2c8e85244126adaf16c1a691db -->
+## 🏴‍☠️ Torii Review — PR #191831
+
+**Verdict:** COMMENT
+**Confidence:** low
+**Score:** 40/100
+**Review effort:** 2/5
+
+> ⚠️ **Incomplete agentic review (F45):** Hermes recorded **0 tool turns** on a 
+multi-file code PR (2 files). Torii fail-closed: **APPROVE is not allowed** 
+without workspace tools (`zero_tools_multi_file_code_nontarget_verdict`). Re-run
+so the agent reads changed files, or treat findings as low-trust.
+
+### Summary
+Agent output did not match the review contract (missing: **Verdict:**, 
+**Score:**, ### Summary, ### Blocking, ### Security audit, ### Tests & risk). 
+Raw content preserved below.
+
+### Walkthrough
+- Contract repair only — re-run for a full structured review
+
+### Architecture diag
+BIT3_OK
+================================================================
+[torii/review_preview] review-191831.md
+================================================================
+[review] <!-- torii-review pr=191831 run=local head=1d361b7f57079f2c8e85244126adaf16c1a691db -->
+[review] ## 🏴‍☠️ Torii Review — PR #191831
+[review] 
+[review] **Verdict:** COMMENT
+[review] **Confidence:** low
+[review] **Score:** 40/100
+[review] **Review effort:** 2/5
+[review] 
+[review] > ⚠️ **Incomplete agentic review (F45):** Hermes recorded **0 tool turns** on a multi-file code PR (2 files). Torii fail-closed: **APPROVE is not allowed** without workspace tools (`zero_tools_multi_file_code_nontarget_verdict`). Re-run so the agent reads changed files, or treat findings as low-trust.
+[review] 
+[review] ### Summary
+[review] Agent output did not match the review contract (missing: **Verdict:**, **Score:**, ### Summary, ### Blocking, ### Security audit, ### Tests & risk). Raw content preserved below.
+[review] 
+[review] ### Walkthrough
+[review] - Contract repair only — re-run for a full structured review
+[review] 
+[review] ### Architecture diagram
+[review] <!-- torii-mermaid -->
+[review] 
+[review] _Auto-generated from 2 changed file(s) (F57). Edges between groups are adjacency, not proven runtime dependencies._
+[review] 
+[review] ```mermaid
+[review] flowchart LR
+[review]   %% PR changed modules (2 files, 1 groups)
+[review]   subgraph g_torch["torch"]
+[review]     f_torch_distributed__symmetric_memory__nvshmem_triton_py["_nvshmem_triton.py"]
+[review]     %% torch/distributed/_symmetric_memory/_nvshmem_triton.py
+[review]     f_torch_di
+================================================================
+[torii/done] ok=True orch_rc=0 elapsed_s=39.2 review=True
+================================================================
+Stopping app - local entrypoint completed.
+✓ App completed. View run at 
+https://modal.com/apps/mr-ashish/main/ap-GM5kbisZjMYaGrm4Idys9I

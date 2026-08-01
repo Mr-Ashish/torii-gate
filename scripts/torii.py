@@ -141,6 +141,15 @@ GROUPS: dict[str, dict[str, Any]] = {
             "ops -- status",
         ],
     },
+    "enterprise": {
+        "script": "enterprise_surface.py",
+        "help": "Enterprise light: org isolation + federation privacy (dim 9)",
+        "examples": [
+            "enterprise -- status",
+            "enterprise -- fixture",
+            "enterprise -- report",
+        ],
+    },
 }
 
 

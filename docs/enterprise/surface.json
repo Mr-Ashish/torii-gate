@@ -1,0 +1,196 @@
+{
+  "feature": "ENTERPRISE",
+  "schema": 1,
+  "scorecard_target": "enterprise",
+  "dim_lift": "enterprise light (dim 9) multi-tenant product surface",
+  "scored_at": "2026-08-01T14:42:43Z",
+  "one_liner": "Org isolation + federation privacy as product docs and audit CLI \u2014 themes only, no paths/snippets/raw tenant IDs",
+  "tenants": [
+    {
+      "tenant_id": "demo-tenant",
+      "has_federation_dir": true,
+      "federation_files": 1
+    },
+    {
+      "tenant_id": "e2e-f155",
+      "has_federation_dir": true,
+      "federation_files": 1
+    },
+    {
+      "tenant_id": "e2e-pytorch",
+      "has_federation_dir": true,
+      "federation_files": 1
+    },
+    {
+      "tenant_id": "fixture-tenant-a",
+      "has_federation_dir": true,
+      "federation_files": 1
+    },
+    {
+      "tenant_id": "t-f155",
+      "has_federation_dir": true,
+      "federation_files": 1
+    },
+    {
+      "tenant_id": "tenant-z",
+      "has_federation_dir": true,
+      "federation_files": 1
+    }
+  ],
+  "tenant_n": 6,
+  "federation_audit": {
+    "dir": "memory/federation",
+    "files_n": 15,
+    "ok_n": 15,
+    "all_ok": true,
+    "audits": [
+      {
+        "file": "federated-signals.json",
+        "ok": true,
+        "issues": [],
+        "privacy_ok": true,
+        "privacy": "theme_cwe_keywords_basenames_tenant_hash_only",
+        "count": 30
+      },
+      {
+        "file": "hub-archival-util-signals.json",
+        "ok": true,
+        "issues": [],
+        "privacy_ok": true,
+        "privacy": null,
+        "count": null
+      },
+      {
+        "file": "memory-util-signals.json",
+        "ok": true,
+        "issues": [],
+        "privacy_ok": true,
+        "privacy": "tool_ids_util_bins_tenant_hash_only",
+        "count": 1
+      },
+      {
+        "file": "promoted-refine-dual-decay-themes.json",
+        "ok": true,
+        "issues": [],
+        "privacy_ok": true,
+        "privacy": "skill_id_fail_bin_tenant_hash_only",
+        "count": null
+      },
+      {
+        "file": "promoted-refine-dual-revive-themes.json",
+        "ok": true,
+        "issues": [],
+        "privacy_ok": true,
+        "privacy": "skill_id_pass_bin_tenant_hash_only",
+        "count": null
+      },
+      {
+        "file": "promoted-refine-dual-themes.json",
+        "ok": true,
+        "issues": [],
+        "privacy_ok": true,
+        "privacy": "skill_id_bins_tenant_hash_only",
+        "count": null
+      },
+      {
+        "file": "recon-warm-signals.json",
+        "ok": true,
+        "issues": [],
+        "privacy_ok": true,
+        "privacy": "themes_warm_bins_tenant_hash_only",
+        "count": 5
+      },
+      {
+        "file": "recovery-util-signals.json",
+        "ok": true,
+        "issues": [],
+        "privacy_ok": true,
+        "privacy": "skill_id_util_bins_tenant_hash_only",
+        "count": 4
+      },
+      {
+        "file": "scorecard-skill-signals.json",
+        "ok": true,
+        "issues": [],
+        "privacy_ok": true,
+        "privacy": "skill_id_tags_tenant_hash_only",
+        "count": 0
+      },
+      {
+        "file": "scorecard-util-signals.json",
+        "ok": true,
+        "issues": [],
+        "privacy_ok": true,
+        "privacy": "skill_id_util_bins_tenant_hash_only",
+        "count": 0
+      },
+      {
+        "file": "skill-fitness-signals.json",
+        "ok": true,
+        "issues": [],
+        "privacy_ok": true,
+        "privacy": "skill_id_hits_tenant_hash_only",
+        "count": 4
+      },
+      {
+        "file": "skill-refine-dual-decay-signals.json",
+        "ok": true,
+        "issues": [],
+        "privacy_ok": true,
+        "privacy": "skill_id_fail_bin_tenant_hash_only",
+        "count": null
+      },
+      {
+        "file": "skill-refine-dual-revive-signals.json",
+        "ok": true,
+        "issues": [],
+        "privacy_ok": true,
+        "privacy": "skill_id_pass_bin_tenant_hash_only",
+        "count": null
+      },
+      {
+        "file": "skill-refine-dual-signals.json",
+        "ok": true,
+        "issues": [],
+        "privacy_ok": true,
+        "privacy": "skill_id_bins_tenant_hash_only",
+        "count": null
+      },
+      {
+        "file": "skill-refine-signals.json",
+        "ok": true,
+        "issues": [],
+        "privacy_ok": null,
+        "privacy": null,
+        "count": null
+      }
+    ]
+  },
+  "docs": {
+    "readme": true,
+    "org_isolation": true,
+    "privacy": true,
+    "privacy_names_allowlist": true,
+    "org_diagram": true
+  },
+  "federated_hub_fixture": {
+    "available": true,
+    "rc": 0,
+    "fixture_pass": true,
+    "privacy_ok": null,
+    "tenants": null
+  },
+  "guarantees": [
+    "no cross-tenant path inject via federation",
+    "tenant hashes only in global aggregates",
+    "promote requires min_tenants (default 2)",
+    "repo-local .torii/ default; hub opt-in"
+  ],
+  "paths": {
+    "readme": "docs/enterprise/README.md",
+    "org_isolation": "docs/enterprise/ORG-ISOLATION.md",
+    "privacy": "docs/enterprise/PRIVACY.md",
+    "surface_md": "docs/enterprise/SURFACE.md"
+  },
+  "enterprise_ok": true
+}

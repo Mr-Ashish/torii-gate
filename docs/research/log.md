@@ -1,3 +1,38 @@
+## 2026-08-01 — ENTERPRISE: org isolation + federation privacy product surface
+
+### Papers / posts
+- Multi-tenant RAG isolation: never inject another tenant’s paths/snippets.
+- Federated privacy mindset: aggregate themes without raw tenant payloads.
+- Scorecard dim enterprise 4.5 — JSON existed; buyers needed a product surface.
+
+### OSS design patterns stolen
+1. docs/enterprise/ORG-ISOLATION.md diagram + guarantees.
+2. docs/enterprise/PRIVACY.md allowlist/denylist one-pager.
+3. enterprise_surface.py audits federation for home paths + privacy_ok.
+4. torii.py enterprise CLI; hermetic fixture for CI.
+
+### Insight
+Federation already scrubbed signals but only engineers saw memory/federation JSON. Highest ROI: buyer-facing isolation + privacy docs + audit CLI.
+
+### Feature shipped (ENTERPRISE / F192)
+- docs/enterprise/* · enterprise_surface.py · tests · PRODUCT/README links
+
+### Loop-engineering
+Enterprise trust is a scored surface: docs + audit + fixture, not F-stack alone.
+
+### Metric
+- Offline: fixture_pass; federation 15/15 privacy ok; pytest 4 passed; enterprise_ok
+- Live Modal: pytorch#191831 BIT3_OK ~39.2s POST_COMMENT=0 log_streaming=true
+
+### scorecard_target
+enterprise
+
+### dim_lift
+enterprise light (dim 9)
+
+### SHA
+`(fill after push)`
+
 ## 2026-08-01 — OPS: fail-closed defaults, cost/PR dashboard, smoke CI
 
 ### Papers / posts

@@ -1,0 +1,17 @@
+{
+  "feature": "ENTERPRISE",
+  "schema_version": 1,
+  "repo": "pytorch/pytorch",
+  "pr": "191831",
+  "model": "deepseek/deepseek-chat-v4-pro",
+  "host": "modal",
+  "bit3": true,
+  "elapsed_s": 39.2,
+  "log_streaming": true,
+  "tool_call_turns": 0,
+  "post_comment": 0,
+  "verdict": "COMMENT",
+  "notes": "Enterprise surface fire dogfood",
+  "scored_at": "2026-08-01T14:42:43Z",
+  "modal_run": "https://modal.com/apps/mr-ashish/main/ap-GM5kbisZjMYaGrm4Idys9I"
+}

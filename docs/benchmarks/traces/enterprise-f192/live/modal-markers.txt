@@ -1,0 +1,19 @@
+429:[orch:err] **Verdict:** < APPROVE | REQUEST CHANGES | COMMENT >
+645:[orch:err] | procedure | 0.25 | Verdict + Blocking + Security + What I checked + trigger scenario |
+942:[hermes:err-live] **Verdict:** < APPROVE | REQUEST CHANGES | COMMENT >
+1100:[hermes:err-live] | procedure | 0.25 | Verdict + Blocking + Security + What I checked + trigger scenario |
+1553:[orch:err] **Verdict:** < APPROVE | REQUEST CHANGES | COMMENT >
+1769:[orch:err] | procedure | 0.25 | Verdict + Blocking + Security + What I checked + trigger scenario |
+2119:[hermes:err-live] **Verdict:** < APPROVE | REQUEST CHANGES | COMMENT >
+2277:[hermes:err-live] | procedure | 0.25 | Verdict + Blocking + Security + What I checked + trigger scenario |
+2612:[orch:out]       "name": "Verdict structure",
+4222:  "elapsed_s": 39.2,
+4226:  "log_streaming": true,
+4236:**Verdict:** COMMENT
+4242:multi-file code PR (2 files). Torii fail-closed: **APPROVE is not allowed** 
+4247:Agent output did not match the review contract (missing: **Verdict:**, 
+4255:BIT3_OK
+4262:[review] **Verdict:** COMMENT
+4267:[review] > ⚠️ **Incomplete agentic review (F45):** Hermes recorded **0 tool turns** on a multi-file code PR (2 files). Torii fail-closed: **APPROVE is not allowed** without workspace tools (`zero_tools_multi_file_code_nontarget_verdict`). Re-run so the agent reads changed files, or treat findings as low-trust.
+4270:[review] Agent output did not match the review contract (missing: **Verdict:**, **Score:**, ### Summary, ### Blocking, ### Security audit, ### Tests & risk). Raw content preserved below.
+4288:[torii/done] ok=True orch_rc=0 elapsed_s=39.2 review=True
