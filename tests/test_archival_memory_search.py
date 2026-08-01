@@ -44,6 +44,13 @@ class ArchivalMemorySearchTests(unittest.TestCase):
         # F145 supersede-aware promote (temporal faithfulness)
         self.assertTrue(data.get("f145") or data.get("feature_supersede") == "F145")
         self.assertTrue(data.get("f145_ok"), data)
+        # F146 reconsolidation on successful promote
+        self.assertTrue(data.get("f146") or data.get("feature_recon") == "F146")
+        self.assertTrue(data.get("f146_ok"), data)
+        self.assertTrue(
+            any("sqli" in str(i) for i in (data.get("f146_recon_ids") or [])),
+            data.get("f146_recon_ids"),
+        )
 
     def test_status(self):
         r = _run(["status"])

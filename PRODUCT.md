@@ -208,6 +208,8 @@ budget always → compact body → score tool_hit → util gap? → budgeted re-
 
 **Supersede-aware archival promote (F145):** MemoTime/Zep temporal faithfulness — multi-hop expanded hits that match active `supersedes` (F101/F102 multi-hop index) are **filtered before core inject** (`TORII_ARCHIVAL_SUPERSEDE_FILTER=1`). Resolved FPs cannot re-page as blocking via co_path kinship.
 
+**Archival reconsolidation (F146):** successful non-superseded promote **warms** durable TP signatures (`hits++`, `last_retrieved_at`, soft `effective_score`) and writes `.torii/archival-reconsolidation.json` (`TORII_ARCHIVAL_RECONSOLIDATE=1`) — retrieval is not write-only inject; next PR ranks proven themes higher.
+
 **Ops:** `python3 scripts/memory_loop_status.py scorecard` → L0–L3. Smoke requires L3 on the hub tree. CI job summary annotates readiness; optional advisory `torii/memory-loop` via `TORII_MEMORY_LOOP_STATUS_COMMIT=1`.
 
 ---

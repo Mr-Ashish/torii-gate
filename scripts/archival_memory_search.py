@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""F98/F144/F145: MemGPT archival search + promote-to-core (+ graph multi-hop + supersede filter).
+"""F98/F144/F145/F146: MemGPT archival search + promote + supersede filter + reconsolidation.
 
 Research drivers (patterns only — no vendored Letta/MemGPT/Zep runtime):
   - MemGPT archival_memory_search / core_memory_append: agent pages cold facts
@@ -11,18 +11,21 @@ Research drivers (patterns only — no vendored Letta/MemGPT/Zep runtime):
   - MemoTime / Zep temporal faithfulness: multi-hop retrieval must not re-surface
     facts invalidated by active supersedes (valid_until / superseded_by)
   - F145: F144 paging without supersede filter resurrects resolved FPs as "core"
+  - Human-inspired reconsolidation on retrieval: successful promote should
+    strengthen durable TP (hits / last_retrieved / soft effective) not be write-only inject
+  - F146: non-superseded archival hits reconsolidate into tp-signatures on promote
 
 Product thesis:
   Highest ROI agentic-memory slice: **deterministic archival search** over
   TP/FP/federated stores + MEMORY.md, optionally **expanded by temporal graph
-  multi-hop themes**, then **promote** only **temporally-active** hits into core
-  inject for this PR (filter multi-hop superseded cold themes).
+  multi-hop themes**, **promote** only **temporally-active** hits into core, then
+  **reconsolidate** successful retrieves so next PR ranks warm evidence higher.
 
 Commands:
   search    — query archival + recall stores (JSON hits)
-  promote   — write top hits as core inject markdown (supersede-aware)
-  auto      — search from changed-path basenames (+ F144 graph multi-hop) + F145 filter + promote
-  fixture   — hermetic: hit archival theme, multi-hop expand, supersede filter, privacy, promote
+  promote   — write top hits as core inject markdown (supersede-aware + reconsolidate)
+  auto      — path basenames + F144 multi-hop + F145 filter + F146 reconsolidate + promote
+  fixture   — hermetic: multi-hop, supersede filter, reconsolidation, privacy, promote
   status    — sources / last result summary
 
 Env:
@@ -31,6 +34,7 @@ Env:
   TORII_ARCHIVAL_SEARCH_LIMIT  default 8
   TORII_ARCHIVAL_GRAPH_HOPS    default 2 (0/off disables F144 multi-hop expand)
   TORII_ARCHIVAL_SUPERSEDE_FILTER  1 (default) | 0  — F145 temporal faithfulness
+  TORII_ARCHIVAL_RECONSOLIDATE     1 (default) | 0  — F146 reconsolidation on promote
   TORII_TP_SIGNATURES_FILE / TORII_FP_RULES_FILE / TORII_FEDERATED_SIGNALS_FILE
   TORII_MEMORY_MD              path to MEMORY.md (else hermes home / agent seed)
 """
@@ -50,8 +54,12 @@ from typing import Any
 FEATURE = "F98"
 FEATURE_GRAPH = "F144"
 FEATURE_SUPERSEDE = "F145"
+FEATURE_RECON = "F146"
 SCHEMA = 1
 MARKER = "<!-- torii-f98-archival-search -->"
+RECON_LEDGER = "archival-reconsolidation.json"
+RECON_EFF_BUMP = 0.03
+RECON_EFF_CAP = 0.95
 
 _FALSEY = frozenset({"0", "false", "no", "off", "disabled", "n", "none", ""})
 _PRIVATE_RX = re.compile(
@@ -360,21 +368,35 @@ def render_promote_section(result: dict[str, Any]) -> str:
     themes = list(result.get("graph_themes") or [])
     filtered = result.get("hits_superseded") or result.get("hits_filtered") or []
     filt_n = int(result.get("superseded_filtered") or len(filtered) or 0)
+    recon = result.get("reconsolidation") or {}
+    recon_n = int(recon.get("updated_n") or result.get("reconsolidated_n") or 0)
     has_graph = bool(themes or result.get("feature_graph") == FEATURE_GRAPH)
     has_f145 = bool(
         result.get("feature_supersede") == FEATURE_SUPERSEDE
         or filt_n > 0
         or (result.get("supersede") or {}).get("enabled")
     )
-    if has_graph and has_f145:
+    has_f146 = bool(
+        result.get("feature_recon") == FEATURE_RECON
+        or recon_n > 0
+        or recon.get("enabled")
+    )
+    tags = ["F98"]
+    if has_graph:
+        tags.append("F144")
+    if has_f145:
+        tags.append("F145")
+    if has_f146:
+        tags.append("F146")
+    if len(tags) > 1:
         title = (
             "## Archival search → core "
-            "(F98/F144/F145 — MemGPT paging + multi-hop + supersede filter)"
+            f"({'/'.join(tags)} — MemGPT paging"
+            + (" + multi-hop" if has_graph else "")
+            + (" + supersede filter" if has_f145 else "")
+            + (" + reconsolidation" if has_f146 else "")
+            + ")"
         )
-    elif has_graph:
-        title = "## Archival search → core (F98/F144 — MemGPT paging + graph multi-hop)"
-    elif has_f145:
-        title = "## Archival search → core (F98/F145 — MemGPT paging + supersede filter)"
     else:
         title = "## Archival search → core (F98 — MemGPT-style paging)"
     lines = [
@@ -401,6 +423,14 @@ def render_promote_section(result: dict[str, Any]) -> str:
                 f"  - ~~`{h.get('id')}`~~ theme=`{h.get('theme')}` "
                 f"reason=`{h.get('supersede_reason') or 'superseded'}`"
             )
+        lines.append("")
+    if recon_n > 0 or has_f146:
+        ids = recon.get("ids") or []
+        lines.append(
+            f"**F146 reconsolidation:** strengthened **{recon_n}** durable TP "
+            "signature(s) on successful retrieve "
+            f"({', '.join(f'`{i}`' for i in ids[:6]) or '—'})."
+        )
         lines.append("")
     if not hits:
         lines.append("_No archival hits for this query._")
@@ -686,6 +716,193 @@ def filter_superseded_hits(
     return out
 
 
+def reconsolidate_enabled() -> bool:
+    """F146: strengthen durable TP signatures when archival hits promote."""
+    raw = (os.environ.get("TORII_ARCHIVAL_RECONSOLIDATE") or "1").strip().lower()
+    return raw not in _FALSEY
+
+
+def default_recon_ledger(root: Path | None = None) -> Path:
+    return (root or _root()) / ".torii" / RECON_LEDGER
+
+
+def reconsolidate_hits(
+    result: dict[str, Any],
+    *,
+    root: Path | None = None,
+    write: bool = True,
+) -> dict[str, Any]:
+    """F146: on successful promote of non-superseded TP hits, reconsolidate store.
+
+    Human-inspired reconsolidation: retrieval that pages into core should warm
+    durable evidence (hits++, last_retrieved_at, soft effective_score bump).
+    Never reconsolidates superseded/quarantined hits. Privacy: ids/themes only.
+    """
+    root = root or _root()
+    out = dict(result)
+    out["feature_recon"] = FEATURE_RECON
+    meta: dict[str, Any] = {
+        "enabled": reconsolidate_enabled(),
+        "updated_n": 0,
+        "ids": [],
+        "soft_skip": False,
+        "privacy_ok": True,
+        "written": False,
+    }
+    hits = [h for h in (result.get("hits") or []) if isinstance(h, dict)]
+    # never touch hits that were superseded
+    bad_ids = {
+        str(h.get("id"))
+        for h in (result.get("hits_superseded") or [])
+        if isinstance(h, dict)
+    }
+    if not reconsolidate_enabled():
+        meta["soft_skip"] = True
+        meta["reason"] = "recon_off"
+        out["reconsolidation"] = meta
+        out["reconsolidated_n"] = 0
+        return out
+    tp_hits = [
+        h
+        for h in hits
+        if h.get("source") == "tp"
+        and str(h.get("id") or "") not in bad_ids
+        and not h.get("superseded")
+    ]
+    if not tp_hits:
+        meta["soft_skip"] = True
+        meta["reason"] = "no_tp_hits"
+        out["reconsolidation"] = meta
+        out["reconsolidated_n"] = 0
+        return out
+
+    tp_path = default_tp_path(root)
+    raw = _load_json(tp_path)
+    if raw is None:
+        meta["soft_skip"] = True
+        meta["reason"] = "no_tp_store"
+        out["reconsolidation"] = meta
+        out["reconsolidated_n"] = 0
+        return out
+
+    if isinstance(raw, dict):
+        sigs = raw.get("signatures") or raw.get("items") or []
+        wrap = "signatures" if "signatures" in raw or not isinstance(raw.get("items"), list) else "items"
+        if "signatures" not in raw and "items" in raw:
+            wrap = "items"
+        else:
+            wrap = "signatures"
+            if "signatures" not in raw:
+                raw = {"signatures": list(sigs)}
+    elif isinstance(raw, list):
+        sigs = raw
+        wrap = None
+        raw = {"signatures": sigs}
+        wrap = "signatures"
+    else:
+        meta["soft_skip"] = True
+        meta["reason"] = "bad_tp_store"
+        out["reconsolidation"] = meta
+        out["reconsolidated_n"] = 0
+        return out
+
+    if not isinstance(sigs, list):
+        sigs = []
+
+    # index by id and theme
+    by_id: dict[str, dict[str, Any]] = {}
+    by_theme: dict[str, list[dict[str, Any]]] = {}
+    for s in sigs:
+        if not isinstance(s, dict) or s.get("deleted") or s.get("evicted"):
+            continue
+        sid = str(s.get("id") or "")
+        if sid:
+            by_id[sid] = s
+        th = _theme_norm(str(s.get("theme") or ""))
+        if th:
+            by_theme.setdefault(th, []).append(s)
+
+    updated: list[str] = []
+    now = _now()
+    for h in tp_hits:
+        hid = str(h.get("id") or "")
+        rid = hid.split(":", 1)[-1] if ":" in hid else hid
+        th = _theme_norm(str(h.get("theme") or ""))
+        target = by_id.get(hid) or by_id.get(rid)
+        if target is None and th:
+            cands = by_theme.get(th) or []
+            if len(cands) == 1:
+                target = cands[0]
+        if target is None:
+            continue
+        # skip inactive / superseded durable rows
+        if target.get("active") is False or target.get("superseded_by"):
+            continue
+        old_hits = int(target.get("hits") or 1)
+        target["hits"] = old_hits + 1
+        target["last_retrieved_at"] = now
+        target["reconsolidated_at"] = now
+        target["reconsolidation_feature"] = FEATURE_RECON
+        try:
+            eff = float(target.get("effective_score") or target.get("effective") or 0.0)
+        except (TypeError, ValueError):
+            eff = 0.0
+        target["effective_score"] = round(min(RECON_EFF_CAP, max(0.0, eff + RECON_EFF_BUMP)), 4)
+        tid = str(target.get("id") or rid or hid)
+        if tid not in updated:
+            updated.append(tid)
+        # reflect in promote hit row for section/debug
+        h["reconsolidated"] = True
+        h["hits"] = target["hits"]
+        h["effective_score"] = target["effective_score"]
+
+    meta["updated_n"] = len(updated)
+    meta["ids"] = updated[:16]
+    blob = json.dumps(meta)
+    meta["privacy_ok"] = "/Users/" not in blob and "/home/" not in blob and "sk-" not in blob
+
+    if write and updated:
+        if wrap and isinstance(raw, dict):
+            raw[wrap] = sigs
+            raw["updated_at"] = now
+            raw["last_reconsolidation"] = {
+                "feature": FEATURE_RECON,
+                "at": now,
+                "ids": updated[:16],
+                "n": len(updated),
+            }
+            tp_path.parent.mkdir(parents=True, exist_ok=True)
+            tp_path.write_text(json.dumps(raw, indent=2) + "\n", encoding="utf-8")
+            meta["written"] = True
+            meta["tp_path"] = str(tp_path.name)
+        # append-only ledger (privacy-safe)
+        ledger_path = default_recon_ledger(root)
+        ledger: dict[str, Any] = {"feature": FEATURE_RECON, "schema": SCHEMA, "runs": []}
+        prev = _load_json(ledger_path)
+        if isinstance(prev, dict) and isinstance(prev.get("runs"), list):
+            ledger = prev
+        run = {
+            "at": now,
+            "feature": FEATURE_RECON,
+            "query": str(result.get("query") or "")[:200],
+            "ids": updated[:16],
+            "n": len(updated),
+            "superseded_filtered": int(result.get("superseded_filtered") or 0),
+        }
+        runs = list(ledger.get("runs") or [])
+        runs.append(run)
+        ledger["runs"] = runs[-50:]
+        ledger["last"] = run
+        ledger["updated_at"] = now
+        ledger_path.parent.mkdir(parents=True, exist_ok=True)
+        ledger_path.write_text(json.dumps(ledger, indent=2) + "\n", encoding="utf-8")
+        meta["ledger"] = ledger_path.name
+
+    out["reconsolidation"] = meta
+    out["reconsolidated_n"] = len(updated)
+    return out
+
+
 def auto_from_paths(
     paths: list[str],
     *,
@@ -694,12 +911,14 @@ def auto_from_paths(
     multi_hop: bool | None = None,
     hops: int | None = None,
     supersede_filter: bool | None = None,
+    reconsolidate: bool | None = None,
 ) -> dict[str, Any]:
     """Build query from changed path basenames + F144 graph multi-hop themes.
 
     MemGPT paging: basenames alone miss cold TP themes linked only via co_path.
     F144 folds Zep multi-hop themes into the archival query before promote.
     F145 filters multi-hop-superseded cold hits so resolved FPs do not re-page.
+    F146 reconsolidates surviving TP hits into durable store (warm on retrieve).
     """
     root = root or _root()
     bases = []
@@ -753,6 +972,19 @@ def auto_from_paths(
         result["supersede"] = {"enabled": False, "soft_skip": True, "reason": "filter_off"}
         result["hits_superseded"] = []
         result["superseded_filtered"] = 0
+    # F146: reconsolidate surviving TP hits (after supersede filter)
+    use_rc = reconsolidate_enabled() if reconsolidate is None else bool(reconsolidate)
+    if use_rc:
+        result = reconsolidate_hits(result, root=root, write=True)
+    else:
+        result["feature_recon"] = None
+        result["reconsolidation"] = {
+            "enabled": False,
+            "soft_skip": True,
+            "reason": "recon_off",
+            "updated_n": 0,
+        }
+        result["reconsolidated_n"] = 0
     return result
 
 
@@ -777,12 +1009,17 @@ def cmd_promote(args: argparse.Namespace) -> int:
     # F145: optional supersede filter on promote of raw search
     if supersede_filter_enabled() and not getattr(args, "no_supersede", False):
         result = filter_superseded_hits(result, paths=paths or None)
+    # F146 reconsolidation after filter
+    if reconsolidate_enabled() and not getattr(args, "no_reconsolidate", False):
+        result = reconsolidate_hits(result, root=_root(), write=True)
     section = render_promote_section(result)
     out: dict[str, Any] = {
         "feature": FEATURE,
         "feature_supersede": result.get("feature_supersede"),
+        "feature_recon": result.get("feature_recon"),
         "hit_count": result.get("hit_count"),
         "superseded_filtered": result.get("superseded_filtered") or 0,
+        "reconsolidated_n": result.get("reconsolidated_n") or 0,
         "query": result.get("query"),
     }
     if args.out:
@@ -817,22 +1054,40 @@ def cmd_auto(args: argparse.Namespace) -> int:
     sf = None
     if getattr(args, "no_supersede", False):
         sf = False
-    result = auto_from_paths(paths, limit=args.limit, multi_hop=multi, supersede_filter=sf)
+    rc = None
+    if getattr(args, "no_reconsolidate", False):
+        rc = False
+    result = auto_from_paths(
+        paths,
+        limit=args.limit,
+        multi_hop=multi,
+        supersede_filter=sf,
+        reconsolidate=rc,
+    )
     section = render_promote_section(result)
     out: dict[str, Any] = {
         "feature": FEATURE,
         "feature_graph": result.get("feature_graph"),
         "feature_supersede": result.get("feature_supersede"),
+        "feature_recon": result.get("feature_recon"),
         "mode": result.get("mode") or "auto",
         "paths": paths[:20],
         "query": result.get("query"),
         "hit_count": result.get("hit_count"),
         "superseded_filtered": result.get("superseded_filtered") or 0,
+        "reconsolidated_n": result.get("reconsolidated_n") or 0,
+        "reconsolidation": result.get("reconsolidation"),
         "graph_themes": result.get("graph_themes") or [],
         "graph": result.get("graph"),
         "supersede": result.get("supersede"),
         "hits": [
-            {"id": h.get("id"), "source": h.get("source"), "score": h.get("score"), "theme": h.get("theme")}
+            {
+                "id": h.get("id"),
+                "source": h.get("source"),
+                "score": h.get("score"),
+                "theme": h.get("theme"),
+                "reconsolidated": h.get("reconsolidated"),
+            }
             for h in (result.get("hits") or [])[:8]
         ],
         "hits_superseded": [
@@ -919,6 +1174,9 @@ def cmd_fixture(args: argparse.Namespace) -> int:
             "TORII_ARCHIVAL_SUPERSEDE_FILTER": os.environ.get(
                 "TORII_ARCHIVAL_SUPERSEDE_FILTER"
             ),
+            "TORII_ARCHIVAL_RECONSOLIDATE": os.environ.get(
+                "TORII_ARCHIVAL_RECONSOLIDATE"
+            ),
         }
         try:
             os.environ["TORII_ROOT"] = str(td_path)
@@ -926,6 +1184,8 @@ def cmd_fixture(args: argparse.Namespace) -> int:
             os.environ["TORII_FP_RULES_FILE"] = str(torii / "fp-rules.json")
             os.environ["TORII_MEMORY_MD"] = str(mem / "MEMORY.md")
             os.environ["TORII_ARCHIVAL_SEARCH"] = "1"
+            # keep early fixture stages free of recon writes until F146 block
+            os.environ["TORII_ARCHIVAL_RECONSOLIDATE"] = "0"
 
             r = search("sql injection db.py", root=td_path, limit=5)
             ids = {h.get("id") for h in r.get("hits") or []}
@@ -946,7 +1206,12 @@ def cmd_fixture(args: argparse.Namespace) -> int:
             body = prompt.read_text(encoding="utf-8")
             inject_ok = inj and MARKER in body
 
-            auto = auto_from_paths(["legacy/db.py", "app.py"], root=td_path, limit=5)
+            auto = auto_from_paths(
+                ["legacy/db.py", "app.py"],
+                root=td_path,
+                limit=5,
+                reconsolidate=False,
+            )
             auto_ok = int(auto.get("hit_count") or 0) >= 1
 
             # F144: multi-hop theme expands archival query for co_path-only themes
@@ -1320,6 +1585,197 @@ def cmd_fixture(args: argparse.Namespace) -> int:
                 f145_ok = False
                 graph_themes = [str(exc)[:80]]
 
+            # F146: reconsolidation — successful promote warms durable TP hits
+            f146_ok = False
+            f146_ids: list[str] = []
+            try:
+                # clean active TP store (no superseded pickle) with known hits
+                (torii / "tp-signatures.json").write_text(
+                    json.dumps(
+                        {
+                            "signatures": [
+                                {
+                                    "id": "sqli-arch",
+                                    "theme": "sql_injection",
+                                    "keywords": ["sql injection", "sqli", "cursor"],
+                                    "path_globs": ["legacy/db.py"],
+                                    "hits": 4,
+                                    "effective_score": 0.35,
+                                },
+                                {
+                                    "id": "xss-noise",
+                                    "theme": "xss",
+                                    "keywords": ["alert"],
+                                    "path_globs": ["ui.js"],
+                                    "hits": 1,
+                                    "effective_score": 0.1,
+                                },
+                            ]
+                        }
+                    )
+                    + "\n",
+                    encoding="utf-8",
+                )
+                (torii / "fp-rules.json").write_text(
+                    json.dumps(
+                        {
+                            "rules": [
+                                {
+                                    "path": "legacy/db.py",
+                                    "reason": "parameterized query helper — false positive",
+                                }
+                            ]
+                        }
+                    )
+                    + "\n",
+                    encoding="utf-8",
+                )
+                os.environ["TORII_ARCHIVAL_RECONSOLIDATE"] = "1"
+                os.environ["TORII_ARCHIVAL_SUPERSEDE_FILTER"] = "0"
+                os.environ["TORII_ARCHIVAL_GRAPH_HOPS"] = "0"
+                before = _load_json(torii / "tp-signatures.json") or {}
+                before_hits = 0
+                for s in before.get("signatures") or []:
+                    if isinstance(s, dict) and s.get("id") == "sqli-arch":
+                        before_hits = int(s.get("hits") or 0)
+                recon_run = auto_from_paths(
+                    ["legacy/db.py"],
+                    root=td_path,
+                    limit=5,
+                    multi_hop=False,
+                    supersede_filter=False,
+                    reconsolidate=True,
+                )
+                after = _load_json(torii / "tp-signatures.json") or {}
+                after_sig = next(
+                    (
+                        s
+                        for s in (after.get("signatures") or [])
+                        if isinstance(s, dict) and s.get("id") == "sqli-arch"
+                    ),
+                    {},
+                )
+                after_hits = int(after_sig.get("hits") or 0)
+                has_retrieved = bool(after_sig.get("last_retrieved_at"))
+                eff_bumped = float(after_sig.get("effective_score") or 0) > 0.35
+                recon_n = int(recon_run.get("reconsolidated_n") or 0)
+                f146_ids = list((recon_run.get("reconsolidation") or {}).get("ids") or [])
+                section_r = render_promote_section(recon_run)
+                section_r_ok = MARKER in section_r and (
+                    "F146" in section_r or "reconsolid" in section_r.lower()
+                )
+                ledger = _load_json(default_recon_ledger(td_path))
+                ledger_ok = isinstance(ledger, dict) and int(
+                    (ledger.get("last") or {}).get("n") or 0
+                ) >= 1
+                # superseded hits must not reconsolidate
+                dead = {
+                    "query": "pickle",
+                    "hits": [
+                        {
+                            "id": "dead-pickle",
+                            "theme": "insecure_deserialization",
+                            "source": "tp",
+                            "score": 0.9,
+                            "effective_score": 0.4,
+                        }
+                    ],
+                    "hit_count": 1,
+                    "hits_superseded": [
+                        {
+                            "id": "dead-pickle",
+                            "theme": "insecure_deserialization",
+                            "supersede_reason": "id_superseded",
+                        }
+                    ],
+                    "superseded_filtered": 1,
+                }
+                # plant dead-pickle then try recon on empty kept hits
+                (torii / "tp-signatures.json").write_text(
+                    json.dumps(
+                        {
+                            "signatures": [
+                                {
+                                    "id": "dead-pickle",
+                                    "theme": "insecure_deserialization",
+                                    "hits": 2,
+                                    "effective_score": 0.4,
+                                    "superseded_by": "fp-x",
+                                    "active": False,
+                                }
+                            ]
+                        }
+                    )
+                    + "\n",
+                    encoding="utf-8",
+                )
+                # filter leaves no hits
+                dead_f = filter_superseded_hits(
+                    {
+                        "query": "pickle",
+                        "hits": [
+                            {
+                                "id": "dead-pickle",
+                                "theme": "insecure_deserialization",
+                                "source": "tp",
+                                "score": 0.9,
+                                "effective_score": 0.4,
+                            }
+                        ],
+                        "hit_count": 1,
+                    },
+                    paths=["serde.py"],
+                    root=td_path,
+                    multi_hop=False,
+                )
+                # force quarantine if graph soft-skipped
+                if int(dead_f.get("superseded_filtered") or 0) == 0:
+                    dead_f = {
+                        "query": "pickle",
+                        "hits": [],
+                        "hit_count": 0,
+                        "hits_superseded": [
+                            {
+                                "id": "dead-pickle",
+                                "theme": "insecure_deserialization",
+                                "source": "tp",
+                            }
+                        ],
+                        "superseded_filtered": 1,
+                    }
+                no_dead = reconsolidate_hits(dead_f, root=td_path, write=True)
+                dead_store = _load_json(torii / "tp-signatures.json") or {}
+                dead_hits = int(
+                    next(
+                        (
+                            s.get("hits")
+                            for s in (dead_store.get("signatures") or [])
+                            if isinstance(s, dict) and s.get("id") == "dead-pickle"
+                        ),
+                        2,
+                    )
+                    or 2
+                )
+                no_dead_ok = int(no_dead.get("reconsolidated_n") or 0) == 0 and dead_hits == 2
+                privacy_r = bool(
+                    (recon_run.get("reconsolidation") or {}).get("privacy_ok", True)
+                )
+                f146_ok = (
+                    after_hits == before_hits + 1
+                    and has_retrieved
+                    and eff_bumped
+                    and recon_n >= 1
+                    and "sqli-arch" in f146_ids
+                    and section_r_ok
+                    and ledger_ok
+                    and no_dead_ok
+                    and privacy_r
+                    and recon_run.get("feature_recon") == FEATURE_RECON
+                )
+            except Exception as exc:
+                f146_ok = False
+                f146_ids = [str(exc)[:80]]
+
             fixture_pass = all(
                 [
                     hit_tp,
@@ -1331,6 +1787,7 @@ def cmd_fixture(args: argparse.Namespace) -> int:
                     auto_ok,
                     f144_ok,
                     f145_ok,
+                    f146_ok,
                 ]
             )
             print(
@@ -1339,8 +1796,10 @@ def cmd_fixture(args: argparse.Namespace) -> int:
                         "feature": FEATURE,
                         "feature_graph": FEATURE_GRAPH,
                         "feature_supersede": FEATURE_SUPERSEDE,
+                        "feature_recon": FEATURE_RECON,
                         "f144": True,
                         "f145": True,
+                        "f146": True,
                         "fixture_pass": fixture_pass,
                         "hit_tp": hit_tp,
                         "hit_fp": hit_fp,
@@ -1351,8 +1810,10 @@ def cmd_fixture(args: argparse.Namespace) -> int:
                         "auto_ok": auto_ok,
                         "f144_ok": f144_ok,
                         "f145_ok": f145_ok,
+                        "f146_ok": f146_ok,
                         "f144_graph_themes": graph_themes,
                         "f145_filtered_ids": f145_filtered,
+                        "f146_recon_ids": f146_ids,
                         "hit_ids": sorted(ids),
                         "auto_hits": auto.get("hit_count"),
                     },
@@ -1420,11 +1881,16 @@ def main(argv: list[str] | None = None) -> int:
         action="store_true",
         help="Disable F145 supersede filter on promote",
     )
+    pp.add_argument(
+        "--no-reconsolidate",
+        action="store_true",
+        help="Disable F146 reconsolidation on promote",
+    )
     pp.set_defaults(func=cmd_promote)
 
     pa = sub.add_parser(
         "auto",
-        help="Search from changed paths (+ F144 graph multi-hop + F145 supersede) + inject",
+        help="Search from paths (+ F144 multi-hop + F145 supersede + F146 recon) + inject",
     )
     pa.add_argument("--files", default="", help="comma-separated paths")
     pa.add_argument("--files-list", default="")
@@ -1447,6 +1913,11 @@ def main(argv: list[str] | None = None) -> int:
         "--no-supersede",
         action="store_true",
         help="Disable F145 supersede filter (temporal faithfulness)",
+    )
+    pa.add_argument(
+        "--no-reconsolidate",
+        action="store_true",
+        help="Disable F146 reconsolidation (retrieval warm)",
     )
     pa.set_defaults(func=cmd_auto)
 

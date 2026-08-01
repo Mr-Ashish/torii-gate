@@ -1,5 +1,36 @@
 # Torii research → product log
 
+## 2026-08-01 — F146 archival reconsolidation on promote
+
+### Papers / posts
+- Human-inspired reconsolidation upon retrieval; MemGPT/Letta archival→core should warm durable state.
+- SuperLocalMemory / agent-memory surveys: retrieval without learning is write-only context tax.
+- F145 supersede filter: only non-superseded hits may reconsolidate.
+
+### OSS design patterns stolen
+1. `reconsolidate_hits` after F145 filter: hits++ / last_retrieved_at / soft effective bump.
+2. Ledger `.torii/archival-reconsolidation.json` (ids only, privacy-safe).
+3. `TORII_ARCHIVAL_RECONSOLIDATE=1`; `--no-reconsolidate`; fixture f146_ok.
+4. PRODUCT/research/brand + traces f146-archival-reconsolidation/.
+
+### Insight
+Paging cold memory into the prompt without updating the store leaves next PR cold. Highest ROI: reconsolidate surviving TP hits on promote so retrieval compounds rank.
+
+### Feature shipped (F146)
+- archival_memory_search reconsolidation on auto/promote
+- fixture f146_ok + tests; PRODUCT/research
+
+### Metric
+- Offline: fixture f146_ok; pytest 619 passed
+- Live: Modal pytorch#191813 BIT3_OK ~62s REQUEST_CHANGES POST_COMMENT=0 log_streaming=true
+
+### Loop-engineering / Hermes practice used
+**Retrieval strengthens memory** — maker/checker filter first; reconsolidation is measured write-back.
+
+### SHA
+`PENDING`
+
+
 ## 2026-08-01 — F145 supersede-aware archival promote
 
 ### Papers / posts

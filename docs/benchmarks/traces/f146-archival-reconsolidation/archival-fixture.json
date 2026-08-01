@@ -1,0 +1,39 @@
+{
+  "feature": "F98",
+  "feature_graph": "F144",
+  "feature_supersede": "F145",
+  "feature_recon": "F146",
+  "f144": true,
+  "f145": true,
+  "f146": true,
+  "fixture_pass": true,
+  "hit_tp": true,
+  "hit_fp": true,
+  "hit_mem": true,
+  "privacy_ok": true,
+  "promote_ok": true,
+  "inject_ok": true,
+  "auto_ok": true,
+  "f144_ok": true,
+  "f145_ok": true,
+  "f146_ok": true,
+  "f144_graph_themes": [
+    "app entry",
+    "insecure deserialization",
+    "pickle",
+    "deserialize"
+  ],
+  "f145_filtered_ids": [
+    "pickle-cold",
+    "fp:legacy/serde.py"
+  ],
+  "f146_recon_ids": [
+    "sqli-arch"
+  ],
+  "hit_ids": [
+    "fp:legacy/db.py",
+    "memory:1:## review 2026-07-01 \u00b7 acme/app pr #1 \u00b7 ",
+    "sqli-arch"
+  ],
+  "auto_hits": 3
+}

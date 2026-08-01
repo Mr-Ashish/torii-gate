@@ -40,3 +40,4 @@ Also mirrored from LOOP.md budget/observability: each fire records metrics (reca
 - F143: memory hub gap critic demotes APPROVE (F127/F139 mirror for Mem0 util)
 - F144: temporal multi-hop themes expand archival auto → core promote (MemGPT+Zep)
 - F145: supersede-aware archival promote (MemoTime temporal faithfulness on F144 paging)
+- F146: archival reconsolidation on promote (retrieval warms durable TP store)

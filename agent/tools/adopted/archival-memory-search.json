@@ -2,5 +2,5 @@
   "id": "archival-memory-search",
   "feature": "F98",
   "status": "adopted",
-  "one_liner": "MemGPT archival search + multi-hop expand + supersede filter (F98/F144/F145)"
+  "one_liner": "MemGPT archival search + multi-hop + supersede filter + reconsolidation (F98/F144/F145/F146)"
 }
