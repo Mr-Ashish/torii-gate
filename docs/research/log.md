@@ -34,7 +34,7 @@ Measure install→gate→signal; fitness of the product is commercial path compl
 simplicity + install UX + commercial trust (golden path)
 
 ### SHA
-`(fill after push)`
+`adbfddc8c5be50dc38aa86c9fe911f453e193b07`
 
 ## 2026-08-01 — F186 compound re-prompt chronic miss pressure
 
