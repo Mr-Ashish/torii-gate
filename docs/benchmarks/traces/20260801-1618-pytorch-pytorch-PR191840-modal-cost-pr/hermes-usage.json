@@ -1,0 +1,18 @@
+{
+  "estimated_cost_usd": 0.018294679,
+  "cost_status": "estimated",
+  "cost_source": "provider_models_api",
+  "input_tokens": 35949,
+  "output_tokens": 2992,
+  "cache_read_tokens": 14848,
+  "cache_write_tokens": 0,
+  "reasoning_tokens": 1340,
+  "total_tokens": 53789,
+  "api_calls": 4,
+  "model": "deepseek/deepseek-v4-pro",
+  "provider": "openrouter",
+  "session_id": "20260801_161926_324623",
+  "completed": true,
+  "failed": false,
+  "service_tier": null
+}

@@ -1,9 +1,10 @@
 #!/usr/bin/env python3
-"""Reliability / ops dashboard stub (priority queue dim 8).
+"""Reliability / ops dashboard (priority queue dim 8 + cost/PR product surface).
 
 Surfaces:
   - fail-closed defaults inventory
-  - cost/PR + time-to-signal from dogfood vault
+  - cost/PR + time-to-signal from dogfood vault (not a stub — live hermes-usage)
+  - gate certificate × cost rows for merge-authority ops
   - smoke / required-check readiness
   - writes docs/ops/DASHBOARD.md + cost-pr-dashboard.md
 
@@ -131,6 +132,7 @@ def required_check_docs(root: Path) -> dict[str, Any]:
 
 
 def cost_pr_table(root: Path) -> dict[str, Any]:
+    """Live cost/PR from dogfood vault (hermes-usage + gate certificate ids)."""
     try:
         sys.path.insert(0, str(root / "scripts"))
         from golden_path_metrics import (  # type: ignore
@@ -141,15 +143,47 @@ def cost_pr_table(root: Path) -> dict[str, Any]:
 
         rows = collect_dogfood_rows(vault_root(root))
         dog = summarize_dogfood(rows)
+        cusd = dog.get("cost_usd") or {}
+        cost_n = int(cusd.get("n") or 0)
+        recent = []
+        for r in rows[-12:]:
+            recent.append(
+                {
+                    "trace_id": r.get("trace_id"),
+                    "repo": r.get("repo"),
+                    "pr": r.get("pr"),
+                    "verdict": r.get("verdict"),
+                    "time_to_signal_s": r.get("time_to_signal_s"),
+                    "cost_usd": r.get("cost_usd"),
+                    "certificate_id": r.get("certificate_id"),
+                    "model": r.get("model"),
+                    "host": r.get("host"),
+                }
+            )
+        cost_ok = bool(cost_n >= 5 and cusd.get("p50") is not None)
         return {
             "source": "docs/benchmarks/traces vault",
             "runs": dog.get("runs"),
             "time_to_signal_s": dog.get("time_to_signal_s"),
-            "cost_usd": dog.get("cost_usd"),
+            "cost_usd": cusd,
             "verdicts": dog.get("verdicts"),
+            "recent_rows": recent,
+            "cost_ok": cost_ok,
+            "cost_n": cost_n,
+            "one_liner": (
+                "Measured cost/PR + time-to-signal from live Modal dogfood "
+                "(hermes-usage) with gate certificate ids — not a stub."
+            ),
         }
     except Exception as exc:  # noqa: BLE001
-        return {"source": "unavailable", "error": str(exc), "runs": 0}
+        return {
+            "source": "unavailable",
+            "error": str(exc),
+            "runs": 0,
+            "cost_ok": False,
+            "cost_n": 0,
+            "recent_rows": [],
+        }
 
 
 def last_gate_certificate(root: Path) -> dict[str, Any]:
@@ -329,7 +363,7 @@ def build_report(root: Path | None = None, *, run_smoke: bool = False) -> dict[s
         "dim_lift": "reliability/ops (dim 8) + certificate + product surface map",
         "scored_at": _now(),
         "one_liner": (
-            "Fail-closed defaults · cost/PR · gate certificate · smoke CI · "
+            "Fail-closed defaults · measured cost/PR · gate certificate · smoke CI · "
             "product surfaces · torii/gate"
         ),
         "fail_closed": fc,
@@ -352,6 +386,7 @@ def build_report(root: Path | None = None, *, run_smoke: bool = False) -> dict[s
         and smoke.get("script_present")
         and smoke.get("ci_workflow_present")
         and products.get("ok")
+        and bool(cost.get("cost_ok"))
         and (not run_smoke or smoke.get("pass"))
     )
     return report
@@ -415,10 +450,12 @@ def render_dashboard(report: dict[str, Any]) -> str:
         f"| min | {tts.get('min')} | {cusd.get('min')} |",
         f"| max | {tts.get('max')} | {cusd.get('max')} |",
         "",
-        f"Runs: **{cost.get('runs')}** · source: `{cost.get('source')}`",
+        f"Runs: **{cost.get('runs')}** · cost_ok=**{cost.get('cost_ok')}** · "
+        f"source: `{cost.get('source')}`",
         "",
         "Detail: [cost-pr-dashboard.md](cost-pr-dashboard.md) · "
-        "Reliability one-pager: [RELIABILITY.md](RELIABILITY.md)",
+        "Reliability one-pager: [RELIABILITY.md](RELIABILITY.md) · "
+        "Golden path: [golden-path-metrics.md](../benchmarks/golden-path-metrics.md)",
         "",
     ]
     cert = report.get("last_gate_certificate") or {}
@@ -501,20 +538,26 @@ def render_cost_md(report: dict[str, Any]) -> str:
     lines = [
         "<!-- torii-cost-pr-dashboard -->",
         "",
-        "# Cost / PR dashboard (stub)",
+        "# Cost / PR dashboard",
         "",
-        f"_Generated: `{report.get('scored_at')}` · from dogfood vault_",
+        f"_Generated: `{report.get('scored_at')}` · cost_ok=**{cost.get('cost_ok')}** · "
+        f"from dogfood vault_",
         "",
-        "Operator-facing cost visibility without opening Modal artifacts.",
+        cost.get("one_liner")
+        or "Measured cost/PR + time-to-signal from live Modal dogfood (hermes-usage).",
+        "",
+        "Buyer/ops: open this page instead of Modal run artifacts for p50 cost and signal latency.",
         "",
         "| Metric | Value |",
         "|--------|------:|",
         f"| dogfood runs | {cost.get('runs')} |",
+        f"| cost samples (hermes-usage) | {cost.get('cost_n')} |",
         f"| time-to-signal p50 (s) | {tts.get('p50')} |",
         f"| time-to-signal mean (s) | {tts.get('mean')} |",
         f"| cost/PR p50 (USD) | {cusd.get('p50')} |",
         f"| cost/PR mean (USD) | {cusd.get('mean')} |",
         f"| cost/PR min–max | {cusd.get('min')} – {cusd.get('max')} |",
+        f"| cost_ok (≥5 samples + p50) | {cost.get('cost_ok')} |",
         "",
         "### Verdict distribution (unlabelled live)",
         "",
@@ -527,10 +570,37 @@ def render_cost_md(report: dict[str, Any]) -> str:
         lines.append("| _(none)_ | 0 |")
     lines += [
         "",
+        "### Recent dogfood (cost × certificate)",
+        "",
+        "| trace | pr | verdict | t_s | cost_usd | certificate | host |",
+        "|-------|---:|---------|----:|---------:|-------------|------|",
+    ]
+    for r in cost.get("recent_rows") or []:
+        cert = r.get("certificate_id") or ""
+        cert_s = f"`{cert}`" if cert else ""
+        tid = str(r.get("trace_id") or "")[:36]
+        lines.append(
+            f"| `{tid}` | {r.get('pr')} | {r.get('verdict')} | "
+            f"{r.get('time_to_signal_s')} | {r.get('cost_usd')} | {cert_s} | {r.get('host')} |"
+        )
+    if not cost.get("recent_rows"):
+        lines.append("| _(empty vault)_ | | | | | | |")
+    lines += [
+        "",
         "Soft budget (GHA): set repo var `TORII_MAX_COST_USD` for over-budget warnings "
         "(does not fail the run by default).",
         "",
-        "Related: `docs/benchmarks/golden-path-metrics.md` · `docs/benchmarks/public-eval/SCORECARD.md`",
+        "Refresh:",
+        "",
+        "```bash",
+        "python3 scripts/ops_dashboard.py report",
+        "python3 scripts/golden_path_metrics.py report",
+        "python3 scripts/torii.py ops -- status",
+        "```",
+        "",
+        "Related: [`golden-path-metrics.md`](../benchmarks/golden-path-metrics.md) · "
+        "[`public-eval/SCORECARD.md`](../benchmarks/public-eval/SCORECARD.md) · "
+        "[`GATE.md`](../GATE.md)",
         "",
     ]
     return "\n".join(lines)
@@ -620,6 +690,10 @@ def cmd_fixture(args: argparse.Namespace) -> int:
         encoding="utf-8", errors="replace"
     )
     products = report.get("product_surfaces") or {}
+    cost = report.get("cost_per_pr") or {}
+    cost_body = (root / OUT_DIR / "cost-pr-dashboard.md").read_text(
+        encoding="utf-8", errors="replace"
+    )
     checks = {
         "fail_closed_safe": bool(report.get("fail_closed_safe_defaults")),
         "required_check_docs": bool((report.get("required_check") or {}).get("ok")),
@@ -636,6 +710,13 @@ def cmd_fixture(args: argparse.Namespace) -> int:
         or "Last gate certificate" in dash_body,
         "product_surfaces_ok": bool(products.get("ok")),
         "dashboard_mentions_product_surfaces": "Product surfaces" in dash_body,
+        # COST_PR product surface: destub + measured samples
+        "cost_ok": bool(cost.get("cost_ok")),
+        "cost_md_not_stub": "Cost / PR dashboard" in cost_body
+        and "(stub)" not in cost_body.splitlines()[0:6]
+        and "cost_ok" in cost_body,
+        "cost_md_has_recent": "Recent dogfood" in cost_body,
+        "cost_md_has_certificate": "certificate" in cost_body.lower(),
     }
     # Also require tool_turns gate source default on
     tt = root / "scripts" / "tool_turns_gate.py"
@@ -649,6 +730,9 @@ def cmd_fixture(args: argparse.Namespace) -> int:
         "checks": checks,
         "fail_closed_safe_defaults": report.get("fail_closed_safe_defaults"),
         "required_context": "torii/gate",
+        "cost_ok": cost.get("cost_ok"),
+        "cost_n": cost.get("cost_n"),
+        "cost_p50": (cost.get("cost_usd") or {}).get("p50"),
         "last_gate_certificate": {
             "available": cert.get("available"),
             "certificate_id": cert.get("certificate_id"),
@@ -674,6 +758,10 @@ def cmd_status(args: argparse.Namespace) -> int:
                         "ops_ok": data.get("ops_ok"),
                         "fail_closed_safe_defaults": data.get("fail_closed_safe_defaults"),
                         "cost_runs": (data.get("cost_per_pr") or {}).get("runs"),
+                        "cost_ok": (data.get("cost_per_pr") or {}).get("cost_ok"),
+                        "cost_p50": ((data.get("cost_per_pr") or {}).get("cost_usd") or {}).get(
+                            "p50"
+                        ),
                         "smoke_ci": (data.get("smoke") or {}).get("ci_workflow_present"),
                         "at": data.get("scored_at"),
                     },
@@ -690,7 +778,7 @@ def main(argv: list[str] | None = None) -> int:
     p = argparse.ArgumentParser(description="Torii ops / reliability dashboard")
     sub = p.add_subparsers(dest="cmd", required=True)
 
-    pr = sub.add_parser("report", help="Write ops dashboard + cost/PR stub")
+    pr = sub.add_parser("report", help="Write ops dashboard + cost/PR product surface")
     pr.add_argument("--json", action="store_true")
     pr.add_argument("--dry-run", action="store_true")
     pr.add_argument("--smoke", action="store_true", help="Also run offline smoke")

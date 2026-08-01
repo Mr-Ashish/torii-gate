@@ -37,7 +37,7 @@ Day-2: `python3 scripts/torii.py doctor` · `python3 scripts/torii.py ops -- sta
 | Doc | Role |
 |-----|------|
 | [DASHBOARD.md](DASHBOARD.md) | Live ops snapshot |
-| [cost-pr-dashboard.md](cost-pr-dashboard.md) | Cost / time-to-signal stub |
+| [cost-pr-dashboard.md](cost-pr-dashboard.md) | Measured cost/PR + time-to-signal (dogfood × cert) |
 | [../GATE.md](../GATE.md) | Gate contract |
 | [../INSTALL.md](../INSTALL.md) | 5-minute install |
 | [../OPERATIONS.md](../OPERATIONS.md) | Full ops runbook |

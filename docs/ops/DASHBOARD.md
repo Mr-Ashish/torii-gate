@@ -2,9 +2,9 @@
 
 # Torii ops dashboard
 
-_Generated: `2026-08-01T16:08:35Z` · **ops_ok=True** · target **ops / dim 8**_
+_Generated: `2026-08-01T16:21:41Z` · **ops_ok=True** · target **ops / dim 8**_
 
-Fail-closed defaults · cost/PR · gate certificate · smoke CI · product surfaces · torii/gate
+Fail-closed defaults · measured cost/PR · gate certificate · smoke CI · product surfaces · torii/gate
 
 ## Fail-closed defaults
 
@@ -39,30 +39,30 @@ python3 scripts/ops_dashboard.py report --smoke
 
 | Stat | time-to-signal (s) | cost USD |
 |------|-------------------:|---------:|
-| n | 56 | 18 |
-| mean | 99.486 | 0.017 |
-| p50 | 91.95 | 0.012 |
+| n | 58 | 20 |
+| mean | 98.624 | 0.017 |
+| p50 | 91.5 | 0.013 |
 | min | 39.2 | 0.008 |
 | max | 262.0 | 0.058 |
 
-Runs: **61** · source: `docs/benchmarks/traces vault`
+Runs: **63** · cost_ok=**True** · source: `docs/benchmarks/traces vault`
 
-Detail: [cost-pr-dashboard.md](cost-pr-dashboard.md) · Reliability one-pager: [RELIABILITY.md](RELIABILITY.md)
+Detail: [cost-pr-dashboard.md](cost-pr-dashboard.md) · Reliability one-pager: [RELIABILITY.md](RELIABILITY.md) · Golden path: [golden-path-metrics.md](../benchmarks/golden-path-metrics.md)
 
 ## Last gate certificate (merge authority)
 
 Deterministic reason codes + path evidence for the latest dogfood gate decision (not a chat transcript). Soft-wired via `save-trace.sh` + reusable workflow.
 
-**CLOSED — REQUEST_CHANGES (verdict_request_changes, strong_path_evidence, blocking_with_paths); path_evidence=1.00**
+**OPEN — APPROVE (verdict_approve_open, strong_path_evidence, blocking_with_paths); path_evidence=1.00**
 
 | Field | Value |
 |-------|------:|
-| certificate_id | `gc-f0613e3b4d162c10` |
-| block | True |
-| verdict | REQUEST_CHANGES |
+| certificate_id | `gc-089fed34e9eb71c5` |
+| block | False |
+| verdict | APPROVE |
 | path_evidence | 1.0 |
-| reason_codes | `verdict_request_changes`, `strong_path_evidence`, `blocking_with_paths` |
-| vault path | `docs/benchmarks/traces/20260801-1605-pytorch-pytorch-PR191840-modal-ops-surfaces/gate-certificate.json` |
+| reason_codes | `verdict_approve_open`, `strong_path_evidence`, `blocking_with_paths` |
+| vault path | `docs/benchmarks/traces/20260801-1618-pytorch-pytorch-PR191840-modal-cost-pr/gate-certificate.json` |
 | wire_ok | True |
 
 ```bash

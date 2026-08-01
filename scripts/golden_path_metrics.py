@@ -147,6 +147,13 @@ def collect_dogfood_rows(vroot: Path) -> list[dict[str, Any]]:
             if m:
                 pr = m.group(1)
 
+        cert = _safe_json(d / "gate-certificate.json")
+        certificate_id = ""
+        if isinstance(cert, dict):
+            certificate_id = str(
+                cert.get("certificate_id") or cert.get("content_sha256_16") or ""
+            )
+
         rows.append(
             {
                 "trace_id": d.name,
@@ -159,6 +166,7 @@ def collect_dogfood_rows(vroot: Path) -> list[dict[str, Any]]:
                 "host": str(host or ("modal" if "modal" in name_l else "local")),
                 "post_comment": post_comment,
                 "bit3": summary.get("bit3"),
+                "certificate_id": certificate_id or None,
                 "path_evidence": (fitness or {}).get("path_evidence")
                 if isinstance(fitness, dict)
                 else None,
@@ -521,17 +529,19 @@ def render_markdown(report: dict[str, Any]) -> str:
         "",
         "## Recent dogfood rows",
         "",
-        "| trace | repo | pr | verdict | t_s | cost_usd | model | host |",
-        "|-------|------|---:|---------|----:|---------:|-------|------|",
+        "| trace | repo | pr | verdict | t_s | cost_usd | cert | model | host |",
+        "|-------|------|---:|---------|----:|---------:|------|-------|------|",
     ]
     for r in rows[-20:]:
+        cert = r.get("certificate_id") or ""
+        cert_s = f"`{cert}`" if cert else ""
         lines.append(
             f"| `{str(r.get('trace_id'))[:40]}` | {r.get('repo')} | {r.get('pr')} | "
             f"{r.get('verdict')} | {r.get('time_to_signal_s')} | {r.get('cost_usd')} | "
-            f"{(r.get('model') or '')[:28]} | {r.get('host')} |"
+            f"{cert_s} | {(r.get('model') or '')[:28]} | {r.get('host')} |"
         )
     if not rows:
-        lines.append("| _(empty vault)_ | | | | | | | |")
+        lines.append("| _(empty vault)_ | | | | | | | | |")
 
     lines += [
         "",

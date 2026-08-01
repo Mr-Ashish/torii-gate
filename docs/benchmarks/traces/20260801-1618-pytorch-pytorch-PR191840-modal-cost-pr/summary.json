@@ -1,0 +1,20 @@
+{
+  "feature": "COST_PR",
+  "schema_version": 1,
+  "repo": "pytorch/pytorch",
+  "pr": "191840",
+  "model": "deepseek/deepseek-v4-pro",
+  "host": "modal",
+  "bit3": true,
+  "elapsed_s": 102.6,
+  "log_streaming": true,
+  "tool_call_turns": 3,
+  "post_comment": 0,
+  "verdict": "APPROVE",
+  "block": false,
+  "certificate_id": "gc-089fed34e9eb71c5",
+  "notes": "COST_PR measured cost/PR product surface (destub ops dashboard + cost\u00d7cert dogfood rows)",
+  "scored_at": "2026-08-01T16:21:39Z",
+  "modal_run": "https://modal.com/apps/mr-ashish/main/ap-5yjGEh2YFY5KJqPybRmEVq",
+  "cost_usd": 0.018294679
+}

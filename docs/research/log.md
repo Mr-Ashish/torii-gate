@@ -1,4 +1,38 @@
 
+## 2026-08-01 — COST_PR: measured cost/PR product surface (post-queue dogfood)
+
+### Papers / posts
+- Loop Engineering: measure what you ship — cost without operator surface is theater.
+- Post-queue: golden-path cost/PR from dogfood was still labeled “stub” on ops dashboards.
+- SLSA-style evidence: pair USD spend with gate certificate ids (tools-as-code).
+
+### Decide / copy / skip
+- **Copy:** destub `cost-pr-dashboard.md`; recent dogfood rows with cost × certificate_id.
+- **Copy:** ops fixture requires cost_ok (≥5 hermes-usage samples + p50) + not-stub checks.
+- **Copy:** golden-path dogfood rows include certificate_id; GOLDEN-PATH next-lifts mark cost shipped.
+- **Skip:** F185+ compound loops; no new demote/GEPA layers.
+
+### Feature shipped (COST_PR)
+- ops_dashboard cost_ok · cost × cert recent table · destub RELIABILITY link
+- golden_path_metrics certificate_id on vault rows
+- GOLDEN-PATH.md commercial lift #7 cost/PR shipped
+
+### Metric
+- Offline: ops fixture_pass · cost_ok · cost_n=20 · cost_p50=$0.013 · commercial 10/10 · overall_est 8.5
+- Live Modal: pytorch#191840 BIT3_OK ~102.6s tools=3 POST_COMMENT=0 cost=$0.0183 cert=gc-089fed34e9eb71c5
+- Traces: docs/benchmarks/traces/20260801-1618-pytorch-pytorch-PR191840-modal-cost-pr/
+- Modal: https://modal.com/apps/mr-ashish/main/ap-5yjGEh2YFY5KJqPybRmEVq
+
+### scorecard_target
+ops (#8) · simplicity (#12) · JTBD cost transparency
+
+### dim_lift
+operators see measured cost/PR + cert without opening Modal artifacts
+
+### SHA
+`(pending push)`
+
+
 ## 2026-08-01 — BRAND_SCORECARD: buyer commercial panel on scorecard-metrics
 
 ### Papers / posts
