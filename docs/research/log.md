@@ -5136,3 +5136,26 @@ Self-evolution compounds only when operators can see dual-gate safety on the day
 
 ### SHA
 `6b9604da12d259ef6d5b8eb5710aef850583f09b`
+
+## 2026-08-01 — DIFF_VS_SAST labeled buyer one-pager
+
+### Papers / posts
+- Buyer packaging: differentiation needs evidence, not feature lists.
+- Loop Engineering: measure what you claim (public-eval seed/model/TP).
+- Honest positioning: merge authority complements SAST; does not replace it.
+
+### Insight
+Dim 2 lagged (7.5) with only a landing matrix. Highest ROI: DIFF.md one-pager + fixture that fails if labeled public-eval evidence or honesty constraints are missing.
+
+### Feature shipped (DIFF_VS_SAST)
+- docs/DIFF.md matrix + labeled metrics + when-to-use
+- scripts/diff_vs_sast.py fixture/status/report
+- Day-2 CLI `diff` · status --text row
+- landing compare → DIFF.md · PRODUCT · README
+
+### Metric
+- fixture 17/17 · labeled_tp=18 · good_recall=1.0 · weak=0.0
+- Live Modal pytorch e2e this fire
+
+### SHA
+`PENDING_PUSH`

@@ -1,6 +1,6 @@
 # Torii Gate — first-principles product scorecard
 
-_Scored: `2026-08-01T20:09:00Z` · commercial **8.5** · overall **8.0** (cap until paid pilot)._
+_Scored: `2026-08-01T20:27:56Z` · commercial **8.5** · overall **8.0** (cap until paid pilot)._
 
 Adoption lens (buyers, not research harness). Evidence from PRODUCT/README/fixtures/e2e/traces.
 
@@ -9,41 +9,41 @@ Adoption lens (buyers, not research harness). Evidence from PRODUCT/README/fixtu
 | # | Dim | Score | One-line evidence |
 |--:|-----|------:|-------------------|
 | 1 | Value prop | 8.5 | PRODUCT: security merge authority · tagline · ICP table |
-| 2 | Diff vs SAST/chat bots | 7.5 | Maker+checker · path evidence · gate cert reason codes |
+| 2 | Diff vs SAST/chat bots | **8.2** | **DIFF.md** + labeled public-eval (tp=18 · good=1.0 · weak=0.0) · landing compare |
 | 3 | JTBD (quieter merge gate) | 8.5 | quieter_ok · getting_quieter · pilot readiness 8/8 |
-| 4 | Agent tool quality | 8.0 | tool_use_rate=0.875 · n=72 · model_alias → v4-pro |
-| 5 | Memory / compound | 8.0 | memory L3 · hub-archival loop_ok · federation themes-only |
-| 6 | Self-evolution | **7.8** | Day-2 JSON status · dual_gate_safe · active on status --text (**this fire**) |
-| 7 | Install UX | 8.5 | 5-min INSTALL · `--minimal` · job-summary require-check |
-| 8 | Ops / reliability | 8.5 | fail_closed_safe_defaults · smoke_ci · cost vault |
-| 9 | Enterprise light | 8.0 | isolation_ok · `--tenant` · privacy themes-only |
-| 10 | Pricing / packaging | 8.0 | open core SKUs · PRICING.md · no fake ARR |
-| 11 | GTM / distribution | 7.5 | Pages landing · PILOT apply · pilot readiness CLI |
-| 12 | Simplicity / cognitive load | 7.6 | Day-1/2/Advanced help · self-evolve buyer JSON (no F-IDs on one-liner) |
+| 4 | Agent tool quality | 8.0 | tool_use_rate=0.875 · model_alias → v4-pro |
+| 5 | Memory / compound | 8.0 | memory L3 · hub-archival loop_ok |
+| 6 | Self-evolution | 7.8 | Day-2 JSON status · dual_gate_safe |
+| 7 | Install UX | 8.5 | 5-min INSTALL · `--minimal` |
+| 8 | Ops / reliability | 8.5 | fail_closed · smoke_ci · cost vault |
+| 9 | Enterprise light | 8.0 | isolation_ok · `--tenant` |
+| 10 | Pricing / packaging | 8.0 | open core SKUs · no fake ARR |
+| 11 | GTM / distribution | 7.5 | Pages landing · PILOT · DIFF one-pager |
+| 12 | Simplicity / cognitive load | 7.6 | Day-1/2/Advanced help · status one-screen |
 
-**Weighted overall (product):** ~**8.0** · commercial surfaces **8.5/10** (cap 8.5 until revenue proof).  
-**Band:** strong packaging · ready for design partners · not yet revenue-proven.
+**Weighted overall (product):** ~**8.1** (still **cap 8.0** until paid pilot) · commercial **8.5**.  
+**Band:** strong packaging · differentiation documented · not revenue-proven.
 
 ## This fire
 
-**SELF_EVOLVE_DAY2:** `self_evolve status` → buyer JSON (dual_gate_safe · active/pending) · Day-2 CLI tier · `status --text` row · SELF-EVOLVE.md path.
+**DIFF_VS_SAST:** `docs/DIFF.md` buyer one-pager · `diff_vs_sast.py` fixture linked to public-eval · Day-2 CLI `diff` · landing/PRODUCT/README · status row.
 
-## Ranked remaining gaps (max 10 · implementable first)
+## Ranked remaining gaps
 
-| Rank | Gap | Dim | ROI | Effort | Status |
-|-----:|-----|-----|-----|--------|--------|
-| 1 | First design partner / paid pilot close | 11 | high | human GTM | open |
-| 2 | Live customer quieter vault (not only hub dogfood) | 3 | high | partner install | open |
-| 3 | Diff-vs-SAST one-pager with labeled bench | 2 | med | eval+docs | open |
-| 4 | Collapse PRODUCT advanced F-stack further on landing | 12 | med | docs | partial |
-| 5 | Self-evolve day-2 one-liner without F-IDs | 6 | med | docs/CLI | **shipped** |
-| 6 | Public eval keep age &lt;72h on every fire | 4/trust | med | refresh | standing |
-| 7 | Enterprise SSO / Plane (not v1) | 9 | low now | roadmap | deferred |
-| 8 | Billing live (Stripe) | 10/11 | high after pilot | eng+GTM | deferred |
-| 9 | No F185+ without customer win | all | standing | discipline | standing |
-| 10 | Required-check adoption playbook short video | 7/11 | med | GTM | open |
+| Rank | Gap | Dim | Status |
+|-----:|-----|-----|--------|
+| 1 | First design partner / paid pilot close | 11 | open (human GTM) |
+| 2 | Live customer quieter vault | 3 | open (partner install) |
+| 3 | Diff-vs-SAST one-pager with labeled bench | 2 | **shipped** |
+| 4 | Collapse PRODUCT advanced F-stack on landing | 12 | partial |
+| 5 | Self-evolve day-2 without F-IDs | 6 | shipped |
+| 6 | Public eval age &lt;72h | trust | standing |
+| 7 | No F185+ without customer win | all | standing |
+| 8 | Required-check short video | 7/11 | open |
+| 9 | Billing live | 10/11 | deferred |
+| 10 | Enterprise Plane / SSO | 9 | deferred |
 
 ```bash
-python3 scripts/torii.py self-evolve -- status
-python3 scripts/torii.py status --text
+python3 scripts/torii.py diff -- status
+python3 scripts/diff_vs_sast.py fixture
 ```

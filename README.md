@@ -26,7 +26,7 @@ One diagram — full write-up: [`docs/brand/BUYER-DIAGRAM.md`](docs/brand/BUYER-
         next PR is quieter and sharper
 ```
 
-Most AI PR bots optimize for *code quality comments*. Torii optimizes for **security merge authority**:
+Most AI PR bots optimize for *code quality comments*. Torii optimizes for **security merge authority** (not SAST replacement — see [`docs/DIFF.md`](docs/DIFF.md)):
 
 - Injection, authz, secrets, XSS/CSRF, SSRF, path traversal, unsafe deserialize, crypto misuse  
 - Evidence from workspace tools (not invented vulns)  
@@ -102,6 +102,7 @@ Day-one path stays install → require **`torii/gate`** → first review. Everyt
 | Enterprise light | [`docs/enterprise/`](docs/enterprise/) · install `--tenant` | `python3 scripts/torii.py enterprise -- status` |
 | **Commercial rollup** | [`docs/benchmarks/commercial-scorecard.md`](docs/benchmarks/commercial-scorecard.md) | `python3 scripts/torii.py commercial -- status` |
 | **Pricing (open core)** | [`docs/PRICING.md`](docs/PRICING.md) | Open Gate free · Team · Business · Enterprise roadmap |
+| **vs SAST / AI review** | [`docs/DIFF.md`](docs/DIFF.md) | Merge authority matrix + labeled public-eval |
 | **Design partner / pilot** | [`docs/PILOT.md`](docs/PILOT.md) | Free design partner · optional paid pilot · **0 paid customers** (honest) |
 
 **Public labeled eval** (Juice Shop + NodeGoat + Django/Flask themes, fixed **seed 42**, model pin, freshness badge):  

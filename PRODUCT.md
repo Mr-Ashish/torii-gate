@@ -78,7 +78,7 @@ Install path: [`docs/GOLDEN-PATH.md`](docs/GOLDEN-PATH.md) · metrics: [`docs/be
 
 **Compound memory:** FP die twice · TP stay sharp (path-evidenced write, tiers, scoped recall) → [`docs/MEMORY.md`](docs/MEMORY.md) · `python3 scripts/torii.py memory -- doctor`.
 
-**CLI:** `python3 scripts/torii.py help` · `status --text` · `doctor` · `golden-path -- status` · `certificate -- fixture` · `quieter -- status` · `tool-use -- status` · `ops -- status` · `commercial -- status` · `enterprise -- status` · `pilot -- readiness`
+**CLI:** `python3 scripts/torii.py help` · `status --text` · `doctor` · `golden-path -- status` · `certificate -- fixture` · `quieter -- status` · `tool-use -- status` · `ops -- status` · `commercial -- status` · `enterprise -- status` · `pilot -- readiness` · `diff -- status`
 
 **Commercial rollup (queue 1–6 + post-queue + workflow):** `python3 scripts/torii.py commercial -- fixture` → [`docs/benchmarks/commercial-scorecard.md`](docs/benchmarks/commercial-scorecard.md).
 
@@ -89,6 +89,8 @@ Install path: [`docs/GOLDEN-PATH.md`](docs/GOLDEN-PATH.md) · metrics: [`docs/be
 **Design partner / paid pilot:** [`docs/PILOT.md`](docs/PILOT.md) — free design partner on a real repo · optional Team/Business pilot · measured readiness `python3 scripts/torii.py pilot -- readiness` · traction stays truthful (**0 paid**). Apply: [issue template](https://github.com/Mr-Ashish/torii-gate/issues/new?template=design-partner.yml).
 
 **Public labeled eval freshness:** seed **42** · model pin · scored_at age (max 72h) — [`docs/benchmarks/public-eval/SCORECARD.md`](docs/benchmarks/public-eval/SCORECARD.md) · badge [`BADGE.md`](docs/benchmarks/public-eval/BADGE.md) · `python3 scripts/torii.py public-eval -- status`.
+
+**Diff vs SAST / AI review:** honest merge-authority positioning + labeled public-eval evidence — [`docs/DIFF.md`](docs/DIFF.md) · `python3 scripts/torii.py diff -- status`.
 
 **Deployed landing (GitHub Pages):** https://mr-ashish.github.io/torii-gate/ — built from [`docs/brand/landing.html`](docs/brand/landing.html) via `python3 scripts/build_landing_site.py build` · workflow `.github/workflows/pages-landing.yml`.
 

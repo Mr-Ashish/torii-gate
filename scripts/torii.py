@@ -238,6 +238,16 @@ GROUPS: dict[str, dict[str, Any]] = {
             "pilot -- report",
         ],
     },
+    "diff": {
+        "script": "diff_vs_sast.py",
+        "help": "Torii vs SAST vs AI review (buyer differentiation)",
+        "tier": "day2",
+        "examples": [
+            "diff -- status",
+            "diff -- fixture",
+            "diff -- report",
+        ],
+    },
 }
 
 _TIER_ORDER = ("day1", "day2", "advanced")
@@ -517,6 +527,11 @@ def build_status_payload(root: Path | None = None) -> dict[str, Any]:
         day2["self_evolve_pending_n"] = sev.get("pending_proposals_n")
         day2["self_evolve_dual_gate_safe"] = sev.get("dual_gate_default_safe")
         day2["self_evolve_one_liner"] = sev.get("one_liner")
+    # Diff vs SAST / AI review (buyer differentiation)
+    dvs = _soft_script_json(root, "diff_vs_sast.py", ["status"], timeout=20)
+    if dvs:
+        day2["diff_vs_sast_ok"] = dvs.get("diff_vs_sast_ok")
+        day2["diff_labeled_tp"] = (dvs.get("measured") or {}).get("labeled_tp")
     # Model alias SoT present
     day2["model_alias_script"] = (_scripts_dir(root) / "model_alias.py").is_file()
     # Public eval freshness (soft) — normalize model id for display honesty
@@ -642,6 +657,12 @@ def render_status_text(payload: dict[str, Any]) -> str:
                 f"pending={day2.get('self_evolve_pending_n')} · "
                 f"dual_gate_safe={day2.get('self_evolve_dual_gate_safe')} "
                 f"(measured adopt · not free-form drift)"
+            )
+        if day2.get("diff_vs_sast_ok") is not None:
+            lines.append(
+                f"- vs SAST / AI review: ok={day2.get('diff_vs_sast_ok')} · "
+                f"labeled_tp={day2.get('diff_labeled_tp')} · "
+                f"docs/DIFF.md (merge authority · not scanner replacement)"
             )
     else:
         lines.append("- _(soft day-2 peeks unavailable — run doctor / commercial -- fixture)_")
