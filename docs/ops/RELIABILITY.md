@@ -16,6 +16,12 @@
 
 Branch protection → require **`torii/gate`**. See `docs/INSTALL.md` and `docs/GATE.md`.
 
+## Live lean path (time-to-signal)
+
+Modal dogfood defaults **`TORII_LIVE_LEAN=1`**: after the merge signal (hermes · critic · demote-eval · scorecard · skill util · memory compound), skip heavy evolve/federate-promote/memory-consolidate/graph stages. Full compound loops remain available with `TORII_LIVE_LEAN=0` on hub research runs.
+
+Also: live product scorecard is **`--shallow`** (reuses `critic-demote-eval.json`; no double demote-eval).
+
 ## Smoke CI
 
 ```bash

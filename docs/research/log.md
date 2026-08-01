@@ -5208,3 +5208,25 @@ run-torii-review ran demote-eval then full scorecard which re-ran demote-eval (3
 
 ### SHA
 `a37fedf5ea3bf8e5fe90d709ef9305c84070ca5d`
+
+## 2026-08-01 — LIVE_LEAN post-gate path (time-to-signal)
+
+### Papers / posts
+- Path-to-value: merge signal first; research compound loops second.
+- Ops: long post-hermes stage tails burn Modal wall without buyer win.
+- Public eval freshness: re-score seed/model/age on buyer surfaces.
+
+### Insight
+After SCORECARD_NO_DOUBLE_DEMOTE, evolve/fed/consolidate still elongated dogfood. Highest ROI: TORII_LIVE_LEAN=1 on Modal skips non-critical stages; keep critic · demote · scorecard · skill util · memory compound.
+
+### Feature shipped (LIVE_LEAN)
+- run-torii-review.sh `_live_lean` skips evolve/fitness-gate/fed promote/consolidate/graph
+- Modal default TORII_LIVE_LEAN=1
+- docs/ops/RELIABILITY.md · public-eval report refresh
+
+### Metric
+- Live Modal e2e should drop stages evolve_ingest/memory_consolidate
+- Public eval age ~0h after report
+
+### SHA
+`PENDING_PUSH`

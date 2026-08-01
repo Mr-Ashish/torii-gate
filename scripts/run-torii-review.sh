@@ -7,6 +7,9 @@
 #   TORII_ROOT, WORKSPACE_ROOT, HERMES_HOME, OUT_DIR
 #   TORII_MODEL, TRIGGER_COMMENT, MAX_DIFF_BYTES
 #   POST_COMMENT=1 to also post (optional)
+#   TORII_LIVE_LEAN=1 — skip heavy post-gate compound stages (Modal/dogfood default)
+#     Keeps: hermes · critic · demote-eval · scorecard · skill util · memory compound · publish
+#     Skips: evolve propose/fitness-gate · federate promote · memory consolidate/graph bloat
 set -euo pipefail
 
 TORII_ROOT="${TORII_ROOT:-$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)}"
@@ -26,6 +29,14 @@ TORII_STARTED_AT="$(date -u +%Y-%m-%dT%H:%M:%SZ)"
 TIMINGS_FILE="$OUT_DIR/timings.json"
 : >"$OUT_DIR/timings.partial.tsv"
 
+# LIVE_LEAN: product path-to-value — merge signal first, compound loops optional later.
+_live_lean() {
+  case "${TORII_LIVE_LEAN:-0}" in
+    1|true|yes|on) return 0 ;;
+    *) return 1 ;;
+  esac
+}
+
 stage() {
   local name="$1"
   shift
@@ -41,6 +52,10 @@ stage() {
   printf '%s\t%s\t%s\n' "$name" "$elapsed" "$rc" >>"$OUT_DIR/timings.partial.tsv"
   return "$rc"
 }
+
+if _live_lean; then
+  echo "::notice::Torii LIVE_LEAN=1 · skip heavy post-gate evolve/fed/consolidate stages" >&2
+fi
 
 echo "::notice::Torii orchestrator · root=$TORII_ROOT workspace=$WORKSPACE_ROOT" >&2
 
@@ -223,7 +238,8 @@ if [[ -f "$SCRIPTS/second_agent_critic.py" ]]; then
       stage product_scorecard \
         python3 "$SCRIPTS/torii.py" scorecard --out-dir "$OUT_DIR" --shallow || true
       # F132: self-evolve skill proposals from scorecard gap themes (soft)
-      if [[ -f "$SCRIPTS/self_evolve.py" ]]; then
+      # LIVE_LEAN: skip propose-scorecard (hub/research path; not on critical merge signal)
+      if [[ -f "$SCRIPTS/self_evolve.py" ]] && ! _live_lean; then
         case "${TORII_SELF_EVOLVE_SCORECARD:-1}" in
           0|false|no|off) ;;
           *)
@@ -249,8 +265,9 @@ if [[ -f "$SCRIPTS/second_agent_critic.py" ]]; then
   esac
 fi
 
-# F69: package trajectory for self-evolution (soft; always ingest when loop exists)
-if [[ -f "$SCRIPTS/self_evolve.py" && -d "$OUT_DIR/agent-loop" ]]; then
+# F69: package trajectory for self-evolution (soft)
+# LIVE_LEAN: skip ingest/propose (merge signal already minted via scorecard+critic)
+if [[ -f "$SCRIPTS/self_evolve.py" && -d "$OUT_DIR/agent-loop" ]] && ! _live_lean; then
   stage evolve_ingest \
     python3 "$SCRIPTS/self_evolve.py" ingest \
       --out-dir "$OUT_DIR" \
@@ -266,7 +283,7 @@ if [[ -f "$SCRIPTS/self_evolve.py" && -d "$OUT_DIR/agent-loop" ]]; then
 fi
 
 # F74: fitness-gated skill evolution cycle (soft; propose+validate; adopt only if auto)
-if [[ -f "$SCRIPTS/fitness_gate_evolve.py" ]]; then
+if [[ -f "$SCRIPTS/fitness_gate_evolve.py" ]] && ! _live_lean; then
   case "${TORII_FITNESS_GATE_EVOLVE:-1}" in
     0|false|no|off) ;;
     *)
@@ -373,10 +390,14 @@ if [[ -f "$SCRIPTS/skill_fitness.py" ]]; then
 fi
 
 # F117: mine allowlisted tool-outcome probes from this run → durable ledger (+ soft propose)
+# LIVE_LEAN: keep mine-probes (cheap) but skip when lean+probe off
 if [[ -f "$SCRIPTS/self_evolve.py" ]]; then
   case "${TORII_TOOL_PROBE_MINE:-1}" in
     0|false|no|off) ;;
     *)
+      if _live_lean; then
+        : # still mine — cheap tool-use compound signal for next PR
+      fi
       _f117_args=(mine-probes --out-dir "$OUT_DIR")
       case "${TORII_SELF_EVOLVE:-0}" in
         1|true|yes|on) _f117_args+=(--propose) ;;
@@ -388,7 +409,7 @@ if [[ -f "$SCRIPTS/self_evolve.py" ]]; then
 fi
 
 # F86: multi-tenant promote of skill themes (soft)
-if [[ -f "$SCRIPTS/skill_dual_rollout.py" ]]; then
+if [[ -f "$SCRIPTS/skill_dual_rollout.py" ]] && ! _live_lean; then
   case "${TORII_SKILL_DUAL_ROLLOUT:-1}" in
     0|false|no|off) ;;
     *)
@@ -399,7 +420,7 @@ if [[ -f "$SCRIPTS/skill_dual_rollout.py" ]]; then
 fi
 
 # F77/F83: promote multi-tenant federated signals (soft)
-if [[ -f "$SCRIPTS/federated_hub_ingest.py" ]]; then
+if [[ -f "$SCRIPTS/federated_hub_ingest.py" ]] && ! _live_lean; then
   case "${TORII_FED_PROMOTE:-1}" in
     0|false|no|off) ;;
     *)
@@ -448,7 +469,8 @@ if [[ -f "$SCRIPTS/memory_compound_write.py" ]]; then
 fi
 
 # F94: memory consolidation — importance · merge · decay · eviction (soft)
-if [[ -f "$SCRIPTS/memory_consolidate.py" ]]; then
+# LIVE_LEAN: skip consolidate (compound write still ran; decay can wait for hub cycle)
+if [[ -f "$SCRIPTS/memory_consolidate.py" ]] && ! _live_lean; then
   case "${TORII_MEMORY_CONSOLIDATE:-1}" in
     0|false|no|off) ;;
     *)
@@ -469,7 +491,8 @@ if [[ -f "$SCRIPTS/memory_consolidate.py" ]]; then
 fi
 
 # F100: rebuild temporal memory graph after writes (soft)
-if [[ -f "$SCRIPTS/memory_temporal_graph.py" ]]; then
+# LIVE_LEAN: skip graph rebuild (not on critical path to torii/gate)
+if [[ -f "$SCRIPTS/memory_temporal_graph.py" ]] && ! _live_lean; then
   case "${TORII_MEMORY_GRAPH:-1}" in
     0|false|no|off) ;;
     *)

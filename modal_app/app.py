@@ -625,6 +625,8 @@ def review_pr(
         "TORII_REVIEW_TIMEOUT_SECONDS": os.environ.get(
             "TORII_REVIEW_TIMEOUT_SECONDS", "2100"
         ),
+        # LIVE_LEAN: merge-signal path first (skip heavy evolve/fed/consolidate)
+        "TORII_LIVE_LEAN": os.environ.get("TORII_LIVE_LEAN", "1"),
         # F41: Hermes max_turns (script default 40 if unset; 0/off disables)
         "TORII_MAX_TURNS": os.environ.get("TORII_MAX_TURNS", "40"),
         # F42: auto model tier (off by default; auto|cheap|full)

@@ -4,9 +4,9 @@ Technical-trust scorecard for Torii Gate (priority →8.5).
 
 - **Scorecard:** [SCORECARD.md](SCORECARD.md) · [scorecard.json](scorecard.json) · [BADGE.md](BADGE.md)
 - **Seed:** `42`
-- **Model:** `deepseek/deepseek-chat-v4-pro`
+- **Model:** `deepseek/deepseek-v4-pro`
 - **public_eval_ok:** `True` · **freshness_ok:** `True`
-- **Badge:** `Public eval · seed 42 · deepseek-chat-v4-pro · scored 2026-08-01T18:43:39Z · age 0.0h`
+- **Badge:** `Public eval · seed 42 · deepseek-v4-pro · scored 2026-08-01T22:21:15Z · age 0.0h`
 
 Packs are license-safe **synthetic** demos themed after OSS training apps (Juice Shop, NodeGoat, Django/Flask vuln classes) — not forks.
 
