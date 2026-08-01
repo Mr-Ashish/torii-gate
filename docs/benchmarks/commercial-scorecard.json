@@ -1,0 +1,184 @@
+{
+  "feature": "COMMERCIAL",
+  "schema": 1,
+  "scored_at": "2026-08-01T14:44:49Z",
+  "scorecard_target": "7.5+",
+  "dim_lift": "commercial rollup of priority queue 1\u20136",
+  "one_liner": "Single commercial scorecard: golden path \u00b7 buyer \u00b7 public eval \u00b7 install \u00b7 ops \u00b7 enterprise",
+  "surfaces": [
+    {
+      "id": "golden_path",
+      "target": "7.5",
+      "dim": "commercial / simplicity path",
+      "weight": 0.22,
+      "ok": true,
+      "fixture": {
+        "ok": true,
+        "rc": 0,
+        "fixture_pass": true,
+        "scorecard_target": "7.5",
+        "script": "golden_path_metrics.py",
+        "payload_keys": [
+          "feature",
+          "schema",
+          "fixture_pass",
+          "readiness",
+          "dogfood_runs_seen",
+          "labeled_eval",
+          "required_check",
+          "scorecard_target",
+          "at"
+        ]
+      }
+    },
+    {
+      "id": "buyer_narrative",
+      "target": "8.0",
+      "dim": "simplicity (narrative)",
+      "weight": 0.18,
+      "ok": true,
+      "fixture": {
+        "ok": true,
+        "rc": 0,
+        "fixture_pass": true,
+        "scorecard_target": "8.0",
+        "script": "buyer_narrative_check.py",
+        "payload_keys": [
+          "paths",
+          "checks",
+          "counts",
+          "ok_n",
+          "total",
+          "fixture_pass",
+          "primary_phrase",
+          "feature",
+          "schema",
+          "scorecard_target",
+          "at"
+        ]
+      }
+    },
+    {
+      "id": "public_eval",
+      "target": "8.5",
+      "dim": "technical trust",
+      "weight": 0.2,
+      "ok": true,
+      "fixture": {
+        "ok": true,
+        "rc": 0,
+        "fixture_pass": true,
+        "scorecard_target": "8.5",
+        "script": "public_eval.py",
+        "payload_keys": [
+          "feature",
+          "schema",
+          "fixture_pass",
+          "seed",
+          "model_id",
+          "required_packs",
+          "catalog_ids",
+          "demo_ok",
+          "fixtures_ok",
+          "corpus",
+          "scorecard_target",
+          "at"
+        ]
+      }
+    },
+    {
+      "id": "install_ux",
+      "target": "install",
+      "dim": "install UX (dim 7)",
+      "weight": 0.14,
+      "ok": true,
+      "fixture": {
+        "ok": true,
+        "rc": 0,
+        "fixture_pass": true,
+        "scorecard_target": "install",
+        "script": "install_ux_check.py",
+        "payload_keys": [
+          "feature",
+          "schema",
+          "fixture_pass",
+          "ok_n",
+          "total",
+          "checks",
+          "dry_detail_tail",
+          "scorecard_target",
+          "dim_lift",
+          "at",
+          "paths"
+        ]
+      }
+    },
+    {
+      "id": "ops",
+      "target": "ops",
+      "dim": "reliability/ops (dim 8)",
+      "weight": 0.14,
+      "ok": true,
+      "fixture": {
+        "ok": true,
+        "rc": 0,
+        "fixture_pass": true,
+        "scorecard_target": "ops",
+        "script": "ops_dashboard.py",
+        "payload_keys": [
+          "feature",
+          "schema",
+          "fixture_pass",
+          "checks",
+          "fail_closed_safe_defaults",
+          "required_context",
+          "scorecard_target",
+          "at"
+        ]
+      }
+    },
+    {
+      "id": "enterprise",
+      "target": "enterprise",
+      "dim": "enterprise light (dim 9)",
+      "weight": 0.12,
+      "ok": true,
+      "fixture": {
+        "ok": true,
+        "rc": 0,
+        "fixture_pass": true,
+        "scorecard_target": "enterprise",
+        "script": "enterprise_surface.py",
+        "payload_keys": [
+          "feature",
+          "schema",
+          "fixture_pass",
+          "checks",
+          "tenant_n",
+          "scorecard_target",
+          "at"
+        ]
+      }
+    }
+  ],
+  "estimate": {
+    "baseline": 6.6,
+    "overall_est": 8.5,
+    "lift": 1.9,
+    "surfaces_pass": 6,
+    "surfaces_total": 6,
+    "pass_fraction": 1.0,
+    "note": "Heuristic commercial score from hermetic surface fixtures \u2014 not a customer interview score. Cap 8.5 until live revenue proof."
+  },
+  "artifacts": {
+    "golden_path_md": true,
+    "public_eval_md": true,
+    "buyer_diagram": true,
+    "install_md": true,
+    "ops_dashboard": true,
+    "enterprise_privacy": true
+  },
+  "all_surfaces_pass": true,
+  "artifacts_ok": true,
+  "commercial_ok": true
+}

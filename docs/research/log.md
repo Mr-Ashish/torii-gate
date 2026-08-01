@@ -1,3 +1,38 @@
+## 2026-08-01 — COMMERCIAL: priority-queue rollup scorecard (→7.5+)
+
+### Papers / posts
+- Loop Engineering: after shipping surfaces, publish one score.
+- Queue 1–6 landed; avoid new F-loops — tools-as-code rollup instead.
+- Commercial trajectory baseline 6.6 → overall_est when fixtures pass.
+
+### OSS design patterns stolen
+1. commercial_scorecard.py runs 6 hermetic surface fixtures with weights.
+2. overall_est = 6.6 + 1.9 * pass_fraction (cap 8.5).
+3. docs/benchmarks/commercial-scorecard.md + CI smoke step.
+4. torii.py commercial CLI.
+
+### Insight
+Six commercial surfaces existed without one operator “are we at 7.5?” command. Highest ROI: rollup tools-as-code.
+
+### Feature shipped (COMMERCIAL / F193)
+- commercial_scorecard.py · scorecard md/json · smoke CI · tests
+
+### Loop-engineering
+Score the commercial loop as a product, not a research log.
+
+### Metric
+- Offline: 6/6 surfaces · overall_est=8.5 · commercial_ok · pytest 2 passed
+- Live Modal: pytorch#191840 BIT3_OK ~52.7s POST_COMMENT=0 log_streaming=true
+
+### scorecard_target
+7.5+
+
+### dim_lift
+commercial rollup (queue 1–6)
+
+### SHA
+`(fill after push)`
+
 ## 2026-08-01 — ENTERPRISE: org isolation + federation privacy product surface
 
 ### Papers / posts

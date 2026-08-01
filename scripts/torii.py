@@ -150,6 +150,15 @@ GROUPS: dict[str, dict[str, Any]] = {
             "enterprise -- report",
         ],
     },
+    "commercial": {
+        "script": "commercial_scorecard.py",
+        "help": "Commercial rollup: golden/buyer/eval/install/ops/enterprise (→7.5+)",
+        "examples": [
+            "commercial -- fixture",
+            "commercial -- report",
+            "commercial -- status",
+        ],
+    },
 }
 
 

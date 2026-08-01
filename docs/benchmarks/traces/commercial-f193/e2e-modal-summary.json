@@ -1,0 +1,18 @@
+{
+  "feature": "COMMERCIAL",
+  "schema_version": 1,
+  "repo": "pytorch/pytorch",
+  "pr": "191840",
+  "model": "deepseek/deepseek-chat-v4-pro",
+  "host": "modal",
+  "bit3": true,
+  "elapsed_s": 52.7,
+  "log_streaming": true,
+  "tool_call_turns": 0,
+  "post_comment": 0,
+  "verdict": "COMMENT",
+  "notes": "Commercial rollup fire; overall_est 8.5 from surfaces 6/6",
+  "scored_at": "2026-08-01T14:46:32Z",
+  "modal_run": "https://modal.com/apps/mr-ashish/main/ap-yOuUOuYjTZICIwVDCuH5lw",
+  "overall_est": 8.5
+}

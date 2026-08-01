@@ -84,6 +84,9 @@ python3 scripts/golden_path_metrics.py report          # → docs/benchmarks/gol
 **Enterprise light** (org isolation + federation privacy):  
 [`docs/enterprise/`](docs/enterprise/) · `python3 scripts/enterprise_surface.py status`
 
+**Commercial scorecard** (priority queue 1–6 rollup →7.5+):  
+[`docs/benchmarks/commercial-scorecard.md`](docs/benchmarks/commercial-scorecard.md) · `python3 scripts/commercial_scorecard.py report`
+
 Install on a **target** repo: copy workflow pack or point `torii_repository` at this hub (see `pack/`).
 
 ## Live e2e (Modal)
