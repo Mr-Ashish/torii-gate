@@ -1,4 +1,36 @@
 
+## 2026-08-01 — FEDERATION: buyer JTBD surface (privacy-safe multi-tenant)
+
+### Papers / posts
+- Multi-tenant agent privacy (themes/hashes only): enterprise buyers need a one-pager above JSON dumps.
+- Core product: federation for merge-authority JTBD — compounds quieter without path leaks.
+- Loop Engineering: package the trust loop operators actually open.
+
+### Decide / copy / skip
+- **Copy:** docs/FEDERATION.md buyer front door (allowlist + torii/gate still required).
+- **Copy:** torii.py federation → federated_hub_ingest; enterprise fixture requires buyer doc.
+- **Copy:** landing federation card; commercial artifact federation_md.
+- **Skip:** F185+; no new hub protocol.
+
+### Feature shipped (FEDERATION)
+- docs/FEDERATION.md · enterprise_surface docs checks · torii federation CLI
+- PRODUCT + enterprise README + landing · tests
+
+### Metric
+- Offline: enterprise fixture_pass (11 checks) · commercial still 10/10
+- Live Modal: pytorch#191840 BIT3_OK ~139.3s tools=6 verdict_rc=0 POST_COMMENT=0
+- Traces: docs/benchmarks/traces/20260801-1541-pytorch-pytorch-PR191840-modal-federation/
+
+### scorecard_target
+enterprise (#9) · JTBD (#3)
+
+### dim_lift
+federation privacy as buyer merge-authority surface
+
+### SHA
+_pending_
+
+
 ## 2026-08-01 — WORKFLOWS: buyer surface + commercial workflow L3
 
 ### Papers / posts

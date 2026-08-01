@@ -131,25 +131,29 @@ def audit_all_federation(root: Path) -> dict[str, Any]:
 
 
 def docs_surface(root: Path) -> dict[str, bool]:
+    privacy_txt = (
+        (root / OUT_REL / "PRIVACY.md").read_text(encoding="utf-8")
+        if (root / OUT_REL / "PRIVACY.md").is_file()
+        else ""
+    )
+    fed_buyer = root / "docs" / "FEDERATION.md"
+    fed_txt = fed_buyer.read_text(encoding="utf-8") if fed_buyer.is_file() else ""
     return {
         "readme": (root / OUT_REL / "README.md").is_file(),
         "org_isolation": (root / OUT_REL / "ORG-ISOLATION.md").is_file(),
         "privacy": (root / OUT_REL / "PRIVACY.md").is_file(),
-        "privacy_names_allowlist": "tenant hash" in (
-            (root / OUT_REL / "PRIVACY.md").read_text(encoding="utf-8")
-            if (root / OUT_REL / "PRIVACY.md").is_file()
-            else ""
-        ).lower()
-        or "tenant hash" in (
-            (root / OUT_REL / "PRIVACY.md").read_text(encoding="utf-8")
-            if (root / OUT_REL / "PRIVACY.md").is_file()
-            else ""
-        ),
+        "privacy_names_allowlist": "tenant hash" in privacy_txt.lower(),
         "org_diagram": "Org A" in (
             (root / OUT_REL / "ORG-ISOLATION.md").read_text(encoding="utf-8")
             if (root / OUT_REL / "ORG-ISOLATION.md").is_file()
             else ""
         ),
+        # Buyer JTBD front door (merge-authority federation, not only enterprise/)
+        "federation_buyer_doc": fed_buyer.is_file(),
+        "federation_buyer_mentions_privacy": (
+            "tenant hash" in fed_txt.lower() and "path" in fed_txt.lower()
+        ),
+        "federation_buyer_mentions_gate": "torii/gate" in fed_txt,
     }
 
 
@@ -214,6 +218,7 @@ def build_report(root: Path | None = None) -> dict[str, Any]:
             "readme": str(OUT_REL / "README.md"),
             "org_isolation": str(OUT_REL / "ORG-ISOLATION.md"),
             "privacy": str(OUT_REL / "PRIVACY.md"),
+            "federation_buyer": "docs/FEDERATION.md",
             "surface_md": str(OUT_REL / "SURFACE.md"),
         },
     }
@@ -276,6 +281,7 @@ def render_surface_md(report: dict[str, Any]) -> str:
         "",
         "- [ORG-ISOLATION.md](ORG-ISOLATION.md) — org isolation story",
         "- [PRIVACY.md](PRIVACY.md) — federation privacy one-pager",
+        "- [../FEDERATION.md](../FEDERATION.md) — buyer JTBD (merge-authority federation)",
         "",
         "## Refresh",
         "",
@@ -317,6 +323,9 @@ def cmd_fixture(args: argparse.Namespace) -> int:
         "docs_org": bool(docs.get("org_isolation")),
         "docs_privacy": bool(docs.get("privacy")),
         "docs_org_diagram": bool(docs.get("org_diagram")),
+        "docs_federation_buyer": bool(docs.get("federation_buyer_doc")),
+        "docs_federation_buyer_privacy": bool(docs.get("federation_buyer_mentions_privacy")),
+        "docs_federation_buyer_gate": bool(docs.get("federation_buyer_mentions_gate")),
         "federation_audited": int(fed.get("files_n") or 0) >= 1,
         "federation_all_ok": bool(fed.get("all_ok")),
         "hub_fixture": bool(hub.get("fixture_pass")),

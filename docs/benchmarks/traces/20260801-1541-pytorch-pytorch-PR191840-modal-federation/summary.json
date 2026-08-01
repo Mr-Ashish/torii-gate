@@ -1,0 +1,21 @@
+{
+  "feature": "FEDERATION",
+  "schema_version": 1,
+  "repo": "pytorch/pytorch",
+  "pr": "191840",
+  "model": "deepseek/deepseek-v4-pro",
+  "host": "modal",
+  "bit3": true,
+  "elapsed_s": 139.3,
+  "log_streaming": true,
+  "tool_call_turns": 6,
+  "post_comment": 0,
+  "verdict": "REQUEST_CHANGES",
+  "block": true,
+  "certificate_id": "gc-2dae34f4cc018daa",
+  "notes": "FEDERATION buyer JTBD surface + torii federation CLI + enterprise fixture docs",
+  "scored_at": "2026-08-01T15:44:51Z",
+  "modal_run": "https://modal.com/apps/mr-ashish/main/ap-f6HrxsSr0Wh91z7FHmNwwF",
+  "cost_usd": 0.010891733,
+  "verdict_rc": 0
+}

@@ -2,7 +2,7 @@
 
 # Enterprise surface inventory
 
-_Generated: `2026-08-01T14:42:43Z` · **enterprise_ok=True**_
+_Generated: `2026-08-01T15:44:51Z` · **enterprise_ok=True**_
 
 Org isolation + federation privacy as product docs and audit CLI — themes only, no paths/snippets/raw tenant IDs
 
@@ -48,6 +48,7 @@ Org isolation + federation privacy as product docs and audit CLI — themes only
 
 - [ORG-ISOLATION.md](ORG-ISOLATION.md) — org isolation story
 - [PRIVACY.md](PRIVACY.md) — federation privacy one-pager
+- [../FEDERATION.md](../FEDERATION.md) — buyer JTBD (merge-authority federation)
 
 ## Refresh
 

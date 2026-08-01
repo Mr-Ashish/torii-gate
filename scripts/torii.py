@@ -150,6 +150,15 @@ GROUPS: dict[str, dict[str, Any]] = {
             "enterprise -- report",
         ],
     },
+    "federation": {
+        "script": "federated_hub_ingest.py",
+        "help": "Privacy-safe multi-tenant hub signals (themes only, no paths)",
+        "examples": [
+            "federation -- status",
+            "federation -- fixture",
+            "federation -- promote",
+        ],
+    },
     "commercial": {
         "script": "commercial_scorecard.py",
         "help": "Commercial rollup: queue 1–6 + cert/quieter/tools + workflow (→7.5+)",

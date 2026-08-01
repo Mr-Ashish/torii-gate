@@ -36,6 +36,11 @@ class EnterpriseSurfaceTests(unittest.TestCase):
         self.assertIn("path", priv.lower())
         self.assertIn("snippet", priv.lower())
         self.assertIn("hash", priv.lower())
+        fed = ROOT / "docs" / "FEDERATION.md"
+        self.assertTrue(fed.is_file())
+        fed_txt = fed.read_text(encoding="utf-8")
+        self.assertIn("torii/gate", fed_txt)
+        self.assertIn("tenant hash", fed_txt.lower())
 
     def test_fixture(self):
         r = _run(["fixture"])
@@ -45,6 +50,8 @@ class EnterpriseSurfaceTests(unittest.TestCase):
         self.assertEqual(data["scorecard_target"], "enterprise")
         self.assertTrue(data["checks"]["federation_all_ok"])
         self.assertTrue(data["checks"]["hub_fixture"])
+        self.assertTrue(data["checks"].get("docs_federation_buyer"), data["checks"])
+        self.assertTrue(data["checks"].get("docs_federation_buyer_gate"), data["checks"])
 
     def test_report(self):
         r = _run(["report", "--json", "--allow-partial"])

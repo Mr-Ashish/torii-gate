@@ -231,6 +231,7 @@ def build_report(root: Path | None = None) -> dict[str, Any]:
         "workflow_yaml": (
             root / "docs" / "workflows" / "torii-gate.workflow.yaml"
         ).is_file(),
+        "federation_md": (root / "docs" / "FEDERATION.md").is_file(),
     }
     report = {
         "feature": FEATURE,

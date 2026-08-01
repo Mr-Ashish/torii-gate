@@ -2,7 +2,7 @@
 
 # Commercial product scorecard
 
-_Generated: `2026-08-01T15:38:21Z` · schema **2** · **overall_est=8.5/10** (baseline 6.6) · commercial_ok=`True`_
+_Generated: `2026-08-01T15:44:52Z` · schema **2** · **overall_est=8.5/10** (baseline 6.6) · commercial_ok=`True`_
 
 Single commercial scorecard: golden path · buyer · public eval · install · ops · enterprise · gate cert · quieter · tool-use · workflow
 
@@ -53,6 +53,7 @@ Deterministic pipeline graph vs LLM prose — validate offline before paid runs.
 |----------|:-------:|
 | `buyer_diagram` | True |
 | `enterprise_privacy` | True |
+| `federation_md` | True |
 | `gate_md` | True |
 | `golden_path_md` | True |
 | `install_md` | True |

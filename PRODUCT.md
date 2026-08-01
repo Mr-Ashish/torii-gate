@@ -69,6 +69,8 @@ Install path: [`docs/GOLDEN-PATH.md`](docs/GOLDEN-PATH.md) · metrics: [`docs/be
 
 **Enterprise light:** multi-tenant org isolation + federation privacy (themes only — no paths/snippets) → [`docs/enterprise/`](docs/enterprise/).
 
+**Federation (buyer JTBD):** privacy-safe multi-tenant heat compounds quieter gates → [`docs/FEDERATION.md`](docs/FEDERATION.md) · `python3 scripts/torii.py federation -- status`.
+
 **CLI:** `python3 scripts/torii.py help` · `doctor` · `golden-path -- status` · `certificate -- fixture` · `quieter -- status` · `tool-use -- status` · `commercial -- status` · `enterprise -- status`
 
 **Commercial rollup (queue 1–6 + post-queue + workflow):** `python3 scripts/torii.py commercial -- fixture` → [`docs/benchmarks/commercial-scorecard.md`](docs/benchmarks/commercial-scorecard.md).
