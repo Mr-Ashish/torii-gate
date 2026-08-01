@@ -128,7 +128,7 @@ EOF
 fi
 
 # --- 4. Workflow wiring ---
-log "[4/4] reusable workflow torii/gate post-step"
+log "[4/5] reusable workflow torii/gate post-step"
 if [[ ! -f "$WORKFLOW" ]]; then
   fail "missing $WORKFLOW"
 else
@@ -144,9 +144,24 @@ else
   fi
 fi
 
+
+# --- 5. F79 workflows-as-code ---
+log "[5/5] workflows-as-code (F79)"
+if [[ -f "$ROOT/scripts/workflow_as_code.py" && -f "$ROOT/docs/workflows/torii-gate.workflow.yaml" ]]; then
+  if python3 "$ROOT/scripts/workflow_as_code.py" fixture >/dev/null 2>&1; then
+    pass "workflow_as_code fixture L3"
+  else
+    python3 "$ROOT/scripts/workflow_as_code.py" fixture 2>&1 | tail -15 || true
+    fail "workflow_as_code fixture"
+  fi
+else
+  pass "skip F79 (workflow file not in this tree)"
+fi
+
 if [[ "$FAIL" -ne 0 ]]; then
   log "=== SMOKE FAILED ==="
   exit 1
 fi
 log "=== SMOKE PASSED ==="
 exit 0
+

@@ -1,8 +1,8 @@
 {
   "schema_version": 1,
-  "feature": "F78",
+  "feature": "F79",
   "description": "Torii agent tool catalog \u2014 research \u2192 eval \u2192 adopt pipeline",
-  "updated_at": "2026-08-01T00:51:42Z",
+  "updated_at": "2026-08-01T00:59:20Z",
   "tools": [
     {
       "id": "terminal",
@@ -196,6 +196,18 @@
       "rationale": "F78 maker/checker panel F70+F72+F73+F75; demote weak APPROVE",
       "feature": "F78",
       "adopted_at": "2026-08-01T00:51:00Z"
+    },
+    {
+      "id": "workflow-as-code",
+      "name": "Workflows-as-code gate pipeline (F79)",
+      "status": "adopted",
+      "source": "research_oss",
+      "kind": "workflow_tool",
+      "toolset": "terminal",
+      "script": "scripts/workflow_as_code.py",
+      "rationale": "Declarative torii-gate.workflow.yaml + validate/plan/status/install-guide; pack ships F70\u2013F78 scripts",
+      "feature": "F79",
+      "adopted_at": "2026-08-01T00:58:00Z"
     }
   ],
   "candidates": [

@@ -21,3 +21,14 @@ Pack mode also installs `scripts/run-torii-gate.sh`, `scripts/torii_gate_status.
 ## Caller pin tip (F10)
 
 `torii-pr-review-caller.yml` uses `…/torii-review-reusable.yml@main` for free upgrades. For production fleets, **pin `uses:` to a commit SHA** so a broken hub `main` does not break every target at once.
+
+## Workflows-as-code (F79)
+
+After pack install, from the target (or hub) checkout:
+
+```bash
+python3 scripts/workflow_as_code.py install-guide
+python3 scripts/workflow_as_code.py validate
+```
+
+See hub `docs/workflows/torii-gate.workflow.yaml` for the declarative stage graph and capability matrix.

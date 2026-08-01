@@ -50,3 +50,16 @@ Benchmark stub (Juice Shop eval plan): [docs/benchmarks/juice-shop-harness.md](b
 ## Roadmap hooks
 - **Trust:** ingest SARIF before agent; only validated findings block
 - **Plane:** policy JSON for coding agents (tool allowlists, spend)
+
+## Workflows-as-code (F79)
+
+Declarative pipeline: [`docs/workflows/torii-gate.workflow.yaml`](workflows/torii-gate.workflow.yaml).
+
+```bash
+python3 scripts/workflow_as_code.py validate
+python3 scripts/workflow_as_code.py plan
+python3 scripts/workflow_as_code.py install-guide   # capability matrix
+python3 scripts/workflow_as_code.py status          # readiness L0–L3
+```
+
+Install guide (generated): [`docs/workflows/INSTALL-GUIDE.md`](workflows/INSTALL-GUIDE.md).

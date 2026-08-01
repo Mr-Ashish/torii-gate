@@ -25,20 +25,21 @@
 | F76 | Multi-corpus bench + Juice Shop synthetic | bench, agent_quality, tools | **shipping** |
 | F77 | Cross-tenant hub federated signal ingest | memory, product, tools | **shipping** |
 | F78 | Multi-checker second-agent critic panel | agent_quality, product, tools | **shipping** |
+| F79 | Workflows-as-code + install capability guide | product, ops, tools | **shipping** |
 
 ## IN_PROGRESS
 
 | ID | Feature | Notes |
 |----|---------|-------|
-| — | — | open: optional LLM critic atop F78; real Juice Shop pin; install UX deep link |
+| — | — | open: optional LLM critic atop F78; real Juice Shop pin; Modal secrets for live logs |
 
 ## LEFT
 
-— Optional real Juice Shop pin; optional LLM critic atop F78 panel; install UX deep link
+— Optional real Juice Shop pin; optional LLM critic atop F78; Modal secrets for streaming
 
 ## Counts
 
-- **features_built_count:** 35 (F44–F78)
+- **features_built_count:** 36 (F44–F79)
 - **types_built:** agent_quality, product, memory, ops, bench, tools
 - **left_count:** open research
 - **progress_pct:** n/a (open research loop)
@@ -51,4 +52,4 @@
 
 ## Status line
 
-`features_built_count=35 types_built=agent_quality,product,memory,ops,bench,tools f78=second_agent_critic`
+`features_built_count=36 types_built=agent_quality,product,memory,ops,bench,tools f79=workflow_as_code`

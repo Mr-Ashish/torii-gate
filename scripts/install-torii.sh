@@ -148,6 +148,17 @@ RUNTIME_SCRIPTS=(
   usage-summary.py
   webhook_auth.py
   write-failure-review.sh
+  bench_security_gate.py
+  taint_prefilter.py
+  chain_revalidate.py
+  trajectory_fitness.py
+  fitness_gate_evolve.py
+  scoped_memory_recall.py
+  federated_hub_ingest.py
+  second_agent_critic.py
+  self_evolve.py
+  bench_corpus.py
+  workflow_as_code.py
 )
 
 copy_file() {
@@ -230,6 +241,8 @@ if [[ "$CALLER_MODE" == "1" ]]; then
   log "  4. Optional vars: TORII_MODEL, TORII_HERMES_COMMIT, TORII_COOLDOWN_SECONDS, TORII_RUNNER_IMAGE, TORII_MEMORY_PATH."
   log "  5. Branch protection: require status check context torii/gate (security-aware merge signal)."
   log "  6. On a PR, comment: @torii review this pr"
+log "  7. Capability matrix: python3 scripts/workflow_as_code.py install-guide"
+log "  8. Offline smoke: ./scripts/smoke-torii-gate.sh && python3 scripts/workflow_as_code.py validate"
   log "  Runtime agent/scripts are fetched from Mr-Ashish/torii-gate@main each run."
   log "  Tip: pin the uses: ref to a commit SHA (not @main) to avoid blast radius from hub main."
   log "  Tip: seed .torii/MEMORY.md on the target default branch (or re-install pack mode once)."

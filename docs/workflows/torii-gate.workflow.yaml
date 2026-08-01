@@ -1,0 +1,175 @@
+# Torii Gate — workflows-as-code (F79)
+# Declarative pipeline for maker review + checker panel + memory.
+# Validated by: python3 scripts/workflow_as_code.py validate
+schema_version: 1
+feature: F79
+name: torii-gate
+description: >
+  PR/CI security gate: assemble context → Hermes maker review → normalize →
+  deterministic checker panel → fitness/vault → memory compound → publish.
+
+# Entry points (product)
+entries:
+  product: scripts/run-torii-gate.sh
+  orchestrator: scripts/run-torii-review.sh
+  local: scripts/review-local.sh
+  trigger: scripts/trigger-review.sh
+  smoke: scripts/smoke-torii-gate.sh
+  install: scripts/install-torii.sh
+  gate_status: scripts/torii_gate_status.py
+  workflow_cli: scripts/workflow_as_code.py
+
+# Soft-fail stages use soft: true (|| true in orchestrator)
+stages:
+  - id: preload_memory
+    script: scripts/preload-hub-memory.sh
+    soft: true
+    phase: pre
+  - id: assemble
+    script: scripts/assemble-context.sh
+    soft: false
+    phase: pre
+    injects:
+      - F69 skills
+      - F70 TP signatures
+      - F71 taint + federated
+      - F72 chain rubric
+      - F73 fitness rubric
+      - F74 fitness-gate evolve
+      - F75 scoped memory
+      - F78 second-agent critic policy
+  - id: hermes
+    script: scripts/run-hermes-review.sh
+    soft: false
+    phase: maker
+    env:
+      - OPENROUTER_API_KEY
+      - TORII_MODEL
+  - id: distill
+    script: scripts/distill-memory.sh
+    soft: true
+    phase: post
+  - id: fp_resolve_update
+    script: scripts/fp_resolve_memory.py
+    soft: true
+    phase: post
+    feature: F62
+  - id: save_trace
+    script: scripts/save-trace.sh
+    soft: true
+    phase: post
+  - id: traj_fitness
+    script: scripts/trajectory_fitness.py
+    soft: true
+    phase: checker
+    feature: F73
+    command: pack
+  - id: second_agent_critic
+    script: scripts/second_agent_critic.py
+    soft: true
+    phase: checker
+    feature: F78
+    command: run
+  - id: evolve_ingest
+    script: scripts/self_evolve.py
+    soft: true
+    phase: memory
+    feature: F69
+  - id: fitness_gate_evolve
+    script: scripts/fitness_gate_evolve.py
+    soft: true
+    phase: memory
+    feature: F74
+  - id: federated_hub
+    script: scripts/federated_hub_ingest.py
+    soft: true
+    phase: memory
+    feature: F77
+    note: usually via hub-ingest payload; local dogfood via CLI
+  - id: publish_local
+    script: scripts/publish-run-local.sh
+    soft: true
+    phase: publish
+  - id: publish_hub
+    script: scripts/publish-run-to-hub.sh
+    soft: true
+    phase: publish
+  - id: pack_ui_bundle
+    script: scripts/pack-run-for-ui.py
+    soft: true
+    phase: publish
+  - id: post_comment
+    script: scripts/post-review-comment.sh
+    soft: false
+    phase: publish
+    when: POST_COMMENT=1
+
+# Capability matrix (install UX deep links)
+capabilities:
+  - id: gate_status
+    feature: F22
+    script: scripts/torii_gate_status.py
+    one_liner: Map verdict → torii/gate merge signal
+  - id: fp_memory
+    feature: F64
+    script: scripts/fp_resolve_memory.py
+    one_liner: Durable FP rules so false positives die twice
+  - id: labeled_bench
+    feature: F70
+    script: scripts/bench_security_gate.py
+    one_liner: Labeled vuln bench + dual-pass critic + TP signatures
+  - id: taint_prefilter
+    feature: F71
+    script: scripts/taint_prefilter.py
+    one_liner: Deterministic source→sink prefilter
+  - id: chain_revalidate
+    feature: F72
+    script: scripts/chain_revalidate.py
+    one_liner: Full-chain maker/checker revalidation
+  - id: trajectory_fitness
+    feature: F73
+    script: scripts/trajectory_fitness.py
+    one_liner: Multi-dim fitness + paper-safe trace vault
+  - id: fitness_gate_evolve
+    feature: F74
+    script: scripts/fitness_gate_evolve.py
+    one_liner: Fitness-gated skill evolution
+  - id: scoped_memory
+    feature: F75
+    script: scripts/scoped_memory_recall.py
+    one_liner: Mem0-style scoped TP/FP recall
+  - id: bench_corpus
+    feature: F76
+    script: scripts/bench_corpus.py
+    one_liner: Multi-corpus PY+JS labeled benches
+  - id: federated_hub
+    feature: F77
+    script: scripts/federated_hub_ingest.py
+    one_liner: Cross-tenant privacy-safe federated signals
+  - id: second_critic
+    feature: F78
+    script: scripts/second_agent_critic.py
+    one_liner: Multi-checker second-agent critic panel
+  - id: workflow_as_code
+    feature: F79
+    script: scripts/workflow_as_code.py
+    one_liner: Declarative gate workflow validate/plan/install-guide
+
+# Scripts that pack install must ship for intelligence path (F79)
+pack_scripts:
+  - torii_gate_status.py
+  - run-torii-gate.sh
+  - run-torii-review.sh
+  - assemble-context.sh
+  - second_agent_critic.py
+  - trajectory_fitness.py
+  - chain_revalidate.py
+  - taint_prefilter.py
+  - bench_security_gate.py
+  - scoped_memory_recall.py
+  - fitness_gate_evolve.py
+  - federated_hub_ingest.py
+  - self_evolve.py
+  - bench_corpus.py
+  - workflow_as_code.py
+  - smoke-torii-gate.sh

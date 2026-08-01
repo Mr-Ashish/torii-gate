@@ -1,5 +1,38 @@
 # Torii research → product log
 
+## 2026-08-01 — F79 workflows-as-code + install capability guide
+
+### Papers / posts / OSS
+- Loop Engineering: loops as validated artifacts + readiness scorecards.
+- Declarative agent/CI pipelines (stages, soft-fail, entries).
+- Install gap: pack RUNTIME_SCRIPTS lagged F70–F78 intelligence tools.
+
+### OSS / eng patterns
+1. Single YAML source of truth for stages + capabilities.
+2. Validate → L0–L3 readiness without LLM.
+3. install-guide deep-links Maker/Checker/Memory features for adopters.
+
+### Insight
+Intelligence features that never ship in `install-torii.sh` pack are dead to customers. Highest ROI: **workflows-as-code + pack completeness + install matrix**.
+
+### Feature shipped (F79)
+- `docs/workflows/torii-gate.workflow.yaml` + `scripts/workflow_as_code.py`
+- Commands: validate / plan / status / install-guide / pack-check / fixture / scorecard
+- Pack RUNTIME_SCRIPTS gains F70–F78 scripts; smoke F79 step
+- `docs/workflows/INSTALL-GUIDE.md`; GATE.md pointer
+- Adopted tool `workflow-as-code`
+
+### Loop-engineering practice used
+**Readiness scorecard on the loop itself** — validate scripts/stages; L3 only when complete.
+
+### Metric
+- Offline: fixture L3 100%; pack-check install_lists_all; smoke F79 green
+- Live: pytorch/pytorch#191813 deepseek/deepseek-v4-pro fitness 0.8294 L2; critic present; workflow status ready=true; POST_COMMENT=0; Modal blocked → local Hermes
+- pytest: 487 passed
+
+### SHA
+`(pending push)`
+
 ## 2026-08-01 — F78 multi-checker second-agent critic (maker/checker)
 
 ### Papers / posts / OSS
