@@ -27,7 +27,7 @@ Scorecards that are not in smoke rot. Highest ROI: **smoke L3 + CI annotation**.
 - Live: **Modal** pytorch#191813 deepseek/deepseek-v4-pro BIT3_OK ~91s; log_streaming=true; POST_COMMENT=0
 
 ### SHA
-_PENDING_
+5dd5d47df2879f7a5b907cae4695cba4881376be
 
 ## 2026-08-01 — F91 skill compound loop readiness scorecard
 
