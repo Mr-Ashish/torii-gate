@@ -2,7 +2,7 @@
 
 # Torii gate certificate
 
-_id `gc-620fd969d4470e58` · `2026-08-01T14:51:21Z`_
+_id `gc-620fd969d4470e58` · `2026-08-01T17:23:24Z`_
 
 **OPEN — APPROVE (verdict_approve_open, low_path_evidence, blocking_with_paths); path_evidence=0.30**
 

@@ -2,7 +2,7 @@
 
 # Torii ops dashboard
 
-_Generated: `2026-08-01T17:14:43Z` · **ops_ok=True** · target **ops / dim 8**_
+_Generated: `2026-08-01T17:23:24Z` · **ops_ok=True** · target **ops / dim 8**_
 
 Fail-closed defaults · measured cost/PR · gate certificate · smoke CI · product surfaces · torii/gate
 
@@ -39,13 +39,13 @@ python3 scripts/ops_dashboard.py report --smoke
 
 | Stat | time-to-signal (s) | cost USD |
 |------|-------------------:|---------:|
-| n | 67 | 29 |
-| mean | 98.63 | 0.018 |
-| p50 | 92.3 | 0.016 |
+| n | 68 | 30 |
+| mean | 99.091 | 0.018 |
+| p50 | 92.55 | 0.015 |
 | min | 39.2 | 0.008 |
 | max | 262.0 | 0.058 |
 
-Runs: **72** · cost_ok=**True** · source: `docs/benchmarks/traces vault`
+Runs: **73** · cost_ok=**True** · source: `docs/benchmarks/traces vault`
 
 Detail: [cost-pr-dashboard.md](cost-pr-dashboard.md) · Reliability one-pager: [RELIABILITY.md](RELIABILITY.md) · Golden path: [golden-path-metrics.md](../benchmarks/golden-path-metrics.md)
 
@@ -57,12 +57,12 @@ Deterministic reason codes + path evidence for the latest dogfood gate decision 
 
 | Field | Value |
 |-------|------:|
-| certificate_id | `gc-e9a820f99efec661` |
+| certificate_id | `gc-5010f8293ba0375a` |
 | block | False |
 | verdict | APPROVE |
 | path_evidence | 1.0 |
 | reason_codes | `verdict_approve_open`, `strong_path_evidence`, `blocking_with_paths` |
-| vault path | `docs/benchmarks/traces/20260801-1712-pytorch-pytorch-PR191840-modal-gate-cost-pair/gate-certificate.json` |
+| vault path | `docs/benchmarks/traces/20260801-1719-pytorch-pytorch-PR191840-modal-cert-vault/gate-certificate.json` |
 | wire_ok | True |
 
 ```bash

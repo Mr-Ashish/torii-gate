@@ -7,11 +7,14 @@ reason codes + path evidence + optional critic demote — not LLM prose.
 Buyer JTBD: "Why did the gate close?" answered by machine-readable
 ``gate-certificate.json`` / short markdown, not a chat transcript.
 
+Dogfood honesty: the report also rolls vault cert × cost rows (same row answers
+*why* and *what did that PR cost?*) without Modal archaeology.
+
 Commands:
   emit     — build certificate from a review markdown
   fixture  — hermetic good/weak certificate checks
   status   — summary of last written certificate (if any)
-  report   — write docs/benchmarks/gate-certificate.md scorecard stub
+  report   — write docs/benchmarks/gate-certificate.md (hermetic + vault)
 
 Env:
   TORII_ROOT
@@ -32,10 +35,11 @@ from pathlib import Path
 from typing import Any
 
 FEATURE = "GATE_CERT"
-SCHEMA = 1
+SCHEMA = 2
 OUT_MD = Path("docs/benchmarks/gate-certificate.md")
 OUT_JSON = Path("docs/benchmarks/gate-certificate.json")
 MARKER = "<!-- torii-gate-certificate -->"
+VAULT_REL = Path("docs/benchmarks/traces")
 
 _PATH_LINE_RX = re.compile(
     r"(?P<path>(?:[\w.-]+/)+[\w.-]+\.[a-zA-Z0-9]{1,12})(?::(?P<line>\d+))?",
@@ -70,6 +74,114 @@ def _gate_mod(root: Path) -> Any:
 
 def _fitness_mod(root: Path) -> Any:
     return _load_mod("trajectory_fitness", root / "scripts" / "trajectory_fitness.py")
+
+
+def _safe_json(path: Path) -> dict[str, Any]:
+    if not path.is_file():
+        return {}
+    try:
+        data = json.loads(path.read_text(encoding="utf-8", errors="replace"))
+    except (OSError, json.JSONDecodeError):
+        return {}
+    return data if isinstance(data, dict) else {}
+
+
+def collect_vault_certificates(
+    root: Path, *, limit: int = 12
+) -> dict[str, Any]:
+    """Scan dogfood vault for gate-certificate.json × hermes-usage cost.
+
+    Tools-as-code surface: same vault row answers *why closed?* and *what cost?*
+    Local vault only — never federated.
+    """
+    vroot = root / VAULT_REL
+    rows: list[dict[str, Any]] = []
+    if not vroot.is_dir():
+        return {
+            "vault_ok": False,
+            "vault_n": 0,
+            "with_cost_n": 0,
+            "with_cert_n": 0,
+            "recent": [],
+            "one_liner": "No dogfood vault yet — run Modal/local dogfood to mint certificates.",
+        }
+
+    for d in sorted(vroot.iterdir(), key=lambda p: p.name, reverse=True):
+        if not d.is_dir() or d.name.startswith("."):
+            continue
+        cert = _safe_json(d / "gate-certificate.json")
+        if not cert:
+            continue
+        usage = _safe_json(d / "hermes-usage.json")
+        summary = _safe_json(d / "summary.json")
+        timings = _safe_json(d / "timings.json")
+        pe = cert.get("path_evidence") if isinstance(cert.get("path_evidence"), dict) else {}
+        cost = usage.get("estimated_cost_usd") if usage else summary.get("cost_usd")
+        elapsed = timings.get("total_seconds") if timings else None
+        if elapsed is None:
+            elapsed = summary.get("elapsed_s") or summary.get("total_seconds")
+        repo = str(summary.get("repo") or "")
+        pr = str(summary.get("pr") or summary.get("pr_number") or "")
+        name_l = d.name.lower()
+        if not repo and "pytorch" in name_l:
+            repo = "pytorch/pytorch"
+        if not pr:
+            m = re.search(r"pr[#\-]?(\d{4,})", name_l)
+            if m:
+                pr = m.group(1)
+        host = str(summary.get("host") or ("modal" if "modal" in name_l else "local"))
+        codes = cert.get("reason_codes") or []
+        if not isinstance(codes, list):
+            codes = []
+        rows.append(
+            {
+                "trace_id": d.name,
+                "repo": repo,
+                "pr": pr,
+                "certificate_id": cert.get("certificate_id"),
+                "block": cert.get("block"),
+                "state": cert.get("state"),
+                "verdict": cert.get("verdict") or summary.get("verdict"),
+                "path_score": pe.get("score"),
+                "reason_codes_head": [str(c) for c in codes[:4]],
+                "cost_usd": float(cost) if isinstance(cost, (int, float)) else None,
+                "time_to_signal_s": float(elapsed)
+                if isinstance(elapsed, (int, float))
+                else None,
+                "host": host,
+                "model": summary.get("model")
+                or (usage.get("model") if usage else None),
+            }
+        )
+
+    with_cost = [r for r in rows if isinstance(r.get("cost_usd"), (int, float))]
+    costs = [float(r["cost_usd"]) for r in with_cost]
+    costs_sorted = sorted(costs)
+    p50 = None
+    if costs_sorted:
+        mid = len(costs_sorted) // 2
+        if len(costs_sorted) % 2:
+            p50 = costs_sorted[mid]
+        else:
+            p50 = (costs_sorted[mid - 1] + costs_sorted[mid]) / 2.0
+
+    recent = rows[: max(1, int(limit))]
+    return {
+        "vault_ok": len(rows) >= 1,
+        "vault_n": len(rows),
+        "with_cost_n": len(with_cost),
+        "with_cert_n": len(rows),
+        "cost_p50_usd": p50,
+        "recent": recent,
+        "privacy": "local_vault_only",
+        "one_liner": (
+            f"Vault has {len(rows)} gate certificates"
+            + (f" · cost p50 ${p50:.3f}" if p50 is not None else "")
+            + " (local only; not federated)."
+            if rows
+            else "No certificates in dogfood vault yet."
+        ),
+    }
 
 
 def extract_path_cites(text: str) -> list[dict[str, Any]]:
@@ -365,9 +477,26 @@ def run_fixture(root: Path) -> dict[str, Any]:
 
     # docs exist for buyer path
     gate_md = root / "docs" / "GATE.md"
-    checks["gate_md_mentions_certificate"] = "certificate" in gate_md.read_text(
-        encoding="utf-8", errors="replace"
-    ).lower() if gate_md.is_file() else False
+    gate_body = (
+        gate_md.read_text(encoding="utf-8", errors="replace")
+        if gate_md.is_file()
+        else ""
+    )
+    checks["gate_md_mentions_certificate"] = "certificate" in gate_body.lower()
+    # CERT_VAULT: buyer contract pairs cert × cost on GATE surface
+    checks["gate_md_cert_cost_pair"] = (
+        "certificate" in gate_body.lower()
+        and ("cost" in gate_body.lower() or "hermes-usage" in gate_body.lower())
+    )
+
+    # vault scan is soft readiness (callable + schema), not hard min-n for hermetic CI
+    vault = collect_vault_certificates(root)
+    checks["vault_scan_callable"] = isinstance(vault.get("vault_n"), int)
+    # when vault has dogfood certs, require at least one cost-paired row for honesty
+    if int(vault.get("vault_n") or 0) >= 3:
+        checks["vault_has_cost_pairs"] = int(vault.get("with_cost_n") or 0) >= 1
+    else:
+        checks["vault_has_cost_pairs"] = True  # empty/small vault is not a fail
 
     detail["good"] = {
         "block": good_c.get("block"),
@@ -383,6 +512,12 @@ def run_fixture(root: Path) -> dict[str, Any]:
         "reason_codes": weak_c.get("reason_codes"),
         "certificate_id": weak_c.get("certificate_id"),
     }
+    detail["vault"] = {
+        "vault_n": vault.get("vault_n"),
+        "with_cost_n": vault.get("with_cost_n"),
+        "cost_p50_usd": vault.get("cost_p50_usd"),
+        "vault_ok": vault.get("vault_ok"),
+    }
 
     ok_n = sum(1 for v in checks.values() if v)
     total = len(checks)
@@ -395,15 +530,20 @@ def run_fixture(root: Path) -> dict[str, Any]:
         "total": total,
         "checks": checks,
         "detail": detail,
+        "vault": vault,
         "scorecard_target": "evidence / simplicity (dim 12)",
-        "dim_lift": "merge-authority certificate tools-as-code",
-        "one_liner": "Every gate open/close ships a deterministic reason-code certificate.",
+        "dim_lift": "merge-authority certificate tools-as-code + vault cert×cost",
+        "one_liner": (
+            "Every gate open/close ships a deterministic reason-code certificate; "
+            "dogfood vault pairs cert ids with measured cost/PR."
+        ),
         "at": _now(),
     }
 
 
 def write_report(root: Path, fixture: dict[str, Any] | None = None) -> dict[str, Any]:
     fx = fixture or run_fixture(root)
+    vault = fx.get("vault") if isinstance(fx.get("vault"), dict) else collect_vault_certificates(root)
     payload = {
         "feature": FEATURE,
         "schema": SCHEMA,
@@ -413,9 +553,21 @@ def write_report(root: Path, fixture: dict[str, Any] | None = None) -> dict[str,
         "total": fx.get("total"),
         "checks": fx.get("checks"),
         "detail": fx.get("detail"),
+        "vault": {
+            "vault_ok": vault.get("vault_ok"),
+            "vault_n": vault.get("vault_n"),
+            "with_cost_n": vault.get("with_cost_n"),
+            "cost_p50_usd": vault.get("cost_p50_usd"),
+            "privacy": vault.get("privacy") or "local_vault_only",
+            "recent": vault.get("recent") or [],
+            "one_liner": vault.get("one_liner"),
+        },
         "scorecard_target": "evidence / simplicity (dim 12)",
-        "dim_lift": "merge-authority evidence + tools-as-code vs LLM prose",
-        "one_liner": "Deterministic merge-authority certificate: reason codes + path evidence, not chat.",
+        "dim_lift": "merge-authority evidence + vault cert×cost (tools-as-code)",
+        "one_liner": (
+            "Deterministic merge-authority certificate: reason codes + path evidence, "
+            "not chat — dogfood vault pairs cert × cost on one surface."
+        ),
     }
     out_json = root / OUT_JSON
     out_md = root / OUT_MD
@@ -429,11 +581,37 @@ def write_report(root: Path, fixture: dict[str, Any] | None = None) -> dict[str,
     detail = fx.get("detail") or {}
     good = detail.get("good") or {}
     weak = detail.get("weak") or {}
+
+    vault_lines: list[str] = []
+    for r in (vault.get("recent") or [])[:10]:
+        if not isinstance(r, dict):
+            continue
+        cert = r.get("certificate_id") or ""
+        cert_s = f"`{cert}`" if cert else "—"
+        cost = r.get("cost_usd")
+        cost_s = f"{cost:.4f}" if isinstance(cost, (int, float)) else "—"
+        tts = r.get("time_to_signal_s")
+        tts_s = f"{tts:.0f}" if isinstance(tts, (int, float)) else "—"
+        ps = r.get("path_score")
+        ps_s = f"{ps}" if ps is not None else "—"
+        codes = r.get("reason_codes_head") or []
+        codes_s = ", ".join(f"`{c}`" for c in codes[:3]) if codes else "—"
+        vault_lines.append(
+            f"| `{r.get('trace_id', '')[:48]}` | {r.get('pr') or '—'} | "
+            f"{r.get('verdict') or '—'} | {r.get('block')} | {ps_s} | "
+            f"{tts_s} | {cost_s} | {cert_s} | {codes_s} |"
+        )
+    if not vault_lines:
+        vault_lines.append("| _(no vault certificates yet)_ | | | | | | | | |")
+    vault_table = "\n".join(vault_lines)
+    cost_p50 = vault.get("cost_p50_usd")
+    cost_p50_s = f"{cost_p50:.4f}" if isinstance(cost_p50, (int, float)) else "—"
+
     md = f"""{MARKER}
 
 # Gate certificate surface
 
-_Generated: `{payload['scored_at']}` · **fixture_pass={payload['fixture_pass']}** · target **evidence / dim 12**_
+_Generated: `{payload['scored_at']}` · schema **{SCHEMA}** · **fixture_pass={payload['fixture_pass']}** · target **evidence / dim 12**_
 
 {payload['one_liner']}
 
@@ -452,17 +630,35 @@ _Generated: `{payload['scored_at']}` · **fixture_pass={payload['fixture_pass']}
 
 Fixtures: `docs/benchmarks/fixtures/gate-certificate-{{good,weak}}/`.
 
+## Dogfood vault (cert × cost)
+
+Live Modal/local dogfood rows that already minted a gate certificate. **Local vault only** — cost never federates ([enterprise/PRIVACY.md](../enterprise/PRIVACY.md)).
+
+| Metric | Value |
+|--------|------:|
+| certificates in vault | {vault.get('vault_n')} |
+| with cost (hermes-usage) | {vault.get('with_cost_n')} |
+| cost/PR p50 (USD) | {cost_p50_s} |
+| privacy | local vault only |
+
+| trace | pr | verdict | block | path | t_s | cost_usd | certificate | reason codes (head) |
+|-------|---:|---------|:-----:|-----:|----:|---------:|-------------|---------------------|
+{vault_table}
+
+Ops rollup (same vault): [ops/cost-pr-dashboard.md](../ops/cost-pr-dashboard.md) · `python3 scripts/torii.py ops -- status`
+
 ## Buyer use
 
 ```bash
 python3 scripts/gate_certificate.py emit --review .torii-out/review-1.md --write .torii-out
 python3 scripts/torii.py certificate -- fixture
 python3 scripts/torii.py certificate -- report
+python3 scripts/torii.py ops -- status   # cost × cert recent table
 ```
 
-Branch protection still requires **`torii/gate`**. The certificate explains *why* without opening the chat log.
+Branch protection still requires **`torii/gate`**. The certificate explains *why* without opening the chat log; vault pairs that id with measured spend.
 
-Related: [GATE.md](../GATE.md) · [GOLDEN-PATH.md](../GOLDEN-PATH.md)
+Related: [GATE.md](../GATE.md) · [GOLDEN-PATH.md](../GOLDEN-PATH.md) · [cost/PR](../ops/cost-pr-dashboard.md)
 """
     out_md.write_text(md, encoding="utf-8")
     payload["paths"] = {"md": str(OUT_MD), "json": str(OUT_JSON)}
@@ -514,6 +710,7 @@ def cmd_fixture(args: argparse.Namespace) -> int:
 
 def cmd_status(args: argparse.Namespace) -> int:
     root = _root()
+    vault = collect_vault_certificates(root, limit=5)
     # prefer report json, else fixture sample
     candidates = [
         root / OUT_JSON,
@@ -522,11 +719,44 @@ def cmd_status(args: argparse.Namespace) -> int:
     for p in candidates:
         if p.is_file():
             data = json.loads(p.read_text(encoding="utf-8"))
-            print(json.dumps({"feature": FEATURE, "source": str(p.relative_to(root)), **{k: data.get(k) for k in ("fixture_pass", "certificate_id", "block", "verdict", "reason_codes", "merge_authority", "one_liner", "at", "scored_at") if k in data or True}}, indent=2, default=str))
+            out = {
+                "feature": FEATURE,
+                "schema": SCHEMA,
+                "source": str(p.relative_to(root)),
+                "fixture_pass": data.get("fixture_pass"),
+                "certificate_id": data.get("certificate_id"),
+                "block": data.get("block"),
+                "verdict": data.get("verdict"),
+                "reason_codes": data.get("reason_codes"),
+                "merge_authority": data.get("merge_authority"),
+                "one_liner": data.get("one_liner"),
+                "at": data.get("at") or data.get("scored_at"),
+                "vault_n": vault.get("vault_n"),
+                "vault_with_cost_n": vault.get("with_cost_n"),
+                "vault_cost_p50_usd": vault.get("cost_p50_usd"),
+                "vault_ok": vault.get("vault_ok"),
+                "vault_one_liner": vault.get("one_liner"),
+            }
+            print(json.dumps(out, indent=2, default=str))
             return 0
     # fall back to fixture
     rep = run_fixture(root)
-    print(json.dumps({"feature": FEATURE, "source": "fixture", "fixture_pass": rep.get("fixture_pass"), "ok_n": rep.get("ok_n"), "total": rep.get("total")}, indent=2))
+    print(
+        json.dumps(
+            {
+                "feature": FEATURE,
+                "schema": SCHEMA,
+                "source": "fixture",
+                "fixture_pass": rep.get("fixture_pass"),
+                "ok_n": rep.get("ok_n"),
+                "total": rep.get("total"),
+                "vault_n": vault.get("vault_n"),
+                "vault_with_cost_n": vault.get("with_cost_n"),
+                "vault_ok": vault.get("vault_ok"),
+            },
+            indent=2,
+        )
+    )
     return 0 if rep.get("fixture_pass") else 1
 
 

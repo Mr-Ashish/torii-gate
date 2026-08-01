@@ -1,4 +1,39 @@
 
+## 2026-08-01 — CERT_VAULT_DOGFOOD: gate-certificate vault cert × cost
+
+### Papers / posts
+- SLSA-style evidence: one artifact should answer *why closed?* and *what did it cost?*
+- GATE_COST_PAIR put cert×cost on GATE.md; certificate scorecard was still hermetic-only.
+- Loop Engineering: measure what you ship on the surface operators open (certificate report).
+
+### Decide / copy / skip
+- **Copy:** `collect_vault_certificates` + Dogfood vault table on gate-certificate report/status.
+- **Copy:** GATE.md cert×cost points at certificate scorecard vault section.
+- **Copy:** fixture checks vault_scan_callable + vault_has_cost_pairs (when vault≥3).
+- **Skip:** F185+; no certificate schema break for emit path; no federation of cost.
+
+### Feature shipped (CERT_VAULT_DOGFOOD)
+- gate_certificate.py schema 2 vault scan + report panel
+- GATE.md certificate report/status commands
+- tests: vault shape + report vault section
+
+### Metric
+- Offline: certificate fixture 14/14 · vault_n≥23 · cost p50≈$0.018 · commercial 8.5
+- Live Modal: pytorch#191840 BIT3_OK ~165s wall / ~130s timed · tools=9 POST_COMMENT=0
+- cert=`gc-5010f8293ba0375a` · cost≈$0.013
+- Traces: docs/benchmarks/traces/20260801-1719-pytorch-pytorch-PR191840-modal-cert-vault/
+- Modal: https://modal.com/apps/mr-ashish/main/ap-OdndeChSjt42s3ahu2VwVs
+
+### scorecard_target
+simplicity (#12) · evidence / merge-authority honesty
+
+### dim_lift
+certificate surface shows vault cert×cost without ops archaeology
+
+### SHA
+_pending_
+
+
 ## 2026-08-01 — GATE_COST_PAIR: certificate × cost on GATE contract
 
 ### Papers / posts

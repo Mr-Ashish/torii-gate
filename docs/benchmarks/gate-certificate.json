@@ -1,10 +1,10 @@
 {
   "feature": "GATE_CERT",
-  "schema": 1,
-  "scored_at": "2026-08-01T14:50:55Z",
+  "schema": 2,
+  "scored_at": "2026-08-01T17:23:22Z",
   "fixture_pass": true,
-  "ok_n": 11,
-  "total": 11,
+  "ok_n": 14,
+  "total": 14,
   "checks": {
     "good_blocks": true,
     "good_request_changes": true,
@@ -16,7 +16,10 @@
     "weak_critic_attached": true,
     "weak_critic_demoted_code": true,
     "wrote_sample_certs": true,
-    "gate_md_mentions_certificate": true
+    "gate_md_mentions_certificate": true,
+    "gate_md_cert_cost_pair": true,
+    "vault_scan_callable": true,
+    "vault_has_cost_pairs": true
   },
   "detail": {
     "good": {
@@ -43,9 +46,253 @@
         "critic:recon_warm_hub_heat_idle_1_0_0_34_recon_warm_hub"
       ],
       "certificate_id": "gc-620fd969d4470e58"
+    },
+    "vault": {
+      "vault_n": 23,
+      "with_cost_n": 23,
+      "cost_p50_usd": 0.018294679,
+      "vault_ok": true
     }
   },
+  "vault": {
+    "vault_ok": true,
+    "vault_n": 23,
+    "with_cost_n": 23,
+    "cost_p50_usd": 0.018294679,
+    "privacy": "local_vault_only",
+    "recent": [
+      {
+        "trace_id": "20260801-1719-pytorch-pytorch-PR191840-modal-cert-vault",
+        "repo": "pytorch/pytorch",
+        "pr": "191840",
+        "certificate_id": "gc-5010f8293ba0375a",
+        "block": false,
+        "state": "success",
+        "verdict": "APPROVE",
+        "path_score": 1.0,
+        "reason_codes_head": [
+          "verdict_approve_open",
+          "strong_path_evidence",
+          "blocking_with_paths"
+        ],
+        "cost_usd": 0.013063195,
+        "time_to_signal_s": 130.0,
+        "host": "modal",
+        "model": "deepseek/deepseek-v4-pro"
+      },
+      {
+        "trace_id": "20260801-1712-pytorch-pytorch-PR191840-modal-gate-cost-pair",
+        "repo": "pytorch/pytorch",
+        "pr": "191840",
+        "certificate_id": "gc-e9a820f99efec661",
+        "block": false,
+        "state": "success",
+        "verdict": "APPROVE",
+        "path_score": 1.0,
+        "reason_codes_head": [
+          "verdict_approve_open",
+          "strong_path_evidence",
+          "blocking_with_paths"
+        ],
+        "cost_usd": 0.011242198000000002,
+        "time_to_signal_s": 68.0,
+        "host": "modal",
+        "model": "deepseek/deepseek-v4-pro"
+      },
+      {
+        "trace_id": "20260801-1706-pytorch-pytorch-PR191840-modal-day2-cost-close",
+        "repo": "pytorch/pytorch",
+        "pr": "191840",
+        "certificate_id": "gc-58da0b7175c81ccd",
+        "block": false,
+        "state": "success",
+        "verdict": "APPROVE",
+        "path_score": 1.0,
+        "reason_codes_head": [
+          "verdict_approve_open",
+          "strong_path_evidence",
+          "blocking_with_paths"
+        ],
+        "cost_usd": 0.018487964,
+        "time_to_signal_s": 89.0,
+        "host": "modal",
+        "model": "deepseek/deepseek-v4-pro"
+      },
+      {
+        "trace_id": "20260801-1700-pytorch-pytorch-PR191840-modal-install-cost-tip",
+        "repo": "pytorch/pytorch",
+        "pr": "191840",
+        "certificate_id": "gc-e7fe92916d5c3e59",
+        "block": true,
+        "state": "failure",
+        "verdict": "REQUEST_CHANGES",
+        "path_score": 1.0,
+        "reason_codes_head": [
+          "verdict_request_changes",
+          "strong_path_evidence",
+          "blocking_with_paths"
+        ],
+        "cost_usd": 0.013211675,
+        "time_to_signal_s": 93.0,
+        "host": "modal",
+        "model": "deepseek/deepseek-v4-pro"
+      },
+      {
+        "trace_id": "20260801-1654-pytorch-pytorch-PR191840-modal-brand-fed-cost",
+        "repo": "pytorch/pytorch",
+        "pr": "191840",
+        "certificate_id": "gc-332eb8180a333c36",
+        "block": true,
+        "state": "failure",
+        "verdict": "REQUEST_CHANGES",
+        "path_score": 1.0,
+        "reason_codes_head": [
+          "verdict_request_changes",
+          "strong_path_evidence",
+          "blocking_with_paths"
+        ],
+        "cost_usd": 0.024852913,
+        "time_to_signal_s": 97.0,
+        "host": "modal",
+        "model": "deepseek/deepseek-v4-pro"
+      },
+      {
+        "trace_id": "20260801-1649-pytorch-pytorch-PR191840-modal-commercial-cost",
+        "repo": "pytorch/pytorch",
+        "pr": "191840",
+        "certificate_id": "gc-23ee89e53f33b7d9",
+        "block": false,
+        "state": "success",
+        "verdict": "APPROVE",
+        "path_score": 1.0,
+        "reason_codes_head": [
+          "verdict_approve_open",
+          "strong_path_evidence",
+          "blocking_with_paths"
+        ],
+        "cost_usd": 0.015617399,
+        "time_to_signal_s": 93.0,
+        "host": "modal",
+        "model": "deepseek/deepseek-v4-pro"
+      },
+      {
+        "trace_id": "20260801-1642-pytorch-pytorch-PR191840-modal-ent-cost-priv",
+        "repo": "pytorch/pytorch",
+        "pr": "191840",
+        "certificate_id": "gc-7d4a3cd3ec21d7e6",
+        "block": false,
+        "state": "success",
+        "verdict": "APPROVE",
+        "path_score": 1.0,
+        "reason_codes_head": [
+          "verdict_approve_open",
+          "strong_path_evidence",
+          "blocking_with_paths"
+        ],
+        "cost_usd": 0.021760091999999998,
+        "time_to_signal_s": 97.0,
+        "host": "modal",
+        "model": "deepseek/deepseek-v4-pro"
+      },
+      {
+        "trace_id": "20260801-1636-pytorch-pytorch-PR191840-modal-readme-cost",
+        "repo": "pytorch/pytorch",
+        "pr": "191840",
+        "certificate_id": "gc-c44356ac39c273bc",
+        "block": false,
+        "state": "success",
+        "verdict": "APPROVE",
+        "path_score": 1.0,
+        "reason_codes_head": [
+          "verdict_approve_open",
+          "strong_path_evidence",
+          "blocking_with_paths"
+        ],
+        "cost_usd": 0.017309839000000004,
+        "time_to_signal_s": 112.0,
+        "host": "modal",
+        "model": "deepseek/deepseek-v4-pro"
+      },
+      {
+        "trace_id": "20260801-1630-pytorch-pytorch-PR191840-modal-product-cost",
+        "repo": "pytorch/pytorch",
+        "pr": "191840",
+        "certificate_id": "gc-c1d8088ce9649d7a",
+        "block": false,
+        "state": "success",
+        "verdict": "APPROVE",
+        "path_score": 1.0,
+        "reason_codes_head": [
+          "verdict_approve_open",
+          "strong_path_evidence",
+          "blocking_with_paths"
+        ],
+        "cost_usd": 0.019598519000000002,
+        "time_to_signal_s": 122.0,
+        "host": "modal",
+        "model": "deepseek/deepseek-v4-pro"
+      },
+      {
+        "trace_id": "20260801-1624-pytorch-pytorch-PR191840-modal-landing-cost",
+        "repo": "pytorch/pytorch",
+        "pr": "191840",
+        "certificate_id": "gc-c9f317b2365e7643",
+        "block": true,
+        "state": "failure",
+        "verdict": "REQUEST_CHANGES",
+        "path_score": 1.0,
+        "reason_codes_head": [
+          "verdict_request_changes",
+          "strong_path_evidence",
+          "blocking_with_paths"
+        ],
+        "cost_usd": 0.023839971999999997,
+        "time_to_signal_s": 117.0,
+        "host": "modal",
+        "model": "deepseek/deepseek-v4-pro"
+      },
+      {
+        "trace_id": "20260801-1618-pytorch-pytorch-PR191840-modal-cost-pr",
+        "repo": "pytorch/pytorch",
+        "pr": "191840",
+        "certificate_id": "gc-089fed34e9eb71c5",
+        "block": false,
+        "state": "success",
+        "verdict": "APPROVE",
+        "path_score": 1.0,
+        "reason_codes_head": [
+          "verdict_approve_open",
+          "strong_path_evidence",
+          "blocking_with_paths"
+        ],
+        "cost_usd": 0.018294679,
+        "time_to_signal_s": 76.0,
+        "host": "modal",
+        "model": "deepseek/deepseek-v4-pro"
+      },
+      {
+        "trace_id": "20260801-1610-pytorch-pytorch-PR191840-modal-brand-scorecard",
+        "repo": "pytorch/pytorch",
+        "pr": "191840",
+        "certificate_id": "gc-966d68ed6c5808da",
+        "block": true,
+        "state": "failure",
+        "verdict": "REQUEST_CHANGES",
+        "path_score": 1.0,
+        "reason_codes_head": [
+          "verdict_request_changes",
+          "strong_path_evidence",
+          "blocking_with_paths"
+        ],
+        "cost_usd": 0.018905854,
+        "time_to_signal_s": 73.0,
+        "host": "modal",
+        "model": "deepseek/deepseek-v4-pro"
+      }
+    ],
+    "one_liner": "Vault has 23 gate certificates \u00b7 cost p50 $0.018 (local only; not federated)."
+  },
   "scorecard_target": "evidence / simplicity (dim 12)",
-  "dim_lift": "merge-authority evidence + tools-as-code vs LLM prose",
-  "one_liner": "Deterministic merge-authority certificate: reason codes + path evidence, not chat."
+  "dim_lift": "merge-authority evidence + vault cert\u00d7cost (tools-as-code)",
+  "one_liner": "Deterministic merge-authority certificate: reason codes + path evidence, not chat \u2014 dogfood vault pairs cert \u00d7 cost on one surface."
 }

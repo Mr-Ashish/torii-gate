@@ -1,0 +1,20 @@
+{
+  "feature": "CERT_VAULT_DOGFOOD",
+  "schema_version": 1,
+  "repo": "pytorch/pytorch",
+  "pr": "191840",
+  "model": "deepseek/deepseek-v4-pro",
+  "host": "modal",
+  "bit3": true,
+  "elapsed_s": 130.0,
+  "log_streaming": true,
+  "tool_call_turns": 9,
+  "post_comment": 0,
+  "verdict": "APPROVE",
+  "block": false,
+  "certificate_id": "gc-5010f8293ba0375a",
+  "notes": "CERT_VAULT_DOGFOOD: gate-certificate report vault cert\u00d7cost panel",
+  "scored_at": "2026-08-01T17:23:22Z",
+  "modal_run": "https://modal.com/apps/mr-ashish/main/ap-OdndeChSjt42s3ahu2VwVs",
+  "cost_usd": 0.013063195
+}

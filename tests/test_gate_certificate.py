@@ -59,3 +59,34 @@ def test_render_md_has_reason_codes():
     md = mod.render_md(cert)
     assert "Reason codes" in md
     assert cert["certificate_id"] in md
+
+
+def test_collect_vault_certificates_shape():
+    vault = mod.collect_vault_certificates(ROOT, limit=5)
+    assert "vault_n" in vault
+    assert "with_cost_n" in vault
+    assert "recent" in vault
+    assert isinstance(vault["recent"], list)
+    assert vault.get("privacy") in (None, "local_vault_only") or vault.get("privacy") == "local_vault_only"
+    # When dogfood vault has prior Modal runs, expect certs
+    vroot = ROOT / "docs/benchmarks/traces"
+    if vroot.is_dir() and any(
+        (d / "gate-certificate.json").is_file()
+        for d in vroot.iterdir()
+        if d.is_dir()
+    ):
+        assert vault["vault_n"] >= 1
+        assert vault["vault_ok"] is True
+        row0 = vault["recent"][0]
+        assert row0.get("certificate_id") or row0.get("trace_id")
+
+
+def test_report_includes_vault_cert_cost_section():
+    payload = mod.write_report(ROOT)
+    assert payload.get("fixture_pass") is True, payload
+    md = (ROOT / "docs/benchmarks/gate-certificate.md").read_text(encoding="utf-8")
+    assert "Dogfood vault" in md
+    assert "cert × cost" in md.lower() or "cert × cost" in md or "cert" in md
+    assert "local vault" in md.lower() or "local only" in md.lower()
+    assert "vault" in payload
+    assert isinstance(payload["vault"].get("vault_n"), int)

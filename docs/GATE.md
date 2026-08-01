@@ -42,9 +42,12 @@ Same vault row can answer *why did the gate close?* **and** *what did that PR co
 |----------|------|--------|
 | Gate certificate | `gate-certificate.json` | `certificate_id`, reason codes, path evidence |
 | Hermes usage | `hermes-usage.json` | `estimated_cost_usd` |
+| Certificate scorecard | [`benchmarks/gate-certificate.md`](benchmarks/gate-certificate.md) | **Dogfood vault (cert × cost)** table |
 | Ops rollup | [`ops/cost-pr-dashboard.md`](ops/cost-pr-dashboard.md) | p50 cost/PR · p50 time-to-signal · cert ids |
 
 ```bash
+python3 scripts/torii.py certificate -- report   # hermetic + vault cert×cost
+python3 scripts/torii.py certificate -- status   # vault_n + cost p50
 python3 scripts/torii.py ops -- status
 python3 scripts/torii.py commercial -- status   # Cost honesty section
 ```

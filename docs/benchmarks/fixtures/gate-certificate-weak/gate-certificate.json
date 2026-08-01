@@ -1,10 +1,10 @@
 {
   "feature": "GATE_CERT",
-  "schema": 1,
+  "schema": 2,
   "one_liner": "Deterministic merge-authority certificate: reason codes + path evidence, not chat.",
   "scorecard_target": "evidence / simplicity (dim 12)",
   "dim_lift": "merge-authority evidence + tools-as-code vs LLM prose",
-  "at": "2026-08-01T14:51:21Z",
+  "at": "2026-08-01T17:23:24Z",
   "review": "/Users/ashishmishra/Documents/experiments/torii/docs/benchmarks/fixtures/insecure-demo-weak-review.md",
   "review_name": "insecure-demo-weak-review.md",
   "certificate_id": "gc-620fd969d4470e58",
