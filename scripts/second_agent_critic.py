@@ -25,6 +25,7 @@ Env:
   TORII_SECOND_CRITIC          1 (default) | 0
   TORII_SECOND_CRITIC_DEMOTE   1 (default) | 0 — rewrite verdict file on demote
   TORII_SECOND_CRITIC_MIN_PATH  default 0.4 path-evidence floor for APPROVE
+  TORII_LLM_CRITIC              0 (default) | 1 — enable F81 LLM checker
 """
 
 from __future__ import annotations
@@ -351,14 +352,44 @@ def run_verdict_structure(review: str) -> CheckerResult:
     )
 
 
+
+def run_f81_llm(review: str, panel_partial: dict[str, Any] | None = None) -> CheckerResult:
+    """Optional LLM checker (F81). Soft-skip when disabled or no key."""
+    _ensure_path()
+    try:
+        from llm_critic import run_critic, to_checker_result, enabled as llm_on  # type: ignore
+
+        # Only call network if enabled
+        api = run_critic(review, panel=panel_partial, force_mock=False)
+        shaped = to_checker_result(api)
+        return CheckerResult(
+            id=str(shaped.get("id") or "f81_llm"),
+            name=str(shaped.get("name") or "LLM checker (F81)"),
+            ok=bool(shaped.get("ok")),
+            score=float(shaped.get("score") or 0.5),
+            detail=dict(shaped.get("detail") or {}),
+            error=str(shaped.get("error") or ""),
+        )
+    except Exception as e:
+        return CheckerResult(
+            id="f81_llm",
+            name="LLM checker (F81)",
+            ok=True,
+            score=0.5,
+            error=str(e)[:200],
+            detail={"soft_fail": True},
+        )
+
+
 def composite_panel(checkers: list[CheckerResult]) -> dict[str, Any]:
     """Weighted composite; default REJECT stance on weak APPROVE."""
     weights = {
-        "structure": 0.15,
-        "f70_dual_critic": 0.25,
-        "f72_chain": 0.20,
-        "f73_fitness": 0.25,
-        "f75_memory": 0.15,
+        "structure": 0.12,
+        "f70_dual_critic": 0.22,
+        "f72_chain": 0.18,
+        "f73_fitness": 0.22,
+        "f75_memory": 0.12,
+        "f81_llm": 0.14,  # optional; soft if skipped
     }
     total_w = 0.0
     acc = 0.0
@@ -458,8 +489,31 @@ def run_panel(
         run_f73_fitness(review_path, out_dir),
         run_f75_memory(out_dir, root),
     ]
+    # F81: optional LLM checker after deterministic panel draft
+    panel_draft = {
+        "maker_verdict": maker,
+        "panel": composite_panel(checkers),
+        "checkers": [
+            {"id": c.id, "ok": c.ok, "score": c.score} for c in checkers
+        ],
+    }
+    checkers.append(run_f81_llm(text, panel_draft))
     panel = composite_panel(checkers)
     decision = decide_verdict(maker, panel, checkers)
+    # If LLM endorses demote and maker is APPROVE, strengthen decision
+    llm = next((c for c in checkers if c.id == "f81_llm"), None)
+    if (
+        llm
+        and isinstance(llm.detail, dict)
+        and llm.detail.get("endorse_demote")
+        and maker == "APPROVE"
+        and not decision.get("demoted")
+    ):
+        decision["demoted"] = True
+        decision["recommended_verdict"] = str(
+            llm.detail.get("recommended_verdict") or "COMMENT"
+        )
+        decision.setdefault("reasons", []).append("f81_llm_endorse_demote")
     report = {
         "schema_version": SCHEMA,
         "feature": FEATURE,

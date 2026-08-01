@@ -21,6 +21,8 @@ def _run(args: list[str], env: dict | None = None) -> subprocess.CompletedProces
         **os.environ,
         "TORII_SECOND_CRITIC": "1",
         "TORII_SECOND_CRITIC_DEMOTE": "0",  # never rewrite fixtures
+        "TORII_LLM_CRITIC": "0",  # F81 off in unit tests unless mock
+        "TORII_LLM_CRITIC_MOCK": "1",
     }
     if env:
         base.update(env)

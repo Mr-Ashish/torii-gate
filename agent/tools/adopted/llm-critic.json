@@ -1,0 +1,8 @@
+{
+  "id": "llm-critic",
+  "name": "Optional LLM checker (F81)",
+  "status": "adopted",
+  "script": "scripts/llm_critic.py",
+  "feature": "F81",
+  "adopted_at": "2026-08-01T01:15:00Z"
+}

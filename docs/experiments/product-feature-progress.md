@@ -27,30 +27,31 @@
 | F78 | Multi-checker second-agent critic panel | agent_quality, product, tools | **shipping** |
 | F79 | Workflows-as-code + install capability guide | product, ops, tools | **shipping** |
 | F80 | Modal secrets bootstrap for live e2e | ops, product | **shipping** |
+| F81 | Optional LLM checker atop F78 | agent_quality, tools | **shipping** |
 
 ## IN_PROGRESS
 
 | ID | Feature | Notes |
 |----|---------|-------|
-| — | — | open: optional LLM critic atop F78; real Juice Shop pin |
+| — | — | open: real Juice Shop pin; brand refresh for Modal-live story |
 
 ## LEFT
 
-— Optional real Juice Shop pin; optional LLM critic atop F78
+— Optional real Juice Shop pin; brand refresh for Modal-live story
 
 ## Counts
 
-- **features_built_count:** 37 (F44–F80)
+- **features_built_count:** 38 (F44–F81)
 - **types_built:** agent_quality, product, memory, ops, bench, tools
 - **left_count:** open research
 - **progress_pct:** n/a (open research loop)
 - **eta:** open research only
 - **active_worktrees:** none
 - **federated_memory_note:** F65–F71–F75 local; F77 hub multi-tenant aggregate + promote gate
-- **agent_design_note:** F70–F77 gates/memory/federation; F78 multi-checker second-agent panel
+- **agent_design_note:** F70–F78 deterministic gates; F81 optional LLM checker atop F78
 - **meta_loop_note:** measure findings → chain gate → trajectory fitness → paper vault
 - **milvus_corpus:** 3 + complex #6 F67 e2e
 
 ## Status line
 
-`features_built_count=37 types_built=agent_quality,product,memory,ops,bench,tools f80=modal_secrets_bootstrap`
+`features_built_count=38 types_built=agent_quality,product,memory,ops,bench,tools f81=llm_critic`

@@ -179,6 +179,19 @@ if [[ -f "$SCRIPTS/second_agent_critic.py" ]]; then
       fi
       if [[ -n "$_f78_review" ]]; then
         stage second_agent_critic           python3 "$SCRIPTS/second_agent_critic.py" run             --review "$_f78_review"             --out-dir "$OUT_DIR" || true
+      # F81: optional LLM critic artifact (also folded into F78 panel when enabled)
+      case "${TORII_LLM_CRITIC:-0}" in
+        1|true|yes|on)
+          if [[ -f "$SCRIPTS/llm_critic.py" ]]; then
+            stage llm_critic \
+              python3 "$SCRIPTS/llm_critic.py" run \
+                --review "$_f78_review" \
+                --out-dir "$OUT_DIR" \
+                --out "$OUT_DIR/llm-critic.json" \
+                --force || true
+          fi
+          ;;
+      esac
       fi
       ;;
   esac

@@ -1,8 +1,8 @@
 {
   "schema_version": 1,
-  "feature": "F80",
+  "feature": "F81",
   "description": "Torii agent tool catalog \u2014 research \u2192 eval \u2192 adopt pipeline",
-  "updated_at": "2026-08-01T01:05:17Z",
+  "updated_at": "2026-08-01T01:14:27Z",
   "tools": [
     {
       "id": "terminal",
@@ -220,6 +220,18 @@
       "rationale": "Create torii-openrouter/torii-github Modal secrets from .env+gh without printing values; unblock live Modal e2e",
       "feature": "F80",
       "adopted_at": "2026-08-01T01:05:00Z"
+    },
+    {
+      "id": "llm-critic",
+      "name": "Optional LLM checker atop F78 (F81)",
+      "status": "adopted",
+      "source": "research_oss",
+      "kind": "workflow_tool",
+      "toolset": "terminal",
+      "script": "scripts/llm_critic.py",
+      "rationale": "Bounded OpenRouter JSON checker; schema-validated; soft-skip default; folds into F78 panel",
+      "feature": "F81",
+      "adopted_at": "2026-08-01T01:15:00Z"
     }
   ],
   "candidates": [

@@ -160,6 +160,7 @@ RUNTIME_SCRIPTS=(
   bench_corpus.py
   workflow_as_code.py
   modal_secrets_bootstrap.py
+  llm_critic.py
 )
 
 copy_file() {

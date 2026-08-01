@@ -518,6 +518,7 @@ def review_pr(
     *,
     model: str = DEFAULT_MODEL,
     post_comment: bool = True,
+    llm_critic: bool = False,
 ) -> dict:
     """Bit 3: Torii Gate review on cheapest Modal profile + cheap LLM default.
 
@@ -597,6 +598,10 @@ def review_pr(
         "TORII_HOST": "modal",  # F31/F66 Run Console host label (prod default e2e)
         # F67: stream Hermes stderr + agent activity (scripts tee when set)
         "TORII_STREAM_LOGS": "1",
+        # F81: optional LLM checker (default off; set TORII_LLM_CRITIC=1 on Modal secret/env)
+        "TORII_LLM_CRITIC": "1" if llm_critic else os.environ.get("TORII_LLM_CRITIC", "0"),
+        "TORII_LLM_CRITIC_MODEL": os.environ.get("TORII_LLM_CRITIC_MODEL", ""),
+        "TORII_SECOND_CRITIC": os.environ.get("TORII_SECOND_CRITIC", "1"),
         # F63: domain pack auto-select from changed paths (default product)
         "TORII_LENS_PACK": os.environ.get("TORII_LENS_PACK", "auto"),
         "TORII_LENS_PACKS": os.environ.get("TORII_LENS_PACKS", "1"),
@@ -1194,6 +1199,7 @@ def main(
     model: str = DEFAULT_MODEL,
     post_comment: bool = True,
     spawn: bool = False,
+    llm_critic: bool = False,
 ) -> None:
     # F80: surface which Modal secret names this run expects
     print(
@@ -1209,7 +1215,7 @@ def main(
         return
     if bit == 3:
         print(f"CHEAP review_pr {repo}#{pr} model={model}")
-        result = review_pr.remote(repo, pr, model=model, post_comment=post_comment)
+        result = review_pr.remote(repo, pr, model=model, post_comment=post_comment, llm_critic=llm_critic)
         slim = {k: v for k, v in result.items() if k != "review_preview"}
         print(json.dumps(slim, indent=2))
         if result.get("review_preview"):

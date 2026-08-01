@@ -427,6 +427,15 @@ REGISTRY: list[ToggleSpec] = [
         "F78",
     ),
     ToggleSpec(
+        "llm_critic",
+        "TORII_LLM_CRITIC",
+        "bool",
+        False,
+        "product",
+        "F81 optional OpenRouter LLM checker atop F78 (default off)",
+        "F81",
+    ),
+    ToggleSpec(
         "chain_revalidate",
         "TORII_CHAIN_REVALIDATE",
         "bool",

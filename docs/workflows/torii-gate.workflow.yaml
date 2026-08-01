@@ -158,6 +158,10 @@ capabilities:
     feature: F80
     script: scripts/modal_secrets_bootstrap.py
     one_liner: Bootstrap Modal secrets torii-* from .env for live e2e
+  - id: llm_critic
+    feature: F81
+    script: scripts/llm_critic.py
+    one_liner: Optional OpenRouter LLM checker atop F78 panel
 
 # Scripts that pack install must ship for intelligence path (F79)
 pack_scripts:
@@ -177,4 +181,5 @@ pack_scripts:
   - bench_corpus.py
   - workflow_as_code.py
   - modal_secrets_bootstrap.py
+  - llm_critic.py
   - smoke-torii-gate.sh

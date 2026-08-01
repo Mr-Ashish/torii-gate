@@ -1,5 +1,36 @@
 # Torii research → product log
 
+## 2026-08-01 — F81 optional LLM checker atop F78
+
+### Papers / posts / OSS
+- QASecClaw / VulAgent: separate validation agent after discovery.
+- Prior Torii F78 deterministic panel; optional semantic pass was the open gap.
+
+### OSS / eng patterns
+1. Bounded OpenRouter chat → JSON-only schema.
+2. Soft-skip when disabled/no key/API fail (F78 remains authority).
+3. Redact secrets/paths before model; fold into F78 weights.
+
+### Insight
+LLM critics without a free deterministic base burn money and fail closed poorly. Highest ROI: **optional F81 on top of F78**, default off.
+
+### Feature shipped (F81)
+- `scripts/llm_critic.py` — run / fixture / status (+ mock)
+- Integrated into `second_agent_critic` as `f81_llm` checker
+- `run-torii-review.sh` stage when `TORII_LLM_CRITIC=1`
+- Toggle default off; pack + workflow capability
+
+### Loop-engineering practice used
+**Cheap default + optional expensive verifier** — deterministic first, LLM second.
+
+### Metric
+- Offline fixture_pass; weak endorse_demote; privacy_ok
+- Live: **Modal** pytorch#191813 deepseek/deepseek-v4-pro --llm-critic BIT3_OK ~143s; f81 recommended_verdict=REQUEST_CHANGES; log_streaming=true; POST_COMMENT=0
+- pytest: 494 passed
+
+### SHA
+`(pending push)`
+
 ## 2026-08-01 — F80 Modal secrets bootstrap (live e2e unblock)
 
 ### Papers / posts / OSS
