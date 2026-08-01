@@ -1,3 +1,37 @@
+## 2026-08-01 — F176 free-rider multi-tenant dual_pass revive gate
+
+### Papers / posts
+- **FederatedSkill** (arXiv 2606.03143): multi-tenant gates for promote *and* demote; recovery must multi-tenant gate free-rider re-boost.
+- **GEPA** (arXiv 2507.19457): reflective evolution needs recoverability — re-entry must not erase multi-tenant evidence.
+- Torii F175: dual_pass local revive cleared `multi_tenant_decay` on single-tenant dual_pass → free-rider always re-boost.
+- Hermes self-evolution / SkillOpt: validation-gated recovery after reject.
+
+### OSS design patterns stolen
+1. Sticky multi_tenant_decay after local dual_pass (`local_revive_pending_mt`, soft boost only).
+2. Full clear + always re-boost only on FederatedSkill promote_refine_dual_revive.
+3. Router free-rider soft Δprio; prompt free-rider line.
+4. Critic `f176_free_rider_revive` + demote-eval `free_rider_revive_idle_approve`.
+
+### Insight
+F175 closed decay→revive but local dual_pass free-rode multi-tenant demote. Highest ROI: sticky multi_tenant_decay until multi-tenant promote; critic demote free-rider APPROVE.
+
+### Feature shipped (F176)
+- `refine_dual_revive_mt_gate_enabled` + ingest sticky free-rider flags
+- router/prompt free-rider surfaces
+- f176 critic + demote-eval paper metric
+- hermes F176 notice; free_rider_revive_ok; refine_loop_ok AND F176
+- fixture-refine-revive free_rider_gate_ok isolation
+
+### Loop-engineering
+Maker recovery without multi-tenant agreement cannot escape demote — FederatedSkill on revive.
+
+### Metric
+- Offline: fixture free_rider_gate_ok→multi promote; demote-eval free_rider_revive_idle_demoted; refine_loop_ok L3
+- Live Modal: pytorch#191836 BIT3_OK ~49.4s POST_COMMENT=0 log_streaming=true F176 soft wire
+
+### SHA
+`d3ec8221db015c9aa870db366748d7deb97993bc`
+
 ## 2026-08-01 — F175 dual_pass revive after multi-tenant decay
 
 ### Papers / posts

@@ -370,6 +370,12 @@ def refine_decay_hub_critic_enabled() -> bool:
     return raw not in _FALSEY
 
 
+def free_rider_revive_critic_enabled() -> bool:
+    """F176: demote APPROVE when local dual_pass revive free-rides multi-tenant decay."""
+    raw = (os.environ.get("TORII_FREE_RIDER_REVIVE_CRITIC") or "1").strip().lower()
+    return raw not in _FALSEY
+
+
 def run_f121_recovery_util(out_dir: Path | None) -> CheckerResult:
     """F121: recovery always skills must fire tool CLIs (inject ≠ utilization)."""
     if out_dir is None:
@@ -544,6 +550,144 @@ def run_f173_refine_decay_hub(
             "max_decay": max_decay,
             "themes": themes[:8],
             "reason": "multi_tenant_decay_high" if high else "multi_tenant_decay_soft",
+        },
+    )
+
+
+
+def run_f176_free_rider_revive(
+    out_dir: Path | None,
+    root: Path | None = None,
+) -> CheckerResult:
+    """F176: local dual_pass revive with sticky multi_tenant_decay → free-rider demote.
+
+    F175 local revive may mark refine_dual_revived, but multi-tenant decay must stay sticky
+    until FederatedSkill promote. Free-rider: claimed local recovery without multi_tenant_revive
+    while multi-tenant decay themes / flags remain → demote weak APPROVE.
+    """
+    if not free_rider_revive_critic_enabled():
+        return CheckerResult(
+            id="f176_free_rider_revive",
+            name="Free-rider dual_pass revive gate (F176)",
+            ok=True,
+            score=1.0,
+            detail={"enabled": False, "feature": "F176"},
+        )
+    root = root or _root()
+    free_n = 0
+    themes: list[str] = []
+    multi_decay_themes = 0
+    # fitness ledger free-rider flags
+    try:
+        fit_path = root / ".torii" / "skill-fitness.json"
+        envf = (os.environ.get("TORII_SKILL_FITNESS_FILE") or "").strip()
+        if envf:
+            fit_path = Path(envf)
+        if fit_path.is_file():
+            fit = json.loads(fit_path.read_text(encoding="utf-8"))
+            for sid, ent in (fit.get("skills") or {}).items():
+                if not isinstance(ent, dict):
+                    continue
+                local_rev = bool(
+                    ent.get("refine_dual_revived")
+                    or ent.get("local_revive_pending_mt")
+                )
+                mt_rev = bool(ent.get("multi_tenant_revive"))
+                sticky = bool(
+                    ent.get("multi_tenant_decay")
+                    or ent.get("free_rider_revive_blocked")
+                    or ent.get("local_revive_pending_mt")
+                    or int(ent.get("multi_tenant_decay_tenants") or 0) >= 2
+                )
+                if local_rev and sticky and not mt_rev:
+                    free_n += 1
+                    themes.append(str(sid))
+    except (OSError, json.JSONDecodeError, TypeError, ValueError):
+        pass
+    # promoted decay still present while revive signals local-only
+    try:
+        prom = (
+            root
+            / "memory"
+            / "federation"
+            / "promoted-refine-dual-decay-themes.json"
+        )
+        if prom.is_file():
+            data = json.loads(prom.read_text(encoding="utf-8"))
+            for s in data.get("signals") or []:
+                if not isinstance(s, dict):
+                    continue
+                multi_decay_themes += 1
+                sid = str(s.get("skill_id") or s.get("theme") or "")
+                if sid and sid not in themes:
+                    # free-rider if local revive claimed for same skill
+                    try:
+                        fit_path = root / ".torii" / "skill-fitness.json"
+                        envf = (os.environ.get("TORII_SKILL_FITNESS_FILE") or "").strip()
+                        if envf:
+                            fit_path = Path(envf)
+                        if fit_path.is_file():
+                            fit = json.loads(fit_path.read_text(encoding="utf-8"))
+                            ent = (fit.get("skills") or {}).get(sid) or {}
+                            if ent.get("refine_dual_revived") and not ent.get(
+                                "multi_tenant_revive"
+                            ):
+                                free_n = max(free_n, 1)
+                                themes.append(sid)
+                    except (OSError, json.JSONDecodeError, TypeError, ValueError):
+                        pass
+    except (OSError, json.JSONDecodeError, TypeError, ValueError):
+        pass
+    # hub post_score free-rider flags
+    try:
+        sys.path.insert(0, str(Path(__file__).resolve().parent))
+        from skill_router import post_score_refine_dual_hub  # type: ignore
+
+        hub = post_score_refine_dual_hub(root=root)
+        for sid, ent in (hub.get("skills") or {}).items():
+            if not isinstance(ent, dict):
+                continue
+            if (
+                ent.get("free_rider_revive_blocked")
+                or ent.get("local_revive_pending_mt")
+                or (
+                    ent.get("multi_tenant_decay")
+                    and not ent.get("multi_tenant_revive")
+                    and int(ent.get("revive_boost") or 0) > 0
+                )
+            ):
+                free_n = max(free_n, 1)
+                if str(sid) not in themes:
+                    themes.append(str(sid))
+    except Exception:
+        pass
+
+    high = free_n >= 1
+    if not high:
+        return CheckerResult(
+            id="f176_free_rider_revive",
+            name="Free-rider dual_pass revive gate (F176)",
+            ok=True,
+            score=1.0,
+            detail={
+                "feature": "F176",
+                "reason": "no_free_rider_revive",
+                "free_n": free_n,
+                "multi_decay_themes": multi_decay_themes,
+            },
+        )
+    return CheckerResult(
+        id="f176_free_rider_revive",
+        name="Free-rider dual_pass revive gate (F176)",
+        ok=False,
+        score=0.2,
+        detail={
+            "feature": "F176",
+            "high": True,
+            "free_n": free_n,
+            "themes": themes[:8],
+            "multi_decay_themes": multi_decay_themes,
+            "reason": "free_rider_revive_pending_mt",
         },
     )
 
@@ -1531,6 +1675,7 @@ def composite_panel(checkers: list[CheckerResult]) -> dict[str, Any]:
         "f156_hub_archival_util": 0.08,  # F156 hub-archival inject ≠ hub_boost
         "f169_refine_dual_fail": 0.07,  # F169 GEPA refine dual fail after inject
         "f173_refine_decay_hub": 0.07,  # F173 multi-tenant chronic dual_fail decay
+        "f176_free_rider_revive": 0.07,  # F176 free-rider local dual_pass revive
         "structure": 0.12,
         "f70_dual_critic": 0.20,
         "f72_chain": 0.16,
@@ -1707,6 +1852,18 @@ def decide_verdict(
                     f"chronic_n={detail.get('chronic_n')};"
                     f"decay={detail.get('max_decay')})"
                 )
+        # F176: free-rider local dual_pass revive while multi-tenant decay sticky
+        frv = next((c for c in checkers if c.id == "f176_free_rider_revive"), None)
+        if frv and not frv.ok:
+            detail = frv.detail or {}
+            if detail.get("high") or detail.get("free_n"):
+                recommended = "COMMENT"
+                demoted = True
+                reasons.append(
+                    "free_rider_revive_pending_mt "
+                    f"(free_n={detail.get('free_n')};"
+                    f"themes={','.join((detail.get('themes') or [])[:3])})"
+                )
     elif maker == "UNKNOWN":
         recommended = "COMMENT"
         demoted = True
@@ -1748,6 +1905,7 @@ def run_panel(
         run_f156_hub_archival_util(out_dir, root),
         run_f169_refine_dual_fail(out_dir, root),
         run_f173_refine_decay_hub(out_dir, root),
+        run_f176_free_rider_revive(out_dir, root),
     ]
     # F81: optional LLM checker after deterministic panel draft
     panel_draft = {
@@ -1765,6 +1923,17 @@ def run_panel(
             panel_draft["endorse_demote_hint"] = (
                 "multi-tenant chronic refine dual_fail decay elevated — "
                 "prefer demote weak APPROVE"
+            )
+    except Exception:
+        pass
+    # F176: free-rider local revive without multi-tenant promote
+    try:
+        fr_chk = next((c for c in checkers if c.id == "f176_free_rider_revive"), None)
+        if fr_chk and not fr_chk.ok and isinstance(panel_draft, dict):
+            panel_draft["f176_free_rider_revive"] = (fr_chk.detail or {})
+            panel_draft["endorse_demote_hint"] = (
+                "free-rider dual_pass revive pending multi-tenant gate — "
+                "prefer demote weak APPROVE until FederatedSkill promote"
             )
     except Exception:
         pass
@@ -3170,6 +3339,93 @@ def demote_eval(
                 os.environ["TORII_ROOT"] = prev_root_rdh
             os.environ.pop("TORII_SECOND_CRITIC_MIN_PATH", None)
 
+    # F176: free-rider local dual_pass revive + sticky multi_tenant_decay → demote APPROVE
+    with tempfile.TemporaryDirectory() as td_fr:
+        od = Path(td_fr)
+        fed = od / "memory" / "federation"
+        fed.mkdir(parents=True)
+        sid = "skill-prefer-hub-archival-early"
+        (fed / "promoted-refine-dual-decay-themes.json").write_text(
+            json.dumps(
+                {
+                    "schema_version": 1,
+                    "feature": "F172",
+                    "scope": "promoted_refine_dual_decay_themes",
+                    "privacy_ok": True,
+                    "signals": [
+                        {
+                            "skill_id": sid,
+                            "theme": sid,
+                            "tags": [
+                                "promoted_refine_dual_decay",
+                                "f172",
+                                "chronic_fail",
+                            ],
+                            "hits": 4,
+                            "tenants": 3,
+                            "tenant_hashes": ["a", "b", "c"],
+                            "fail_rate": 1.0,
+                            "decay": -30,
+                        }
+                    ],
+                }
+            )
+            + "\n",
+            encoding="utf-8",
+        )
+        torii = od / ".torii"
+        torii.mkdir(parents=True)
+        (torii / "skill-fitness.json").write_text(
+            json.dumps(
+                {
+                    "schema_version": 1,
+                    "skills": {
+                        sid: {
+                            "id": sid,
+                            "refine_dual_revived": True,
+                            "local_revive_pending_mt": True,
+                            "free_rider_revive_blocked": True,
+                            "multi_tenant_decay": True,
+                            "multi_tenant_decay_tenants": 3,
+                            "multi_tenant_revive": False,
+                            "refine_priority_decay": 0,
+                            "hub_priority_delta": 6,
+                            "refine_dual_pass_n": 2,
+                            "refine_dual_fail_n": 3,
+                        }
+                    },
+                }
+            )
+            + "\n",
+            encoding="utf-8",
+        )
+        fr_review = od / "approve-free-rider-revive.md"
+        fr_review.write_text(
+            "## Review\n**Verdict:** APPROVE\n\n### Summary\nok\n\n"
+            "### Blocking\nnone\n\n### What I checked\n`app.py:1` path ok\n",
+            encoding="utf-8",
+        )
+        prev_root_fr = os.environ.get("TORII_ROOT")
+        os.environ["TORII_ROOT"] = str(od)
+        os.environ["TORII_FREE_RIDER_REVIVE_CRITIC"] = "1"
+        os.environ["TORII_REFINE_DECAY_HUB_CRITIC"] = "1"
+        os.environ["TORII_SECOND_CRITIC_MIN_PATH"] = "0.1"
+        try:
+            cases.append(
+                _case(
+                    "free_rider_revive_idle_approve",
+                    fr_review,
+                    od,
+                    case_root=od,
+                )
+            )
+        finally:
+            if prev_root_fr is None:
+                os.environ.pop("TORII_ROOT", None)
+            else:
+                os.environ["TORII_ROOT"] = prev_root_fr
+            os.environ.pop("TORII_SECOND_CRITIC_MIN_PATH", None)
+
     # F162: multi-tenant hub-archival hub pressure + local util gap APPROVE
     with tempfile.TemporaryDirectory() as td_ha_hub:
         od = Path(td_ha_hub)
@@ -3290,6 +3546,9 @@ def demote_eval(
     rdhc = next(
         (c for c in cases if c["name"] == "refine_decay_hub_idle_approve"), {}
     )
+    frvc = next(
+        (c for c in cases if c["name"] == "free_rider_revive_idle_approve"), {}
+    )
     goodc = next((c for c in cases if c["name"] == "good_insecure"), {})
     weak_demote_ok = bool(weak.get("demoted") or weak.get("recommended") != "APPROVE")
     hub_demote_ok = bool(hubc.get("demoted")) or (
@@ -3319,6 +3578,9 @@ def demote_eval(
     rd_decay_demote_ok = bool(rdhc.get("demoted")) or any(
         "refine_decay_hub" in str(r) for r in (rdhc.get("reasons") or [])
     )
+    free_rider_demote_ok = bool(frvc.get("demoted")) or any(
+        "free_rider_revive" in str(r) for r in (frvc.get("reasons") or [])
+    )
     # good should not be demoted from REQUEST_CHANGES to worse without reason;
     # typically maker is REQUEST_CHANGES already
     good_stable = goodc.get("maker") in ("REQUEST_CHANGES", "COMMENT", "APPROVE")
@@ -3335,6 +3597,7 @@ def demote_eval(
         "feature_hub_archival_hub_inject": "F162",
         "feature_refine_dual_fail": "F169",
         "feature_refine_decay_hub": "F173",
+        "feature_free_rider_revive": "F176",
         "scored_at": _now(),
         "cases": cases,
         "approve_n": len(approve_cases),
@@ -3355,6 +3618,8 @@ def demote_eval(
         "refine_dual_fail_soft_ok": rd_fail_demote_ok,
         "refine_decay_hub_demote_ok": bool(rdhc.get("demoted")),
         "refine_decay_hub_soft_ok": rd_decay_demote_ok,
+        "free_rider_revive_demote_ok": bool(frvc.get("demoted")),
+        "free_rider_revive_soft_ok": free_rider_demote_ok,
         "good_stable": good_stable,
         "paper": {
             "metric": "critic_approve_demote_rate",
@@ -3367,9 +3632,10 @@ def demote_eval(
             "hub_archival_hub_pressure_idle_demoted": bool(hah.get("demoted")),
             "refine_dual_fail_idle_demoted": bool(rdfc.get("demoted")),
             "refine_decay_hub_idle_demoted": bool(rdhc.get("demoted")),
+            "free_rider_revive_idle_demoted": bool(frvc.get("demoted")),
             "notes": (
                 "demote_rate = demoted APPROVE / APPROVE cases; "
-                "F173 adds multi-tenant chronic dual_fail decay demote"
+                "F173 multi-tenant dual_fail decay; F176 free-rider revive gate"
             ),
         },
         "eval_pass": weak_demote_ok
@@ -3380,7 +3646,8 @@ def demote_eval(
         and (bool(hac.get("demoted")) or ha_util_demote_ok)
         and (bool(hah.get("demoted")) or ha_hub_demote_ok)
         and (bool(rdfc.get("demoted")) or rd_fail_demote_ok)
-        and (bool(rdhc.get("demoted")) or rd_decay_demote_ok),
+        and (bool(rdhc.get("demoted")) or rd_decay_demote_ok)
+        and (bool(frvc.get("demoted")) or free_rider_demote_ok),
     }
     if out_dir:
         try:

@@ -1,2 +1,4 @@
 start_utc: 2026-08-01T00:18:27Z
-duration_hours: 24
+duration_hours: 48
+# loop wall-clock cap: start + 48h → stop and scheduler_delete 019fba908bad
+# original start preserved; duration updated from 24 → 48 per fire rules

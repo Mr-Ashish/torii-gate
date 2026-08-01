@@ -1076,9 +1076,20 @@ def post_score_refine_dual_hub(
                         continue
                     if ent.get("refine_dual_revived") or ent.get("multi_tenant_revive"):
                         sid_s = str(sid)
-                        if sid_s in fitness_decay:
+                        # F176: free-rider gate — local revive with sticky multi_tenant_decay
+                        # does not full-supersede decay; only multi_tenant_revive does.
+                        mt_free_rider = bool(
+                            ent.get("multi_tenant_decay")
+                            or ent.get("local_revive_pending_mt")
+                            or ent.get("free_rider_revive_blocked")
+                        ) and not ent.get("multi_tenant_revive")
+                        if not mt_free_rider and sid_s in fitness_decay:
                             del fitness_decay[sid_s]
-                        boost = max(12, int(ent.get("hub_priority_delta") or 12))
+                        if mt_free_rider:
+                            # soft pending boost only (F176)
+                            boost = max(4, min(8, int(ent.get("hub_priority_delta") or 4)))
+                        else:
+                            boost = max(12, int(ent.get("hub_priority_delta") or 12))
                         revive_boost[sid_s] = max(
                             int(revive_boost.get(sid_s) or 0), boost
                         )
@@ -1093,17 +1104,27 @@ def post_score_refine_dual_hub(
                                 "tool_contrib_pp": float(
                                     ent.get("last_refine_tool_pp") or 0
                                 ),
-                                "promoted": True,
+                                "promoted": not mt_free_rider,
                                 "dual_fail_n": 0,
                                 "dual_pass_n": int(ent.get("refine_dual_pass_n") or 1),
                                 "priority_delta": 0,
-                                "util_rate_bin": "pos",
+                                "util_rate_bin": "pos" if not mt_free_rider else "pending",
                             },
                         )
-                        se["chronic_fail"] = False
-                        se["multi_tenant_decay"] = False
+                        se["chronic_fail"] = bool(mt_free_rider)
+                        se["multi_tenant_decay"] = bool(
+                            mt_free_rider or ent.get("multi_tenant_decay")
+                        )
                         se["multi_tenant_revive"] = bool(ent.get("multi_tenant_revive"))
-                        se["promoted"] = True
+                        se["local_revive_pending_mt"] = bool(
+                            ent.get("local_revive_pending_mt")
+                        )
+                        se["free_rider_revive_blocked"] = bool(mt_free_rider)
+                        se["promoted"] = (not mt_free_rider) and bool(
+                            ent.get("multi_tenant_revive") or ent.get("refine_dual_revived")
+                        )
+                        if mt_free_rider:
+                            se["promoted"] = False
                         se["revive_boost"] = revive_boost[sid_s]
         except (OSError, json.JSONDecodeError, TypeError, ValueError):
             pass
@@ -1131,16 +1152,30 @@ def post_score_refine_dual_hub(
             delta = min(delta, int(fitness_decay[sid]))
             ent["chronic_fail"] = True
             ent["fitness_decay"] = fitness_decay[sid]
-        # F175: dual_pass revive re-boost supersedes decay
+        # F175/F176: dual_pass revive re-boost supersedes decay
+        # F176 free-rider: sticky multi_tenant_decay / pending MT → soft boost only
         if sid in revive_boost or ent.get("multi_tenant_revive") or ent.get("revive_boost"):
             rb = int(
                 revive_boost.get(sid)
                 or ent.get("revive_boost")
                 or 16
             )
-            delta = max(delta, rb)
-            ent["chronic_fail"] = False
-            ent["multi_tenant_decay"] = False
+            free_rider = bool(
+                ent.get("free_rider_revive_blocked")
+                or ent.get("local_revive_pending_mt")
+                or (ent.get("multi_tenant_decay") and not ent.get("multi_tenant_revive"))
+            )
+            if free_rider and not ent.get("multi_tenant_revive"):
+                rb = min(rb, 8)
+                delta = max(delta, rb)
+                # keep chronic/multi_tenant flags sticky for F173 critic
+                ent["chronic_fail"] = True
+                ent["multi_tenant_decay"] = True
+                ent["free_rider_revive_blocked"] = True
+            else:
+                delta = max(delta, rb)
+                ent["chronic_fail"] = False
+                ent["multi_tenant_decay"] = False
         # also decay when local dual_fail_n dominates dual_pass_n (run-level chronic)
         df = int(ent["dual_fail_n"])
         dp = int(ent["dual_pass_n"])
@@ -1206,6 +1241,11 @@ def render_refine_dual_hub_section(hub: dict[str, Any]) -> str:
                 f"tenants={e.get('tenants')} tool_pp={e.get('tool_contrib_pp')} "
                 f"Δprio={int(e.get('priority_delta') or 0):+d} fail_n={e.get('dual_fail_n')}"
                 + (" chronic_decay" if e.get("chronic_fail") else "")
+                + (
+                    " free_rider_pending_mt"
+                    if e.get("free_rider_revive_blocked") or e.get("local_revive_pending_mt")
+                    else ""
+                )
             )
     else:
         lines.append(
@@ -1215,6 +1255,21 @@ def render_refine_dual_hub_section(hub: dict[str, Any]) -> str:
         lines.append(
             f"- **F171 chronic dual_fail decay** on {int(hub.get('chronic_fail_n') or 0)} skill(s) — "
             "always budget demotes until hub_boost tools recover contribution_pp."
+        )
+    free_n = sum(
+        1
+        for e in (skills.values() if isinstance(skills, dict) else [])
+        if isinstance(e, dict)
+        and (
+            e.get("free_rider_revive_blocked")
+            or e.get("local_revive_pending_mt")
+            or (e.get("multi_tenant_decay") and not e.get("multi_tenant_revive"))
+        )
+    )
+    if free_n >= 1:
+        lines.append(
+            f"- **F176 free-rider revive gate** on {free_n} skill(s) — local dual_pass alone "
+            "cannot clear multi-tenant decay; wait for multi-tenant revive promote before full always re-boost."
         )
     if hub.get("high_fail"):
         lines.append(

@@ -125,6 +125,12 @@ def refine_dual_revive_enabled() -> bool:
     return raw not in _FALSEY
 
 
+def refine_dual_revive_mt_gate_enabled() -> bool:
+    """F176: multi-tenant free-rider gate — local dual_pass cannot clear multi_tenant_decay."""
+    raw = (os.environ.get("TORII_SKILL_FITNESS_REVIVE_MT_GATE") or "1").strip().lower()
+    return raw not in _FALSEY
+
+
 def refine_dual_fail_thr() -> float:
     """F171: dual_fail_rate ≥ thr after min samples → decay (default 0.67)."""
     try:
@@ -609,7 +615,8 @@ def ingest_refine_dual(
             e["refine_dual_chronic_fail"] = False
             if int(e.get("refine_priority_decay") or 0) < 0 and float(e["refine_dual_fail_rate"]) < thr:
                 e["refine_priority_decay"] = 0
-            # F175: dual_pass revive after prior decay (local clear + re-boost fuel)
+            # F175/F176: dual_pass revive after prior decay
+            # F176: multi-tenant free-rider gate — sticky multi_tenant_decay stays until promote
             prior_decay = bool(
                 e.get("last_refine_decayed")
                 or e.get("multi_tenant_decay")
@@ -625,20 +632,42 @@ def ingest_refine_dual(
                 and (rate_ok or streak_ok)
             ):
                 boost = 12 + min(12, int(max(0.0, tool_pp) / 10))
+                mt_sticky = bool(
+                    e.get("multi_tenant_decay")
+                    or int(e.get("multi_tenant_decay_tenants") or 0) >= 2
+                )
                 e["refine_dual_revived"] = True
                 e["last_refine_revive_at"] = _now()
-                e["multi_tenant_decay"] = False
                 e["last_refine_decayed"] = False
                 e["refine_priority_decay"] = 0
-                e["hub_priority_delta"] = max(int(e.get("hub_priority_delta") or 0), boost)
                 e["demoted"] = False
                 e["gepa_refined"] = True  # restore F166 refine shield eligibility
+                if mt_sticky and refine_dual_revive_mt_gate_enabled():
+                    # F176: local dual_pass proves recovery fuel but cannot free-ride clear
+                    # multi-tenant decay / full always re-boost until FederatedSkill promote
+                    e["local_revive_pending_mt"] = True
+                    e["multi_tenant_decay"] = True  # sticky until promote_refine_dual_revive
+                    # soft local signal only (half boost, floor +4) — not full always re-entry
+                    soft = max(4, boost // 2)
+                    e["hub_priority_delta"] = max(
+                        min(int(e.get("hub_priority_delta") or 0), soft), soft
+                    )
+                    e["free_rider_revive_blocked"] = True
+                    e["feature_revive_gate"] = "F176"
+                else:
+                    e["multi_tenant_decay"] = False
+                    e["local_revive_pending_mt"] = False
+                    e["free_rider_revive_blocked"] = False
+                    e["hub_priority_delta"] = max(
+                        int(e.get("hub_priority_delta") or 0), boost
+                    )
                 revived.append(sid)
         ingested += 1
     ledger["last_refine_dual_ingest"] = {
         "at": _now(),
         "feature": "F171",
         "feature_revive": "F175" if revived else None,
+        "feature_revive_gate": "F176" if revived else None,
         "ingested_n": ingested,
         "effective_pass": effective_pass,
         "tool_pp": tool_pp,
@@ -1267,6 +1296,9 @@ def promote_refine_dual_revive(
             e["multi_tenant_decay"] = False
             e["multi_tenant_revive"] = True
             e["multi_tenant_revive_tenants"] = int(c.get("tenants") or 0)
+            e["local_revive_pending_mt"] = False
+            e["free_rider_revive_blocked"] = False
+            e["feature_revive_gate"] = "F176"
             e["last_refine_decayed"] = False
             e["refine_priority_decay"] = 0
             e["hub_priority_delta"] = max(
@@ -2692,6 +2724,22 @@ def cmd_fixture_refine_revive(args: argparse.Namespace) -> int:
         "selected_n": 3,
     }
     save_ledger(ledger, ledger_path(root))
+    # isolate free-rider local path: clear multi-tenant revive/decay federation
+    # so soft promote during ingest cannot free-ride clear multi_tenant_decay
+    fed_dir = root / "memory" / "federation"
+    fed_dir.mkdir(parents=True, exist_ok=True)
+    for name in (
+        "skill-refine-dual-revive-signals.json",
+        "promoted-refine-dual-revive-themes.json",
+        "skill-refine-dual-decay-signals.json",
+        "promoted-refine-dual-decay-themes.json",
+    ):
+        fp = fed_dir / name
+        if fp.is_file():
+            try:
+                fp.unlink()
+            except OSError:
+                pass
     # dual_pass recovery samples (need pass > fail to streak_ok, or rate < thr)
     # 3 fails + 4 passes → fail_rate=3/7≈0.43 < 0.67
     revived_local = False
@@ -2714,6 +2762,13 @@ def cmd_fixture_refine_revive(args: argparse.Namespace) -> int:
     ) and not ent.get("refine_dual_chronic_fail") and int(
         ent.get("refine_priority_decay") or 0
     ) >= 0 and int(ent.get("hub_priority_delta") or 0) > 0
+    # F176: multi-tenant free-rider gate — local revive must NOT clear multi_tenant_decay
+    free_rider_gate_ok = bool(
+        ent.get("multi_tenant_decay")
+        and ent.get("local_revive_pending_mt")
+        and ent.get("free_rider_revive_blocked")
+        and not ent.get("multi_tenant_revive")
+    )
 
     # multi-tenant: plant second-tenant revive signal then promote
     fed_path = root / "memory" / "federation" / "skill-refine-dual-revive-signals.json"
@@ -2829,23 +2884,30 @@ def cmd_fixture_refine_revive(args: argparse.Namespace) -> int:
         privacy_ok = privacy_ok and "/Users/" not in pb and "/home/" not in pb
 
     f175_ok = bool(local_ok and multi_ok and multi_ledger_ok and superseded and privacy_ok)
+    f176_ok = bool(free_rider_gate_ok and multi_ledger_ok and not ent2.get("local_revive_pending_mt"))
+    fixture_pass = bool(f175_ok and f176_ok)
     out = {
         "feature": "F175",
-        "fixture_pass": f175_ok,
+        "feature_mt_gate": "F176",
+        "fixture_pass": fixture_pass,
         "local_revive_ok": local_ok,
+        "free_rider_gate_ok": free_rider_gate_ok,
         "multi_tenant_promote_ok": multi_ok,
         "multi_ledger_ok": multi_ledger_ok,
+        "f176_ok": f176_ok,
         "decay_superseded": superseded,
         "privacy_ok": privacy_ok,
         "promoted_n": prom.get("promoted_n"),
         "revived": prom.get("revived"),
         "hub_priority_delta": ent2.get("hub_priority_delta"),
         "multi_tenant_revive": ent2.get("multi_tenant_revive"),
+        "multi_tenant_decay_after_local": ent.get("multi_tenant_decay"),
+        "multi_tenant_decay_after_promote": ent2.get("multi_tenant_decay"),
         "refine_dual_revived": ent2.get("refine_dual_revived"),
         "refine_priority_decay": ent2.get("refine_priority_decay"),
     }
     print(json.dumps(out, indent=2))
-    return 0 if f175_ok else 1
+    return 0 if fixture_pass else 1
 
 
 def cmd_ingest_hub_archival(args: argparse.Namespace) -> int:

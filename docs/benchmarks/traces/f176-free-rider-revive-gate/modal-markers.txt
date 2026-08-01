@@ -1,0 +1,21 @@
+2209:[orch:err] ::notice::F175 refine dual_pass revive federate+promote (soft)
+2210:[orch:err] F175 refine dual_pass revive federate+promote (soft)
+2211:[orch:err] ::notice::F176 free-rider revive MT gate (soft · sticky multi_tenant_decay until promote)
+2212:[orch:err] F176 free-rider revive MT gate (soft · sticky multi_tenant_decay until promote)
+2752:[orch:out]       "name": "Free-rider dual_pass revive gate (F176)",
+2757:[orch:out]         "feature": "F176",
+2792:[orch:out]   "feature_free_rider_revive": "F176",
+3032:[orch:out]     "notes": "demote_rate = demoted APPROVE / APPROVE cases; F173 multi-tenant dual_fail decay; F176 free-rider revive gate"
+3192:[orch:out]     "feature_refine_loop": "F170/F176",
+3198:[orch:out]     "feature_refine_dual_revive": "F175",
+3200:[orch:out]     "feature_free_rider_revive": "F176",
+3241:[orch:out]       "notes": "demote_rate = demoted APPROVE / APPROVE cases; F173 multi-tenant dual_fail decay; F176 free-rider revive gate"
+3723:  "orch_rc": 0,
+3762:(soft)\nF172 refine dual decay federate+promote (soft)\n::notice::F175 refine 
+3763:dual_pass revive federate+promote (soft)\nF175 refine dual_pass revive 
+3764:federate+promote (soft)\n::notice::F176 free-rider revive MT gate (soft \u00b7 
+3765:sticky multi_tenant_decay until promote)\nF176 free-rider revive MT gate (soft 
+3867:  "elapsed_s": 49.4,
+3871:  "log_streaming": true,
+3899:BIT3_OK
+3932:[torii/done] ok=True orch_rc=0 elapsed_s=49.4 review=True

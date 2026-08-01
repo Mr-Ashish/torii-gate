@@ -110,3 +110,5 @@ Paper/eval-safe slim traces (redacted). Large raw logs may be gitignored; always
 | f165-gepa-lite-skill-refine | F165 | GEPA-lite skill refine-from-util | local recall=1.0 + Modal pytorch#191831 BIT3_OK |
 
 | F175 | dual_pass revive after multi-tenant decay | f175-refine-dual-pass-revive | refine_loop_ok + multi-tenant re-boost |
+
+| F176 | free-rider multi-tenant dual_pass revive gate | `f176-free-rider-revive-gate/` | Modal pytorch#191836 BIT3_OK ~49s |

@@ -1083,6 +1083,9 @@ if [[ -f "$SKILL_ROUTER_HELPER" && $TIMED_OUT -eq 0 && "${HERMES_CLI_ARGV_BROKEN
                             python3 "$TORII_ROOT/scripts/skill_fitness.py" federate-refine-revive >/dev/null 2>&1 || true
                             python3 "$TORII_ROOT/scripts/skill_fitness.py" promote-refine-revive >/dev/null 2>&1 || true
                             notice "F175 refine dual_pass revive federate+promote (soft)"
+                            # F176: multi-tenant free-rider gate is inline in ingest/promote;
+                            # notice when sticky multi_tenant_decay + local revive pending
+                            notice "F176 free-rider revive MT gate (soft · sticky multi_tenant_decay until promote)"
                             ;;
                         esac
                         ;;
