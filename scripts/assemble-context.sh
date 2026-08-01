@@ -515,6 +515,26 @@ try:
 except Exception:
     memory_cli_on = "0"
 
+# F105: memory tool utilization rubric (soft) — measure mid-review retrieval use
+memory_tool_audit_on = "0"
+try:
+    import sys as _sys_f105
+    _sys_f105.path.insert(0, str(torii_root / "scripts"))
+    from memory_tool_audit import (  # type: ignore
+        enabled as mta_enabled,
+        inject_prompt as mta_inject,
+    )
+
+    if mta_enabled() and os.environ.get("PROMPT_PATH"):
+        if mta_inject(Path(os.environ["PROMPT_PATH"])):
+            memory_tool_audit_on = "1"
+            try:
+                prompt = Path(os.environ["PROMPT_PATH"]).read_text(encoding="utf-8")
+            except Exception:
+                pass
+except Exception:
+    memory_tool_audit_on = "0"
+
 # F71: deterministic source→sink prefilter + federated sanitized signals
 taint_prefilter_on = "0"
 taint_candidates = "0"
@@ -826,6 +846,7 @@ meta = {
     "MEMORY_GRAPH": memory_graph_on,
     "MEMORY_GRAPH_EDGES": memory_graph_edges,
     "MEMORY_CLI": memory_cli_on,
+    "MEMORY_TOOL_AUDIT": memory_tool_audit_on,
     "TAINT_PREFILTER": taint_prefilter_on,
     "TAINT_CANDIDATES": taint_candidates,
     "FEDERATED_SIGNALS": federated_signals_on,

@@ -125,6 +125,16 @@ COMMANDS: dict[str, dict[str, Any]] = {
             "compound -- status",
         ],
     },
+    "audit": {
+        "script": "memory_tool_audit.py",
+        "default_args": [],
+        "help": "Mid-review memory tool utilization audit (F105)",
+        "examples": [
+            "audit -- audit --out-dir .torii-out",
+            "audit -- fixture",
+            "audit -- status",
+        ],
+    },
 }
 
 
@@ -300,6 +310,7 @@ def cmd_doctor(args: argparse.Namespace) -> int:
         ("loop", ["scorecard", "--shallow"]),
         ("federate", ["fixture"]),
         ("compound", ["fixture"]),
+        ("audit", ["fixture"]),
     ]
     results = []
     all_ok = True
@@ -387,9 +398,11 @@ def cmd_inject_hint(args: argparse.Namespace) -> int:
 def cmd_fixture(args: argparse.Namespace) -> int:
     """Hermetic: help lists cmds; status; doctor; inject-hint."""
     h = help_payload()
-    help_ok = len(h.get("commands") or []) >= 9 and "search" in {
+    help_ok = len(h.get("commands") or []) >= 10 and "search" in {
         c["cmd"] for c in h["commands"]
-    } and "compound" in {c["cmd"] for c in h["commands"]}
+    } and "compound" in {c["cmd"] for c in h["commands"]} and "audit" in {
+        c["cmd"] for c in h["commands"]
+    }
     # status
     st = subprocess.run(
         [sys.executable, str(Path(__file__).resolve()), "status"],

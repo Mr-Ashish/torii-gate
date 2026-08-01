@@ -1,6 +1,37 @@
 # Torii research → product log
 
 
+## 2026-08-01 — F105 mid-review memory tool utilization audit
+
+### Papers / posts
+- **IFCMemoryBench** (arXiv 2607.26072): memory eval = ingestion · retrieval · **utilization**.
+- **WorldMemArena**: write / maintain / retrieve / use decomposition — Torii lacked the use score.
+- Loop-eng: score the loop; do not assume SOUL prose was followed.
+- MemGPT/Letta: memory tools only help if agents call them mid-trajectory.
+
+### OSS design patterns stolen
+1. **Utilization auditor** on agent-loop tool args (not only inject presence).
+2. **utilization_gap** flag when inject offered + tools used but memory never queried.
+3. Soft **fitness blend** (small weight) so path evidence stays dominant.
+
+### Insight
+F103/F104 shipped front door + compound write. Without measuring mid-review retrieval, we cannot prove the memory stack is used. Highest ROI: deterministic scan of terminal commands for `torii_memory` / graph / archival, score 0–1, soft-blend fitness, trace artifact.
+
+### Feature shipped (F105)
+- `scripts/memory_tool_audit.py` — scan / score / audit / inject / fixture / status
+- Soft assemble-context rubric inject; post-run stage after traj_fitness
+- Soft blend into `fitness.json` when present
+- `torii_memory.py audit` + memory_loop stage (L3 12/12)
+- Toggles `TORII_MEMORY_TOOL_AUDIT` / `TORII_MEMORY_TOOL_FITNESS`
+
+### Metric
+- Offline fixture: good=1.0 weak=0.15 delta=0.85 fixture_pass=1
+- Live Modal pytorch#191813: BIT3_OK ~41s log_streaming=true; F105 inject_offered=true score=0.1 hit=0 (zero tool turns measured)
+- pytest: 574 passed
+
+### SHA
+_pending_
+
 ## 2026-08-01 — F104 integrity-gated post-review memory compound write
 
 ### Papers / posts

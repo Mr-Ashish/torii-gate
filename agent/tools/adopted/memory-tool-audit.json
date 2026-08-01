@@ -1,0 +1,6 @@
+{
+  "id": "memory-tool-audit",
+  "feature": "F105",
+  "status": "adopted",
+  "one_liner": "Measure mid-review torii_memory / graph / search utilization"
+}

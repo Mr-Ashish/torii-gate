@@ -75,7 +75,7 @@ route → hit → fitness → dual → attr → inject
 
 ---
 
-## Mental model C — Memory compound loop (F93–F104)
+## Mental model C — Memory compound loop (F93–F105)
 
 Torii does not dump every past finding into the next prompt. Memory is **written with integrity, events, consolidated, strength-ranked, tiered, and paged on demand**:
 
@@ -108,9 +108,11 @@ compound → write → consolidate → effective_critic → federate → scoped_
 
 **Temporal graph (F100–F102).** Zep-style edges (`supersedes`, `same_theme`, `co_path`) with `valid_from` / `valid_until`. Dual-pass critic **demotes findings that match actively superseded TPs**, with **multi-hop** path kinship (co_path/same_theme) so sibling files inherit resolve caution.
 
-**Agent front door (F103):** `python3 scripts/torii_memory.py help|search|graph|loop|compound|doctor` — one CLI for Hermes/terminal over the whole memory stack.
+**Agent front door (F103):** `python3 scripts/torii_memory.py help|search|graph|loop|compound|audit|doctor` — one CLI for Hermes/terminal over the whole memory stack.
 
 **Integrity compound (F104):** after each review, only path-evidenced findings become durable TP signatures (provenance + no absolute-home/secret blobs); weak narrative never poisons the store.
+
+**Utilization audit (F105):** mid-review memory tool calls (search/graph/…) are **scored** from the agent loop — inject offered but unused is a measured gap, soft-blended into trajectory fitness.
 
 **Ops:** `python3 scripts/memory_loop_status.py scorecard` → L0–L3. Smoke requires L3 on the hub tree. CI job summary annotates readiness; optional advisory `torii/memory-loop` via `TORII_MEMORY_LOOP_STATUS_COMMIT=1`.
 

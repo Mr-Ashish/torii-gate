@@ -164,6 +164,24 @@ if [[ -f "$SCRIPTS/trajectory_fitness.py" ]]; then
   esac
 fi
 
+# F105: audit mid-review memory tool use; soft-blend into fitness.json
+if [[ -f "$SCRIPTS/memory_tool_audit.py" ]]; then
+  case "${TORII_MEMORY_TOOL_AUDIT:-1}" in
+    0|false|no|off) ;;
+    *)
+      _f105_args=(audit --out-dir "$OUT_DIR")
+      if [[ -f "$OUT_DIR/fitness.json" ]]; then
+        _f105_args+=(--fitness "$OUT_DIR/fitness.json")
+      fi
+      if [[ -f "$OUT_DIR/prompt.md" ]]; then
+        _f105_args+=(--prompt "$OUT_DIR/prompt.md")
+      fi
+      stage memory_tool_audit \
+        python3 "$SCRIPTS/memory_tool_audit.py" "${_f105_args[@]}" || true
+      ;;
+  esac
+fi
+
 # F78: multi-checker second-agent critic panel (soft; may demote weak APPROVE)
 if [[ -f "$SCRIPTS/second_agent_critic.py" ]]; then
   case "${TORII_SECOND_CRITIC:-1}" in

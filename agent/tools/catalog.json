@@ -1,9 +1,21 @@
 {
   "schema_version": 1,
-  "feature": "F104",
+  "feature": "F105",
   "description": "Torii agent tool catalog \u2014 research \u2192 eval \u2192 adopt pipeline",
-  "updated_at": "2026-08-01T03:49:19Z",
+  "updated_at": "2026-08-01T03:57:32Z",
   "tools": [
+    {
+      "id": "memory-tool-audit",
+      "name": "Memory tool utilization audit",
+      "status": "adopted",
+      "source": "shipped",
+      "kind": "workflow_tool",
+      "toolset": "terminal",
+      "rationale": "F105: score whether Hermes called torii_memory/search/graph mid-review",
+      "safety": "read-only scan of redacted agent-loop; soft fitness blend",
+      "adopted_at": "2026-08-01T03:57:32Z",
+      "feature": "F105"
+    },
     {
       "id": "memory-compound-write",
       "name": "Integrity-gated memory compound write",

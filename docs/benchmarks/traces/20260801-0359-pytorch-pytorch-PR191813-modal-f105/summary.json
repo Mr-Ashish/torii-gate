@@ -1,0 +1,27 @@
+{
+  "feature": "F105",
+  "repo": "pytorch/pytorch",
+  "pr": 191813,
+  "model": "deepseek/deepseek-v4-pro",
+  "host": "modal",
+  "bit3": "OK",
+  "elapsed_s": 40.7,
+  "log_streaming": true,
+  "tool_call_turns": 0,
+  "post_comment": 0,
+  "verdict": "REQUEST_CHANGES",
+  "memory_tool_audit": {
+    "feature": "F105",
+    "score": 0.1,
+    "level": "L0",
+    "hit_count": 0,
+    "inject_offered": true,
+    "tool_call_turns": 0,
+    "stage_ran": true,
+    "note": "inject offered; zero tool turns this run \u2014 utilization L0 measured"
+  },
+  "scored_at": "2026-08-01T03:59:30Z",
+  "modal_app": "https://modal.com/apps/mr-ashish/main/ap-DDPxvi6OMwp3NlefSlWfUl",
+  "tests": "574 passed",
+  "fixture_f105": "pass"
+}
