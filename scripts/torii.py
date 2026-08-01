@@ -1251,13 +1251,78 @@ def product_scorecard(
             report.setdefault("artifacts", []).append(_rel(dest))
         except OSError:
             pass
+    # Soft commercial + product-surface panel for buyers (no hard dependency)
+    commercial_panel: dict[str, Any] = {}
+    product_panel: dict[str, Any] = {}
+    try:
+        cpath = root / "scripts" / "commercial_scorecard.py"
+        if cpath.is_file():
+            cr = subprocess.run(
+                [sys.executable, str(cpath), "status"],
+                cwd=str(root),
+                capture_output=True,
+                text=True,
+                timeout=120,
+                env={**os.environ, "TORII_ROOT": str(root)},
+            )
+            if cr.stdout.strip().startswith("{"):
+                commercial_panel = json.loads(cr.stdout)
+    except (OSError, subprocess.TimeoutExpired, json.JSONDecodeError):
+        commercial_panel = {}
+    try:
+        opath = root / "scripts" / "ops_dashboard.py"
+        if opath.is_file():
+            # import inventory without full smoke
+            sys.path.insert(0, str(root / "scripts"))
+            import ops_dashboard as _ops  # type: ignore
+
+            product_panel = _ops.product_surfaces_inventory(root)
+    except Exception:
+        product_panel = {}
+
+    report["commercial"] = {
+        "commercial_ok": commercial_panel.get("commercial_ok"),
+        "overall_est": commercial_panel.get("overall_est"),
+        "surfaces_pass": commercial_panel.get("surfaces_pass"),
+    }
+    report["product_surfaces"] = {
+        "ok": product_panel.get("ok"),
+        "ok_n": product_panel.get("ok_n"),
+        "total": product_panel.get("total"),
+    }
+
     # brand markdown snippet (no secrets / no home paths)
     brand_md = root / "docs" / "brand" / "scorecard-metrics.md"
     try:
         lines = [
-            "# Torii Gate — measured scorecard (F129/F130/F164/F170/F184)",
+            "# Torii Gate — product scorecard",
             "",
-            f"_Generated: `{report['scored_at']}` · level **{level}** · brand_ready={brand_ready}_",
+            f"_Generated: `{report['scored_at']}` · level **{level}** · brand_ready=**{brand_ready}**_",
+            "",
+            "Buyers start here. Advanced loop metrics (engineers) are below the fold.",
+            "",
+            "## Commercial readiness (queue + post-queue)",
+            "",
+            "| Metric | Value |",
+            "|--------|------:|",
+            f"| overall_est | **{commercial_panel.get('overall_est')}** / 10 |",
+            f"| commercial_ok | {commercial_panel.get('commercial_ok')} |",
+            f"| surfaces_pass | {commercial_panel.get('surfaces_pass')} |",
+            f"| dual_compound L3 | skill {metrics['skill_loop_level']} · memory {metrics['memory_loop_level']} · workflow {metrics['workflow_level']} |",
+            f"| doctor_pass | {metrics['doctor_pass']} |",
+            f"| product_surfaces | {product_panel.get('ok_n')}/{product_panel.get('total')} |",
+            "",
+            "Commands: `python3 scripts/torii.py commercial -- status` · "
+            "`python3 scripts/torii.py doctor` · "
+            "`python3 scripts/torii.py ops -- status`",
+            "",
+            "Docs: [INSTALL](../INSTALL.md) · [GOLDEN-PATH](../GOLDEN-PATH.md) · "
+            "[QUIETER](../QUIETER.md) · [MEMORY](../MEMORY.md) · "
+            "[WORKFLOWS](../WORKFLOWS.md) · [commercial-scorecard](../benchmarks/commercial-scorecard.md)",
+            "",
+            "---",
+            "",
+            "## Advanced — measured loop metrics",
             "",
             report["one_liner"],
             "",
@@ -1296,8 +1361,7 @@ def product_scorecard(
             f"| refine_promote_ok | {metrics.get('refine_promote_ok')} |",
             f"| refine_dual_hub_ok | {metrics.get('refine_dual_hub_ok')} |",
             f"| refine_loop_ok | {metrics.get('refine_loop_ok')} |",
-            f"| refine_dual_decay_ok | {metrics.get('refine_dual_decay_ok')} |",
-            f"| refine_decay_fed_ok | {metrics.get('refine_decay_fed_ok')} |",
+            f"| refine_dual_decay_ok | {metrics.get('refine_dual_decay_ok')} |",            f"| refine_decay_fed_ok | {metrics.get('refine_decay_fed_ok')} |",
             f"| refine_dual_fail_idle_demoted | {metrics.get('refine_dual_fail_idle_demoted')} |",
             f"| refine_decay_hub_idle_demoted | {metrics.get('refine_decay_hub_idle_demoted')} |",
             f"| refine_dual_revive_ok | {metrics.get('refine_dual_revive_ok')} |",

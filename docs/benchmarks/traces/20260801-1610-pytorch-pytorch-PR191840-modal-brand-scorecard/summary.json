@@ -1,0 +1,20 @@
+{
+  "feature": "BRAND_SCORECARD",
+  "schema_version": 1,
+  "repo": "pytorch/pytorch",
+  "pr": "191840",
+  "model": "deepseek/deepseek-v4-pro",
+  "host": "modal",
+  "bit3": true,
+  "elapsed_s": 100.7,
+  "log_streaming": true,
+  "tool_call_turns": 4,
+  "post_comment": 0,
+  "verdict": "REQUEST_CHANGES",
+  "block": true,
+  "certificate_id": "gc-966d68ed6c5808da",
+  "notes": "BRAND_SCORECARD buyer-first commercial panel on scorecard-metrics.md",
+  "scored_at": "2026-08-01T16:13:41Z",
+  "modal_run": "https://modal.com/apps/mr-ashish/main/ap-3pt52sxw3XfYBxXOPvfWk7",
+  "cost_usd": 0.018905854
+}

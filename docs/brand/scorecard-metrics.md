@@ -1,6 +1,27 @@
-# Torii Gate — measured scorecard (F129/F130/F164/F170/F184)
+# Torii Gate — product scorecard
 
-_Generated: `2026-08-01T13:49:38Z` · level **L3** · brand_ready=True_
+_Generated: `2026-08-01T16:13:41Z` · level **L3** · brand_ready=**True**_
+
+Buyers start here. Advanced loop metrics (engineers) are below the fold.
+
+## Commercial readiness (queue + post-queue)
+
+| Metric | Value |
+|--------|------:|
+| overall_est | **8.5** / 10 |
+| commercial_ok | True |
+| surfaces_pass | 10 |
+| dual_compound L3 | skill L3 · memory L3 · workflow L3 |
+| doctor_pass | True |
+| product_surfaces | 10/10 |
+
+Commands: `python3 scripts/torii.py commercial -- status` · `python3 scripts/torii.py doctor` · `python3 scripts/torii.py ops -- status`
+
+Docs: [INSTALL](../INSTALL.md) · [GOLDEN-PATH](../GOLDEN-PATH.md) · [QUIETER](../QUIETER.md) · [MEMORY](../MEMORY.md) · [WORKFLOWS](../WORKFLOWS.md) · [commercial-scorecard](../benchmarks/commercial-scorecard.md)
+
+---
+
+## Advanced — measured loop metrics
 
 Measured gate readiness: dual compound (skill+memory) + workflow graph + demote_rate=1.0 + memory_util_delta=0.85 + hub-archival loop (util→reprompt→fitness→hub inject).
 
@@ -53,6 +74,8 @@ Measured gate readiness: dual compound (skill+memory) + workflow graph + demote_
 | hub_gepa_compound_inject_ok | True |
 | hub_gepa_compound_always_ok | True |
 | reprompt_compound_ok | True |
+| compound_reprompt_fitness_ok | True |
+| compound_reprompt_pressure_ok | True |
 
 Source: `python3 scripts/torii.py scorecard` · workflow F131 · demote F128/F151 · util F130 · hub-archival F155–F163 (F164) · GEPA refine F165–F180 (F170/F180).
 

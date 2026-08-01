@@ -1,4 +1,36 @@
 
+## 2026-08-01 — BRAND_SCORECARD: buyer commercial panel on scorecard-metrics
+
+### Papers / posts
+- Loop Engineering: scorecards for operators, not only research demote tables.
+- Simplicity #12: brand scorecard was F-dense; buyers need overall_est first.
+- Commercial rollup 8.5 already shipped — surface it on brand metrics.
+
+### Decide / copy / skip
+- **Copy:** scorecard-metrics.md buyer section (commercial + product_surfaces).
+- **Copy:** Advanced fold keeps loop metrics for engineers.
+- **Copy:** TORII.md pointer to measured product scorecard.
+- **Skip:** F185+; no new demote/GEPA layers.
+
+### Feature shipped (BRAND_SCORECARD)
+- torii.py scorecard writes buyer commercial panel first
+- commercial_ok / overall_est / product_surfaces 10/10 on brand md
+
+### Metric
+- Offline: brand_ready L3 · commercial overall_est 8.5 · product 10/10
+- Live Modal: pytorch#191840 BIT3_OK ~100.7s tools=4 POST_COMMENT=0
+- Traces: docs/benchmarks/traces/20260801-1610-pytorch-pytorch-PR191840-modal-brand-scorecard/
+
+### scorecard_target
+simplicity (#12) · commercial trust
+
+### dim_lift
+brand scorecard leads with buyer commercial readiness
+
+### SHA
+_pending_
+
+
 ## 2026-08-01 — OPS_SURFACES: product map on ops dashboard (dim 8)
 
 ### Papers / posts

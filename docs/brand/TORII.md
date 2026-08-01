@@ -85,6 +85,8 @@ compound → write → consolidate → effective → federate → recall → tie
 
 Differentiator vs static skill dumps / forever MEMORY.md: measure contribution, demote free-riders, integrity-gate compound, tier core vs archival, budget soft re-prompts.
 
+**Measured product scorecard (buyers first):** [`scorecard-metrics.md`](scorecard-metrics.md) — commercial overall_est + product surfaces, then Advanced loop metrics.
+
 Ops (not marketing):
 
 ```bash
