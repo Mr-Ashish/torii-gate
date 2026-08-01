@@ -31,14 +31,20 @@ class CommercialScorecardTests(unittest.TestCase):
         data = json.loads(r.stdout)
         self.assertTrue(data["fixture_pass"], data)
         self.assertTrue(data["all_surfaces_pass"])
+        self.assertTrue(data.get("post_queue_complete"), data)
         self.assertGreaterEqual(float(data["overall_est"]), 7.5)
         self.assertEqual(data["surfaces_pass"], data["surfaces_total"])
+        self.assertGreaterEqual(int(data["surfaces_total"]), 9)
 
     def test_report_writes(self):
         r = _run(["report", "--json"])
         self.assertEqual(r.returncode, 0, r.stderr + r.stdout)
         data = json.loads(r.stdout)
         self.assertTrue(data.get("commercial_ok"), data)
+        self.assertTrue(data.get("post_queue_complete"), data)
+        ids = {s.get("id") for s in (data.get("surfaces") or [])}
+        for need in ("golden_path", "enterprise", "gate_certificate", "quieter", "tool_use"):
+            self.assertIn(need, ids)
         md = ROOT / "docs" / "benchmarks" / "commercial-scorecard.md"
         js = ROOT / "docs" / "benchmarks" / "commercial-scorecard.json"
         self.assertTrue(md.is_file())
@@ -48,6 +54,9 @@ class CommercialScorecardTests(unittest.TestCase):
         self.assertIn("golden_path", body)
         self.assertIn("public_eval", body)
         self.assertIn("enterprise", body)
+        self.assertIn("gate_certificate", body)
+        self.assertIn("Post-queue", body)
+        self.assertIn("tool_use", body)
 
 
 if __name__ == "__main__":

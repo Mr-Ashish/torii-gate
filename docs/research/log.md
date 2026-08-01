@@ -1,4 +1,37 @@
 
+## 2026-08-01 — COMMERCIAL_V2: post-queue surfaces in commercial rollup
+
+### Papers / posts
+- Loop Engineering: after shipping surfaces, keep one score that includes them.
+- Queue 1–6 + post-queue (GATE_CERT, QUIETER, TOOL_USE) were fragmented until one fixture.
+- Live Modal: report-verdict.sh syntax error on env help line (ops reliability).
+
+### Decide / copy / skip
+- **Copy:** commercial schema 2 with 9 surfaces (priority 6 + post 3).
+- **Copy:** artifacts QUIETER.md / TOOL-USE.md / GATE.md; post_queue_complete flag.
+- **Copy:** fix report-verdict.sh missing # on TORII_FIXIT_PROMPTS comment.
+- **Skip:** F185+ compound loops; no new feature stack.
+
+### Feature shipped (COMMERCIAL_V2)
+- commercial_scorecard.py SURFACES + post-queue section in md
+- smoke-offline quieter + tool-use tests
+- report-verdict.sh comment fix (verdict stage bash -n clean)
+
+### Metric
+- Offline: pytest commercial 2 · fixture 9/9 · overall_est 8.5 · post_queue_complete
+- Live Modal: pytorch#191840 BIT3_OK ~114.6s tools=3 POST_COMMENT=0
+- Traces: docs/benchmarks/traces/20260801-1527-pytorch-pytorch-PR191840-modal-commercial-v2/
+
+### scorecard_target
+commercial 7.5+ · dims 3+12 post-queue
+
+### dim_lift
+one operator score for full product surface set
+
+### SHA
+_pending_
+
+
 ## 2026-08-01 — TOOL_USE: agent tool-use quality chart (tools-as-code)
 
 ### Papers / posts

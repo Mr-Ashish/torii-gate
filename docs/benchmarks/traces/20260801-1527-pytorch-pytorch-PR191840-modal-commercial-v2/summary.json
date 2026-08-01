@@ -1,0 +1,27 @@
+{
+  "feature": "COMMERCIAL_V2",
+  "schema_version": 1,
+  "repo": "pytorch/pytorch",
+  "pr": "191840",
+  "model": "deepseek/deepseek-v4-pro",
+  "host": "modal",
+  "bit3": true,
+  "elapsed_s": 114.6,
+  "log_streaming": true,
+  "tool_call_turns": 3,
+  "post_comment": 0,
+  "verdict": "APPROVE",
+  "block": false,
+  "certificate_id": "gc-8145e70dec5ab02f",
+  "reason_codes": [
+    "verdict_approve_open",
+    "strong_path_evidence",
+    "blocking_with_paths"
+  ],
+  "path_evidence_score": null,
+  "notes": "COMMERCIAL v2: post-queue surfaces in rollup + fix report-verdict.sh comment syntax",
+  "scored_at": "2026-08-01T15:30:21Z",
+  "modal_run": "https://modal.com/apps/mr-ashish/main/ap-ggZxAledMF4yF9qmMZhJuG",
+  "cost_usd": 0.009592533,
+  "verdict_rc_note": "pre-fix: report-verdict.sh missing # on env line (fixed this fire)"
+}

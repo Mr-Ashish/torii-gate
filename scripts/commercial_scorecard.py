@@ -1,9 +1,10 @@
 #!/usr/bin/env python3
-"""Commercial product scorecard rollup (post priority-queue 1–6).
+"""Commercial product scorecard rollup (priority queue 1–6 + post-queue).
 
-Tools-as-code that serve golden path / eval / install / ops / enterprise:
-runs hermetic fixtures for each commercial surface and publishes a single
-score trajectory from baseline 6.6 toward 7.5+.
+Tools-as-code that serve golden path / eval / install / ops / enterprise plus
+post-queue merge-authority surfaces (gate certificate · quieter · tool-use):
+runs hermetic fixtures and publishes a single score trajectory from baseline
+6.6 toward 7.5+ (cap 8.5).
 
 Commands:
   report | fixture | status
@@ -21,60 +22,94 @@ from pathlib import Path
 from typing import Any
 
 FEATURE = "COMMERCIAL"
-SCHEMA = 1
+SCHEMA = 2
 BASELINE_OVERALL = 6.6
 OUT_REL = Path("docs/benchmarks/commercial-scorecard.md")
 OUT_JSON = Path("docs/benchmarks/commercial-scorecard.json")
 
-# Priority queue surfaces: script, target label, weight toward overall lift
+# Priority queue surfaces (1–6) + post-queue (certificate / quieter / tool-use).
+# Weights sum ~1.0; post-queue lifts JTBD/simplicity without new F-stack.
 SURFACES: list[dict[str, Any]] = [
     {
         "id": "golden_path",
         "script": "golden_path_metrics.py",
         "target": "7.5",
         "dim": "commercial / simplicity path",
-        "weight": 0.22,
+        "weight": 0.18,
         "pass_key": "fixture_pass",
+        "queue": "priority",
     },
     {
         "id": "buyer_narrative",
         "script": "buyer_narrative_check.py",
         "target": "8.0",
         "dim": "simplicity (narrative)",
-        "weight": 0.18,
+        "weight": 0.14,
         "pass_key": "fixture_pass",
+        "queue": "priority",
     },
     {
         "id": "public_eval",
         "script": "public_eval.py",
         "target": "8.5",
         "dim": "technical trust",
-        "weight": 0.20,
+        "weight": 0.16,
         "pass_key": "fixture_pass",
+        "queue": "priority",
     },
     {
         "id": "install_ux",
         "script": "install_ux_check.py",
         "target": "install",
         "dim": "install UX (dim 7)",
-        "weight": 0.14,
+        "weight": 0.11,
         "pass_key": "fixture_pass",
+        "queue": "priority",
     },
     {
         "id": "ops",
         "script": "ops_dashboard.py",
         "target": "ops",
         "dim": "reliability/ops (dim 8)",
-        "weight": 0.14,
+        "weight": 0.11,
         "pass_key": "fixture_pass",
+        "queue": "priority",
     },
     {
         "id": "enterprise",
         "script": "enterprise_surface.py",
         "target": "enterprise",
         "dim": "enterprise light (dim 9)",
-        "weight": 0.12,
+        "weight": 0.10,
         "pass_key": "fixture_pass",
+        "queue": "priority",
+    },
+    {
+        "id": "gate_certificate",
+        "script": "gate_certificate.py",
+        "target": "evidence",
+        "dim": "merge-authority certificate (dim 12)",
+        "weight": 0.08,
+        "pass_key": "fixture_pass",
+        "queue": "post",
+    },
+    {
+        "id": "quieter",
+        "script": "quieter_over_time.py",
+        "target": "JTBD",
+        "dim": "own-repo quieter-over-time (dim 3)",
+        "weight": 0.06,
+        "pass_key": "fixture_pass",
+        "queue": "post",
+    },
+    {
+        "id": "tool_use",
+        "script": "tool_use_quality.py",
+        "target": "tools",
+        "dim": "agent tool-use quality (dims 3+12)",
+        "weight": 0.06,
+        "pass_key": "fixture_pass",
+        "queue": "post",
     },
 ]
 
@@ -164,11 +199,14 @@ def build_report(root: Path | None = None) -> dict[str, Any]:
                 "target": s["target"],
                 "dim": s["dim"],
                 "weight": s["weight"],
+                "queue": s.get("queue") or "priority",
                 "ok": fr.get("ok"),
                 "fixture": fr,
             }
         )
     est = estimate_overall(results)
+    priority = [r for r in results if r.get("queue") == "priority"]
+    post = [r for r in results if r.get("queue") == "post"]
     # docs presence quick check for golden path metrics artifact
     artifacts = {
         "golden_path_md": (root / "docs" / "benchmarks" / "golden-path-metrics.md").is_file(),
@@ -177,22 +215,30 @@ def build_report(root: Path | None = None) -> dict[str, Any]:
         "install_md": (root / "docs" / "INSTALL.md").is_file(),
         "ops_dashboard": (root / "docs" / "ops" / "DASHBOARD.md").is_file(),
         "enterprise_privacy": (root / "docs" / "enterprise" / "PRIVACY.md").is_file(),
+        "quieter_md": (root / "docs" / "QUIETER.md").is_file(),
+        "tool_use_md": (root / "docs" / "TOOL-USE.md").is_file(),
+        "gate_md": (root / "docs" / "GATE.md").is_file(),
     }
     report = {
         "feature": FEATURE,
         "schema": SCHEMA,
         "scored_at": _now(),
         "scorecard_target": "7.5+",
-        "dim_lift": "commercial rollup of priority queue 1–6",
+        "dim_lift": "commercial rollup of priority queue 1–6 + post-queue cert/quieter/tools",
         "one_liner": (
             "Single commercial scorecard: golden path · buyer · public eval · "
-            "install · ops · enterprise"
+            "install · ops · enterprise · gate cert · quieter · tool-use"
         ),
         "surfaces": results,
+        "priority_surfaces": priority,
+        "post_queue_surfaces": post,
         "estimate": est,
         "artifacts": artifacts,
         "all_surfaces_pass": all(r.get("ok") for r in results),
+        "priority_pass": all(r.get("ok") for r in priority) if priority else False,
+        "post_queue_pass": all(r.get("ok") for r in post) if post else False,
         "artifacts_ok": all(artifacts.values()),
+        "post_queue_complete": bool(post) and all(r.get("ok") for r in post),
     }
     report["commercial_ok"] = bool(
         report["all_surfaces_pass"] and report["artifacts_ok"] and est["overall_est"] >= 7.5
@@ -207,7 +253,7 @@ def render_md(report: dict[str, Any]) -> str:
         "",
         "# Commercial product scorecard",
         "",
-        f"_Generated: `{report.get('scored_at')}` · "
+        f"_Generated: `{report.get('scored_at')}` · schema **{report.get('schema')}** · "
         f"**overall_est={est.get('overall_est')}/10** "
         f"(baseline {est.get('baseline')}) · "
         f"commercial_ok=`{report.get('commercial_ok')}`_",
@@ -224,13 +270,32 @@ def render_md(report: dict[str, Any]) -> str:
         f"| overall_est | **{est.get('overall_est')}** |",
         f"| lift | +{est.get('lift')} |",
         f"| surfaces pass | {est.get('surfaces_pass')}/{est.get('surfaces_total')} |",
+        f"| post_queue_complete | {report.get('post_queue_complete')} |",
         "",
-        "## Priority queue surfaces",
+        "## Priority queue surfaces (1–6)",
         "",
         "| Surface | Target | Dim | Pass |",
         "|---------|--------|-----|:----:|",
     ]
-    for r in report.get("surfaces") or []:
+    for r in report.get("priority_surfaces") or [
+        x for x in (report.get("surfaces") or []) if x.get("queue") != "post"
+    ]:
+        mark = "yes" if r.get("ok") else "**no**"
+        lines.append(
+            f"| `{r.get('id')}` | {r.get('target')} | {r.get('dim')} | {mark} |"
+        )
+    lines += [
+        "",
+        "## Post-queue surfaces (merge authority)",
+        "",
+        "Gate certificate · quieter-over-time · agent tool-use — tools-as-code, not F-stack.",
+        "",
+        "| Surface | Target | Dim | Pass |",
+        "|---------|--------|-----|:----:|",
+    ]
+    for r in report.get("post_queue_surfaces") or [
+        x for x in (report.get("surfaces") or []) if x.get("queue") == "post"
+    ]:
         mark = "yes" if r.get("ok") else "**no**"
         lines.append(
             f"| `{r.get('id')}` | {r.get('target')} | {r.get('dim')} | {mark} |"
@@ -255,6 +320,8 @@ def render_md(report: dict[str, Any]) -> str:
         "```",
         "",
         "Related: [GOLDEN-PATH](../GOLDEN-PATH.md) · "
+        "[QUIETER](../QUIETER.md) · [TOOL-USE](../TOOL-USE.md) · "
+        "[GATE](../GATE.md) · "
         "[public-eval](public-eval/SCORECARD.md) · "
         "[ops](../ops/DASHBOARD.md) · "
         "[enterprise](../enterprise/)",
@@ -294,6 +361,7 @@ def cmd_fixture(args: argparse.Namespace) -> int:
         "schema": SCHEMA,
         "fixture_pass": bool(report.get("commercial_ok")),
         "all_surfaces_pass": report.get("all_surfaces_pass"),
+        "post_queue_complete": report.get("post_queue_complete"),
         "artifacts_ok": report.get("artifacts_ok"),
         "overall_est": (report.get("estimate") or {}).get("overall_est"),
         "surfaces_pass": (report.get("estimate") or {}).get("surfaces_pass"),

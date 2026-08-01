@@ -25,7 +25,7 @@
 #   TORII_PR_REVIEW — 1 (default) to submit formal PR review; 0/off to skip
 #   TORII_REPLACE_PREVIOUS — 1 (default) also dismisses prior F23 PR reviews
 #   TORII_INLINE_COMMENTS — 1 (default) post F9 inline notes; 0/off to skip
-  TORII_FIXIT_PROMPTS — 1 (default) attach F54 fix-it agent prompts on findings; 0/off
+#   TORII_FIXIT_PROMPTS — 1 (default) attach F54 fix-it agent prompts on findings; 0/off
 #   TORII_PR_LABELS — 1 (default) apply F37 labels; 0/off to skip
 #   TORII_LABEL_PREFIX — default "torii" → labels torii:approve etc.
 #   HEAD_SHA — optional; resolved via gh pr view when empty

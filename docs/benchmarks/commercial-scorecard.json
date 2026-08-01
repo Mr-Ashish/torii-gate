@@ -1,16 +1,17 @@
 {
   "feature": "COMMERCIAL",
-  "schema": 1,
-  "scored_at": "2026-08-01T14:44:49Z",
+  "schema": 2,
+  "scored_at": "2026-08-01T15:30:49Z",
   "scorecard_target": "7.5+",
-  "dim_lift": "commercial rollup of priority queue 1\u20136",
-  "one_liner": "Single commercial scorecard: golden path \u00b7 buyer \u00b7 public eval \u00b7 install \u00b7 ops \u00b7 enterprise",
+  "dim_lift": "commercial rollup of priority queue 1\u20136 + post-queue cert/quieter/tools",
+  "one_liner": "Single commercial scorecard: golden path \u00b7 buyer \u00b7 public eval \u00b7 install \u00b7 ops \u00b7 enterprise \u00b7 gate cert \u00b7 quieter \u00b7 tool-use",
   "surfaces": [
     {
       "id": "golden_path",
       "target": "7.5",
       "dim": "commercial / simplicity path",
-      "weight": 0.22,
+      "weight": 0.18,
+      "queue": "priority",
       "ok": true,
       "fixture": {
         "ok": true,
@@ -35,7 +36,8 @@
       "id": "buyer_narrative",
       "target": "8.0",
       "dim": "simplicity (narrative)",
-      "weight": 0.18,
+      "weight": 0.14,
+      "queue": "priority",
       "ok": true,
       "fixture": {
         "ok": true,
@@ -62,7 +64,8 @@
       "id": "public_eval",
       "target": "8.5",
       "dim": "technical trust",
-      "weight": 0.2,
+      "weight": 0.16,
+      "queue": "priority",
       "ok": true,
       "fixture": {
         "ok": true,
@@ -90,7 +93,8 @@
       "id": "install_ux",
       "target": "install",
       "dim": "install UX (dim 7)",
-      "weight": 0.14,
+      "weight": 0.11,
+      "queue": "priority",
       "ok": true,
       "fixture": {
         "ok": true,
@@ -117,7 +121,8 @@
       "id": "ops",
       "target": "ops",
       "dim": "reliability/ops (dim 8)",
-      "weight": 0.14,
+      "weight": 0.11,
+      "queue": "priority",
       "ok": true,
       "fixture": {
         "ok": true,
@@ -132,6 +137,7 @@
           "checks",
           "fail_closed_safe_defaults",
           "required_context",
+          "last_gate_certificate",
           "scorecard_target",
           "at"
         ]
@@ -141,7 +147,250 @@
       "id": "enterprise",
       "target": "enterprise",
       "dim": "enterprise light (dim 9)",
-      "weight": 0.12,
+      "weight": 0.1,
+      "queue": "priority",
+      "ok": true,
+      "fixture": {
+        "ok": true,
+        "rc": 0,
+        "fixture_pass": true,
+        "scorecard_target": "enterprise",
+        "script": "enterprise_surface.py",
+        "payload_keys": [
+          "feature",
+          "schema",
+          "fixture_pass",
+          "checks",
+          "tenant_n",
+          "scorecard_target",
+          "at"
+        ]
+      }
+    },
+    {
+      "id": "gate_certificate",
+      "target": "evidence",
+      "dim": "merge-authority certificate (dim 12)",
+      "weight": 0.08,
+      "queue": "post",
+      "ok": true,
+      "fixture": {
+        "ok": true,
+        "rc": 0,
+        "fixture_pass": true,
+        "scorecard_target": "evidence / simplicity (dim 12)",
+        "script": "gate_certificate.py",
+        "payload_keys": [
+          "feature",
+          "schema",
+          "fixture_pass",
+          "ok_n",
+          "total",
+          "checks",
+          "detail",
+          "scorecard_target",
+          "dim_lift",
+          "one_liner",
+          "at"
+        ]
+      }
+    },
+    {
+      "id": "quieter",
+      "target": "JTBD",
+      "dim": "own-repo quieter-over-time (dim 3)",
+      "weight": 0.06,
+      "queue": "post",
+      "ok": true,
+      "fixture": {
+        "ok": true,
+        "rc": 0,
+        "fixture_pass": true,
+        "scorecard_target": "JTBD / simplicity",
+        "script": "quieter_over_time.py",
+        "payload_keys": [
+          "feature",
+          "fixture_pass",
+          "core_ok",
+          "buyer_doc_ok",
+          "own_repo_ok_n",
+          "own_repo_total",
+          "required_check",
+          "scorecard_target"
+        ]
+      }
+    },
+    {
+      "id": "tool_use",
+      "target": "tools",
+      "dim": "agent tool-use quality (dims 3+12)",
+      "weight": 0.06,
+      "queue": "post",
+      "ok": true,
+      "fixture": {
+        "ok": true,
+        "rc": 0,
+        "fixture_pass": true,
+        "scorecard_target": "simplicity / JTBD",
+        "script": "tool_use_quality.py",
+        "payload_keys": [
+          "feature",
+          "fixture_pass",
+          "buyer_doc_ok",
+          "tool_turns_gate_ok",
+          "trajectory_fitness_ok",
+          "readiness_ok_n",
+          "readiness_total",
+          "catalog_adopted",
+          "scorecard_target"
+        ]
+      }
+    }
+  ],
+  "priority_surfaces": [
+    {
+      "id": "golden_path",
+      "target": "7.5",
+      "dim": "commercial / simplicity path",
+      "weight": 0.18,
+      "queue": "priority",
+      "ok": true,
+      "fixture": {
+        "ok": true,
+        "rc": 0,
+        "fixture_pass": true,
+        "scorecard_target": "7.5",
+        "script": "golden_path_metrics.py",
+        "payload_keys": [
+          "feature",
+          "schema",
+          "fixture_pass",
+          "readiness",
+          "dogfood_runs_seen",
+          "labeled_eval",
+          "required_check",
+          "scorecard_target",
+          "at"
+        ]
+      }
+    },
+    {
+      "id": "buyer_narrative",
+      "target": "8.0",
+      "dim": "simplicity (narrative)",
+      "weight": 0.14,
+      "queue": "priority",
+      "ok": true,
+      "fixture": {
+        "ok": true,
+        "rc": 0,
+        "fixture_pass": true,
+        "scorecard_target": "8.0",
+        "script": "buyer_narrative_check.py",
+        "payload_keys": [
+          "paths",
+          "checks",
+          "counts",
+          "ok_n",
+          "total",
+          "fixture_pass",
+          "primary_phrase",
+          "feature",
+          "schema",
+          "scorecard_target",
+          "at"
+        ]
+      }
+    },
+    {
+      "id": "public_eval",
+      "target": "8.5",
+      "dim": "technical trust",
+      "weight": 0.16,
+      "queue": "priority",
+      "ok": true,
+      "fixture": {
+        "ok": true,
+        "rc": 0,
+        "fixture_pass": true,
+        "scorecard_target": "8.5",
+        "script": "public_eval.py",
+        "payload_keys": [
+          "feature",
+          "schema",
+          "fixture_pass",
+          "seed",
+          "model_id",
+          "required_packs",
+          "catalog_ids",
+          "demo_ok",
+          "fixtures_ok",
+          "corpus",
+          "scorecard_target",
+          "at"
+        ]
+      }
+    },
+    {
+      "id": "install_ux",
+      "target": "install",
+      "dim": "install UX (dim 7)",
+      "weight": 0.11,
+      "queue": "priority",
+      "ok": true,
+      "fixture": {
+        "ok": true,
+        "rc": 0,
+        "fixture_pass": true,
+        "scorecard_target": "install",
+        "script": "install_ux_check.py",
+        "payload_keys": [
+          "feature",
+          "schema",
+          "fixture_pass",
+          "ok_n",
+          "total",
+          "checks",
+          "dry_detail_tail",
+          "scorecard_target",
+          "dim_lift",
+          "at",
+          "paths"
+        ]
+      }
+    },
+    {
+      "id": "ops",
+      "target": "ops",
+      "dim": "reliability/ops (dim 8)",
+      "weight": 0.11,
+      "queue": "priority",
+      "ok": true,
+      "fixture": {
+        "ok": true,
+        "rc": 0,
+        "fixture_pass": true,
+        "scorecard_target": "ops",
+        "script": "ops_dashboard.py",
+        "payload_keys": [
+          "feature",
+          "schema",
+          "fixture_pass",
+          "checks",
+          "fail_closed_safe_defaults",
+          "required_context",
+          "last_gate_certificate",
+          "scorecard_target",
+          "at"
+        ]
+      }
+    },
+    {
+      "id": "enterprise",
+      "target": "enterprise",
+      "dim": "enterprise light (dim 9)",
+      "weight": 0.1,
+      "queue": "priority",
       "ok": true,
       "fixture": {
         "ok": true,
@@ -161,12 +410,93 @@
       }
     }
   ],
+  "post_queue_surfaces": [
+    {
+      "id": "gate_certificate",
+      "target": "evidence",
+      "dim": "merge-authority certificate (dim 12)",
+      "weight": 0.08,
+      "queue": "post",
+      "ok": true,
+      "fixture": {
+        "ok": true,
+        "rc": 0,
+        "fixture_pass": true,
+        "scorecard_target": "evidence / simplicity (dim 12)",
+        "script": "gate_certificate.py",
+        "payload_keys": [
+          "feature",
+          "schema",
+          "fixture_pass",
+          "ok_n",
+          "total",
+          "checks",
+          "detail",
+          "scorecard_target",
+          "dim_lift",
+          "one_liner",
+          "at"
+        ]
+      }
+    },
+    {
+      "id": "quieter",
+      "target": "JTBD",
+      "dim": "own-repo quieter-over-time (dim 3)",
+      "weight": 0.06,
+      "queue": "post",
+      "ok": true,
+      "fixture": {
+        "ok": true,
+        "rc": 0,
+        "fixture_pass": true,
+        "scorecard_target": "JTBD / simplicity",
+        "script": "quieter_over_time.py",
+        "payload_keys": [
+          "feature",
+          "fixture_pass",
+          "core_ok",
+          "buyer_doc_ok",
+          "own_repo_ok_n",
+          "own_repo_total",
+          "required_check",
+          "scorecard_target"
+        ]
+      }
+    },
+    {
+      "id": "tool_use",
+      "target": "tools",
+      "dim": "agent tool-use quality (dims 3+12)",
+      "weight": 0.06,
+      "queue": "post",
+      "ok": true,
+      "fixture": {
+        "ok": true,
+        "rc": 0,
+        "fixture_pass": true,
+        "scorecard_target": "simplicity / JTBD",
+        "script": "tool_use_quality.py",
+        "payload_keys": [
+          "feature",
+          "fixture_pass",
+          "buyer_doc_ok",
+          "tool_turns_gate_ok",
+          "trajectory_fitness_ok",
+          "readiness_ok_n",
+          "readiness_total",
+          "catalog_adopted",
+          "scorecard_target"
+        ]
+      }
+    }
+  ],
   "estimate": {
     "baseline": 6.6,
     "overall_est": 8.5,
     "lift": 1.9,
-    "surfaces_pass": 6,
-    "surfaces_total": 6,
+    "surfaces_pass": 9,
+    "surfaces_total": 9,
     "pass_fraction": 1.0,
     "note": "Heuristic commercial score from hermetic surface fixtures \u2014 not a customer interview score. Cap 8.5 until live revenue proof."
   },
@@ -176,9 +506,15 @@
     "buyer_diagram": true,
     "install_md": true,
     "ops_dashboard": true,
-    "enterprise_privacy": true
+    "enterprise_privacy": true,
+    "quieter_md": true,
+    "tool_use_md": true,
+    "gate_md": true
   },
   "all_surfaces_pass": true,
+  "priority_pass": true,
+  "post_queue_pass": true,
   "artifacts_ok": true,
+  "post_queue_complete": true,
   "commercial_ok": true
 }

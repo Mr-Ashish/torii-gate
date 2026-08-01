@@ -58,4 +58,6 @@ jobs:
             tests/test_buyer_narrative_check.py \
             tests/test_public_eval.py \
             tests/test_enterprise_surface.py \
+            tests/test_quieter_over_time.py \
+            tests/test_tool_use_quality.py \
             tests/test_commercial_scorecard.py
