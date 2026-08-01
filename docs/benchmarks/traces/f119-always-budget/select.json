@@ -1,0 +1,131 @@
+{
+  "feature": "F84",
+  "feature_always_budget": "F119",
+  "schema": 1,
+  "f89": true,
+  "path_themes": [
+    "chain",
+    "cmdi",
+    "pickle",
+    "python",
+    "review",
+    "secrets",
+    "sqli",
+    "taint",
+    "tools"
+  ],
+  "paths_n": 1,
+  "max_full": 4,
+  "max_always": 3,
+  "always_selected": [
+    "skill-prefer-memory-cli-early",
+    "skill-prefer-product-cli",
+    "skill-prefer-critic-early"
+  ],
+  "always_deferred": [
+    "skill-tool-depth-hunks",
+    "skill-preserve-deep-tools"
+  ],
+  "catalog_n": 9,
+  "selected": [
+    "skill-prefer-memory-cli-early",
+    "skill-prefer-product-cli",
+    "skill-prefer-critic-early",
+    "skill-f74-exploit-scenario"
+  ],
+  "demoted_skipped": [],
+  "free_rider_skipped": [],
+  "fitness_boosts": {},
+  "attr_boosts": {
+    "skill-tool-depth-hunks": 3.0,
+    "skill-f74-exploit-scenario": 3.0,
+    "skill-f74-prefer-chain-json": 3.0,
+    "skill-preserve-deep-tools": 1.474,
+    "skill-prefer-memory-cli-early": 1.964,
+    "skill-prefer-critic-early": 1.25,
+    "skill-prefer-product-cli": 0.75
+  },
+  "ranking": [
+    {
+      "id": "skill-prefer-critic-early",
+      "score": 1000.0,
+      "always": true,
+      "always_priority": 85,
+      "always_deferred": false,
+      "demoted": false,
+      "free_rider": false
+    },
+    {
+      "id": "skill-prefer-memory-cli-early",
+      "score": 1000.0,
+      "always": true,
+      "always_priority": 100,
+      "always_deferred": false,
+      "demoted": false,
+      "free_rider": false
+    },
+    {
+      "id": "skill-prefer-product-cli",
+      "score": 1000.0,
+      "always": true,
+      "always_priority": 90,
+      "always_deferred": false,
+      "demoted": false,
+      "free_rider": false
+    },
+    {
+      "id": "skill-f74-exploit-scenario",
+      "score": 15.0,
+      "always": false,
+      "always_priority": 10,
+      "always_deferred": false,
+      "demoted": false,
+      "free_rider": false
+    },
+    {
+      "id": "skill-f74-prefer-chain-json",
+      "score": 15.0,
+      "always": false,
+      "always_priority": 10,
+      "always_deferred": false,
+      "demoted": false,
+      "free_rider": false
+    },
+    {
+      "id": "skill-tool-depth-hunks",
+      "score": 11.5,
+      "always": true,
+      "always_priority": 50,
+      "always_deferred": true,
+      "demoted": false,
+      "free_rider": false
+    },
+    {
+      "id": "skill-preserve-deep-tools",
+      "score": 9.47,
+      "always": true,
+      "always_priority": 40,
+      "always_deferred": true,
+      "demoted": false,
+      "free_rider": false
+    },
+    {
+      "id": "skill-soft-tool-nudge",
+      "score": 6.0,
+      "always": false,
+      "always_priority": 20,
+      "always_deferred": false,
+      "demoted": false,
+      "free_rider": false
+    },
+    {
+      "id": "skill-archival-memory-search",
+      "score": 0.0,
+      "always": false,
+      "always_priority": 10,
+      "always_deferred": false,
+      "demoted": false,
+      "free_rider": false
+    }
+  ]
+}

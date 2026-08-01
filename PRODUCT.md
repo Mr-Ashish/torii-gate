@@ -134,6 +134,8 @@ compound → write → consolidate → effective_critic → federate → scoped_
 
 **Tool dual-gate adopt (F118):** F117 product-cli/critic proposals adopt only when tool-aware attribution (synthetic allowlisted tool_blob) proves contribution — free-riders without tools stay proposals; active skills ship after dual+attr gates.
 
+**Always-on budget (F119):** full-body inject is capped (`TORII_SKILL_ROUTER_ALWAYS_MAX=3`); recovery skills (memory → product-cli → critic) outrank soft always (tool-depth/preserve) so F118 skills ship in the prompt without context bloat (SkillReducer).
+
 **Ops:** `python3 scripts/memory_loop_status.py scorecard` → L0–L3. Smoke requires L3 on the hub tree. CI job summary annotates readiness; optional advisory `torii/memory-loop` via `TORII_MEMORY_LOOP_STATUS_COMMIT=1`.
 
 ---

@@ -1,9 +1,12 @@
+<!-- F119 always-budget recovery skill -->
 <!-- F118 dual-gate tool-attr adopted -->
 <!-- F74 adopted 2026-08-01T05:36:49Z -->
 ---
 id: skill-prefer-critic-early
 feature: F117/F118
 status: adopted
+always: true
+always_priority: 85
 signal: f117_critic_tools
 created_at: 2026-08-01T05:35:12Z
 title: Run second-agent critic path evidence early

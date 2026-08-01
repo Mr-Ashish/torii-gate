@@ -37,6 +37,10 @@ class SkillRouterTests(unittest.TestCase):
         self.assertTrue(data["sec_ok"])
         self.assertTrue(data["stripped_ok"])
         self.assertGreater(data["good_hit_rate"], data["weak_hit_rate"])
+        # F119 always budget
+        self.assertTrue(data.get("f119") or data.get("feature_always_budget") == "F119")
+        self.assertTrue(data.get("product_in_py"), data)
+        self.assertIn("skill-prefer-product-cli", data.get("always_selected") or [])
 
     def test_status(self):
         r = _run(["status"])
@@ -67,10 +71,13 @@ class SkillRouterTests(unittest.TestCase):
         self.assertEqual(r.returncode, 0, r.stderr + r.stdout)
         data = json.loads(r.stdout)
         sel = set(data["selected"])
-        # at least one always or f74 skill
+        # F119: recovery always (memory/product/critic) or f74/tool always
         self.assertTrue(
             sel
             & {
+                "skill-prefer-memory-cli-early",
+                "skill-prefer-product-cli",
+                "skill-prefer-critic-early",
                 "skill-tool-depth-hunks",
                 "skill-preserve-deep-tools",
                 "skill-f74-prefer-chain-json",
@@ -78,6 +85,43 @@ class SkillRouterTests(unittest.TestCase):
             },
             sel,
         )
+        # recovery skills win always budget over soft tool-depth
+        always_sel = set(data.get("always_selected") or [])
+        if always_sel:
+            self.assertIn("skill-prefer-memory-cli-early", always_sel)
+
+    def test_f119_always_budget_priority(self):
+        """F119: ALWAYS_MAX keeps product-cli over soft always tool-depth."""
+        r = subprocess.run(
+            [
+                sys.executable,
+                str(SCRIPT),
+                "select",
+                "--paths",
+                "demo/insecure/app.py",
+                "--max",
+                "4",
+            ],
+            cwd=str(ROOT),
+            capture_output=True,
+            text=True,
+            env={**os.environ, "TORII_SKILL_ROUTER_ALWAYS_MAX": "3"},
+        )
+        self.assertEqual(r.returncode, 0, r.stderr + r.stdout)
+        data = json.loads(r.stdout)
+        always_sel = data.get("always_selected") or []
+        always_def = data.get("always_deferred") or []
+        self.assertIn("skill-prefer-memory-cli-early", always_sel)
+        self.assertIn("skill-prefer-product-cli", always_sel)
+        self.assertIn("skill-prefer-critic-early", always_sel)
+        # soft always deferred under budget=3 with 5 always candidates
+        self.assertTrue(
+            "skill-tool-depth-hunks" in always_def
+            or "skill-preserve-deep-tools" in always_def,
+            data,
+        )
+        sel = set(data.get("selected") or [])
+        self.assertIn("skill-prefer-product-cli", sel)
 
     def test_inject_writes_marker(self):
         with tempfile.TemporaryDirectory() as td:

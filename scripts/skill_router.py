@@ -30,8 +30,10 @@ Commands:
 Env:
   TORII_ROOT
   TORII_SKILL_ROUTER          1 (default) | 0/off
-  TORII_SKILL_ROUTER_MAX      default 4 full skills (plus always-on core)
-  TORII_SKILL_ROUTER_ALWAYS   comma ids always included (optional)
+  TORII_SKILL_ROUTER_MAX         default 4 full-body skills (includes always slots)
+  TORII_SKILL_ROUTER_ALWAYS      comma ids always included (optional)
+  TORII_SKILL_ROUTER_ALWAYS_MAX  default 3 always full-body slots (F119 budget)
+  TORII_SKILL_ROUTER_ALWAYS_PRIO comma id:priority overrides (F119)
   TORII_SKILL_ROUTER_REPLACE  1 (default) | 0 — replace F69 skills block
   TORII_SKILL_TOOL_OUTCOME    1 (default) | 0 — F114 tool-invocation hit scoring
 """
@@ -134,7 +136,46 @@ DEFAULT_TRIGGERS: dict[str, dict[str, Any]] = {
         ],
         "exts": [],
         "always": True,
+        "always_priority": 100,
     },
+    # F119: F118 dual-gate adopted product/critic — always candidates under budget
+    "skill-prefer-product-cli": {
+        "themes": ["product", "cli", "doctor", "status", "budget", "readiness"],
+        "keywords": [
+            "torii.py doctor",
+            "torii.py status",
+            "torii.py budget",
+            "product cli",
+            "doctor",
+        ],
+        "exts": [],
+        "always": True,
+        "always_priority": 90,
+    },
+    "skill-prefer-critic-early": {
+        "themes": ["critic", "checker", "path", "evidence", "revalidate"],
+        "keywords": [
+            "second_agent_critic",
+            "chain_revalidate",
+            "path:line",
+            "dual-pass",
+            "unvalidated",
+        ],
+        "exts": [],
+        "always": True,
+        "always_priority": 85,
+    },
+}
+
+# F119: default always priority when card.always (higher = keep under ALWAYS_MAX)
+ALWAYS_PRIORITY_DEFAULT: dict[str, int] = {
+    "skill-prefer-memory-cli-early": 100,
+    "skill-prefer-product-cli": 90,
+    "skill-prefer-critic-early": 85,
+    "skill-f74-path-evidence": 70,
+    "skill-tool-depth-hunks": 50,
+    "skill-preserve-deep-tools": 40,
+    "skill-soft-tool-nudge": 20,
 }
 
 # F114: skill success measured by tool invocations (agent-loop / logs), not prose
@@ -209,6 +250,43 @@ def always_ids_env() -> set[str]:
     if not raw:
         return set()
     return {x.strip() for x in raw.split(",") if x.strip()}
+
+
+def always_max() -> int:
+    """F119: max always-on full-body skills (default 3) — SkillReducer context budget."""
+    return _int_env("TORII_SKILL_ROUTER_ALWAYS_MAX", 3)
+
+
+def always_priority_map() -> dict[str, int]:
+    """F119: skill_id → priority (higher wins always slots)."""
+    out = dict(ALWAYS_PRIORITY_DEFAULT)
+    raw = (os.environ.get("TORII_SKILL_ROUTER_ALWAYS_PRIO") or "").strip()
+    if raw:
+        for part in raw.split(","):
+            part = part.strip()
+            if not part:
+                continue
+            if ":" in part:
+                sid, pr = part.split(":", 1)
+                try:
+                    out[sid.strip()] = int(pr.strip())
+                except ValueError:
+                    continue
+            else:
+                out[part] = 80
+    return out
+
+
+def always_priority_for(sid: str, defaults: dict[str, Any] | None = None) -> int:
+    prio_map = always_priority_map()
+    if sid in prio_map:
+        return int(prio_map[sid])
+    if defaults and "always_priority" in defaults:
+        try:
+            return int(defaults["always_priority"])
+        except (TypeError, ValueError):
+            pass
+    return 10
 
 
 def active_skills_dir(root: Path | None = None) -> Path:
@@ -291,6 +369,7 @@ class SkillCard:
     keywords: list[str] = field(default_factory=list)
     exts: list[str] = field(default_factory=list)
     always: bool = False
+    always_priority: int = 10
     body: str = ""
     chars: int = 0
 
@@ -328,6 +407,9 @@ def build_card(path: Path) -> SkillCard:
         always = True
     if sid in always_ids_env():
         always = True
+    prio = always_priority_for(sid, defaults)
+    if meta.get("always_priority", "").strip().isdigit():
+        prio = int(meta["always_priority"].strip())
     body_clean = body.strip()
     return SkillCard(
         id=sid,
@@ -337,6 +419,7 @@ def build_card(path: Path) -> SkillCard:
         keywords=kws[:16],
         exts=exts,
         always=always,
+        always_priority=prio,
         body=body_clean,
         chars=len(body_clean),
     )
@@ -514,10 +597,15 @@ def score_skill(
     *,
     fitness_boost: float = 0.0,
     attr_boost: float = 0.0,
+    force_not_always: bool = False,
 ) -> float:
-    if card.always:
+    # Budgeted always → top rank; deferred always (F119) compete on themes/tools only
+    if card.always and not force_not_always:
         return 1000.0
     score = 0.0
+    if card.always and force_not_always:
+        # soft residual for deferred always (still prefer recovery over noise)
+        score += min(8.0, float(card.always_priority or 0) / 20.0)
     for t in card.themes:
         if t in path_themes:
             score += 3.0
@@ -545,13 +633,24 @@ def select_skills(
     cards: list[SkillCard],
     paths: list[str],
     max_full: int | None = None,
+    max_always: int | None = None,
 ) -> dict[str, Any]:
     max_full = max_full if max_full is not None else _int_env("TORII_SKILL_ROUTER_MAX", 4)
+    max_always = max_always if max_always is not None else always_max()
     path_themes = themes_from_paths(paths)
     boosts, demoted = _load_fitness()
     attr_boosts, free_riders = _load_attribution()
-    # free-riders join demote set for full-body skip (always still allowed)
+    # free-riders join demote set for full-body skip (budgeted always still allowed)
     skip_full = set(demoted) | set(free_riders)
+
+    # F119: always-on budget — rank always candidates by always_priority, take top N
+    always_cands = [c for c in cards if c.always]
+    always_cands.sort(key=lambda c: (-int(c.always_priority or 0), c.id))
+    always_selected = always_cands[: max(0, max_always)]
+    always_deferred = [c.id for c in always_cands[max(0, max_always) :]]
+    always_selected_ids = {c.id for c in always_selected}
+    always_deferred_set = set(always_deferred)
+
     ranked: list[tuple[float, SkillCard]] = []
     for c in cards:
         s = score_skill(
@@ -560,24 +659,22 @@ def select_skills(
             paths,
             fitness_boost=boosts.get(c.id, 0.0),
             attr_boost=attr_boosts.get(c.id, 0.0),
+            force_not_always=(c.id in always_deferred_set),
         )
         ranked.append((s, c))
     ranked.sort(key=lambda x: (-x[0], x[1].id))
 
-    selected: list[SkillCard] = []
+    selected: list[SkillCard] = list(always_selected)
     skipped_demoted: list[str] = []
     skipped_free_riders: list[str] = []
-    # always first (never blocked by demote/free-rider)
-    for s, c in ranked:
-        if c.always and c not in selected:
-            selected.append(c)
-    # then top by score until max_full; demoted/free-rider → index-only
-    # F114: do not break early on max_full — continue so free-rider/demote
-    # accounting still records skills that never enter the full-body budget.
+
+    # fill remaining full-body slots by score (deferred always compete without 1000)
     for s, c in ranked:
         if c in selected:
             continue
-        if c.id in skip_full and not c.always:
+        if c.id in always_selected_ids:
+            continue
+        if c.id in skip_full:
             if c.id in free_riders and c.id not in skipped_free_riders:
                 skipped_free_riders.append(c.id)
             if c.id in demoted and c.id not in skipped_demoted:
@@ -586,7 +683,6 @@ def select_skills(
         if s <= 0 and len(selected) >= 1:
             continue
         if len(selected) >= max_full:
-            # Budget full: still record remaining free-riders/demoted as skipped
             if c.id in free_riders and c.id not in skipped_free_riders:
                 skipped_free_riders.append(c.id)
             if c.id in demoted and c.id not in skipped_demoted:
@@ -594,35 +690,36 @@ def select_skills(
             continue
         selected.append(c)
 
-    # Explicit residual free-riders/demoted not selected (always never skipped)
+    # residual free-riders/demoted accounting
     selected_ids = {c.id for c in selected}
     for sid in free_riders:
         if sid not in selected_ids and sid not in skipped_free_riders:
             skipped_free_riders.append(sid)
     for sid in demoted:
         if sid not in selected_ids and sid not in skipped_demoted:
-            # always skills may be in demoted ledger for info only
-            card = next((c for c in cards if c.id == sid), None)
-            if card and card.always:
+            if sid in always_selected_ids:
                 continue
             skipped_demoted.append(sid)
 
-    # if nothing selected, take top 2 non-skipped by score or first always
     if not selected and ranked:
         fallback = [
             c
             for _, c in ranked
-            if c.always or c.id not in skip_full
+            if c.id in always_selected_ids or c.id not in skip_full
         ][: min(2, len(ranked))]
         selected = fallback or [c for _, c in ranked[: min(2, len(ranked))]]
 
     return {
         "feature": FEATURE,
+        "feature_always_budget": "F119",
         "schema": SCHEMA,
         "f89": True,
         "path_themes": sorted(path_themes),
         "paths_n": len(paths),
         "max_full": max_full,
+        "max_always": max_always,
+        "always_selected": [c.id for c in always_selected],
+        "always_deferred": always_deferred,
         "catalog_n": len(cards),
         "selected": [c.id for c in selected],
         "selected_cards": selected,
@@ -637,8 +734,10 @@ def select_skills(
                 "id": c.id,
                 "score": round(s, 2),
                 "always": c.always,
-                "demoted": c.id in demoted and not c.always,
-                "free_rider": c.id in free_riders and not c.always,
+                "always_priority": c.always_priority,
+                "always_deferred": c.id in always_deferred_set,
+                "demoted": c.id in demoted and c.id not in always_selected_ids,
+                "free_rider": c.id in free_riders and c.id not in always_selected_ids,
             }
             for s, c in ranked
         ],
@@ -1197,32 +1296,57 @@ Also `python3 scripts/torii_memory.py search` is valid.
 """,
             encoding="utf-8",
         )
+        # F119: product-cli always candidate (higher prio than tool-depth)
+        (active / "skill-prefer-product-cli.md").write_text(
+            """---
+id: skill-prefer-product-cli
+title: Call torii product CLI doctor/status early
+always: true
+always_priority: 90
+themes: product,cli,doctor
+---
+
+## Skill: prefer-product-cli (F117/F118)
+
+Call `python3 scripts/torii.py doctor` early for readiness.
+""",
+            encoding="utf-8",
+        )
 
         os.environ["TORII_ROOT"] = str(root)
         os.environ["TORII_SKILL_ROUTER"] = "1"
         os.environ["TORII_SKILL_ROUTER_MAX"] = "3"
+        os.environ["TORII_SKILL_ROUTER_ALWAYS_MAX"] = "2"  # F119: budget 2 always slots
         os.environ["TORII_SKILL_ROUTER_REPLACE"] = "1"
         os.environ["TORII_SKILL_TOOL_OUTCOME"] = "1"
 
         cards = catalog(root)
-        assert len(cards) == 5
+        assert len(cards) == 6
         mem_card = next(c for c in cards if c.id == "skill-prefer-memory-cli-early")
+        prod_card = next(c for c in cards if c.id == "skill-prefer-product-cli")
         memory_always_ok = mem_card.always is True
+        product_always_ok = prod_card.always is True
 
         py_paths = ["src/app/auth.py", "lib/db.py", "tests/test_auth.py"]
-        sel_py = select_skills(cards, py_paths, max_full=3)
+        sel_py = select_skills(cards, py_paths, max_full=3, max_always=2)
         sel_ids = set(sel_py["selected"])
-        # always skill present
-        always_ok = "skill-tool-depth-hunks" in sel_ids
-        # security skills preferred for py
+        always_sel = set(sel_py.get("always_selected") or [])
+        always_def = set(sel_py.get("always_deferred") or [])
+        # F119: top-priority recovery always (memory+product), tool-depth deferred
+        always_ok = (
+            "skill-prefer-memory-cli-early" in always_sel
+            and "skill-prefer-product-cli" in always_sel
+            and "skill-tool-depth-hunks" in always_def
+        )
+        # security skills preferred for remaining full slot
         sec_ok = bool(sel_ids & {"skill-f74-prefer-chain-json", "skill-f74-exploit-scenario"})
         # docs-only should rank low vs py code
         docs_not_first = sel_py["selected"][0] != "skill-docs-only" if sel_py["selected"] else True
 
         md_paths = ["README.md", "docs/guide.md"]
-        sel_md = select_skills(cards, md_paths, max_full=3)
+        sel_md = select_skills(cards, md_paths, max_full=3, max_always=2)
         md_ids = set(sel_md["selected"])
-        always_in_md = "skill-tool-depth-hunks" in md_ids
+        always_in_md = "skill-prefer-memory-cli-early" in md_ids
 
         # inject
         prompt = root / "prompt.md"
@@ -1326,6 +1450,7 @@ Verdict: REQUEST_CHANGES
         )
         memory_in_py = "skill-prefer-memory-cli-early" in set(inj["selected"])
 
+        product_in_py = "skill-prefer-product-cli" in set(inj["selected"])
         fixture_pass = all(
             [
                 always_ok,
@@ -1339,7 +1464,9 @@ Verdict: REQUEST_CHANGES
                 privacy_ok,
                 good_hits.get("hit_n", 0) >= 1,
                 memory_always_ok,
+                product_always_ok,
                 memory_in_py,
+                product_in_py,
                 tool_outcome_ok,
                 tool_rate_ok,
                 weak_tool_ok,
@@ -1348,8 +1475,12 @@ Verdict: REQUEST_CHANGES
         payload = {
             "feature": FEATURE,
             "f114": True,
+            "f119": True,
+            "feature_always_budget": "F119",
             "fixture_pass": fixture_pass,
             "always_ok": always_ok,
+            "always_selected": list(always_sel),
+            "always_deferred": list(always_def),
             "sec_ok": sec_ok,
             "docs_not_first": docs_not_first,
             "always_in_md": always_in_md,
@@ -1363,7 +1494,9 @@ Verdict: REQUEST_CHANGES
             "privacy_ok": privacy_ok,
             "good_hit_n": good_hits.get("hit_n"),
             "memory_always_ok": memory_always_ok,
+            "product_always_ok": product_always_ok,
             "memory_in_py": memory_in_py,
+            "product_in_py": product_in_py,
             "tool_outcome_ok": tool_outcome_ok,
             "tool_hit_n": tool_hits.get("tool_hit_n"),
             "tool_hit_rate": tool_hits.get("tool_hit_rate"),

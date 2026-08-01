@@ -1,6 +1,36 @@
 # Torii research → product log
 
 
+## 2026-08-01 — F119 always-on skill budget with recovery priority
+
+### Papers / posts
+- SkillReducer (arXiv 2603.29919): skill injection is context cost; unbounded always-on is skill bloat.
+- Agent Skills progressive disclosure: index all, full body only when needed.
+- Gap after F118: product-cli/critic active but always=false → max_full filled by soft always (tool-depth/preserve).
+
+### OSS design patterns stolen
+1. ALWAYS_MAX=3 always full-body slots (SkillReducer budget).
+2. Priority: memory(100) > product-cli(90) > critic(85) > tool-depth(50) > preserve(40).
+3. Deferred always compete on theme score (no 1000 boost).
+4. Install already rsyncs agent/skills/ including new always skills.
+
+### Insight
+Dual-gate adopt without always budget still fails to inject recovery skills. Highest ROI: cap always slots and prioritize tool-recovery skills so doctor/memory/critic teach mid-review.
+
+### Feature shipped (F119)
+- `skill_router.py` always budget + priority; product/critic DEFAULT_TRIGGERS always
+- active skills always:true frontmatter; fixture F119; PRODUCT + research note
+- traces `docs/benchmarks/traces/f119-always-budget/`
+
+### Metric
+- Offline: always_selected memory+product+critic; tool-depth deferred; fixture_pass
+- pytest 598; smoke PASS; Modal pytorch#191813 BIT3_OK ~45s log_streaming=true POST_COMMENT=0
+
+### Loop-engineering / Hermes practice used
+**Context budget as a loop constraint** — always inject is rationed, not vibes.
+
+### SHA
+`157ae365dfaedcb21a9aa985bbcab463ed517e00`
 ## 2026-08-01 — F118 tool-aware dual-gate adopt of F117 product-cli/critic skills
 
 ### Papers / posts
