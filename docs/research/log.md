@@ -27,7 +27,7 @@ Tiers without search leave cold knowledge dead. Highest ROI: **just-in-time arch
 - Live: **Modal** pytorch#191813 deepseek/deepseek-v4-pro BIT3_OK ~96s; log_streaming=true; POST_COMMENT=0
 
 ### SHA
-PENDING
+d32b300595133a70f5ab0ca187fa6b5f8f7fd7c7
 
 ## 2026-08-01 — F97 Letta-style core/archival memory tiers + CI memory-loop summary
 
