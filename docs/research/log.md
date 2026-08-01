@@ -5159,3 +5159,26 @@ Dim 2 lagged (7.5) with only a landing matrix. Highest ROI: DIFF.md one-pager + 
 
 ### SHA
 `6405c939b19e86a7b4713059043640c4bce8cdbd`
+
+## 2026-08-01 — STATUS_COMPACT four-beat day-2 screen
+
+### Papers / posts
+- Cognitive load: operators abandon dashboards with 12+ metric rows.
+- Loop Engineering: surface the few beats that decide “ship / fix”.
+- Buyer packaging: Day-2 help tables grow; collapse to primary + also-line.
+
+### Insight
+status --text listed 11+ surfaces after packaging queue. Highest ROI for dim 12: four beats (merge · cost/trust · org · growth) + --verbose escape hatch + day-2 primary help table.
+
+### Feature shipped (STATUS_COMPACT)
+- render_status_text four beats default
+- status --verbose expanded surfaces
+- help day-2 primary groups + Also day-2 line
+- INSTALL/PRODUCT copy
+
+### Metric
+- fixture help_collapse_ok + install_ux pass
+- Live Modal pytorch e2e this fire
+
+### SHA
+`PENDING_PUSH`

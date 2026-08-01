@@ -1,49 +1,43 @@
 # Torii Gate — first-principles product scorecard
 
-_Scored: `2026-08-01T20:27:56Z` · commercial **8.5** · overall **8.0** (cap until paid pilot)._
-
-Adoption lens (buyers, not research harness). Evidence from PRODUCT/README/fixtures/e2e/traces.
+_Scored: `2026-08-01T20:44:23Z` · commercial **8.5** · overall **8.0** (cap until paid pilot)._
 
 ## Dims 1–12
 
 | # | Dim | Score | One-line evidence |
 |--:|-----|------:|-------------------|
-| 1 | Value prop | 8.5 | PRODUCT: security merge authority · tagline · ICP table |
-| 2 | Diff vs SAST/chat bots | **8.2** | **DIFF.md** + labeled public-eval (tp=18 · good=1.0 · weak=0.0) · landing compare |
-| 3 | JTBD (quieter merge gate) | 8.5 | quieter_ok · getting_quieter · pilot readiness 8/8 |
-| 4 | Agent tool quality | 8.0 | tool_use_rate=0.875 · model_alias → v4-pro |
-| 5 | Memory / compound | 8.0 | memory L3 · hub-archival loop_ok |
-| 6 | Self-evolution | 7.8 | Day-2 JSON status · dual_gate_safe |
-| 7 | Install UX | 8.5 | 5-min INSTALL · `--minimal` |
-| 8 | Ops / reliability | 8.5 | fail_closed · smoke_ci · cost vault |
-| 9 | Enterprise light | 8.0 | isolation_ok · `--tenant` |
-| 10 | Pricing / packaging | 8.0 | open core SKUs · no fake ARR |
-| 11 | GTM / distribution | 7.5 | Pages landing · PILOT · DIFF one-pager |
-| 12 | Simplicity / cognitive load | 7.6 | Day-1/2/Advanced help · status one-screen |
+| 1 | Value prop | 8.5 | merge authority · ICP |
+| 2 | Diff vs SAST | 8.2 | DIFF.md · labeled tp=18 |
+| 3 | JTBD | 8.5 | quieter · require torii/gate on status beat 1 |
+| 4 | Agent tools | 8.0 | tool_use_rate=0.875 |
+| 5 | Memory | 8.0 | L3 on growth beat |
+| 6 | Self-evolution | 7.8 | dual_gate_safe on status |
+| 7 | Install | 8.5 | 5-min · four-beat status in INSTALL |
+| 8 | Ops | 8.5 | fail_closed on cost/trust beat |
+| 9 | Enterprise | 8.0 | org beat · isolation |
+| 10 | Pricing | 8.0 | open core |
+| 11 | GTM | 7.5 | Pages · pilot · DIFF |
+| 12 | Simplicity | **8.2** | **status 4 beats** · help day-2 primary table (**this fire**) |
 
-**Weighted overall (product):** ~**8.1** (still **cap 8.0** until paid pilot) · commercial **8.5**.  
-**Band:** strong packaging · differentiation documented · not revenue-proven.
+**Overall ~8.1** (cap **8.0** until paid pilot) · commercial **8.5**.
 
 ## This fire
 
-**DIFF_VS_SAST:** `docs/DIFF.md` buyer one-pager · `diff_vs_sast.py` fixture linked to public-eval · Day-2 CLI `diff` · landing/PRODUCT/README · status row.
+**STATUS_COMPACT:** `status --text` → four buyer beats; `--verbose` expanded; help day-2 primary + “Also day-2” line.
 
-## Ranked remaining gaps
+## Remaining gaps
 
-| Rank | Gap | Dim | Status |
-|-----:|-----|-----|--------|
-| 1 | First design partner / paid pilot close | 11 | open (human GTM) |
-| 2 | Live customer quieter vault | 3 | open (partner install) |
-| 3 | Diff-vs-SAST one-pager with labeled bench | 2 | **shipped** |
-| 4 | Collapse PRODUCT advanced F-stack on landing | 12 | partial |
-| 5 | Self-evolve day-2 without F-IDs | 6 | shipped |
-| 6 | Public eval age &lt;72h | trust | standing |
-| 7 | No F185+ without customer win | all | standing |
-| 8 | Required-check short video | 7/11 | open |
-| 9 | Billing live | 10/11 | deferred |
-| 10 | Enterprise Plane / SSO | 9 | deferred |
+| Rank | Gap | Status |
+|-----:|-----|--------|
+| 1 | First design partner / paid pilot | human GTM |
+| 2 | Live customer quieter vault | partner install |
+| 3 | Diff-vs-SAST one-pager | shipped |
+| 4 | Status cognitive collapse | **shipped** |
+| 5 | Public eval age &lt;72h | standing |
+| 6 | No F185+ without customer win | standing |
 
 ```bash
-python3 scripts/torii.py diff -- status
-python3 scripts/diff_vs_sast.py fixture
+python3 scripts/torii.py status --text
+python3 scripts/torii.py status --verbose
+python3 scripts/torii.py help
 ```

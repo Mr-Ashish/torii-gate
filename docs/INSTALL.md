@@ -63,13 +63,13 @@ Expect: PR comment + labels + commit status **`torii/gate`**.
 ## 5. Doctor + status (day-2 habit)
 
 ```bash
-python3 scripts/torii.py status --text   # one-screen: commercial · cost · cert · quieter
+python3 scripts/torii.py status --text   # four beats: merge · cost/trust · org · growth
 python3 scripts/torii.py doctor          # human summary (default on TTY)
 python3 scripts/torii.py doctor --json   # machine JSON
 python3 scripts/torii.py help
 ```
 
-`status --text` is the buyer day-2 one-screen (no research feature IDs).  
+`status --text` is the buyer day-2 **four-beat** screen (merge authority · cost & trust · org · growth — no research feature IDs). Use `status --verbose` for the expanded surface list.  
 `doctor_pass: true` means product surfaces are wired. Failures print the failing check names.
 
 ## CLI confusion — use one front door

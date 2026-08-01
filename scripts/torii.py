@@ -339,20 +339,46 @@ def render_help_text() -> str:
         label = _TIER_LABELS.get(tier, tier)
         lines.append(f"## {label}")
         lines.append("")
-        lines.append("| Group | Purpose |")
-        lines.append("|-------|---------|")
-        for g in by_tier.get(tier) or []:
-            lines.append(f"| `{g['group']}` | {g['help']} |")
-        lines.append("")
+        if tier == "day2":
+            # Cognitive collapse: primary table + secondary one-liner
+            primary = [g for g in (by_tier.get(tier) or []) if g["group"] in _DAY2_PRIMARY]
+            secondary = [
+                g for g in (by_tier.get(tier) or []) if g["group"] not in _DAY2_PRIMARY
+            ]
+            # preserve declared primary order
+            primary_sorted = []
+            by_name = {g["group"]: g for g in primary}
+            for name in _DAY2_PRIMARY:
+                if name in by_name:
+                    primary_sorted.append(by_name[name])
+            for g in primary:
+                if g not in primary_sorted:
+                    primary_sorted.append(g)
+            lines.append("| Group | Purpose |")
+            lines.append("|-------|---------|")
+            for g in primary_sorted:
+                lines.append(f"| `{g['group']}` | {g['help']} |")
+            if secondary:
+                also = " · ".join(f"`{g['group']}`" for g in secondary)
+                lines.append("")
+                lines.append(f"Also day-2 (same CLI): {also}")
+            lines.append("")
+        else:
+            lines.append("| Group | Purpose |")
+            lines.append("|-------|---------|")
+            for g in by_tier.get(tier) or []:
+                lines.append(f"| `{g['group']}` | {g['help']} |")
+            lines.append("")
 
     lines += [
         "Day-1 only needs: `status --text` · `doctor` · `smoke` · `golden-path -- status` · require **`torii/gate`**.",
+        "Day-2 one screen is **four beats** (merge · cost/trust · org · growth) — `status --verbose` for full surface list.",
         "Advanced groups stay on the same CLI — they are not the install path.",
         "",
         "Examples:",
         "```bash",
         "python3 scripts/torii.py help",
-        "python3 scripts/torii.py status --text   # day-2 one-screen",
+        "python3 scripts/torii.py status --text   # day-2 four beats",
         "python3 scripts/torii.py doctor",
         "python3 scripts/torii.py golden-path -- status",
         "python3 scripts/torii.py quieter -- status",
@@ -566,15 +592,37 @@ def build_status_payload(root: Path | None = None) -> dict[str, Any]:
         "extras": extras,
         "day2": day2,
         "one_liner": (
-            "Day-2 one screen: commercial · cost/PR · cert · quieter · tool-use · "
-            "fail-closed · enterprise · pilot · self-evolve · require torii/gate."
+            "Day-2 four beats: merge authority · cost & trust · org · growth — "
+            "require torii/gate."
         ),
+        "status_compact": True,
         "scored_at": _now(),
     }
 
 
-def render_status_text(payload: dict[str, Any]) -> str:
-    """Human day-2 one-screen status (install UX — hide F-stack)."""
+# Day-2 CLI groups shown in full help table vs one-line "also"
+_DAY2_PRIMARY = (
+    "quieter",
+    "ops",
+    "commercial",
+    "certificate",
+    "enterprise",
+    "pilot",
+)
+_DAY2_SECONDARY = (
+    "public-eval",
+    "tool-use",
+    "self-evolve",
+    "diff",
+)
+
+
+def render_status_text(payload: dict[str, Any], *, verbose: bool = False) -> str:
+    """Human day-2 one-screen status — four buyer beats (cognitive collapse).
+
+    Default: 4 bullets (merge · cost/trust · org · growth).
+    ``verbose=True`` or ``status --verbose``: legacy per-surface lines.
+    """
     day2 = payload.get("day2") if isinstance(payload.get("day2"), dict) else {}
     ok = bool(payload.get("all_present"))
     lines = [
@@ -582,107 +630,131 @@ def render_status_text(payload: dict[str, Any]) -> str:
         f"scored_at: {payload.get('scored_at')}",
         f"CLI groups: {payload.get('groups_n')}/{payload.get('groups_total')} present",
         "",
-        "## Day-2 readiness (buyer)",
+        "## Day-2 readiness (buyer · 4 beats)",
     ]
-    if day2:
+    if not day2:
+        lines.append("- _(soft day-2 peeks unavailable — run doctor / commercial -- fixture)_")
+    elif verbose:
+        # Legacy expanded surface list (operators / CI dumps)
         if day2.get("overall_est") is not None:
             lines.append(
                 f"- commercial: overall_est={day2.get('overall_est')} · "
-                f"ok={day2.get('commercial_ok')} · "
-                f"surfaces={day2.get('surfaces_pass')}"
+                f"ok={day2.get('commercial_ok')} · surfaces={day2.get('surfaces_pass')}"
             )
         if day2.get("cost_p50_usd") is not None or day2.get("cost_ok") is not None:
             p50 = day2.get("cost_p50_usd")
             p50_s = f"${float(p50):.3f}" if isinstance(p50, (int, float)) else "—"
             lines.append(
-                f"- cost honesty: p50={p50_s}/PR · "
-                f"cost_ok={day2.get('cost_ok')} · "
-                f"honesty={day2.get('cost_honesty_ok')} "
-                f"(local vault only)"
+                f"- cost honesty: p50={p50_s}/PR · cost_ok={day2.get('cost_ok')} · "
+                f"honesty={day2.get('cost_honesty_ok')} (local vault only)"
             )
         if day2.get("cert_vault_n") is not None:
             cp = day2.get("cert_vault_cost_p50")
             cp_s = f"${float(cp):.3f}" if isinstance(cp, (int, float)) else "—"
             lines.append(
-                f"- gate certificates in vault: n={day2.get('cert_vault_n')} · "
+                f"- gate certificates: n={day2.get('cert_vault_n')} · "
                 f"cost p50={cp_s} · ok={day2.get('cert_vault_ok')}"
             )
         if day2.get("quieter_ok") is not None:
             lines.append(
-                f"- quieter-over-time: ok={day2.get('quieter_ok')} · "
+                f"- quieter: ok={day2.get('quieter_ok')} · "
                 f"getting_quieter={day2.get('getting_quieter')} · "
                 f"score={day2.get('quiet_score_all')}"
             )
         if day2.get("ops_ok") is not None or day2.get("fail_closed_safe_defaults") is not None:
             lines.append(
                 f"- ops: ok={day2.get('ops_ok')} · "
-                f"fail_closed_safe_defaults={day2.get('fail_closed_safe_defaults')} · "
-                f"smoke_ci={day2.get('smoke_ci')} "
-                f"(docs/ops/RELIABILITY.md)"
+                f"fail_closed={day2.get('fail_closed_safe_defaults')} · "
+                f"smoke_ci={day2.get('smoke_ci')}"
             )
         if day2.get("enterprise_ok") is not None:
-            iso = day2.get("isolation_ok")
-            iso_s = f" · isolation_ok={iso}" if iso is not None else ""
             lines.append(
-                f"- enterprise light: ok={day2.get('enterprise_ok')} · "
-                f"tenants={day2.get('tenant_n')} · "
-                f"install --tenant (optional fleet){iso_s}"
+                f"- enterprise: ok={day2.get('enterprise_ok')} · "
+                f"tenants={day2.get('tenant_n')} · isolation={day2.get('isolation_ok')}"
             )
         if day2.get("tool_use_ok") is not None or day2.get("tool_use_rate") is not None:
             lines.append(
-                f"- tool-use quality: ok={day2.get('tool_use_ok')} · "
-                f"rate={day2.get('tool_use_rate')} · "
-                f"n={day2.get('tool_use_n')} "
-                f"(tools-as-code · prefer deepseek/deepseek-v4-pro)"
+                f"- tool-use: ok={day2.get('tool_use_ok')} · "
+                f"rate={day2.get('tool_use_rate')} · n={day2.get('tool_use_n')}"
             )
-        if day2.get("public_eval_ok") is not None or day2.get("public_eval_freshness_ok") is not None:
+        if day2.get("public_eval_ok") is not None:
             lines.append(
                 f"- public eval: ok={day2.get('public_eval_ok')} · "
                 f"freshness={day2.get('public_eval_freshness_ok')} · "
                 f"model={day2.get('public_eval_model')}"
             )
-        if day2.get("pilot_ok") is not None or day2.get("pilot_readiness_ok") is not None:
-            rn = day2.get("pilot_ready_n")
-            rt = day2.get("pilot_ready_total")
-            ratio = f"{rn}/{rt}" if rn is not None and rt is not None else "—"
+        if day2.get("pilot_ok") is not None:
             lines.append(
-                f"- design partner / pilot: ok={day2.get('pilot_ok')} · "
-                f"readiness={day2.get('pilot_readiness_ok')} ({ratio}) · "
-                f"docs/PILOT.md · pre-revenue honest"
+                f"- pilot: ok={day2.get('pilot_ok')} · "
+                f"readiness={day2.get('pilot_readiness_ok')} "
+                f"({day2.get('pilot_ready_n')}/{day2.get('pilot_ready_total')})"
             )
         if day2.get("self_evolve_ok") is not None:
             lines.append(
-                f"- self-evolution: ok={day2.get('self_evolve_ok')} · "
+                f"- self-evolve: ok={day2.get('self_evolve_ok')} · "
                 f"active={day2.get('self_evolve_active_n')} · "
-                f"pending={day2.get('self_evolve_pending_n')} · "
-                f"dual_gate_safe={day2.get('self_evolve_dual_gate_safe')} "
-                f"(measured adopt · not free-form drift)"
+                f"dual_gate_safe={day2.get('self_evolve_dual_gate_safe')}"
             )
         if day2.get("diff_vs_sast_ok") is not None:
             lines.append(
-                f"- vs SAST / AI review: ok={day2.get('diff_vs_sast_ok')} · "
-                f"labeled_tp={day2.get('diff_labeled_tp')} · "
-                f"docs/DIFF.md (merge authority · not scanner replacement)"
+                f"- vs SAST: ok={day2.get('diff_vs_sast_ok')} · "
+                f"labeled_tp={day2.get('diff_labeled_tp')}"
             )
     else:
-        lines.append("- _(soft day-2 peeks unavailable — run doctor / commercial -- fixture)_")
+        # --- four buyer beats (default) ---
+        p50 = day2.get("cost_p50_usd")
+        p50_s = f"${float(p50):.3f}" if isinstance(p50, (int, float)) else "—"
+        cp = day2.get("cert_vault_cost_p50")
+        cp_s = f"${float(cp):.3f}" if isinstance(cp, (int, float)) else "—"
+        rn, rt = day2.get("pilot_ready_n"), day2.get("pilot_ready_total")
+        pilot_r = f"{rn}/{rt}" if rn is not None and rt is not None else "—"
+        ml = (payload.get("extras") or {}).get("memory_loop") or {}
+        mem_s = ""
+        if ml:
+            mem_s = f" · memory={ml.get('level')}"
 
-    ml = (payload.get("extras") or {}).get("memory_loop") or {}
-    if ml:
         lines.append(
-            f"- memory loop: level={ml.get('level')} ready={ml.get('ready')}"
+            f"- **Merge authority:** quieter={day2.get('quieter_ok')} "
+            f"(getting_quieter={day2.get('getting_quieter')} score={day2.get('quiet_score_all')}) · "
+            f"certs n={day2.get('cert_vault_n')} ({cp_s}/PR) · "
+            f"require **torii/gate**"
         )
+        lines.append(
+            f"- **Cost & trust:** commercial={day2.get('overall_est')}/10 "
+            f"ok={day2.get('commercial_ok')} · cost p50={p50_s}/PR "
+            f"honesty={day2.get('cost_honesty_ok')} · "
+            f"public-eval freshness={day2.get('public_eval_freshness_ok')} · "
+            f"tool-use rate={day2.get('tool_use_rate')} · "
+            f"fail_closed={day2.get('fail_closed_safe_defaults')}"
+        )
+        lines.append(
+            f"- **Org:** enterprise={day2.get('enterprise_ok')} · "
+            f"tenants={day2.get('tenant_n')} · isolation={day2.get('isolation_ok')} · "
+            f"install --tenant (optional fleet)"
+        )
+        lines.append(
+            f"- **Growth:** pilot readiness={day2.get('pilot_readiness_ok')} ({pilot_r}) · "
+            f"self-evolve active={day2.get('self_evolve_active_n')} "
+            f"dual_gate_safe={day2.get('self_evolve_dual_gate_safe')} · "
+            f"vs SAST labeled_tp={day2.get('diff_labeled_tp')} "
+            f"(docs/DIFF.md){mem_s}"
+        )
+
+    if verbose:
+        ml = (payload.get("extras") or {}).get("memory_loop") or {}
+        if ml:
+            lines.append(
+                f"- memory loop: level={ml.get('level')} ready={ml.get('ready')}"
+            )
+
     lines += [
         "",
         "## Next",
-        "- Require status check **torii/gate** (merge authority)",
-        "- Fail-closed defaults on: tool-turns gate · smoke CI · cert on every gate",
-        "- Prefer model `deepseek/deepseek-v4-pro` (chat-v4-pro aliases for tool-use)",
-        "- `python3 scripts/torii.py doctor` · `ops -- status` · `tool-use -- status`",
-        "- `python3 scripts/torii.py quieter -- status` · `enterprise -- status`",
-        "- Design partner: `pilot -- readiness` · docs/PILOT.md · Pages: https://mr-ashish.github.io/torii-gate/",
-        "- Self-evolve: `self-evolve -- status` · docs/SELF-EVOLVE.md",
-        "- JSON: `python3 scripts/torii.py status --json`",
+        "1. Require status check **torii/gate** (merge authority)",
+        "2. `python3 scripts/torii.py doctor` · `quieter -- status` · `pilot -- readiness`",
+        "3. Prefer model `deepseek/deepseek-v4-pro` · Pages: https://mr-ashish.github.io/torii-gate/",
+        "",
+        "Detail: `status --verbose` · JSON: `status --json` · help: `python3 scripts/torii.py help`",
         "",
         str(payload.get("one_liner") or ""),
         "",
@@ -694,6 +766,7 @@ def cmd_status(args: argparse.Namespace) -> int:
     payload = build_status_payload()
     want_json = bool(getattr(args, "json", False))
     want_text = bool(getattr(args, "text", False))
+    want_verbose = bool(getattr(args, "verbose", False))
     env_json = (os.environ.get("TORII_STATUS_JSON") or "").strip().lower() in {
         "1",
         "true",
@@ -710,7 +783,7 @@ def cmd_status(args: argparse.Namespace) -> int:
         not want_json and not env_json and sys.stdout.isatty()
     )
     if use_text and not want_json and not env_json:
-        print(render_status_text(payload))
+        print(render_status_text(payload, verbose=want_verbose))
     else:
         print(json.dumps(payload, indent=2))
     return 0 if payload.get("all_present") else 1
@@ -1980,6 +2053,12 @@ def main(argv: list[str] | None = None) -> int:
             "--text",
             action="store_true",
             help="Force human day-2 one-screen (even when piped)",
+        )
+        p.add_argument(
+            "--verbose",
+            "-v",
+            action="store_true",
+            help="Expanded per-surface day-2 lines (default: four buyer beats)",
         )
         ns, _ = p.parse_known_args(pre + passthrough)
         return cmd_status(ns)
