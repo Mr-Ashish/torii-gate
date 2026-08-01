@@ -50,11 +50,16 @@ MARKER = "<!-- torii-f110-product-cli -->"
 
 _FALSEY = frozenset({"0", "false", "no", "off", "disabled", "n", "none", ""})
 
+# Tier for cognitive-load collapse (HELP_CLI_COLLAPSE):
+#   day1     — install → first signal (buyer must see first)
+#   day2     — quieter / cost / enterprise habit
+#   advanced — engineers / research (still one CLI, not front-door)
 # top-level group → script
 GROUPS: dict[str, dict[str, Any]] = {
     "memory": {
         "script": "torii_memory.py",
-        "help": "Compound memory stack front door (F103–F107)",
+        "help": "Compound memory (FP die twice · path-evidenced TP)",
+        "tier": "advanced",
         "examples": [
             "memory -- help",
             "memory -- doctor",
@@ -65,32 +70,38 @@ GROUPS: dict[str, dict[str, Any]] = {
     "gate": {
         "script": "torii_gate_status.py",
         "help": "Map review verdict → CI gate / merge policy",
+        "tier": "day1",
         "examples": ["gate -- --review review.md", "gate -- --help"],
     },
     "budget": {
         "script": "reprompt_budget.py",
-        "help": "Shared soft-re-prompt budget F49+F106+F122 (F108)",
+        "help": "Shared soft re-prompt budget (advanced recovery)",
+        "tier": "advanced",
         "examples": ["budget -- status", "budget -- fixture"],
     },
     "skill-loop": {
         "script": "skill_loop_status.py",
-        "help": "Skill compound loop L0–L3 readiness",
+        "help": "Skill compound loop readiness (L0–L3)",
+        "tier": "advanced",
         "examples": ["skill-loop -- scorecard --shallow", "skill-loop -- fixture"],
     },
     "memory-loop": {
         "script": "memory_loop_status.py",
-        "help": "Memory compound loop L0–L3 readiness",
+        "help": "Memory compound loop readiness (L0–L3)",
+        "tier": "advanced",
         "examples": ["memory-loop -- scorecard --shallow", "memory-loop -- fixture"],
     },
     "smoke": {
         "script": "smoke-torii-gate.sh",
-        "help": "Offline smoke (bash)",
+        "help": "Offline smoke (no API key)",
+        "tier": "day1",
         "examples": ["smoke"],
         "shell": True,
     },
     "workflow": {
         "script": "workflow_as_code.py",
-        "help": "Workflows-as-code validate + scorecard (F79/F131)",
+        "help": "Workflows-as-code validate + scorecard",
+        "tier": "advanced",
         "examples": [
             "workflow -- scorecard",
             "workflow -- validate",
@@ -99,7 +110,8 @@ GROUPS: dict[str, dict[str, Any]] = {
     },
     "golden-path": {
         "script": "golden_path_metrics.py",
-        "help": "Commercial golden path: install → torii/gate → dogfood metrics (→7.5)",
+        "help": "Install → torii/gate → dogfood metrics",
+        "tier": "day1",
         "examples": [
             "golden-path -- fixture",
             "golden-path -- status",
@@ -108,7 +120,8 @@ GROUPS: dict[str, dict[str, Any]] = {
     },
     "buyer": {
         "script": "buyer_narrative_check.py",
-        "help": "Buyer narrative: one diagram, hide F-IDs (→8.0 simplicity)",
+        "help": "Buyer narrative checks (one diagram, hide research IDs)",
+        "tier": "advanced",
         "examples": [
             "buyer -- fixture",
             "buyer -- status",
@@ -117,7 +130,8 @@ GROUPS: dict[str, dict[str, Any]] = {
     },
     "public-eval": {
         "script": "public_eval.py",
-        "help": "Public labeled eval scorecard (→8.5 technical trust)",
+        "help": "Public labeled eval + cost/PR honesty",
+        "tier": "day2",
         "examples": [
             "public-eval -- fixture",
             "public-eval -- report",
@@ -126,7 +140,8 @@ GROUPS: dict[str, dict[str, Any]] = {
     },
     "install-ux": {
         "script": "install_ux_check.py",
-        "help": "Install UX: 5-min path, one CLI, doctor defaults (dim 7)",
+        "help": "Install UX surface checks (5-min path)",
+        "tier": "advanced",
         "examples": [
             "install-ux -- fixture",
             "install-ux -- report",
@@ -134,7 +149,8 @@ GROUPS: dict[str, dict[str, Any]] = {
     },
     "ops": {
         "script": "ops_dashboard.py",
-        "help": "Reliability/ops dashboard: fail-closed, cost/PR, smoke (dim 8)",
+        "help": "Ops: fail-closed defaults · cost/PR · smoke",
+        "tier": "day2",
         "examples": [
             "ops -- fixture",
             "ops -- report --smoke",
@@ -143,7 +159,8 @@ GROUPS: dict[str, dict[str, Any]] = {
     },
     "enterprise": {
         "script": "enterprise_surface.py",
-        "help": "Enterprise light: org isolation + federation privacy (dim 9)",
+        "help": "Enterprise light: org isolation + federation privacy",
+        "tier": "day2",
         "examples": [
             "enterprise -- status",
             "enterprise -- fixture",
@@ -152,7 +169,8 @@ GROUPS: dict[str, dict[str, Any]] = {
     },
     "federation": {
         "script": "federated_hub_ingest.py",
-        "help": "Privacy-safe multi-tenant hub signals (themes only, no paths)",
+        "help": "Privacy-safe multi-tenant hub signals (themes only)",
+        "tier": "advanced",
         "examples": [
             "federation -- status",
             "federation -- fixture",
@@ -161,7 +179,8 @@ GROUPS: dict[str, dict[str, Any]] = {
     },
     "self-evolve": {
         "script": "self_evolve.py",
-        "help": "Self-evolution: propose/adopt skills from run evidence (day-2)",
+        "help": "Self-evolution: propose/adopt skills from run evidence",
+        "tier": "advanced",
         "examples": [
             "self-evolve -- status",
             "self-evolve -- fixture",
@@ -170,7 +189,8 @@ GROUPS: dict[str, dict[str, Any]] = {
     },
     "commercial": {
         "script": "commercial_scorecard.py",
-        "help": "Commercial rollup: queue 1–6 + cert/quieter/tools + workflow (→7.5+)",
+        "help": "Commercial rollup (surfaces + cost honesty)",
+        "tier": "day2",
         "examples": [
             "commercial -- fixture",
             "commercial -- report",
@@ -179,7 +199,8 @@ GROUPS: dict[str, dict[str, Any]] = {
     },
     "certificate": {
         "script": "gate_certificate.py",
-        "help": "Deterministic merge-authority certificate: reason codes + path evidence",
+        "help": "Merge-authority certificate (reason codes + path evidence)",
+        "tier": "day2",
         "examples": [
             "certificate -- fixture",
             "certificate -- emit -- --review docs/benchmarks/fixtures/insecure-demo-good-review.md",
@@ -188,7 +209,8 @@ GROUPS: dict[str, dict[str, Any]] = {
     },
     "quieter": {
         "script": "quieter_over_time.py",
-        "help": "Own-repo required check + quieter-over-time dogfood chart (JTBD)",
+        "help": "Quieter-over-time chart (required check habit)",
+        "tier": "day2",
         "examples": [
             "quieter -- fixture",
             "quieter -- status",
@@ -197,13 +219,21 @@ GROUPS: dict[str, dict[str, Any]] = {
     },
     "tool-use": {
         "script": "tool_use_quality.py",
-        "help": "Agent tool-use quality chart (tools-as-code, not SOUL prose)",
+        "help": "Agent tool-use quality (tools-as-code)",
+        "tier": "day2",
         "examples": [
             "tool-use -- fixture",
             "tool-use -- status",
             "tool-use -- report",
         ],
     },
+}
+
+_TIER_ORDER = ("day1", "day2", "advanced")
+_TIER_LABELS = {
+    "day1": "Day-1 — install → first signal",
+    "day2": "Day-2 — quieter · cost · enterprise",
+    "advanced": "Advanced — engineers (still one CLI)",
 }
 
 
@@ -229,22 +259,35 @@ def _scripts_dir(root: Path | None = None) -> Path:
 
 def help_payload() -> dict[str, Any]:
     groups = []
+    tiers: dict[str, list[str]] = {t: [] for t in _TIER_ORDER}
     for name, meta in GROUPS.items():
+        tier = str(meta.get("tier") or "advanced")
+        if tier not in tiers:
+            tier = "advanced"
         groups.append(
             {
                 "group": name,
                 "script": meta["script"],
                 "help": meta["help"],
+                "tier": tier,
                 "examples": meta.get("examples") or [],
             }
         )
+        tiers[tier].append(name)
+    day1_n = len(tiers.get("day1") or [])
     return {
         "feature": FEATURE,
         "schema": SCHEMA,
         "entrypoint": "python3 scripts/torii.py",
-        "one_liner": "One product front door for Torii Gate (memory · gate · budget · loops).",
+        "one_liner": (
+            "One product front door for Torii Gate — Day-1 install path first; "
+            "Day-2 quieter/cost/enterprise; Advanced for engineers."
+        ),
         "usage": "python3 scripts/torii.py <group|help|status|doctor> [-- <args>]",
         "groups": groups,
+        "tiers": tiers,
+        "day1_groups_n": day1_n,
+        "help_collapse_ok": day1_n <= 6 and day1_n >= 2 and "gate" in (tiers.get("day1") or []),
         "builtins": ["help", "status", "doctor", "scorecard", "inject-hint"],
         "scored_at": _now(),
     }
@@ -252,37 +295,47 @@ def help_payload() -> dict[str, Any]:
 
 def render_help_text() -> str:
     p = help_payload()
+    by_tier: dict[str, list[dict[str, Any]]] = {t: [] for t in _TIER_ORDER}
+    for g in p["groups"]:
+        t = str(g.get("tier") or "advanced")
+        if t not in by_tier:
+            t = "advanced"
+        by_tier[t].append(g)
+
     lines = [
-        f"# Torii product CLI ({FEATURE})",
+        "# Torii product CLI",
         "",
         p["one_liner"],
         "",
         f"Usage: `{p['usage']}`",
         "",
-        "| Group | Script | Purpose |",
-        "|-------|--------|---------|",
-    ]
-    for g in p["groups"]:
-        lines.append(f"| `{g['group']}` | `{g['script']}` | {g['help']} |")
-    lines += [
-        "",
-        "Builtins: `help` · `status` · `doctor` · `scorecard` · `inject-hint`",
-        "",
-        "**One front door** for humans/install. Peer scripts (`torii_memory.py`, …) remain",
-        "for agents that pin them — day-one path is always `torii.py`.",
+        "Builtins (always): `help` · `status --text` · `doctor` · `scorecard`",
         "",
         "Install (5 minutes): `docs/INSTALL.md` · `./scripts/install-torii.sh [--minimal] DEST`",
+        "",
+    ]
+    for tier in _TIER_ORDER:
+        label = _TIER_LABELS.get(tier, tier)
+        lines.append(f"## {label}")
+        lines.append("")
+        lines.append("| Group | Purpose |")
+        lines.append("|-------|---------|")
+        for g in by_tier.get(tier) or []:
+            lines.append(f"| `{g['group']}` | {g['help']} |")
+        lines.append("")
+
+    lines += [
+        "Day-1 only needs: `status --text` · `doctor` · `smoke` · `golden-path -- status` · require **`torii/gate`**.",
+        "Advanced groups stay on the same CLI — they are not the install path.",
         "",
         "Examples:",
         "```bash",
         "python3 scripts/torii.py help",
-        "python3 scripts/torii.py status --text   # day-2 one-screen (no F-IDs)",
-        "python3 scripts/torii.py doctor          # human summary (TTY default)",
-        "python3 scripts/torii.py doctor --json   # machine JSON",
-        "python3 scripts/torii.py scorecard",
-        "python3 scripts/torii.py memory -- help",
-        'python3 scripts/torii.py memory -- search -- -q "sql injection"',
+        "python3 scripts/torii.py status --text   # day-2 one-screen",
+        "python3 scripts/torii.py doctor",
         "python3 scripts/torii.py golden-path -- status",
+        "python3 scripts/torii.py quieter -- status",
+        "python3 scripts/torii.py ops -- status",
         "```",
         "",
     ]
@@ -292,17 +345,17 @@ def render_help_text() -> str:
 def render_inject_hint() -> str:
     return (
         f"{MARKER}\n"
-        "## Torii product CLI (F110 — umbrella front door)\n\n"
-        "Prefer the **product** entrypoint for discoverability:\n\n"
+        "## Torii product CLI (umbrella front door)\n\n"
+        "Prefer the **product** entrypoint — Day-1 first, Advanced only when needed:\n\n"
         "```bash\n"
         "python3 scripts/torii.py help\n"
-        "python3 scripts/torii.py memory -- help\n"
+        "python3 scripts/torii.py status --text\n"
+        "python3 scripts/torii.py doctor\n"
+        "python3 scripts/torii.py golden-path -- status\n"
+        "python3 scripts/torii.py quieter -- status\n"
         "python3 scripts/torii.py memory -- search -- -q \"theme keywords\"\n"
-        "python3 scripts/torii.py memory -- graph -- query --path <file> --hops 2\n"
-        "python3 scripts/torii.py budget -- status\n"
         "```\n\n"
-        "Memory stack still has `torii_memory.py` (F103). Soft re-prompts share a budget (F108).\n"
-        "Still require path:line evidence to block.\n"
+        "Still require path:line evidence to block. Peer scripts remain for agents that pin them.\n"
         "<!-- /torii-f110-product-cli -->\n"
     )
 
@@ -1684,6 +1737,16 @@ def cmd_fixture(args: argparse.Namespace) -> int:
     help_ok = len(h.get("groups") or []) >= 5 and "memory" in {
         g["group"] for g in h["groups"]
     }
+    help_collapse_ok = bool(h.get("help_collapse_ok"))
+    help_text = render_help_text()
+    help_tiered = (
+        "Day-1" in help_text
+        and "Day-2" in help_text
+        and "Advanced" in help_text
+        and "F103" not in help_text
+        and "F108" not in help_text
+        and "F79" not in help_text
+    )
     st = subprocess.run(
         [sys.executable, str(Path(__file__).resolve()), "status"],
         cwd=str(_root()),
@@ -1736,14 +1799,29 @@ def cmd_fixture(args: argparse.Namespace) -> int:
         scorecard_ok = bool(scd.get("brand_ready") or scd.get("metrics", {}).get("doctor_pass"))
     except json.JSONDecodeError:
         scorecard_ok = False
-    fixture_pass = all([help_ok, status_ok, doctor_ok, hint_ok, dispatch_ok, scorecard_ok])
+    fixture_pass = all(
+        [
+            help_ok,
+            help_collapse_ok,
+            help_tiered,
+            status_ok,
+            doctor_ok,
+            hint_ok,
+            dispatch_ok,
+            scorecard_ok,
+        ]
+    )
     print(
         json.dumps(
             {
                 "feature": FEATURE,
                 "feature_scorecard": "F129",
+                "feature_help_collapse": "HELP_CLI_COLLAPSE",
                 "fixture_pass": fixture_pass,
                 "help_ok": help_ok,
+                "help_collapse_ok": help_collapse_ok,
+                "help_tiered": help_tiered,
+                "day1_groups_n": h.get("day1_groups_n"),
                 "status_ok": status_ok,
                 "doctor_ok": doctor_ok,
                 "hint_ok": hint_ok,

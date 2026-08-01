@@ -1,3 +1,35 @@
+## 2026-08-01 — HELP_CLI_COLLAPSE + first-principles scorecard (Phase B)
+
+### Papers / posts
+- Loop Engineering: day-2 habit needs one discoverable surface — not 19 flat peer groups.
+- AppSec install UX: cognitive load kills required-check adoption more than missing features.
+- Commercial queue 1–6 + post-queue green (8.5 cap); next lift is buyer simplicity, not F185+.
+
+### Decide / copy / skip
+- **Copy:** First-principles re-score dims 1–12 as buyer adoption (not research harness).
+- **Copy:** Tier `torii.py help` Day-1 / Day-2 / Advanced; strip F-IDs from primary help.
+- **Copy:** INSTALL Day-1 4-command path; install_ux + torii fixture gate collapse.
+- **Skip:** F185+ compound loops; pricing surface deferred to next gap (#2).
+
+### Feature shipped (HELP_CLI_COLLAPSE)
+- `docs/SCORECARD-FIRST-PRINCIPLES.md` — overall **7.6** band B+; ranked gaps
+- GROUPS `tier` + `render_help_text` collapse; `help_collapse_ok` fixture
+- INSTALL.md Day-1 CLI block; install_ux checks
+
+### Metric
+- Offline: torii fixture help_collapse_ok · install_ux 30/30 · commercial 8.5 · buyer 28/28
+- Live Modal: (fill)
+- Traces: (fill)
+
+### scorecard_target
+simplicity (#12) · install (#7) · JTBD (#3)
+
+### dim_lift
+Day-1 help is 3 groups + builtins — not a research catalog
+
+### SHA
+(pending)
+
 
 ## 2026-08-01 — GOLDEN_PATH_ENT_EVAL: golden --tenant + public-eval cost vault
 

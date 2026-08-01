@@ -72,6 +72,19 @@ python3 scripts/torii.py help
 
 ## CLI confusion — use one front door
 
+`python3 scripts/torii.py help` is **tiered** (Day-1 · Day-2 · Advanced). Day-1 only needs:
+
+```bash
+python3 scripts/torii.py status --text
+python3 scripts/torii.py doctor
+python3 scripts/torii.py smoke              # offline, no API key
+python3 scripts/torii.py golden-path -- status
+# require branch-protection check: torii/gate
+```
+
+Day-2 (after a few reviews): `quieter -- status` · `ops -- status` · `certificate -- fixture` · `enterprise -- status`.  
+Advanced groups (memory loops, federation, self-evolve) stay on the same CLI — they are not the install path.
+
 | Use this | Not this (day one) |
 |----------|--------------------|
 | `python3 scripts/torii.py …` | raw `torii_memory.py`, `skill_loop_status.py`, … |

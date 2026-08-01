@@ -82,6 +82,8 @@ Install path: [`docs/GOLDEN-PATH.md`](docs/GOLDEN-PATH.md) · metrics: [`docs/be
 
 **Commercial rollup (queue 1–6 + post-queue + workflow):** `python3 scripts/torii.py commercial -- fixture` → [`docs/benchmarks/commercial-scorecard.md`](docs/benchmarks/commercial-scorecard.md).
 
+**First-principles buyer scorecard (dims 1–12):** [`docs/SCORECARD-FIRST-PRINCIPLES.md`](docs/SCORECARD-FIRST-PRINCIPLES.md) — adoption lens (not research harness). CLI help is **Day-1 / Day-2 / Advanced** (`python3 scripts/torii.py help`).
+
 **Workflows-as-code:** declarative pipeline graph (not LLM prose) → [`docs/WORKFLOWS.md`](docs/WORKFLOWS.md) · `python3 scripts/torii.py workflow -- scorecard`.
 
 > **Advanced** content below (mental models A–E, feature IDs, loop stage tables) is for engineers and research. Buyers can stop here.

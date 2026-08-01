@@ -120,6 +120,18 @@ def check(root: Path) -> dict[str, Any]:
         "torii_doctor_text": "render_doctor_text" in tp,
         "torii_status_text": "render_status_text" in tp,
         "torii_doctor_json_flag": '"--json"' in tp or "'--json'" in tp,
+        # HELP_CLI_COLLAPSE: Day-1 / Day-2 / Advanced tiers (simplicity #12)
+        "torii_help_collapse": bool(
+            "Day-1" in tp
+            and "Day-2" in tp
+            and "Advanced" in tp
+            and '"tier": "day1"' in tp
+            and "help_collapse_ok" in tp
+        ),
+        "install_md_help_day1": bool(
+            re.search(r"Day-1|day-1 path|help.*Day", im, re.I)
+            and "torii.py help" in im
+        ),
         "golden_links_install": "INSTALL.md" in gd or "docs/INSTALL" in gd,
         "install_script_exists": install_sh.is_file(),
     }
