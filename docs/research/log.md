@@ -31,7 +31,7 @@ Intelligence without packaging loses adoption clarity. Highest ROI this fire: cl
 **Scorecard + trace archive as product surfaces** — dogfood readiness for recovery loop.
 
 ### SHA
-`272d5b53035a38620e70d52f8b79f992ed18bb35`
+`25e83e9cff8ea0b2a838291f218c93d3da35c4b8`
 ## 2026-08-01 — F122 recovery skill soft re-prompt under F108 budget
 
 ### Papers / posts
