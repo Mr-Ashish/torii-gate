@@ -1,0 +1,17 @@
+{
+  "feature": "OPS",
+  "schema_version": 1,
+  "repo": "pytorch/pytorch",
+  "pr": "191840",
+  "model": "deepseek/deepseek-chat-v4-pro",
+  "host": "modal",
+  "bit3": true,
+  "elapsed_s": 49.4,
+  "log_streaming": true,
+  "tool_call_turns": 0,
+  "post_comment": 0,
+  "verdict": "COMMENT",
+  "notes": "Fail-closed F45 live proof; ops dashboard fire",
+  "scored_at": "2026-08-01T14:37:05Z",
+  "modal_run": "https://modal.com/apps/mr-ashish/main/ap-QWbMl4QmCVaZ6VnIwhKAIg"
+}

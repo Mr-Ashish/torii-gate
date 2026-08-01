@@ -39,9 +39,13 @@ Required checks for a hard merge gate should use **`torii/gate`**. Optional hard
 
 **Commercial golden path (install → required check → dogfood → FP/TP):** [`GOLDEN-PATH.md`](GOLDEN-PATH.md) · metrics [`benchmarks/golden-path-metrics.md`](benchmarks/golden-path-metrics.md).
 
+**Reliability / ops:** fail-closed defaults · cost/PR stub · smoke CI → [`ops/RELIABILITY.md`](ops/RELIABILITY.md) · [`ops/DASHBOARD.md`](ops/DASHBOARD.md).
+
 ```bash
 python3 scripts/golden_path_metrics.py fixture
 python3 scripts/golden_path_metrics.py report
+python3 scripts/ops_dashboard.py report --smoke
+./scripts/smoke-torii-gate.sh   # also .github/workflows/smoke-offline.yml
 ```
 
 ## Dogfood

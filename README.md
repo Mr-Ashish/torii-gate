@@ -54,8 +54,9 @@ cp .env.example .env   # set OPENROUTER_API_KEY
 # optional: copy keys from sibling Luffy checkout
 # cp ../pr-review-agent/.env .env
 
-# Offline product smoke (no API key)
+# Offline product smoke (no API key) — also CI: smoke-offline.yml
 ./scripts/smoke-torii-gate.sh
+python3 scripts/ops_dashboard.py report   # cost/PR + fail-closed dashboard
 
 # Local full review (needs gh + PR access + OPENROUTER_API_KEY)
 export REPO=owner/repo PR_NUMBER=1

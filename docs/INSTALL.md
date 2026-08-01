@@ -90,6 +90,7 @@ python3 scripts/torii.py doctor
 |-----|------|
 | [`GOLDEN-PATH.md`](GOLDEN-PATH.md) | commercial loop + metrics |
 | [`GATE.md`](GATE.md) | gate policy contract |
+| [`ops/RELIABILITY.md`](ops/RELIABILITY.md) | fail-closed defaults · smoke CI · cost/PR |
 | [`workflows/INSTALL-GUIDE.md`](workflows/INSTALL-GUIDE.md) | full capability matrix |
 | [`brand/BUYER-DIAGRAM.md`](brand/BUYER-DIAGRAM.md) | buyer story |
 | `docs/research/` | Advanced / F-IDs |

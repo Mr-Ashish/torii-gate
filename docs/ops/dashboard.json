@@ -1,0 +1,134 @@
+{
+  "feature": "OPS",
+  "schema": 1,
+  "scorecard_target": "ops",
+  "dim_lift": "reliability/ops (dim 8)",
+  "scored_at": "2026-08-01T14:37:05Z",
+  "one_liner": "Fail-closed defaults \u00b7 cost/PR dashboard \u00b7 smoke CI \u00b7 required check torii/gate",
+  "fail_closed": [
+    {
+      "name": "TORII_TOOL_TURNS_GATE",
+      "default_on": true,
+      "effective": true,
+      "source": "unset\u2192default",
+      "fail_closed_when_on": true,
+      "what": "Zero-tool multi-file code PRs cannot APPROVE (fail-closed)",
+      "docs": "scripts/tool_turns_gate.py \u00b7 docs/OPERATIONS.md"
+    },
+    {
+      "name": "TORII_TOOL_TURNS_REPROMPT",
+      "default_on": true,
+      "effective": true,
+      "source": "unset\u2192default",
+      "fail_closed_when_on": true,
+      "what": "Soft re-prompt once when tools were skipped (budgeted)",
+      "docs": "scripts/tool_turns_gate.py"
+    },
+    {
+      "name": "TORII_WEBHOOK_ALLOW_OPEN",
+      "default_on": false,
+      "effective": false,
+      "source": "unset\u2192default",
+      "fail_closed_when_on": false,
+      "what": "Modal webhook refuse-open by default (must explicitly allow)",
+      "docs": "docs/OPERATIONS.md \u00b7 modal_app",
+      "safe_default": "off"
+    },
+    {
+      "name": "TORII_COMMIT_STATUS",
+      "default_on": true,
+      "effective": true,
+      "source": "unset\u2192default",
+      "fail_closed_when_on": true,
+      "what": "Post torii/gate + torii/review commit statuses",
+      "docs": "docs/GATE.md"
+    },
+    {
+      "name": "TORII_GATE_STRICT",
+      "default_on": false,
+      "effective": false,
+      "source": "unset\u2192default",
+      "fail_closed_when_on": false,
+      "what": "Optional hard job fail when gate closed (branch protection uses status)",
+      "docs": "docs/GATE.md \u00b7 TORII_GATE_STRICT=1",
+      "note": "Status context torii/gate is the merge authority; strict job fail is optional"
+    },
+    {
+      "name": "TORII_PR_LABELS",
+      "default_on": true,
+      "effective": true,
+      "source": "unset\u2192default",
+      "fail_closed_when_on": true,
+      "what": "Verdict labels on PRs (visible ops signal)",
+      "docs": "docs/GATE.md"
+    }
+  ],
+  "fail_closed_safe_defaults": true,
+  "required_check": {
+    "ok": true,
+    "paths": {
+      "docs/GATE.md": {
+        "exists": true,
+        "names_torii_gate": true,
+        "branch_protection": true
+      },
+      "docs/INSTALL.md": {
+        "exists": true,
+        "names_torii_gate": true,
+        "branch_protection": true
+      },
+      "docs/GOLDEN-PATH.md": {
+        "exists": true,
+        "names_torii_gate": true,
+        "branch_protection": true
+      },
+      "docs/workflows/INSTALL-GUIDE.md": {
+        "exists": true,
+        "names_torii_gate": true,
+        "branch_protection": true
+      },
+      "pack/README.md": {
+        "exists": true,
+        "names_torii_gate": true,
+        "branch_protection": true
+      }
+    },
+    "required_context": "torii/gate"
+  },
+  "cost_per_pr": {
+    "source": "docs/benchmarks/traces vault",
+    "runs": 48,
+    "time_to_signal_s": {
+      "n": 43,
+      "mean": 95.286,
+      "p50": 84.3,
+      "min": 40.7,
+      "max": 208.6
+    },
+    "cost_usd": {
+      "n": 7,
+      "mean": 0.011,
+      "p50": 0.012,
+      "min": 0.008,
+      "max": 0.016
+    },
+    "verdicts": {
+      "REQUEST_CHANGES": 17,
+      "UNKNOWN": 26,
+      "COMMENT": 5
+    }
+  },
+  "smoke": {
+    "script_present": true,
+    "ci_workflow_present": true,
+    "ran": false,
+    "pass": null
+  },
+  "paths": {
+    "dashboard_md": "docs/ops/DASHBOARD.md",
+    "cost_md": "docs/ops/cost-pr-dashboard.md",
+    "reliability_md": "docs/ops/RELIABILITY.md",
+    "smoke_ci": ".github/workflows/smoke-offline.yml"
+  },
+  "ops_ok": true
+}

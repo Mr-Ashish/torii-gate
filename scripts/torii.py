@@ -132,6 +132,15 @@ GROUPS: dict[str, dict[str, Any]] = {
             "install-ux -- report",
         ],
     },
+    "ops": {
+        "script": "ops_dashboard.py",
+        "help": "Reliability/ops dashboard: fail-closed, cost/PR, smoke (dim 8)",
+        "examples": [
+            "ops -- fixture",
+            "ops -- report --smoke",
+            "ops -- status",
+        ],
+    },
 }
 
 

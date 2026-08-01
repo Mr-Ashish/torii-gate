@@ -1,3 +1,38 @@
+## 2026-08-01 — OPS: fail-closed defaults, cost/PR dashboard, smoke CI
+
+### Papers / posts
+- Loop Engineering: measure operator loops (smoke green, cost visible).
+- AppSec: silent APPROVE without tools is worse than a closed gate.
+- Scorecard dim reliability/ops 5.0 → lift with CI + dashboard stub.
+
+### OSS design patterns stolen
+1. fail_closed inventory (tool-turns on, webhook open off, statuses on).
+2. `.github/workflows/smoke-offline.yml` — no API key; smoke + focused pytest.
+3. `ops_dashboard.py` → docs/ops DASHBOARD + cost-pr-dashboard.
+4. Live dogfood proves fail-closed zero-tool → COMMENT not APPROVE.
+
+### Insight
+Smoke only ran on laptops; cost hid in Modal. Highest ROI: CI smoke + published ops dashboard.
+
+### Feature shipped (OPS / F191)
+- smoke-offline.yml · ops_dashboard · docs/ops/* · torii.py ops · tests
+
+### Loop-engineering
+Reliability is a scored loop: defaults → smoke → cost signal → required check.
+
+### Metric
+- Offline: ops fixture_pass; smoke PASS; pytest 5 ops tests; ops_ok
+- Live Modal: pytorch#191840 BIT3_OK ~49.4s POST_COMMENT=0 fail-closed COMMENT
+
+### scorecard_target
+ops
+
+### dim_lift
+reliability/ops (dim 8)
+
+### SHA
+`(fill after push)`
+
 ## 2026-08-01 — INSTALL_UX: 5-min path, --minimal pack, doctor text defaults
 
 ### Papers / posts
