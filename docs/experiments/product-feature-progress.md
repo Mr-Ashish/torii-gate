@@ -24,30 +24,31 @@
 | F75 | Scoped memory recall (Mem0 multi-scope TP/FP) | memory, agent_quality, tools | **shipping** |
 | F76 | Multi-corpus bench + Juice Shop synthetic | bench, agent_quality, tools | **shipping** |
 | F77 | Cross-tenant hub federated signal ingest | memory, product, tools | **shipping** |
+| F78 | Multi-checker second-agent critic panel | agent_quality, product, tools | **shipping** |
 
 ## IN_PROGRESS
 
 | ID | Feature | Notes |
 |----|---------|-------|
-| — | — | open: LLM second-agent critic; real Juice Shop pin optional; brand/install UX refresh |
+| — | — | open: optional LLM critic atop F78; real Juice Shop pin; install UX deep link |
 
 ## LEFT
 
-— Optional real Juice Shop pin; optional LLM checker atop F72; brand packaging for F70–F77 story
+— Optional real Juice Shop pin; optional LLM critic atop F78 panel; install UX deep link
 
 ## Counts
 
-- **features_built_count:** 34 (F44–F77)
+- **features_built_count:** 35 (F44–F78)
 - **types_built:** agent_quality, product, memory, ops, bench, tools
 - **left_count:** open research
 - **progress_pct:** n/a (open research loop)
 - **eta:** open research only
 - **active_worktrees:** none
 - **federated_memory_note:** F65–F71–F75 local; F77 hub multi-tenant aggregate + promote gate
-- **agent_design_note:** F70–F75 gates/memory; F76 multi-corpus labeled bench (JS+PY)
+- **agent_design_note:** F70–F77 gates/memory/federation; F78 multi-checker second-agent panel
 - **meta_loop_note:** measure findings → chain gate → trajectory fitness → paper vault
 - **milvus_corpus:** 3 + complex #6 F67 e2e
 
 ## Status line
 
-`features_built_count=34 types_built=agent_quality,product,memory,ops,bench,tools f77=federated_hub_ingest`
+`features_built_count=35 types_built=agent_quality,product,memory,ops,bench,tools f78=second_agent_critic`

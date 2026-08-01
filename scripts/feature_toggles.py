@@ -418,6 +418,15 @@ REGISTRY: list[ToggleSpec] = [
         "F77",
     ),
     ToggleSpec(
+        "second_critic",
+        "TORII_SECOND_CRITIC",
+        "bool",
+        True,
+        "product",
+        "F78 multi-checker second-agent critic panel (maker/checker)",
+        "F78",
+    ),
+    ToggleSpec(
         "chain_revalidate",
         "TORII_CHAIN_REVALIDATE",
         "bool",

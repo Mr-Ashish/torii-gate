@@ -1,5 +1,39 @@
 # Torii research → product log
 
+## 2026-08-01 — F78 multi-checker second-agent critic (maker/checker)
+
+### Papers / posts / OSS
+- **QASecClaw** (arXiv 2605.01885): multi-agent validation after discovery cuts FPs.
+- **VulAgent / Argus**: decouple maker findings from confirmation.
+- Loop Engineering **loop-verifier**: default REJECT until evidence.
+- Prior Torii F70–F75 checkers were siloed; missing a single post-run panel.
+
+### OSS / eng patterns
+1. Orchestrate existing deterministic checkers as a second "agent" (no LLM).
+2. Demote weak APPROVE without path evidence.
+3. Product mental model: security merge authority = maker + checker + memory.
+
+### Insight
+Shipping more maker intelligence without an independent checker lets weak APPROVE slip. Highest ROI: **compose F70+F72+F73+F75 into one critic panel** and demote.
+
+### Feature shipped (F78)
+- `scripts/second_agent_critic.py` — run / inject / fixture / scorecard / status
+- Panel: structure + F70 dual critic + F72 chain + F73 fitness + F75 memory
+- Wire assemble-context inject + run-torii-review post stage; optional demote
+- Brand/PRODUCT mental model: Maker/Checker; toggle `TORII_SECOND_CRITIC`
+- Adopted tool `second-agent-critic`
+
+### Loop-engineering practice used
+**Independent verifier panel** — maker writes review; checker scorecard L0–L3; demote on weak evidence.
+
+### Metric
+- Offline: good composite≈0.74 weak≈0.39 delta≈0.35; weak APPROVE→COMMENT; inject_ok
+- Live: pytorch/pytorch#191813 deepseek/deepseek-v4-pro fitness 0.8694 L3; SECOND_CRITIC=1 panel L1 composite=0.54; no demote (maker REQUEST_CHANGES); POST_COMMENT=0; Modal blocked → local Hermes
+- pytest: 481 passed
+
+### SHA
+`(pending push)`
+
 ## 2026-08-01 — F77 cross-tenant hub federated signal ingest
 
 ### Papers / posts / OSS

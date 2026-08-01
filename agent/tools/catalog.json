@@ -1,8 +1,8 @@
 {
   "schema_version": 1,
-  "feature": "F77",
+  "feature": "F78",
   "description": "Torii agent tool catalog \u2014 research \u2192 eval \u2192 adopt pipeline",
-  "updated_at": "2026-08-01T00:43:49Z",
+  "updated_at": "2026-08-01T00:51:42Z",
   "tools": [
     {
       "id": "terminal",
@@ -184,6 +184,18 @@
       "rationale": "F77 multi-tenant privacy-safe signal aggregate + promote",
       "feature": "F77",
       "adopted_at": "2026-08-01T00:42:00Z"
+    },
+    {
+      "id": "second-agent-critic",
+      "name": "Multi-checker second-agent critic panel",
+      "status": "adopted",
+      "source": "research_oss",
+      "kind": "workflow_tool",
+      "toolset": "terminal",
+      "script": "scripts/second_agent_critic.py",
+      "rationale": "F78 maker/checker panel F70+F72+F73+F75; demote weak APPROVE",
+      "feature": "F78",
+      "adopted_at": "2026-08-01T00:51:00Z"
     }
   ],
   "candidates": [

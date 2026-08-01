@@ -22,3 +22,11 @@ Platform / AppSec engineer who needs every PR checked for security without drown
 - Time-to-first-signal on PR
 - Measured FP rate (memory growth of suppressions)
 - PRs blocked with path-evidenced findings
+
+## Mental model (F78)
+
+**Maker / Checker.** Hermes is the maker (agent review). A deterministic second-agent critic panel (path evidence, chain revalidation, trajectory fitness, scoped memory) re-scores every run and demotes weak APPROVE without path evidence — no extra LLM cost.
+
+**Compound memory.** FP rules, TP signatures, and privacy-safe federated themes compound across PRs and tenants; scoped recall keeps prompt context budgeted.
+
+**Measured gate.** Multi-corpus labeled benches (Python insecure-demo + Juice Shop synthetic) score recall before shipping harness changes.

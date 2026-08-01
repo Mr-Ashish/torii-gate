@@ -1,0 +1,35 @@
+{
+  "tool_use": 0.85,
+  "path_evidence": 0.9,
+  "procedure": 0.9375,
+  "chain_quality": 0.7,
+  "conciseness": 1.0,
+  "length_penalty": 0.0,
+  "composite": 0.8694,
+  "level": "L3",
+  "verdict": "REQUEST_CHANGES",
+  "path_hits": [
+    "torch/csrc/autograd/functions/utils.h",
+    "utils.h"
+  ],
+  "tool_call_turns": 4,
+  "theme_hits": 3,
+  "trigger_hits": 0,
+  "review_chars": 4110,
+  "feedback": [
+    "no trigger/exploit scenario language",
+    "chain JSON absent; inferred from path+theme"
+  ],
+  "signals": {
+    "weights": {
+      "path_evidence": 0.4,
+      "procedure": 0.25,
+      "tool_use": 0.2,
+      "chain_quality": 0.15
+    },
+    "raw_before_penalty": 0.8694
+  },
+  "feature": "F73",
+  "schema_version": 1,
+  "scored_at": "2026-08-01T00:53:19Z"
+}

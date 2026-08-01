@@ -1,0 +1,26 @@
+{
+  "id": "second-agent-critic",
+  "name": "Multi-checker second-agent critic (F78)",
+  "status": "adopted",
+  "source": "research_oss",
+  "kind": "workflow_tool",
+  "toolset": "terminal",
+  "script": "scripts/second_agent_critic.py",
+  "rationale": "QASecClaw/VulAgent maker-checker: orchestrate F70+F72+F73+F75 as independent post-run critic panel; demote weak APPROVE without path evidence; zero extra LLM cost",
+  "eval": {
+    "scored_at": "2026-08-01T00:51:00Z",
+    "dims": {
+      "signal": 5,
+      "safety": 5,
+      "effort": 4,
+      "torii_fit": 5,
+      "cost": 5
+    },
+    "total": 24,
+    "max": 25,
+    "recommend": "adopt",
+    "notes": "fixture delta>=0.1; weak APPROVE demoted; inject marker"
+  },
+  "adopted_at": "2026-08-01T00:51:00Z",
+  "feature": "F78"
+}

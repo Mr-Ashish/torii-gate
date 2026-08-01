@@ -164,6 +164,26 @@ if [[ -f "$SCRIPTS/trajectory_fitness.py" ]]; then
   esac
 fi
 
+# F78: multi-checker second-agent critic panel (soft; may demote weak APPROVE)
+if [[ -f "$SCRIPTS/second_agent_critic.py" ]]; then
+  case "${TORII_SECOND_CRITIC:-1}" in
+    0|false|no|off) ;;
+    *)
+      _f78_review=""
+      if [[ -n "${REVIEW_FILE:-}" && -f "${REVIEW_FILE}" ]]; then
+        _f78_review="$REVIEW_FILE"
+      elif [[ -f "$OUT_DIR/review-${PR_NUMBER:-}.md" ]]; then
+        _f78_review="$OUT_DIR/review-${PR_NUMBER}.md"
+      elif compgen -G "$OUT_DIR/review*.md" > /dev/null; then
+        _f78_review="$(ls -1 "$OUT_DIR"/review*.md 2>/dev/null | head -1)"
+      fi
+      if [[ -n "$_f78_review" ]]; then
+        stage second_agent_critic           python3 "$SCRIPTS/second_agent_critic.py" run             --review "$_f78_review"             --out-dir "$OUT_DIR" || true
+      fi
+      ;;
+  esac
+fi
+
 # F69: package trajectory for self-evolution (soft; always ingest when loop exists)
 if [[ -f "$SCRIPTS/self_evolve.py" && -d "$OUT_DIR/agent-loop" ]]; then
   stage evolve_ingest \
