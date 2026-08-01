@@ -1,5 +1,39 @@
 # Torii research → product log
 
+## 2026-08-01 — F167 GEPA refine dual-rollout contribution_pp
+
+### Papers / posts
+- **SkillsBench** (arXiv 2602.12670): with vs without skills; self-gen skills ≈0 without dual.
+- **Agent Skill Evaluation** (arXiv 2606.11435): dual-rollout = contribution signal.
+- **GEPA** + F165/F166: refined bodies without paper contribution_pp are slogans.
+- Loop Engineering: get a score — refine_tool_contribution_pp next to doctor flags.
+
+### OSS design patterns stolen
+1. run_refine_dual with-refine enrich+hub tools vs ablated strip+weak tools.
+2. refine_tool_contribution_pp + refine_probe_delta paper metrics.
+3. hermes soft refine-dual after F166; refine-dual.json artifact.
+4. skill_loop refine_dual_ok; fixture f167_ok inside dual fixture.
+
+### Insight
+F165–F166 invest in skill text; dual-rollout proves the investment. Highest ROI: paper metric refine_tool_contribution_pp so GEPA refine is measured, not claimed.
+
+### Feature shipped (F167)
+- skill_dual_rollout refine-dual + fixture f167_ok
+- hermes soft wire; skill_loop refine_dual_ok
+- PRODUCT + research pattern note
+
+### Metric
+- Offline: dual fixture f167_ok; refine_tool_contribution_pp>0
+- Live local: recall=1.0 util_rate=1.0 refine_tool_contribution_pp=50.0 probe_delta=3
+- Modal pytorch#191832 BIT3_OK ~172.0s POST_COMMENT=0 log_streaming=true
+
+### Loop-engineering / Hermes practice used
+**With vs ablated → score** — SkillsBench dual for GEPA refine bodies.
+
+### SHA
+`(pending)`
+
+
 ## 2026-08-01 — F166 GEPA refine dual-gate LOO floor + fitness shield
 
 ### Papers / posts

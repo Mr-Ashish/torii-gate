@@ -116,3 +116,8 @@ Generated: `2026-08-01T09:45:56Z`
 - Offline f166_ok refine floor / adversarial off
 - Live local recall=1.0 F165+F166 soft wires
 - Modal pytorch#191829 BIT3_OK ~84s POST_COMMENT=0
+
+## F167 GEPA refine dual-rollout contribution_pp
+- Offline f167_ok refine_tool_contribution_pp>0
+- Live refine-dual.json + F167 hermes notice; recall=1.0
+- Modal pytorch#191832 BIT3_OK ~172s POST_COMMENT=0

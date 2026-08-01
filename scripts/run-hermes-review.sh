@@ -1058,6 +1058,16 @@ if [[ -f "$SKILL_ROUTER_HELPER" && $TIMED_OUT -eq 0 && "${HERMES_CLI_ARGV_BROKEN
               python3 "$TORII_ROOT/scripts/skill_attribution.py" refine-floor --out-dir "$OUT_DIR" --write >/dev/null 2>&1 || true
               notice "F166 refine LOO floor hint · skill-refine-attr.json"
             fi
+            # F167: paper dual-rollout refine contribution_pp (with vs ablated GEPA body)
+            if [[ -f "$TORII_ROOT/scripts/skill_dual_rollout.py" ]]; then
+              case "${TORII_SKILL_REFINE_DUAL:-1}" in
+                0|false|no|off) ;;
+                *)
+                  python3 "$TORII_ROOT/scripts/skill_dual_rollout.py" refine-dual --out-dir "$OUT_DIR" >/dev/null 2>&1 || true
+                  notice "F167 refine dual-rollout contribution_pp · refine-dual.json"
+                  ;;
+              esac
+            fi
             ;;
         esac
       fi

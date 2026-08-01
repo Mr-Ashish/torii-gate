@@ -1,0 +1,149 @@
+{
+  "feature": "F70",
+  "mode": "live",
+  "at": "2026-08-01T11:49:13Z",
+  "model": "deepseek/deepseek-v4-pro",
+  "hermes_rc": 0,
+  "review": "docs/benchmarks/traces/f167-gepa-refine-dual-rollout/live/review-bench-f70.md",
+  "score": {
+    "feature": "F70",
+    "pack_id": "insecure-demo",
+    "verdict": "COMMENT",
+    "expected_verdict": "REQUEST_CHANGES",
+    "verdict_ok": false,
+    "tp": 4,
+    "fn": 0,
+    "required_total": 4,
+    "recall": 1.0,
+    "precision_proxy": 0.0,
+    "cases": [
+      {
+        "case_id": "sqli-search",
+        "hit": true,
+        "matched_terms": [
+          "sql injection",
+          "sqli",
+          "f-string",
+          "f\"select",
+          "execute(f",
+          "cur.execute(f",
+          "cwe-89"
+        ],
+        "path_ok": true
+      },
+      {
+        "case_id": "pickle-load",
+        "hit": true,
+        "matched_terms": [
+          "pickle",
+          "deserialization",
+          "cwe-502",
+          "pickle.loads"
+        ],
+        "path_ok": true
+      },
+      {
+        "case_id": "cmdi-run",
+        "hit": true,
+        "matched_terms": [
+          "command injection",
+          "shell=true",
+          "rce",
+          "subprocess",
+          "cwe-78"
+        ],
+        "path_ok": true
+      },
+      {
+        "case_id": "secret-exposure",
+        "hit": true,
+        "matched_terms": [
+          "secret",
+          "api key",
+          "api_key",
+          "openrouter",
+          "credential",
+          "exposure"
+        ],
+        "path_ok": true
+      }
+    ],
+    "path_hits": [
+      {
+        "path": "demo/insecure/app.py",
+        "line": null
+      },
+      {
+        "path": "demo/insecure/app.py",
+        "line": 18
+      },
+      {
+        "path": "demo/insecure/app.py",
+        "line": 26
+      },
+      {
+        "path": "demo/insecure/app.py",
+        "line": 33
+      },
+      {
+        "path": "demo/insecure/app.py",
+        "line": 37
+      },
+      {
+        "path": "app.py",
+        "line": 18
+      },
+      {
+        "path": "app.py",
+        "line": 33
+      },
+      {
+        "path": "app.py",
+        "line": 26
+      },
+      {
+        "path": "app.py",
+        "line": 38
+      }
+    ],
+    "critic": {
+      "feature": "F70",
+      "pass": "dual_offline",
+      "effective_aware": true,
+      "graph_supersede_aware": true,
+      "graph_multi_hop": false,
+      "graph_supersede_edges": 0,
+      "graph_hop": {
+        "multi_hop": false,
+        "hops": 0,
+        "seed_n": 0,
+        "neighborhood_n": 0
+      },
+      "effective_floor": 0.25,
+      "chunk_count": 1,
+      "likely_fp": 0,
+      "confirmed_tp": 0,
+      "stale_tp_match": 0,
+      "superseded_tp": 0,
+      "weak_evidence": 1,
+      "precision_proxy": 0.0,
+      "effective_precision": 0.0,
+      "findings": [
+        {
+          "index": 0,
+          "status": "weak_evidence",
+          "has_path": false,
+          "paths": [],
+          "tp_signature_hits": [],
+          "tp_effective_max": null,
+          "tp_effective_scores": [],
+          "demote_reason": "",
+          "graph_filtered": null,
+          "preview": "None (contract repair \u2014 re-run if this looks incomplete)   ). Raw content preserved below.    None \u2014 normalizer fallback."
+        }
+      ]
+    },
+    "score_pct": 70.0,
+    "passed": false
+  }
+}

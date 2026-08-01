@@ -230,6 +230,8 @@ budget always → compact body → score tool_hit → util gap? → budgeted re-
 
 **Refine dual-gate LOO floor + fitness shield (F166):** constraint-passed F165 refinements stamp `dual_gate: constraint_ok`, federate privacy-safe refine themes, soft-shield fitness demote (`ingest-refine`), and LOO-floor contribution so free-rider demote cannot kill a just-refined recovery skill before the next tool hit compounds `contribution_pp`.
 
+**Refine dual-rollout contribution_pp (F167):** SkillsBench/GEPA paper metric — `skill_dual_rollout.py refine-dual` measures with-refine (GEPA body + hub_boost tools) vs ablated baseline (`refine_tool_contribution_pp`, `refine_probe_delta`). Soft hermes wire writes `refine-dual.json`; skill-loop surfaces `refine_dual_ok`.
+
 ---
 
 ## Mental model D — Hub-archival compound loop (F155–F163)

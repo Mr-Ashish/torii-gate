@@ -1,0 +1,31 @@
+{
+  "feature": "F167",
+  "title": "GEPA refine dual-rollout contribution_pp",
+  "scored_at": "2026-08-01T11:51:57Z",
+  "pattern": "with-refine vs ablated-refine \u2192 refine_tool_contribution_pp",
+  "offline": {
+    "f167_ok": true,
+    "refine_dual_ok": true
+  },
+  "live_local": {
+    "recall": 1.0,
+    "tp": 4,
+    "fn": 0,
+    "verdict": "COMMENT",
+    "util_rate": 1.0,
+    "recovery_injected_n": 3,
+    "refine_dual_pass": true,
+    "refine_tool_contribution_pp": 50.0,
+    "refine_probe_delta": 3,
+    "refine_contribution_pp": 0.0,
+    "model": "deepseek/deepseek-v4-pro"
+  },
+  "modal": {
+    "repo": "pytorch/pytorch",
+    "pr": 191832,
+    "outcome": "BIT3_OK",
+    "elapsed_s": 172.0,
+    "log_streaming": true,
+    "post_comment": 0
+  }
+}

@@ -1,0 +1,42 @@
+{
+  "feature": "F105",
+  "schema": 1,
+  "score": 1.0,
+  "level": "L3",
+  "hit_count": 3,
+  "tools_used": [
+    "archival_search",
+    "torii_product_memory"
+  ],
+  "by_tool": {
+    "torii_product_memory": 2,
+    "archival_search": 1
+  },
+  "cli_subcmds": {
+    "search": 3
+  },
+  "inject_offered": true,
+  "utilization_gap": false,
+  "tool_call_turns": 2,
+  "feedback": [
+    "memory_tools_used=2 hits=3 tools=['archival_search', 'torii_product_memory']"
+  ],
+  "scored_at": "2026-08-01T11:49:13Z",
+  "hits_detail": [
+    {
+      "tool": "torii_product_memory",
+      "snip": "{\"command\": \"python3 scripts/torii.py memory -- search -- -q \\\"auth OR sql OR pickle OR secret\\\" 2>&1\", \"workdir\": \"/Users/a"
+    },
+    {
+      "tool": "archival_search",
+      "snip": "{\"command\": \"python3 scripts/archival_memory_search.py auto --files demo/insecure/app.py 2>&1\", \"workdir\": \"/Users/ashishmishra/Docume"
+    },
+    {
+      "tool": "torii_product_memory",
+      "snip": "ing findings, call: `python3 scripts/torii.py memory -- search -- -q \"auth OR sql OR pickle OR secret\"` or `python3 script"
+    }
+  ],
+  "out_dir": "docs/benchmarks/traces/f167-gepa-refine-dual-rollout/live",
+  "loop_path": "docs/benchmarks/traces/f167-gepa-refine-dual-rollout/live/agent-loop/agent-loop.json",
+  "enabled": true
+}
