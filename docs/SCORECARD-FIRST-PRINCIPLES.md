@@ -1,21 +1,21 @@
 # Torii Gate — first-principles product scorecard
 
-_Scored: `2026-08-01T19:19:39Z` · commercial **8.5** · overall **8.0** (cap until paid pilot)._
+_Scored: `2026-08-01T19:38:40Z` · commercial **8.5** · overall **8.0** (cap until paid pilot)._
 
-## Product win this fire
+## This fire
 
-**MODEL_ALIAS_TOOLUSE:** map `deepseek-chat-v4-pro` → `deepseek/deepseek-v4-pro` so Hermes uses tools (dogfood: 0 → **4** tool turns). Lifts JTBD #3 + tool-use quality + trust.
+**DAY2_TOOLUSE_STATUS:** shared `model_alias.py` · public-eval default/model pin = v4-pro · day-2 status surfaces tool-use rate, isolation, pilot, public-eval freshness.
 
-## Gaps
+## Remaining
 
 | Rank | Gap | Status |
 |-----:|-----|--------|
-| 1–8 | buyer packaging / pilot path | **shipped** |
-| 9 | First closed paid pilot | human |
-| — | Model alias for tool-use | **shipped** `a79a0dd` |
+| 1–8 | packaging queue | **shipped** |
+| — | Model alias + day-2 tool-use surface | **this fire** |
+| 9 | First closed paid pilot | human GTM |
 | 10 | No F185+ without customer win | standing |
 
 ```bash
-# chat slug aliases to tool-capable pro
-TORII_MODEL=deepseek/deepseek-chat-v4-pro  # → deepseek/deepseek-v4-pro
+python3 scripts/model_alias.py fixture
+python3 scripts/torii.py status --text
 ```

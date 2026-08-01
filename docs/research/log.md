@@ -1,3 +1,33 @@
+## 2026-08-01 — DAY2_TOOLUSE_STATUS: model_alias SoT + status panel
+
+### Papers / posts
+- Day-2 habit must show tool-use health next to quieter/cost (buyer JTBD).
+- Public eval model pin must match dogfood tool-capable slug.
+
+### Decide / copy / skip
+- **Copy:** scripts/model_alias.py SoT; public_eval default deepseek-v4-pro.
+- **Copy:** status --text: tool-use · isolation · pilot · public-eval freshness.
+- **Skip:** F185+; paid pilot close (human).
+
+### Feature shipped (DAY2_TOOLUSE_STATUS)
+- model_alias fixture · day-2 panel expansion
+- Live: tools=6 APPROVE pytorch#191840
+
+### Metric
+- Offline: model_alias fixture_pass · status shows tool-use rate 0.875
+- Live Modal: tool_call_turns=6 · ~289s · POST_COMMENT=0
+- Traces: docs/benchmarks/traces/20260801-1923-pytorch-pytorch-PR191840-modal-day2-tooluse-status/
+- Modal: https://modal.com/apps/mr-ashish/main/ap-4SzrYtEOhEpFpMMsCt4N6A
+
+### scorecard_target
+JTBD (#3) · simplicity (#12) · trust (#5)
+
+### dim_lift
+Operators see tool-use + pilot + eval pin on one day-2 screen
+
+### SHA
+(pending)
+
 ## 2026-08-01 — MODEL_ALIAS_TOOLUSE: deepseek-chat-v4-pro → v4-pro (tools)
 
 ### Papers / posts

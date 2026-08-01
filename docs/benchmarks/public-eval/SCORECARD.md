@@ -2,11 +2,11 @@
 
 # Public labeled eval scorecard
 
-_Generated: `2026-08-01T18:43:39Z` · seed **42** · model **`deepseek/deepseek-chat-v4-pro`** · target **8.5/10**_
+_Generated: `2026-08-01T18:43:39Z` · seed **42** · model **`deepseek/deepseek-v4-pro`** · target **8.5/10**_
 
 **public_eval_ok:** `True` · **freshness_ok:** `True` · age **0.0h** (max 72.0h)
 
-> Badge: `Public eval · seed 42 · deepseek-chat-v4-pro · scored 2026-08-01T18:43:39Z · age 0.0h`
+> Badge: `Public eval · seed 42 · deepseek-v4-pro · scored 2026-08-01T18:43:39Z · age 0.0h`
 
 Public labeled eval: Juice Shop synthetic + NodeGoat-theme + Django/Flask-theme packs; fixed seed; cost/PR from dogfood vault.
 
@@ -18,7 +18,7 @@ Public labeled eval: Juice Shop synthetic + NodeGoat-theme + Django/Flask-theme 
 | age_hours | 0.0 |
 | max_age_hours | 72.0 |
 | freshness_ok | True |
-| model_id | `deepseek/deepseek-chat-v4-pro` |
+| model_id | `deepseek/deepseek-v4-pro` |
 | seed | 42 |
 
 ## Packs (license-safe synthetic · OSS themes)
@@ -73,14 +73,14 @@ Day-2: `python3 scripts/torii.py ops -- status` · [cost-pr-dashboard.md](../ops
 - Juice Shop synthetic: **True**
 - Additional OSS-theme packs: `django-vuln-synthetic, nodegoat-synthetic` ok=**True**
 - Fixed seed: **42**
-- Model id: **`deepseek/deepseek-chat-v4-pro`**
+- Model id: **`deepseek/deepseek-v4-pro`**
 - Cost samples (hermes-usage): **34**
 
 ## Reproduce
 
 ```bash
 export TORII_PUBLIC_EVAL_SEED=42
-export TORII_MODEL=deepseek/deepseek-chat-v4-pro
+export TORII_MODEL=deepseek/deepseek-v4-pro
 python3 scripts/public_eval.py report
 python3 scripts/public_eval.py fixture
 python3 scripts/bench_corpus.py all

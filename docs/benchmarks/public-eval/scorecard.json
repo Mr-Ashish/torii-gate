@@ -5,7 +5,7 @@
   "dim_lift": "technical trust / public labeled eval",
   "scored_at": "2026-08-01T18:43:39Z",
   "seed": 42,
-  "model_id": "deepseek/deepseek-chat-v4-pro",
+  "model_id": "deepseek/deepseek-v4-pro",
   "one_liner": "Public labeled eval: Juice Shop synthetic + NodeGoat-theme + Django/Flask-theme packs; fixed seed; cost/PR from dogfood vault.",
   "packs": [
     {
@@ -148,14 +148,14 @@
   },
   "freshness": {
     "scored_at": "2026-08-01T18:43:39Z",
-    "age_hours": 0.0,
+    "age_hours": 0.66,
     "max_age_hours": 72.0,
     "freshness_ok": true,
-    "model_id": "deepseek/deepseek-chat-v4-pro",
+    "model_id": "deepseek/deepseek-v4-pro",
     "model_pin_ok": true,
     "seed": 42,
     "seed_ok": true,
-    "badge": "Public eval \u00b7 seed 42 \u00b7 deepseek-chat-v4-pro \u00b7 scored 2026-08-01T18:43:39Z \u00b7 age 0.0h",
+    "badge": "Public eval \u00b7 seed 42 \u00b7 deepseek-v4-pro \u00b7 scored 2026-08-01T18:43:39Z \u00b7 age 0.7h",
     "one_liner": "Labeled eval freshness: fixed seed + recorded model + scored_at within max age"
   },
   "public_eval_ok": true

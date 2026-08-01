@@ -478,6 +478,43 @@ def build_status_payload(root: Path | None = None) -> dict[str, Any]:
     if ent:
         day2["enterprise_ok"] = ent.get("enterprise_ok")
         day2["tenant_n"] = ent.get("tenant_n")
+        day2["isolation_ok"] = ent.get("isolation_ok")
+    # Tool-use quality (tools-as-code JTBD)
+    tools = _soft_script_json(root, "tool_use_quality.py", ["status"], timeout=45)
+    if tools:
+        day2["tool_use_ok"] = (
+            tools.get("tool_use_ok")
+            or tools.get("tool_use_quality_ok")
+            or tools.get("quality_ok")
+        )
+        day2["tool_use_rate"] = tools.get("tool_use_rate")
+        day2["tool_use_n"] = (
+            tools.get("measured_n") or tools.get("n") or tools.get("dogfood_n")
+        )
+    # Pilot path honesty (pre-revenue design partner)
+    pilot = _soft_script_json(root, "pilot_surface.py", ["status"], timeout=20)
+    if pilot:
+        day2["pilot_ok"] = pilot.get("pilot_ok")
+    # Model alias SoT present
+    day2["model_alias_script"] = (_scripts_dir(root) / "model_alias.py").is_file()
+    # Public eval freshness (soft) — normalize model id for display honesty
+    pe = _soft_script_json(root, "public_eval.py", ["status"], timeout=30)
+    if pe:
+        day2["public_eval_ok"] = pe.get("public_eval_ok")
+        day2["public_eval_freshness_ok"] = pe.get("freshness_ok")
+        mid = pe.get("model_id") or ""
+        try:
+            sys.path.insert(0, str(_scripts_dir(root)))
+            from model_alias import normalize_model  # type: ignore
+
+            mid = normalize_model(str(mid))
+        except Exception:
+            if mid in {
+                "deepseek/deepseek-chat-v4-pro",
+                "deepseek-chat-v4-pro",
+            }:
+                mid = "deepseek/deepseek-v4-pro"
+        day2["public_eval_model"] = mid
 
     groups_n = sum(1 for v in present.values() if v)
     return {
@@ -492,8 +529,8 @@ def build_status_payload(root: Path | None = None) -> dict[str, Any]:
         "extras": extras,
         "day2": day2,
         "one_liner": (
-            "Day-2 one screen: commercial · cost/PR · cert · quieter · "
-            "fail-closed · enterprise · require torii/gate."
+            "Day-2 one screen: commercial · cost/PR · cert · quieter · tool-use · "
+            "fail-closed · enterprise · pilot · require torii/gate."
         ),
         "scored_at": _now(),
     }
@@ -547,10 +584,30 @@ def render_status_text(payload: dict[str, Any]) -> str:
                 f"(docs/ops/RELIABILITY.md)"
             )
         if day2.get("enterprise_ok") is not None:
+            iso = day2.get("isolation_ok")
+            iso_s = f" · isolation_ok={iso}" if iso is not None else ""
             lines.append(
                 f"- enterprise light: ok={day2.get('enterprise_ok')} · "
                 f"tenants={day2.get('tenant_n')} · "
-                f"install --tenant (optional fleet)"
+                f"install --tenant (optional fleet){iso_s}"
+            )
+        if day2.get("tool_use_ok") is not None or day2.get("tool_use_rate") is not None:
+            lines.append(
+                f"- tool-use quality: ok={day2.get('tool_use_ok')} · "
+                f"rate={day2.get('tool_use_rate')} · "
+                f"n={day2.get('tool_use_n')} "
+                f"(tools-as-code · prefer deepseek/deepseek-v4-pro)"
+            )
+        if day2.get("public_eval_ok") is not None or day2.get("public_eval_freshness_ok") is not None:
+            lines.append(
+                f"- public eval: ok={day2.get('public_eval_ok')} · "
+                f"freshness={day2.get('public_eval_freshness_ok')} · "
+                f"model={day2.get('public_eval_model')}"
+            )
+        if day2.get("pilot_ok") is not None:
+            lines.append(
+                f"- design partner / pilot: ok={day2.get('pilot_ok')} · "
+                f"docs/PILOT.md · pre-revenue honest"
             )
     else:
         lines.append("- _(soft day-2 peeks unavailable — run doctor / commercial -- fixture)_")
@@ -565,8 +622,10 @@ def render_status_text(payload: dict[str, Any]) -> str:
         "## Next",
         "- Require status check **torii/gate** (merge authority)",
         "- Fail-closed defaults on: tool-turns gate · smoke CI · cert on every gate",
-        "- `python3 scripts/torii.py doctor` · `ops -- status` · `certificate -- report`",
+        "- Prefer model `deepseek/deepseek-v4-pro` (chat-v4-pro aliases for tool-use)",
+        "- `python3 scripts/torii.py doctor` · `ops -- status` · `tool-use -- status`",
         "- `python3 scripts/torii.py quieter -- status` · `enterprise -- status`",
+        "- Design partner: docs/PILOT.md · Pages: https://mr-ashish.github.io/torii-gate/",
         "- JSON: `python3 scripts/torii.py status --json`",
         "",
         str(payload.get("one_liner") or ""),

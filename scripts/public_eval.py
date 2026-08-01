@@ -125,11 +125,30 @@ def _seed() -> int:
 
 
 def _model_id() -> str:
+    # Prefer shared alias map (chat-v4-pro → deepseek-v4-pro for tool-use honesty)
+    try:
+        from model_alias import normalize_model, PREFERRED_DEEPSEEK  # type: ignore
+    except ImportError:
+        try:
+            from scripts.model_alias import normalize_model, PREFERRED_DEEPSEEK  # type: ignore
+        except ImportError:
+            normalize_model = lambda m: (  # type: ignore
+                "deepseek/deepseek-v4-pro"
+                if (m or "").strip()
+                in {
+                    "deepseek/deepseek-chat-v4-pro",
+                    "deepseek-chat-v4-pro",
+                    "deepseek/deepseek-chat-v4",
+                    "deepseek-chat-v4",
+                }
+                else (m or "").strip()
+            )
+            PREFERRED_DEEPSEEK = "deepseek/deepseek-v4-pro"
     for k in ("TORII_MODEL", "OPENROUTER_MODEL", "TORII_PUBLIC_EVAL_MODEL"):
         v = (os.environ.get(k) or "").strip()
         if v:
-            return v
-    return "deepseek/deepseek-chat-v4-pro"
+            return normalize_model(v)
+    return PREFERRED_DEEPSEEK
 
 
 def _run_corpus(root: Path) -> dict[str, Any]:
