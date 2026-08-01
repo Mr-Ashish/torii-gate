@@ -693,12 +693,20 @@ jobs:
           VERDICT="UNKNOWN"
 
           if [[ -n "${REVIEW_FILE:-}" && -f "$REVIEW_FILE" && -f "$TORII_ROOT/scripts/torii_gate_status.py" ]]; then
-            DECISION="$(python3 "$TORII_ROOT/scripts/torii_gate_status.py" "$REVIEW_FILE" --json)"
+            # Soft attach deterministic gate certificate (reason codes + path evidence)
+            GATE_ARGS=("$REVIEW_FILE" --json --certificate --certificate-write "$OUT_DIR")
+            if [[ -f "$OUT_DIR/second-agent-critic.json" ]]; then
+              GATE_ARGS+=(--critic-json "$OUT_DIR/second-agent-critic.json")
+            fi
+            DECISION="$(python3 "$TORII_ROOT/scripts/torii_gate_status.py" "${GATE_ARGS[@]}" 2>/dev/null || \
+              python3 "$TORII_ROOT/scripts/torii_gate_status.py" "$REVIEW_FILE" --json)"
             STATE="$(python3 -c 'import json,sys; print(json.load(sys.stdin)["state"])' <<<"$DECISION")"
             CONTEXT="$(python3 -c 'import json,sys; print(json.load(sys.stdin)["context"])' <<<"$DECISION")"
             DESC="$(python3 -c 'import json,sys; print(json.load(sys.stdin)["description"])' <<<"$DECISION")"
             BLOCK="$(python3 -c 'import json,sys; print("true" if json.load(sys.stdin).get("block") else "false")' <<<"$DECISION")"
             VERDICT="$(python3 -c 'import json,sys; print(json.load(sys.stdin).get("verdict",""))' <<<"$DECISION")"
+            CERT_ID="$(python3 -c 'import json,sys; c=json.load(sys.stdin).get("certificate") or {}; print(c.get("certificate_id") or "")' <<<"$DECISION" 2>/dev/null || true)"
+            CERT_CODES="$(python3 -c 'import json,sys; c=json.load(sys.stdin).get("certificate") or {}; print(",".join(c.get("reason_codes") or [])[:120])' <<<"$DECISION" 2>/dev/null || true)"
           fi
 
           {
@@ -706,6 +714,7 @@ jobs:
             echo "context=$CONTEXT"
             echo "block=$BLOCK"
             echo "verdict=$VERDICT"
+            echo "certificate_id=${CERT_ID:-}"
           } >> "$GITHUB_OUTPUT"
 
           if [[ -n "${GITHUB_STEP_SUMMARY:-}" ]]; then
@@ -715,6 +724,10 @@ jobs:
               echo "- **Block:** \`$BLOCK\`"
               echo "- **Verdict:** \`$VERDICT\`"
               echo "- **Description:** $DESC"
+              if [[ -n "${CERT_ID:-}" ]]; then
+                echo "- **Certificate:** \`$CERT_ID\`"
+                echo "- **Reason codes:** \`${CERT_CODES:-}\`"
+              fi
               echo
             } >> "$GITHUB_STEP_SUMMARY"
           fi

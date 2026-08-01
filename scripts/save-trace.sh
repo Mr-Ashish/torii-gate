@@ -140,6 +140,43 @@ copy_if "$OUT_DIR/reprompt-budget.json" "$TRACE_DIR/reprompt-budget.json"
 # second-agent critic panel (includes F121 recovery util checker)
 copy_if "$OUT_DIR/second-agent-critic.json" "$TRACE_DIR/second-agent-critic.json"
 copy_if "$OUT_DIR/second_agent_critic.json" "$TRACE_DIR/second_agent_critic.json"
+
+# GATE_CERT: soft deterministic merge-authority certificate (reason codes + path evidence)
+# Every run that produced a review gets gate-certificate.{json,md} in OUT_DIR + TRACE_DIR.
+# Disable: TORII_GATE_CERTIFICATE=0
+case "${TORII_GATE_CERTIFICATE:-1}" in
+  0|false|FALSE|off|OFF|no|NO) ;;
+  *)
+    _gc_script="$(dirname "${BASH_SOURCE[0]}")/gate_certificate.py"
+    _gc_review=""
+    if [[ -f "$TRACE_DIR/review.md" ]]; then
+      _gc_review="$TRACE_DIR/review.md"
+    elif [[ -f "$OUT_DIR/review-${PR_NUMBER}.md" ]]; then
+      _gc_review="$OUT_DIR/review-${PR_NUMBER}.md"
+    fi
+    _gc_critic=""
+    if [[ -f "$OUT_DIR/second-agent-critic.json" ]]; then
+      _gc_critic="$OUT_DIR/second-agent-critic.json"
+    elif [[ -f "$TRACE_DIR/second-agent-critic.json" ]]; then
+      _gc_critic="$TRACE_DIR/second-agent-critic.json"
+    fi
+    if [[ -n "$_gc_review" && -f "$_gc_script" ]]; then
+      _gc_args=(emit --review "$_gc_review" --write "$OUT_DIR" --repo "${REPO:-}" --pr "${PR_NUMBER:-}")
+      if [[ -n "$_gc_critic" ]]; then
+        _gc_args+=(--critic "$_gc_critic")
+      fi
+      python3 "$_gc_script" "${_gc_args[@]}" \
+        >"$OUT_DIR/gate-certificate.emit.json" 2>"$OUT_DIR/gate-certificate.emit.stderr" || true
+      copy_if "$OUT_DIR/gate-certificate.json" "$TRACE_DIR/gate-certificate.json"
+      copy_if "$OUT_DIR/gate-certificate.md" "$TRACE_DIR/gate-certificate.md"
+      copy_if "$OUT_DIR/gate-certificate.emit.json" "$TRACE_DIR/gate-certificate.emit.json"
+      if [[ -f "$OUT_DIR/gate-certificate.json" ]]; then
+        log "GATE_CERT wrote gate-certificate.json → $OUT_DIR + $TRACE_DIR"
+      fi
+    fi
+    ;;
+esac
+
 if [[ -d "$OUT_DIR/agent-loop-attempt1" ]]; then
   rm -rf "$TRACE_DIR/agent-loop-attempt1"
   cp -a "$OUT_DIR/agent-loop-attempt1" "$TRACE_DIR/agent-loop-attempt1" 2>/dev/null || true

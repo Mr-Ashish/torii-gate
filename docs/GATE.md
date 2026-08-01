@@ -32,6 +32,8 @@ python3 scripts/torii.py certificate -- report
 
 Artifacts: `gate-certificate.json` / `.md` · scorecard: [`benchmarks/gate-certificate.md`](benchmarks/gate-certificate.md).
 
+**Soft wire (every run):** `save-trace.sh` emits the certificate into `.torii-out/` + the per-run trace dir (disable with `TORII_GATE_CERTIFICATE=0`). The reusable workflow attaches `--certificate` when posting `torii/gate`. Ops dashboard shows the **last gate certificate** from the dogfood vault (`python3 scripts/torii.py ops -- report`).
+
 ## Entry points
 ```bash
 ./scripts/run-torii-gate.sh          # product entry (security forced)

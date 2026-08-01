@@ -50,6 +50,7 @@ jobs:
             tests/test_smoke_torii_gate.py \
             tests/test_torii_gate_status.py \
             tests/test_gate_certificate.py \
+            tests/test_gate_certificate_wire.py \
             tests/test_tool_turns_gate.py \
             tests/test_ops_dashboard.py \
             tests/test_install_ux.py \

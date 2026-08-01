@@ -152,6 +152,77 @@ def cost_pr_table(root: Path) -> dict[str, Any]:
         return {"source": "unavailable", "error": str(exc), "runs": 0}
 
 
+def last_gate_certificate(root: Path) -> dict[str, Any]:
+    """Buyer-facing last merge-authority certificate from dogfood vault (GATE_CERT wire)."""
+    vault = root / "docs" / "benchmarks" / "traces"
+    out: dict[str, Any] = {
+        "available": False,
+        "script_present": (root / "scripts" / "gate_certificate.py").is_file(),
+        "save_trace_wired": False,
+        "workflow_wired": False,
+    }
+    st = root / "scripts" / "save-trace.sh"
+    if st.is_file():
+        text = st.read_text(encoding="utf-8", errors="replace")
+        out["save_trace_wired"] = "gate_certificate" in text and "GATE_CERT" in text
+    wf = root / ".github" / "workflows" / "torii-review-reusable.yml"
+    if wf.is_file():
+        wt = wf.read_text(encoding="utf-8", errors="replace")
+        out["workflow_wired"] = "--certificate" in wt and "certificate-write" in wt
+
+    if not vault.is_dir():
+        out["reason"] = "no_vault"
+        return out
+
+    newest: Path | None = None
+    newest_mtime = 0.0
+    for p in vault.rglob("gate-certificate.json"):
+        try:
+            m = p.stat().st_mtime
+        except OSError:
+            continue
+        if m >= newest_mtime:
+            newest_mtime = m
+            newest = p
+    if newest is None:
+        out["reason"] = "no_certificate_in_vault"
+        out["wire_ok"] = bool(out["script_present"] and out["save_trace_wired"])
+        return out
+
+    try:
+        data = json.loads(newest.read_text(encoding="utf-8", errors="replace"))
+    except (OSError, json.JSONDecodeError) as exc:
+        out["reason"] = f"bad_json:{exc}"
+        return out
+
+    pe = data.get("path_evidence") if isinstance(data.get("path_evidence"), dict) else {}
+    ma = data.get("merge_authority") if isinstance(data.get("merge_authority"), dict) else {}
+    try:
+        rel = str(newest.relative_to(root))
+    except ValueError:
+        rel = str(newest)
+    out.update(
+        {
+            "available": True,
+            "path": rel,
+            "certificate_id": data.get("certificate_id"),
+            "verdict": data.get("verdict"),
+            "block": data.get("block"),
+            "state": data.get("state"),
+            "reason_codes": data.get("reason_codes") or [],
+            "path_evidence_score": pe.get("score"),
+            "human_summary": ma.get("human_summary") or data.get("description"),
+            "at": data.get("at"),
+            "repo": (data.get("meta") or {}).get("repo") if isinstance(data.get("meta"), dict) else None,
+            "pr": (data.get("meta") or {}).get("pr") if isinstance(data.get("meta"), dict) else None,
+            "wire_ok": bool(
+                out["script_present"] and out["save_trace_wired"] and out["workflow_wired"]
+            ),
+        }
+    )
+    return out
+
+
 def smoke_status(root: Path, *, run: bool) -> dict[str, Any]:
     smoke = root / "scripts" / "smoke-torii-gate.sh"
     wf = root / ".github" / "workflows" / "smoke-offline.yml"
@@ -203,21 +274,23 @@ def build_report(root: Path | None = None, *, run_smoke: bool = False) -> dict[s
     req = required_check_docs(root)
     cost = cost_pr_table(root)
     smoke = smoke_status(root, run=run_smoke)
+    last_cert = last_gate_certificate(root)
 
     report = {
         "feature": FEATURE,
         "schema": SCHEMA,
         "scorecard_target": "ops",
-        "dim_lift": "reliability/ops (dim 8)",
+        "dim_lift": "reliability/ops (dim 8) + merge-authority certificate wire",
         "scored_at": _now(),
         "one_liner": (
-            "Fail-closed defaults · cost/PR dashboard · smoke CI · required check torii/gate"
+            "Fail-closed defaults · cost/PR · gate certificate · smoke CI · torii/gate"
         ),
         "fail_closed": fc,
         "fail_closed_safe_defaults": all(safe_bits) if safe_bits else False,
         "required_check": req,
         "cost_per_pr": cost,
         "smoke": smoke,
+        "last_gate_certificate": last_cert,
         "paths": {
             "dashboard_md": str(OUT_DIR / "DASHBOARD.md"),
             "cost_md": str(OUT_DIR / "cost-pr-dashboard.md"),
@@ -231,6 +304,7 @@ def build_report(root: Path | None = None, *, run_smoke: bool = False) -> dict[s
         and smoke.get("script_present")
         and smoke.get("ci_workflow_present")
         and (not run_smoke or smoke.get("pass"))
+        # soft: certificate wire preferred but not hard-fail ops_ok until fixtures assert wire_ok
     )
     return report
 
@@ -297,6 +371,44 @@ def render_dashboard(report: dict[str, Any]) -> str:
         "",
         "Detail: [cost-pr-dashboard.md](cost-pr-dashboard.md) · "
         "Reliability one-pager: [RELIABILITY.md](RELIABILITY.md)",
+        "",
+    ]
+    cert = report.get("last_gate_certificate") or {}
+    lines += [
+        "## Last gate certificate (merge authority)",
+        "",
+        "Deterministic reason codes + path evidence for the latest dogfood gate decision "
+        "(not a chat transcript). Soft-wired via `save-trace.sh` + reusable workflow.",
+        "",
+    ]
+    if cert.get("available"):
+        codes = ", ".join(f"`{c}`" for c in (cert.get("reason_codes") or [])[:8]) or "—"
+        lines += [
+            f"**{cert.get('human_summary') or '—'}**",
+            "",
+            "| Field | Value |",
+            "|-------|------:|",
+            f"| certificate_id | `{cert.get('certificate_id')}` |",
+            f"| block | {cert.get('block')} |",
+            f"| verdict | {cert.get('verdict')} |",
+            f"| path_evidence | {cert.get('path_evidence_score')} |",
+            f"| reason_codes | {codes} |",
+            f"| vault path | `{cert.get('path')}` |",
+            f"| wire_ok | {cert.get('wire_ok')} |",
+            "",
+        ]
+    else:
+        lines += [
+            f"_No certificate in vault yet_ · reason=`{cert.get('reason')}` · "
+            f"script={cert.get('script_present')} save_trace_wired={cert.get('save_trace_wired')} "
+            f"workflow_wired={cert.get('workflow_wired')}",
+            "",
+        ]
+    lines += [
+        "```bash",
+        "python3 scripts/torii.py certificate -- fixture",
+        "python3 scripts/gate_certificate.py emit --review .torii-out/review-1.md --write .torii-out",
+        "```",
         "",
         "## Refresh",
         "",
@@ -430,6 +542,7 @@ def cmd_fixture(args: argparse.Namespace) -> int:
     (out / "DASHBOARD.md").write_text(render_dashboard(report), encoding="utf-8")
     (out / "cost-pr-dashboard.md").write_text(render_cost_md(report), encoding="utf-8")
 
+    cert = report.get("last_gate_certificate") or {}
     checks = {
         "fail_closed_safe": bool(report.get("fail_closed_safe_defaults")),
         "required_check_docs": bool((report.get("required_check") or {}).get("ok")),
@@ -439,6 +552,15 @@ def cmd_fixture(args: argparse.Namespace) -> int:
         "dashboard_md": (root / OUT_DIR / "DASHBOARD.md").is_file(),
         "cost_md": (root / OUT_DIR / "cost-pr-dashboard.md").is_file(),
         "ops_script": (root / "scripts" / "ops_dashboard.py").is_file(),
+        "gate_cert_script": bool(cert.get("script_present")),
+        "gate_cert_save_trace_wired": bool(cert.get("save_trace_wired")),
+        "gate_cert_workflow_wired": bool(cert.get("workflow_wired")),
+        "dashboard_mentions_certificate": "gate certificate" in (
+            root / OUT_DIR / "DASHBOARD.md"
+        ).read_text(encoding="utf-8", errors="replace").lower()
+        or "Last gate certificate" in (root / OUT_DIR / "DASHBOARD.md").read_text(
+            encoding="utf-8", errors="replace"
+        ),
     }
     # Also require tool_turns gate source default on
     tt = root / "scripts" / "tool_turns_gate.py"
@@ -452,6 +574,11 @@ def cmd_fixture(args: argparse.Namespace) -> int:
         "checks": checks,
         "fail_closed_safe_defaults": report.get("fail_closed_safe_defaults"),
         "required_context": "torii/gate",
+        "last_gate_certificate": {
+            "available": cert.get("available"),
+            "certificate_id": cert.get("certificate_id"),
+            "wire_ok": cert.get("wire_ok"),
+        },
         "scorecard_target": "ops",
         "at": _now(),
     }

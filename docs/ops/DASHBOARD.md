@@ -2,9 +2,9 @@
 
 # Torii ops dashboard
 
-_Generated: `2026-08-01T14:37:05Z` · **ops_ok=True** · target **ops / dim 8**_
+_Generated: `2026-08-01T15:05:15Z` · **ops_ok=True** · target **ops / dim 8**_
 
-Fail-closed defaults · cost/PR dashboard · smoke CI · required check torii/gate
+Fail-closed defaults · cost/PR · gate certificate · smoke CI · torii/gate
 
 ## Fail-closed defaults
 
@@ -39,15 +39,36 @@ python3 scripts/ops_dashboard.py report --smoke
 
 | Stat | time-to-signal (s) | cost USD |
 |------|-------------------:|---------:|
-| n | 43 | 7 |
-| mean | 95.286 | 0.011 |
+| n | 47 | 9 |
+| mean | 97.813 | 0.017 |
 | p50 | 84.3 | 0.012 |
-| min | 40.7 | 0.008 |
-| max | 208.6 | 0.016 |
+| min | 39.2 | 0.008 |
+| max | 262.0 | 0.058 |
 
-Runs: **48** · source: `docs/benchmarks/traces vault`
+Runs: **52** · source: `docs/benchmarks/traces vault`
 
 Detail: [cost-pr-dashboard.md](cost-pr-dashboard.md) · Reliability one-pager: [RELIABILITY.md](RELIABILITY.md)
+
+## Last gate certificate (merge authority)
+
+Deterministic reason codes + path evidence for the latest dogfood gate decision (not a chat transcript). Soft-wired via `save-trace.sh` + reusable workflow.
+
+**CLOSED — REQUEST_CHANGES (verdict_request_changes, strong_path_evidence, blocking_with_paths); path_evidence=1.00**
+
+| Field | Value |
+|-------|------:|
+| certificate_id | `gc-95888668ca0a313d` |
+| block | True |
+| verdict | REQUEST_CHANGES |
+| path_evidence | 1.0 |
+| reason_codes | `verdict_request_changes`, `strong_path_evidence`, `blocking_with_paths` |
+| vault path | `docs/benchmarks/traces/20260801-1502-pytorch-pytorch-PR191840-modal-gate-cert-wire/gate-certificate.json` |
+| wire_ok | True |
+
+```bash
+python3 scripts/torii.py certificate -- fixture
+python3 scripts/gate_certificate.py emit --review .torii-out/review-1.md --write .torii-out
+```
 
 ## Refresh
 

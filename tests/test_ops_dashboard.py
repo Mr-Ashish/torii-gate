@@ -47,6 +47,20 @@ class OpsDashboardTests(unittest.TestCase):
         self.assertEqual(data["required_context"], "torii/gate")
         self.assertTrue(data["checks"]["smoke_ci"])
         self.assertTrue(data["checks"]["fail_closed_safe"])
+        self.assertTrue(data["checks"]["gate_cert_script"])
+        self.assertTrue(data["checks"]["gate_cert_save_trace_wired"])
+        self.assertTrue(data["checks"]["gate_cert_workflow_wired"])
+
+    def test_last_certificate_surface(self):
+        r = _run(["report", "--json", "--allow-partial"])
+        self.assertEqual(r.returncode, 0, r.stderr + r.stdout)
+        data = json.loads(r.stdout)
+        cert = data.get("last_gate_certificate") or {}
+        self.assertTrue(cert.get("script_present"))
+        self.assertTrue(cert.get("save_trace_wired"))
+        self.assertTrue(cert.get("workflow_wired"))
+        body = (ROOT / "docs" / "ops" / "DASHBOARD.md").read_text(encoding="utf-8")
+        self.assertIn("Last gate certificate", body)
 
     def test_report(self):
         r = _run(["report", "--json", "--allow-partial"])

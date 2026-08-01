@@ -1,4 +1,37 @@
 
+## 2026-08-01 — GATE_CERT_WIRE: save-trace + workflow + ops last certificate
+
+### Papers / posts
+- Loop Engineering: ship the verifier artifact on every loop iteration, not CLI-only.
+- GATE_CERT fire: certificate existed offline; buyers still needed every-run + ops surface.
+- Scorecard dim 8 ops + dim 12 simplicity: wire tools-as-code, avoid new F-compound loops.
+
+### Decide / copy / skip
+- **Copy:** soft emit in save-trace (default on; TORII_GATE_CERTIFICATE=0 off).
+- **Copy:** reusable workflow `torii_gate_status --certificate --certificate-write`.
+- **Copy:** ops dashboard **Last gate certificate** from vault.
+- **Skip:** F185+ reprompt/GEPA layers.
+
+### Feature shipped
+- save-trace.sh GATE_CERT block · torii-review-reusable.yml cert attach
+- ops_dashboard last_gate_certificate + fixture wire checks
+- tests: test_gate_certificate_wire.py + ops surface asserts
+
+### Metric
+- Offline: pytest 16 · ops fixture_pass · wire_ok · save-trace emit hermetic
+- Live Modal: pytorch#191840 BIT3_OK ~173.5s POST_COMMENT=0 tools=7 · cert gc-95888668ca0a313d path_evidence=1.0
+- Traces: docs/benchmarks/traces/20260801-1502-pytorch-pytorch-PR191840-modal-gate-cert-wire/
+
+### scorecard_target
+ops dim 8 + evidence/simplicity dim 12
+
+### dim_lift
+merge-authority certificate on every run + buyer ops one-liner
+
+### SHA
+TBD
+
+
 ## 2026-08-01 — GATE_CERT: deterministic merge-authority certificate
 
 ### Papers / posts

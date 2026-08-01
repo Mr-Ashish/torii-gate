@@ -2,9 +2,9 @@
   "feature": "OPS",
   "schema": 1,
   "scorecard_target": "ops",
-  "dim_lift": "reliability/ops (dim 8)",
-  "scored_at": "2026-08-01T14:37:05Z",
-  "one_liner": "Fail-closed defaults \u00b7 cost/PR dashboard \u00b7 smoke CI \u00b7 required check torii/gate",
+  "dim_lift": "reliability/ops (dim 8) + merge-authority certificate wire",
+  "scored_at": "2026-08-01T15:05:15Z",
+  "one_liner": "Fail-closed defaults \u00b7 cost/PR \u00b7 gate certificate \u00b7 smoke CI \u00b7 torii/gate",
   "fail_closed": [
     {
       "name": "TORII_TOOL_TURNS_GATE",
@@ -97,25 +97,25 @@
   },
   "cost_per_pr": {
     "source": "docs/benchmarks/traces vault",
-    "runs": 48,
+    "runs": 52,
     "time_to_signal_s": {
-      "n": 43,
-      "mean": 95.286,
+      "n": 47,
+      "mean": 97.813,
       "p50": 84.3,
-      "min": 40.7,
-      "max": 208.6
+      "min": 39.2,
+      "max": 262.0
     },
     "cost_usd": {
-      "n": 7,
-      "mean": 0.011,
+      "n": 9,
+      "mean": 0.017,
       "p50": 0.012,
       "min": 0.008,
-      "max": 0.016
+      "max": 0.058
     },
     "verdicts": {
-      "REQUEST_CHANGES": 17,
+      "REQUEST_CHANGES": 19,
       "UNKNOWN": 26,
-      "COMMENT": 5
+      "COMMENT": 7
     }
   },
   "smoke": {
@@ -123,6 +123,28 @@
     "ci_workflow_present": true,
     "ran": false,
     "pass": null
+  },
+  "last_gate_certificate": {
+    "available": true,
+    "script_present": true,
+    "save_trace_wired": true,
+    "workflow_wired": true,
+    "path": "docs/benchmarks/traces/20260801-1502-pytorch-pytorch-PR191840-modal-gate-cert-wire/gate-certificate.json",
+    "certificate_id": "gc-95888668ca0a313d",
+    "verdict": "REQUEST_CHANGES",
+    "block": true,
+    "state": "failure",
+    "reason_codes": [
+      "verdict_request_changes",
+      "strong_path_evidence",
+      "blocking_with_paths"
+    ],
+    "path_evidence_score": 1.0,
+    "human_summary": "CLOSED \u2014 REQUEST_CHANGES (verdict_request_changes, strong_path_evidence, blocking_with_paths); path_evidence=1.00",
+    "at": "2026-08-01T15:05:15Z",
+    "repo": "pytorch/pytorch",
+    "pr": "191840",
+    "wire_ok": true
   },
   "paths": {
     "dashboard_md": "docs/ops/DASHBOARD.md",

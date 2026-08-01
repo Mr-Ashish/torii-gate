@@ -1,0 +1,29 @@
+{
+  "feature": "GATE_CERT_WIRE",
+  "schema_version": 1,
+  "repo": "pytorch/pytorch",
+  "pr": "191840",
+  "model": "deepseek/deepseek-v4-pro",
+  "host": "modal",
+  "bit3": true,
+  "elapsed_s": 173.5,
+  "log_streaming": true,
+  "tool_call_turns": 7,
+  "post_comment": 0,
+  "verdict": "REQUEST_CHANGES",
+  "block": true,
+  "certificate_id": "gc-95888668ca0a313d",
+  "reason_codes": [
+    "verdict_request_changes",
+    "strong_path_evidence",
+    "blocking_with_paths"
+  ],
+  "path_evidence_score": 1.0,
+  "notes": "GATE_CERT_WIRE fire: save-trace+workflow+ops last cert; live dogfood BIT3",
+  "scored_at": "2026-08-01T15:05:15Z",
+  "modal_run": "https://modal.com/apps/mr-ashish/main/ap-4ghVM4pbAMLAIlBbyHhzHn",
+  "hermes_in_logs": true,
+  "BIT3_OK": true,
+  "trace_volume_path": "/traces/pytorch--pytorch-pr191840-1785596513",
+  "wire_note": "soft wire lands after this push; cert emitted offline from volume review"
+}
