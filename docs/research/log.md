@@ -29,7 +29,7 @@ commercial 7.5+ · dims 3+12 post-queue
 one operator score for full product surface set
 
 ### SHA
-_pending_
+`f6b10fd1ed1e99b03b156f63a754863d4e36aad2`
 
 
 ## 2026-08-01 — TOOL_USE: agent tool-use quality chart (tools-as-code)
