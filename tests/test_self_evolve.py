@@ -16,6 +16,87 @@ SCRIPT = ROOT / "scripts" / "self_evolve.py"
 
 
 class SelfEvolveTests(unittest.TestCase):
+    def test_f112_memory_recovery_signal_and_proposal(self):
+        """F112: f106 recovery / utilization gap → skill-prefer-memory-cli-early."""
+        with tempfile.TemporaryDirectory() as td:
+            root = Path(td)
+            out = root / "out"
+            loop = out / "agent-loop"
+            loop.mkdir(parents=True)
+            (loop / "agent-loop.json").write_text(
+                json.dumps(
+                    {
+                        "tool_call_turns": 8,
+                        "message_count": 12,
+                        "messages": [],
+                        "session_id": "sess-f112",
+                        "model": "deepseek/deepseek-v4-pro",
+                    }
+                ),
+                encoding="utf-8",
+            )
+            (out / "memory-tool-reprompt.env").write_text(
+                "reprompt=1\nattempted=1\nrecovered=1\nreason=reprompt_recovered\n"
+                "hit_count_before=0\nhit_count_after=5\nfeature=F106\n",
+                encoding="utf-8",
+            )
+            (out / "memory-tool-audit.json").write_text(
+                json.dumps(
+                    {
+                        "feature": "F105",
+                        "hit_count": 5,
+                        "tools_used": ["torii_memory"],
+                        "utilization_gap": False,
+                        "inject_offered": True,
+                    }
+                ),
+                encoding="utf-8",
+            )
+            (out / "review-1.md").write_text(
+                "**Verdict:** REQUEST CHANGES\n", encoding="utf-8"
+            )
+            (root / "agent" / "skills" / "active").mkdir(parents=True)
+            (root / "agent" / "skills" / "proposals").mkdir(parents=True)
+
+            env = os.environ.copy()
+            env["TORII_ROOT"] = str(root)
+            env["TORII_EVOLUTION_ROOT"] = str(root / "memory" / "evolution")
+
+            r = subprocess.run(
+                [
+                    sys.executable,
+                    str(SCRIPT),
+                    "ingest",
+                    "--out-dir",
+                    str(out),
+                    "--pr",
+                    "191813",
+                    "--repo",
+                    "pytorch/pytorch",
+                ],
+                cwd=str(root),
+                env=env,
+                capture_output=True,
+                text=True,
+            )
+            self.assertEqual(r.returncode, 0, r.stderr + r.stdout)
+            self.assertIn("f106_recovered", r.stdout)
+            self.assertIn("memory_tools_used", r.stdout)
+
+            r2 = subprocess.run(
+                [sys.executable, str(SCRIPT), "propose", "--limit", "8"],
+                cwd=str(root),
+                env=env,
+                capture_output=True,
+                text=True,
+            )
+            self.assertEqual(r2.returncode, 0, r2.stderr + r2.stdout)
+            prop = root / "agent" / "skills" / "proposals" / "skill-prefer-memory-cli-early.md"
+            self.assertTrue(prop.is_file(), r2.stdout + str(list((root / "agent/skills/proposals").glob("*"))))
+            body = prop.read_text(encoding="utf-8")
+            self.assertIn("F112", body)
+            self.assertIn("torii_memory", body)
+
     def test_ingest_propose_eval_adopt_inject(self):
         with tempfile.TemporaryDirectory() as td:
             root = Path(td)

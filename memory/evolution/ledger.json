@@ -110,6 +110,20 @@
         "verdict_request_changes"
       ],
       "ingested_at": "2026-08-01T01:00:38Z"
+    },
+    {
+      "trajectory_id": "pr191813-f112-seed-memory-recovery",
+      "path": "memory/evolution/trajectories/pr191813-f112-seed-memory-recovery",
+      "repo": "pytorch/pytorch",
+      "pr_number": "191813",
+      "tool_call_turns": 8,
+      "signals": [
+        "f106_memory_reprompt",
+        "f106_recovered",
+        "memory_tools_used",
+        "verdict_request_changes"
+      ],
+      "ingested_at": "2026-08-01T04:47:50Z"
     }
   ],
   "proposals": [
@@ -246,6 +260,38 @@
         "reasons": [],
         "feature": "F74"
       }
+    },
+    {
+      "id": "skill-test-gap-blocking",
+      "title": "Claim-to-fix: missing tests are blocking",
+      "path": "agent/skills/proposals/skill-test-gap-blocking.md",
+      "signal": "f50_test_gap",
+      "status": "proposal",
+      "created_at": "2026-08-01T04:47:50Z",
+      "eval": null
+    },
+    {
+      "id": "skill-prefer-memory-cli-early",
+      "title": "Call torii product/memory CLI early mid-review",
+      "path": "agent/skills/proposals/skill-prefer-memory-cli-early.md",
+      "signal": "f106_recovered|memory_utilization_gap",
+      "status": "evaluated",
+      "created_at": "2026-08-01T04:47:50Z",
+      "eval": {
+        "scored_at": "2026-08-01T04:47:56Z",
+        "dims": {
+          "structure": 3,
+          "actionability": 2,
+          "evidence": 5,
+          "safety": 5,
+          "size": 5
+        },
+        "total": 20,
+        "max": 25,
+        "recommend": "adopt",
+        "words": 132,
+        "bullets": 0
+      }
     }
   ],
   "adopted": [
@@ -360,7 +406,7 @@
       "feature": "F74"
     }
   ],
-  "updated_at": "2026-08-01T01:28:42Z",
+  "updated_at": "2026-08-01T04:47:56Z",
   "fitness_signals": [
     {
       "at": "2026-08-01T00:16:02Z",

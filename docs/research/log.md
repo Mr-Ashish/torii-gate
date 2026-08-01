@@ -1,6 +1,33 @@
 # Torii research → product log
 
 
+## 2026-08-01 — F112 self-evolve skill from F106 memory recovery
+
+### Papers / posts
+- Hermes self-evolution: trajectories → proposals → eval → adopt.
+- Mem2ActBench: proactive memory use beats passive inject + re-prompt.
+- Live F106 recovered hits 0→5; signal was not yet a skill proposal path.
+
+### OSS design patterns stolen
+1. Ingest signals: `f106_recovered`, `memory_utilization_gap`, `memory_tools_used` from reprompt env + audit JSON.
+2. Propose `skill-prefer-memory-cli-early` (call `torii.py memory` / `torii_memory` early).
+3. Dual-gate: eval recommend=adopt (20/25); no silent auto-adopt.
+
+### Insight
+Recovery re-prompts prove the agent *can* use memory tools — self-evolution must promote that into a durable skill so next PR does not burn the F108 budget.
+
+### Feature shipped (F112)
+- `self_evolve.py` F105/F106 signal extraction + proposal template
+- proposal `agent/skills/proposals/skill-prefer-memory-cli-early.md`
+- tests for F112 recovery path
+
+### Metric
+- Offline: ingest emits f106_recovered; propose creates skill; eval recommend=adopt
+- pytest 588; Live Modal pytorch#191813 BIT3_OK ~164s log_streaming=true
+
+### SHA
+_pending_
+
 ## 2026-08-01 — F111 smoke product doctor + insecure compound/federate proof
 
 ### Papers / posts

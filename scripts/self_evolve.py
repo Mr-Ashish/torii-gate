@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""F69: Torii-native self-evolution (Hermes best practices, not a Hermes fork).
+"""F69/F112: Torii-native self-evolution (Hermes best practices, not a Hermes fork).
 
 Patterns adopted from Hermes self-evolution / skill evolution (H3, H9, H10):
   - trajectory packaging from agent-loop runs
@@ -7,6 +7,9 @@ Patterns adopted from Hermes self-evolution / skill evolution (H3, H9, H10):
   - offline eval of proposals
   - adopt → agent/skills/active/ injected into review prompts
   - soft skill nudge when prior runs show zero-tool thrash
+
+F112: memory utilization recovery signals (F105/F106) → skill proposal to call
+product CLI / torii_memory early (proactive use, not only soft re-prompt).
 
 Usage:
   python3 scripts/self_evolve.py ingest --out-dir DIR [--pr N] [--repo R]
@@ -196,6 +199,30 @@ def _signals_from_loop(data: dict[str, Any], out_dir: Path) -> list[str]:
         txt = envp.read_text(encoding="utf-8", errors="replace")
         if "reprompt=1" in txt or "recovered=1" in txt:
             signals.append("f49_recovered")
+    # F105/F106 memory utilization + soft re-prompt recovery (F112)
+    mem_env = out_dir / "memory-tool-reprompt.env"
+    if mem_env.is_file():
+        txt = mem_env.read_text(encoding="utf-8", errors="replace")
+        if "reprompt=1" in txt or "attempted=1" in txt:
+            signals.append("f106_memory_reprompt")
+        if "recovered=1" in txt or "reason=reprompt_recovered" in txt:
+            signals.append("f106_recovered")
+        if "budget_blocked" in txt:
+            signals.append("f108_budget_blocked")
+    audit_p = out_dir / "memory-tool-audit.json"
+    if audit_p.is_file():
+        try:
+            audit = json.loads(audit_p.read_text(encoding="utf-8", errors="replace"))
+            if isinstance(audit, dict):
+                if audit.get("utilization_gap"):
+                    signals.append("memory_utilization_gap")
+                hits = int(audit.get("hit_count") or 0)
+                if hits >= 1 and "torii_memory" in (audit.get("tools_used") or []):
+                    signals.append("memory_tools_used")
+                if audit.get("inject_offered") and hits == 0:
+                    signals.append("memory_inject_unused")
+        except (json.JSONDecodeError, TypeError, ValueError):
+            pass
     # F50
     for rev in out_dir.glob("review-*.md"):
         if ".raw." in rev.name:
@@ -286,6 +313,32 @@ def cmd_propose(args: argparse.Namespace) -> int:
                 ),
             }
         )
+    # F112: memory utilization gap / F106 recovery → call memory tools early
+    if (
+        sig_count.get("f106_recovered", 0) >= 1
+        or sig_count.get("memory_utilization_gap", 0) >= 1
+        or sig_count.get("memory_inject_unused", 0) >= 1
+        or sig_count.get("f106_memory_reprompt", 0) >= 1
+    ):
+        templates.append(
+            {
+                "id": "skill-prefer-memory-cli-early",
+                "title": "Call torii product/memory CLI early mid-review",
+                "signal": "f106_recovered|memory_utilization_gap",
+                "body": (
+                    "## Skill: prefer-memory-cli-early (F112)\n\n"
+                    "When memory sections are injected (F103 CLI / F98 archival / F100 graph / F70 TP):\n"
+                    "1. **Before** finishing findings, call the product front door once:\n"
+                    "   `python3 scripts/torii.py memory -- help`\n"
+                    "   `python3 scripts/torii.py memory -- search -- -q \"auth OR sql OR pickle OR secret\"`\n"
+                    "   or `python3 scripts/torii_memory.py search -- -q \"theme keywords\"`\n"
+                    "2. Prefer **search/graph** on changed basenames (F100 multi-hop) before re-raising old themes.\n"
+                    "3. Treat hits as **hints only** — still require path:line evidence to block.\n"
+                    "4. Do not wait for a soft re-prompt (F106) — proactive use scores higher (F105 utilization).\n"
+                    "5. Soft re-prompts share a budget (F108); early use avoids spending the only recovery slot.\n"
+                ),
+            }
+        )
     # always offer soft mid-loop style nudge skill (H10)
     templates.append(
         {
@@ -314,7 +367,7 @@ def cmd_propose(args: argparse.Namespace) -> int:
         header = (
             f"---\n"
             f"id: {pid}\n"
-            f"feature: F69\n"
+            f"feature: {'F112' if 'memory-cli' in tmpl['id'] or 'f106' in tmpl['signal'] else 'F69'}\n"
             f"status: proposal\n"
             f"signal: {tmpl['signal']}\n"
             f"created_at: {_now()}\n"
