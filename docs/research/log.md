@@ -29,7 +29,7 @@ Scorecard without self-evolution is a dashboard. Highest ROI: gap themes become 
 **Measure → propose → adopt** — scorecard gaps feed the skill library.
 
 ### SHA
-`PENDING`
+`40b639aa3267512ab996d6ddb865fbb8ad2891d5`
 
 ## 2026-08-01 — F131 workflow scorecard + dual compound brand panel
 
