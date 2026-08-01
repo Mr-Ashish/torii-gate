@@ -1,5 +1,33 @@
 # Torii research → product log
 
+## 2026-08-01 — F91 skill compound loop readiness scorecard
+
+### Papers / posts / OSS
+- Loop Engineering readiness scorecards L0–L3 for explicit loops.
+- F90 branded skill loop; ops could not answer "is skill path ready?".
+
+### OSS / eng patterns
+1. `skill_loop_status.py` — stages/pack/active skills/wiring/deep fixtures.
+2. Embed in workflow scorecard + install-guide markdown.
+3. `torii_gate_status --skill-loop-only` ops surface (merge exit unchanged).
+
+### Insight
+Brand without ops readiness is untestable. Highest ROI: **L0–L3 skill-loop scorecard**.
+
+### Feature shipped (F91)
+- skill_loop_status status/scorecard/fixture/markdown
+- workflow_as_code + install-guide + pack; PRODUCT note
+
+### Loop-engineering practice used
+**Readiness scorecard on the loop itself.**
+
+### Metric
+- Offline: fixture L3 100%; workflow scorecard skill_loop ready; 527 pytest; smoke PASS
+- Live: **Modal** pytorch#191813 deepseek/deepseek-v4-pro BIT3_OK ~120s; log_streaming=true; POST_COMMENT=0
+
+### SHA
+_PENDING_
+
 ## 2026-08-01 — F90 brand skill loop + ICP packaging
 
 ### Papers / posts / OSS

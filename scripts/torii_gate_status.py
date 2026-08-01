@@ -114,14 +114,64 @@ def gate_decision(parsed: dict) -> dict:
     }
 
 
+def skill_loop_snapshot(root: Path | None = None) -> dict:
+    """F91: optional skill compound loop readiness (does not affect merge exit)."""
+    try:
+        import importlib.util
+        import os
+
+        r = root
+        if r is None:
+            env = (os.environ.get("TORII_ROOT") or "").strip()
+            r = Path(env).resolve() if env else Path(__file__).resolve().parents[1]
+        slp = r / "scripts" / "skill_loop_status.py"
+        if not slp.is_file():
+            return {"available": False}
+        spec = importlib.util.spec_from_file_location("skill_loop_status", slp)
+        if spec is None or spec.loader is None:
+            return {"available": False}
+        mod = importlib.util.module_from_spec(spec)
+        sys.modules["skill_loop_status"] = mod
+        spec.loader.exec_module(mod)
+        rep = mod.assess(r, deep=False)
+        return {
+            "available": True,
+            "feature": "F91",
+            "level": rep.get("level"),
+            "pct": rep.get("pct"),
+            "ready": rep.get("ready"),
+            "stages_ok": f"{rep.get('stages_ok')}/{rep.get('stages_total')}",
+            "skills_n": rep.get("active_skills_n"),
+            "loop": rep.get("loop"),
+        }
+    except Exception as exc:
+        return {"available": False, "error": str(exc)[:120]}
+
+
 def main(argv: list[str] | None = None) -> int:
     ap = argparse.ArgumentParser(description="Torii Gate status from review markdown")
-    ap.add_argument("review", type=Path, help="Path to review-*.md")
+    ap.add_argument("review", type=Path, nargs="?", default=None, help="Path to review-*.md")
     ap.add_argument("--json", action="store_true")
     ap.add_argument("--strict", action="store_true", help="Exit 1 when block=True")
+    ap.add_argument(
+        "--skill-loop",
+        action="store_true",
+        help="F91: include skill compound loop readiness (shallow; never blocks merge alone)",
+    )
+    ap.add_argument(
+        "--skill-loop-only",
+        action="store_true",
+        help="F91: print skill loop readiness only (no review required)",
+    )
     args = ap.parse_args(argv)
 
-    if not args.review.is_file():
+    if args.skill_loop_only:
+        snap = skill_loop_snapshot()
+        print(json.dumps(snap, indent=2) if args.json or True else snap)
+        # exit 0 if ready else 1 for ops, but not used in CI gate path
+        return 0 if snap.get("ready") else 1
+
+    if args.review is None or not args.review.is_file():
         print(f"missing review file: {args.review}", file=sys.stderr)
         return 2
 
@@ -129,11 +179,19 @@ def main(argv: list[str] | None = None) -> int:
     parsed = parse_verdict_text(text)
     decision = gate_decision(parsed)
     decision["parsed"] = parsed
+    if args.skill_loop:
+        decision["skill_loop"] = skill_loop_snapshot()
 
     if args.json:
         print(json.dumps(decision, indent=2))
     else:
         print(f"{decision['state']}\t{decision['context']}\t{decision['description']}")
+        if args.skill_loop and isinstance(decision.get("skill_loop"), dict):
+            sl = decision["skill_loop"]
+            print(
+                f"skill_loop\t{sl.get('level')}\t"
+                f"stages={sl.get('stages_ok')} skills={sl.get('skills_n')} ready={sl.get('ready')}"
+            )
 
     if args.strict and decision.get("block"):
         return 1

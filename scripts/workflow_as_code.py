@@ -441,14 +441,41 @@ def install_guide(root: Path, wf: dict[str, Any], report: dict[str, Any]) -> str
         "- **Maker** — Hermes agent writes the security review.",
         "- **Checker** — F78 multi-checker panel (path/chain/fitness/memory) demotes weak APPROVE.",
         "- **Memory** — FP rules, TP signatures, scoped recall, federated hub themes compound.",
+        "- **Skill loop** — `route → hit → fitness → dual → attr → inject` (skills that do not contribute do not re-inflate prompts).",
         "- **Gate** — `torii/gate` commit status is the merge signal.",
         "",
+    ]
+    # F91: skill compound loop readiness block
+    try:
+        import importlib.util
+
+        slp = root / "scripts" / "skill_loop_status.py"
+        if slp.is_file():
+            spec = importlib.util.spec_from_file_location("skill_loop_status", slp)
+            if spec and spec.loader:
+                mod = importlib.util.module_from_spec(spec)
+                sys.modules["skill_loop_status"] = mod
+                spec.loader.exec_module(mod)
+                sl_report = mod.assess(root, deep=False)
+                lines.append(mod.to_markdown(sl_report).rstrip())
+                lines.append("")
+                lines.append(
+                    "Deep skill-loop proof: `python3 scripts/skill_loop_status.py fixture`"
+                )
+                lines.append("")
+    except Exception:
+        lines.append(
+            "## Skill compound loop readiness (F91)\n\n"
+            "_skill_loop_status.py not available — re-install pack._\n"
+        )
+    lines += [
         "## Offline proof (no API key)",
         "",
         "```bash",
         "./scripts/smoke-torii-gate.sh",
         "python3 scripts/bench_corpus.py all",
         "python3 scripts/second_agent_critic.py fixture",
+        "python3 scripts/skill_loop_status.py scorecard",
         "```",
         "",
     ]
@@ -523,7 +550,12 @@ def cmd_fixture(args: argparse.Namespace) -> int:
     phases = set((planned.get("by_phase") or {}).keys())
     phase_ok = "maker" in phases and "checker" in phases and "pre" in phases
     guide = install_guide(root, wf, report)
-    guide_ok = "torii/gate" in guide and "Maker" in guide and "F78" in guide
+    guide_ok = (
+        "torii/gate" in guide
+        and "Maker" in guide
+        and "F78" in guide
+        and ("Skill compound" in guide or "skill loop" in guide.lower() or "F91" in guide)
+    )
     fixture_pass = report["valid"] and phase_ok and guide_ok and report["pct"] >= 90
     print(
         json.dumps(
@@ -550,6 +582,28 @@ def cmd_scorecard(args: argparse.Namespace) -> int:
     wf, _ = load_workflow(root)
     report = validate(root, wf)
     pc = pack_check(root, wf)
+    skill_loop: dict[str, Any] | None = None
+    try:
+        import importlib.util
+
+        slp = root / "scripts" / "skill_loop_status.py"
+        if slp.is_file():
+            spec = importlib.util.spec_from_file_location("skill_loop_status", slp)
+            if spec and spec.loader:
+                mod = importlib.util.module_from_spec(spec)
+                sys.modules["skill_loop_status"] = mod
+                spec.loader.exec_module(mod)
+                sl = mod.assess(root, deep=False)
+                skill_loop = {
+                    "level": sl.get("level"),
+                    "pct": sl.get("pct"),
+                    "ready": sl.get("ready"),
+                    "stages_ok": f"{sl.get('stages_ok')}/{sl.get('stages_total')}",
+                    "skills_n": sl.get("active_skills_n"),
+                    "wiring_ok": sl.get("wiring_ok"),
+                }
+    except Exception as exc:
+        skill_loop = {"error": str(exc)[:120]}
     print(
         json.dumps(
             {
@@ -559,6 +613,7 @@ def cmd_scorecard(args: argparse.Namespace) -> int:
                 "valid": report["valid"],
                 "pack_install_lists_all": pc.get("install_lists_all"),
                 "missing_from_install": pc.get("missing_from_install"),
+                "skill_loop": skill_loop,
             },
             indent=2,
         )

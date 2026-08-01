@@ -92,5 +92,9 @@ Validated skill proposals enter `agent/skills/active/` only after offline regres
 | Evidence + measured contribution | “Zero false positives” theater |
 | Pipeline-native AppSec (install pack) | Day-one ASPM suite |
 
+## Skill loop readiness (F91)
+
+Ops scorecard: `python3 scripts/skill_loop_status.py scorecard` → L0–L3 for `route → hit → fitness → dual → attr → inject`. Embedded in install-guide and `workflow_as_code.py scorecard`. Does not change merge exit codes.
+
 ## Live proof
 Modal + Hermes + DeepSeek V4 Pro on real open-source PRs (e.g. pytorch), `POST_COMMENT=0` for dogfood, log streaming to Modal UI, redacted traces under `docs/benchmarks/traces/`.

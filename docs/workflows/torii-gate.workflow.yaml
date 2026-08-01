@@ -214,6 +214,10 @@ capabilities:
     feature: F89
     script: scripts/skill_router.py
     one_liner: Attribution ledger ranks inject; free-riders index-only
+  - id: skill_loop_status
+    feature: F91
+    script: scripts/skill_loop_status.py
+    one_liner: Skill compound loop readiness scorecard L0–L3
   - id: eval_trace_report
     feature: F83
     script: scripts/eval_trace_report.py
@@ -256,4 +260,5 @@ pack_scripts:
   - skill_fitness.py
   - skill_dual_rollout.py
   - skill_attribution.py
+  - skill_loop_status.py
   - smoke-torii-gate.sh

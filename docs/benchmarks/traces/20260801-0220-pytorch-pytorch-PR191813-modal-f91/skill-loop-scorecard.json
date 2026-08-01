@@ -1,0 +1,11 @@
+{
+  "feature": "F91",
+  "level": "L3",
+  "pct": 100.0,
+  "ready": true,
+  "stages_ok": "7/7",
+  "skills_n": 5,
+  "wiring_ok": true,
+  "deep_ok": null,
+  "loop": "route \u2192 hit \u2192 fitness \u2192 dual \u2192 attr \u2192 inject"
+}

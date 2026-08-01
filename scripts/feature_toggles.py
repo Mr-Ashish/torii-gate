@@ -472,6 +472,15 @@ REGISTRY: list[ToggleSpec] = [
         "F89",
     ),
     ToggleSpec(
+        "skill_loop_status",
+        "TORII_SKILL_LOOP_STATUS",
+        "bool",
+        True,
+        "product",
+        "F91 skill compound loop readiness scorecard (ops/install)",
+        "F91",
+    ),
+    ToggleSpec(
         "skill_auto_adopt_attr",
         "TORII_SKILL_AUTO_ADOPT_ATTR",
         "bool",
