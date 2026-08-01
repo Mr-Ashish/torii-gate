@@ -28,7 +28,7 @@ F144 multi-hop paging without supersede filter resurrects resolved cold TPs as c
 **Temporal validity on retrieval** — multi-hop expand compounds with supersede demote before inject.
 
 ### SHA
-`PENDING`
+`414cc3dd26bfd2645f4e1350ca0fa7bd15825537`
 
 
 ## 2026-08-01 — F144 graph multi-hop → archival promote
