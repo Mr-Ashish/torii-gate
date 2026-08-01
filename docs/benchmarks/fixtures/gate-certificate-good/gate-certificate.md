@@ -2,7 +2,7 @@
 
 # Torii gate certificate
 
-_id `gc-bbbbbb72db7f8678` · `2026-08-01T17:58:28Z`_
+_id `gc-bbbbbb72db7f8678` · `2026-08-01T18:07:17Z`_
 
 **CLOSED — REQUEST_CHANGES (verdict_request_changes, strong_path_evidence, blocking_with_paths); path_evidence=0.75**
 

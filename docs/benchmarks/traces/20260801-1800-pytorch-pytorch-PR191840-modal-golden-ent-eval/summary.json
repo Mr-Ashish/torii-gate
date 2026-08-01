@@ -1,0 +1,20 @@
+{
+  "feature": "GOLDEN_PATH_ENT_EVAL",
+  "schema_version": 1,
+  "repo": "pytorch/pytorch",
+  "pr": "191840",
+  "model": "deepseek/deepseek-v4-pro",
+  "host": "modal",
+  "bit3": true,
+  "elapsed_s": 179.0,
+  "log_streaming": true,
+  "tool_call_turns": 5,
+  "post_comment": 0,
+  "verdict": "APPROVE",
+  "block": false,
+  "certificate_id": "gc-810df2f120dd4956",
+  "notes": "GOLDEN_PATH_ENT_EVAL: golden --tenant + public-eval cost vault refresh",
+  "scored_at": "2026-08-01T18:07:14Z",
+  "modal_run": "https://modal.com/apps/mr-ashish/main/ap-0qNCUhxOGU41fdPQXjsLIF",
+  "cost_usd": 0.010264579000000001
+}

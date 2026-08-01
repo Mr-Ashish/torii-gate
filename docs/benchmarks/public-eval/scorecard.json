@@ -3,7 +3,7 @@
   "schema": 1,
   "scorecard_target": "8.5",
   "dim_lift": "technical trust / public labeled eval",
-  "scored_at": "2026-08-01T17:06:38Z",
+  "scored_at": "2026-08-01T18:07:15Z",
   "seed": 42,
   "model_id": "deepseek/deepseek-chat-v4-pro",
   "one_liner": "Public labeled eval: Juice Shop synthetic + NodeGoat-theme + Django/Flask-theme packs; fixed seed; cost/PR from dogfood vault.",
@@ -107,18 +107,18 @@
   },
   "cost_per_pr": {
     "source": "docs/benchmarks/traces vault dogfood",
-    "runs": 70,
+    "runs": 77,
     "time_to_signal_s": {
-      "n": 65,
-      "mean": 99.249,
-      "p50": 92.8,
+      "n": 72,
+      "mean": 101.711,
+      "p50": 93.0,
       "min": 39.2,
       "max": 262.0
     },
     "cost_usd": {
-      "n": 27,
-      "mean": 0.018,
-      "p50": 0.016,
+      "n": 34,
+      "mean": 0.017,
+      "p50": 0.014,
       "min": 0.008,
       "max": 0.058
     },
@@ -126,7 +126,7 @@
       "REQUEST_CHANGES": 27,
       "UNKNOWN": 26,
       "COMMENT": 7,
-      "APPROVE": 10
+      "APPROVE": 17
     },
     "note": "Live OSS dogfood unlabelled; cost when hermes-usage present. Local hub vault only \u2014 never federated (see enterprise/PRIVACY.md)."
   },

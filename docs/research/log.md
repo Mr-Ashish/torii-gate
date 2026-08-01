@@ -1,4 +1,38 @@
 
+## 2026-08-01 — GOLDEN_PATH_ENT_EVAL: golden --tenant + public-eval cost vault
+
+### Papers / posts
+- Commercial golden path still omitted enterprise light after ENT_INSTALL_TENANT.
+- Public-eval SCORECARD cost table was stale vs live vault (27 samples → 33+).
+- Loop Engineering: commercial path + technical trust share measured cost honesty.
+
+### Decide / copy / skip
+- **Copy:** GOLDEN-PATH.md install `--tenant` + enterprise day-2 + public-eval CLI.
+- **Copy:** golden readiness checks install_tenant_flag · golden_doc_enterprise_tenant · public_eval.
+- **Copy:** public_eval fixture requires cost_n≥5 + SCORECARD cost section; report refresh.
+- **Skip:** F185+; no new labeled packs.
+
+### Feature shipped (GOLDEN_PATH_ENT_EVAL)
+- GOLDEN-PATH enterprise light + lifts #8–9
+- golden_path_metrics readiness tenant/eval checks
+- public_eval cost honesty fixture + vault refresh
+
+### Metric
+- Offline: golden ready 15/15 · public_eval fixture · cost_n≥33 · commercial 8.5
+- Live Modal: pytorch#191840 BIT3_OK ~340s wall · POST_COMMENT=0
+- Traces: docs/benchmarks/traces/20260801-1800-pytorch-pytorch-PR191840-modal-golden-ent-eval/
+- Modal: https://modal.com/apps/mr-ashish/main/ap-0qNCUhxOGU41fdPQXjsLIF
+
+### scorecard_target
+install (#7) · enterprise (#9) · public eval trust · JTBD
+
+### dim_lift
+commercial golden path documents enterprise tenant; public-eval cost matches vault
+
+### SHA
+_pending_
+
+
 ## 2026-08-01 — GTM_ENT_OPS: README/landing enterprise + fail-closed on status
 
 ### Papers / posts

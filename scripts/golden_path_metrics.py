@@ -323,6 +323,31 @@ def readiness(root: Path) -> dict[str, Any]:
     checks["docs_branch_protection"] = bool(
         re.search(r"branch protection|required (status )?check", gate_text, re.I)
     )
+    # GOLDEN_PATH_ENT: enterprise light --tenant on commercial golden path
+    install_sh = ""
+    ish = root / "scripts" / "install-torii.sh"
+    if ish.is_file():
+        try:
+            install_sh = ish.read_text(encoding="utf-8", errors="replace")
+        except OSError:
+            install_sh = ""
+    golden_md = ""
+    gmd = root / "docs" / "GOLDEN-PATH.md"
+    if gmd.is_file():
+        try:
+            golden_md = gmd.read_text(encoding="utf-8", errors="replace")
+        except OSError:
+            golden_md = ""
+    checks["install_tenant_flag"] = bool(
+        re.search(r"--tenant", install_sh) and "TORII_MEMORY_TENANT" in install_sh
+    )
+    checks["golden_doc_enterprise_tenant"] = bool(
+        re.search(r"--tenant", golden_md)
+        and re.search(r"enterprise", golden_md, re.I)
+    )
+    checks["golden_doc_public_eval"] = bool(
+        re.search(r"public-eval|public_eval|SCORECARD\.md", golden_md, re.I)
+    )
     ok_n = sum(1 for v in checks.values() if v)
     return {
         "checks": checks,

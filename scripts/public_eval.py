@@ -21,6 +21,7 @@ import argparse
 import json
 import os
 import random
+import re
 import statistics
 import subprocess
 import sys
@@ -447,11 +448,21 @@ def cmd_fixture(args: argparse.Namespace) -> int:
     dog = _dogfood_cost_table(root)
     cost_n = int((dog.get("cost_usd") or {}).get("n") or 0)
     cost_md = root / "docs" / "ops" / "cost-pr-dashboard.md"
-    # Soft: public eval documents cost path; prefer ≥1 hermes-usage sample when vault warm
+    pe_scorecard = root / OUT_REL / "SCORECARD.md"
+    # GOLDEN_PATH_ENT_EVAL: cost honesty requires vault samples + local-only note
     cost_surface_ok = cost_md.is_file() and (
-        "local hub vault" in (dog.get("note") or "").lower()
-        or "never federated" in (dog.get("note") or "").lower()
-        or cost_n >= 0
+        (
+            "local hub vault" in (dog.get("note") or "").lower()
+            or "never federated" in (dog.get("note") or "").lower()
+        )
+        and cost_n >= 5
+    )
+    pe_scorecard_ok = pe_scorecard.is_file() and bool(
+        re.search(
+            r"Cost\s*/\s*PR|cost USD|never federated",
+            pe_scorecard.read_text(encoding="utf-8", errors="replace"),
+            re.I,
+        )
     )
     fixture_pass = bool(
         required.issubset(ids)
@@ -461,6 +472,7 @@ def cmd_fixture(args: argparse.Namespace) -> int:
         and corpus_pass
         and (root / "scripts" / "public_eval.py").is_file()
         and cost_surface_ok
+        and pe_scorecard_ok
     )
     payload = {
         "feature": FEATURE,
@@ -476,6 +488,7 @@ def cmd_fixture(args: argparse.Namespace) -> int:
         "cost_samples_n": cost_n,
         "cost_p50_usd": (dog.get("cost_usd") or {}).get("p50"),
         "cost_surface_ok": cost_surface_ok,
+        "pe_scorecard_ok": pe_scorecard_ok,
         "scorecard_target": "8.5",
         "at": _now(),
     }

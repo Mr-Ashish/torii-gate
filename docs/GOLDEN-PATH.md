@@ -19,10 +19,14 @@ install pack  →  secret  →  require torii/gate  →  @torii review  →  sig
 # ./scripts/install-torii.sh --minimal /path/to/your-app
 # hub-managed thin caller only (free upgrades from hub main):
 # ./scripts/install-torii.sh --caller /path/to/your-app
+# optional enterprise light (multi-org fleet tenant stamp — repo-local memory still default):
+# ./scripts/install-torii.sh --tenant acme-platform /path/to/your-app
 
 cd /path/to/your-app
 git add -A && git commit -m "ci: install Torii Gate" && git push
 ```
+
+**Enterprise light (optional):** `--tenant <id>` writes `tenant_id=` on `.torii-install-stamp` + `.torii/tenant.env` (`TORII_MEMORY_TENANT`). Hub publish stays opt-in; cost/PR never federates. Docs: [`enterprise/`](enterprise/) · `python3 scripts/torii.py enterprise -- status`.
 
 ### Wire secrets & vars
 
@@ -105,9 +109,12 @@ Public scorecard (seed + model + cost/PR): [`docs/benchmarks/public-eval/SCORECA
 
 ```bash
 python3 scripts/torii.py help
+python3 scripts/torii.py status --text   # day-2 one-screen (cost · cert · quieter · fail-closed · enterprise)
 python3 scripts/torii.py doctor
 python3 scripts/torii.py golden-path -- fixture
 python3 scripts/torii.py golden-path -- report
+python3 scripts/torii.py public-eval -- report   # labeled packs + cost/PR vault
+python3 scripts/torii.py enterprise -- status
 python3 scripts/torii.py gate -- --review path/to/review.md
 ```
 
@@ -126,3 +133,5 @@ python3 scripts/torii.py gate -- --review path/to/review.md
 5. **Own-repo quieter-over-time** — required check habit + dogfood chart → [`QUIETER.md`](QUIETER.md) · `python3 scripts/torii.py quieter -- status` · shipped.
 6. **Agent tool-use quality** — tools-as-code chart + fail-closed tool turns → [`TOOL-USE.md`](TOOL-USE.md) · `python3 scripts/torii.py tool-use -- status` · shipped.
 7. **Cost / PR from dogfood** — measured p50 cost + time-to-signal + gate cert ids → [`ops/cost-pr-dashboard.md`](ops/cost-pr-dashboard.md) · `python3 scripts/torii.py ops -- status` · shipped.
+8. **Enterprise light on golden path** — install `--tenant` + enterprise day-2 · [`enterprise/`](enterprise/) · `python3 scripts/torii.py enterprise -- status` · shipped.
+9. **Public eval cost honesty** — labeled packs + vault cost/PR on [`benchmarks/public-eval/SCORECARD.md`](benchmarks/public-eval/SCORECARD.md) · `python3 scripts/torii.py public-eval -- report` · shipped.

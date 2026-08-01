@@ -2,7 +2,7 @@
 
 # Public labeled eval scorecard
 
-_Generated: `2026-08-01T17:06:38Z` · seed **42** · model **`deepseek/deepseek-chat-v4-pro`** · target **8.5/10**_
+_Generated: `2026-08-01T18:07:15Z` · seed **42** · model **`deepseek/deepseek-chat-v4-pro`** · target **8.5/10**_
 
 **public_eval_ok:** `True`
 
@@ -45,13 +45,13 @@ Live OSS dogfood unlabelled; cost when hermes-usage present. Local hub vault onl
 
 | Stat | time-to-signal (s) | cost USD |
 |------|-------------------:|---------:|
-| n | 65 | 27 |
-| mean | 99.249 | 0.018 |
-| p50 | 92.8 | 0.016 |
+| n | 72 | 34 |
+| mean | 101.711 | 0.017 |
+| p50 | 93.0 | 0.014 |
 | min | 39.2 | 0.008 |
 | max | 262.0 | 0.058 |
 
-Dogfood runs: **70** · source: `docs/benchmarks/traces vault dogfood`
+Dogfood runs: **77** · source: `docs/benchmarks/traces vault dogfood`
 
 Day-2: `python3 scripts/torii.py ops -- status` · [cost-pr-dashboard.md](../ops/cost-pr-dashboard.md) · commercial Cost honesty: [commercial-scorecard.md](../commercial-scorecard.md).
 
@@ -61,7 +61,7 @@ Day-2: `python3 scripts/torii.py ops -- status` · [cost-pr-dashboard.md](../ops
 - Additional OSS-theme packs: `django-vuln-synthetic, nodegoat-synthetic` ok=**True**
 - Fixed seed: **42**
 - Model id: **`deepseek/deepseek-chat-v4-pro`**
-- Cost samples (hermes-usage): **27**
+- Cost samples (hermes-usage): **34**
 
 ## Reproduce
 
