@@ -33,7 +33,7 @@ Score the story customers hear; research IDs stay in the engine room.
 simplicity (buyer narrative collapse)
 
 ### SHA
-`(fill after push)`
+`02c04c9c9f2b2d3102738566d051debbe9e0fab7`
 
 ## 2026-08-01 — GOLDEN commercial path metrics (install → torii/gate → dogfood)
 
