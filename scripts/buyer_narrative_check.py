@@ -173,6 +173,30 @@ def check_surfaces(root: Path) -> dict[str, Any]:
         re.search(r"--tenant|install-torii\.sh --tenant", prod_buyer)
         and re.search(r"enterprise", prod_buyer, re.I)
     )
+    # PRICING_PACKAGING: public SKU surface (open core) without Hub71 archaeology
+    pricing = root / "docs" / "PRICING.md"
+    pricing_txt = _read(pricing)
+    results["paths"]["pricing"] = pricing.is_file()
+    results["checks"]["pricing_md_exists"] = pricing.is_file()
+    results["checks"]["pricing_open_core"] = bool(
+        re.search(r"open core|Open \(Gate\)|\$0", pricing_txt, re.I)
+        and re.search(r"Team|Business|Enterprise", pricing_txt)
+        and "pre-revenue" in pricing_txt.lower()
+    )
+    results["checks"]["pricing_no_fake_customers"] = bool(
+        pricing.is_file()
+        and not re.search(r"\bcustomers?:\s*\d{2,}", pricing_txt, re.I)
+        and "Never invent customers" in pricing_txt
+    )
+    results["checks"]["readme_links_pricing"] = bool(
+        re.search(r"PRICING\.md|docs/PRICING", rm)
+    )
+    results["checks"]["product_links_pricing"] = bool(
+        re.search(r"PRICING\.md|docs/PRICING", prod)
+    )
+    results["checks"]["landing_links_pricing"] = bool(
+        re.search(r"PRICING\.md|id=[\"']pricing[\"']|#pricing", land, re.I)
+    )
 
     # F-number budgets on *primary* slices (before Advanced)
     prod_primary = _primary_section(

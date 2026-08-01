@@ -1,3 +1,36 @@
+## 2026-08-01 — PRICING_PACKAGING: open-core buyer SKU surface (Phase B #2)
+
+### Papers / posts
+- Open-core SaaS packaging: free merge-authority core · paid support/fleet (not feature-gating the gate).
+- Buyer scorecard dim 10 was 4/10 — only Hub71 ACCESS draft pricing.
+- Cap commercial honesty: pre-revenue, never invent customers.
+
+### Decide / copy / skip
+- **Copy:** `docs/PRICING.md` Open/Team/Business/Enterprise with indicative prices + path-to-value.
+- **Copy:** Wire README · PRODUCT · landing `#pricing` · commercial artifact · buyer fixture gates.
+- **Copy:** Light re-score first-principles overall **7.9** (pricing 7 · simplicity 7.5).
+- **Skip:** Stripe/billing; F185+; fake logos.
+
+### Feature shipped (PRICING_PACKAGING)
+- docs/PRICING.md open core
+- landing pricing section · buyer 34/34 · commercial pricing_md artifact
+- SCORECARD-FIRST-PRINCIPLES gap #2 this fire
+
+### Metric
+- Offline: buyer 34/34 · commercial 8.5 · pricing_md artifact
+- Live Modal: pytorch#191842 BIT3_OK ~190s · fail-closed 0-tool COMMENT · POST_COMMENT=0
+- Traces: docs/benchmarks/traces/20260801-1821-pytorch-pytorch-PR191842-modal-pricing-packaging/
+- Modal: https://modal.com/apps/mr-ashish/main/ap-RgtWSdK46RldDVdcpU31OZ
+
+### scorecard_target
+pricing (#10) · GTM (#11) · ICP (#2)
+
+### dim_lift
+Buyers find packaging without Hub71 archaeology
+
+### SHA
+(pending)
+
 ## 2026-08-01 — HELP_CLI_COLLAPSE + first-principles scorecard (Phase B)
 
 ### Papers / posts

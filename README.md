@@ -101,6 +101,7 @@ Day-one path stays install → require **`torii/gate`** → first review. Everyt
 | Self-evolution (day-2) | [`docs/SELF-EVOLVE.md`](docs/SELF-EVOLVE.md) | `python3 scripts/torii.py self-evolve -- status` |
 | Enterprise light | [`docs/enterprise/`](docs/enterprise/) · install `--tenant` | `python3 scripts/torii.py enterprise -- status` |
 | **Commercial rollup** | [`docs/benchmarks/commercial-scorecard.md`](docs/benchmarks/commercial-scorecard.md) | `python3 scripts/torii.py commercial -- status` |
+| **Pricing (open core)** | [`docs/PRICING.md`](docs/PRICING.md) | Open Gate free · Team · Business · Enterprise roadmap |
 
 **Public labeled eval** (Juice Shop + NodeGoat + Django/Flask themes, fixed seed):  
 [`docs/benchmarks/public-eval/SCORECARD.md`](docs/benchmarks/public-eval/SCORECARD.md) · `python3 scripts/public_eval.py report`

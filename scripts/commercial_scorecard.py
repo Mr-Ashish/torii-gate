@@ -321,6 +321,8 @@ def build_report(root: Path | None = None) -> dict[str, Any]:
         "memory_md": (root / "docs" / "MEMORY.md").is_file(),
         "self_evolve_md": (root / "docs" / "SELF-EVOLVE.md").is_file(),
         "landing_html": landing.is_file(),
+        # PRICING_PACKAGING: buyer SKU surface (open core · pre-revenue honest)
+        "pricing_md": (root / "docs" / "PRICING.md").is_file(),
     }
     # COMMERCIAL_COST: measured cost honesty rollup (not a new surface script)
     cost_honesty = _cost_honesty_panel(root, cost_body=cost_body, landing_body=landing_body)
