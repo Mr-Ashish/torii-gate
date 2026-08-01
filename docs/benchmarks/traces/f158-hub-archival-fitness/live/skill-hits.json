@@ -1,0 +1,160 @@
+{
+  "feature": "F84",
+  "schema": 1,
+  "f114": true,
+  "tool_outcome": true,
+  "scored_at": "2026-08-01T10:19:39Z",
+  "selected_n": 10,
+  "hit_n": 9,
+  "hit_rate": 0.9,
+  "prose_hit_n": 9,
+  "tool_hit_n": 2,
+  "tool_hit_rate": 0.2,
+  "hits": [
+    {
+      "id": "skill-archival-memory-search",
+      "hit": true,
+      "matched": [
+        "not",
+        "core",
+        "severity",
+        "search"
+      ],
+      "n_matched": 4,
+      "prose_hit": true,
+      "tool_hit": false,
+      "tool_matched": []
+    },
+    {
+      "id": "skill-f74-exploit-scenario",
+      "hit": true,
+      "matched": [
+        "source",
+        "sink",
+        "attacker",
+        "exploit",
+        "severity",
+        "pickle",
+        "trigger",
+        "request changes"
+      ],
+      "n_matched": 8,
+      "prose_hit": true,
+      "tool_hit": false,
+      "tool_matched": []
+    },
+    {
+      "id": "skill-f74-prefer-chain-json",
+      "hit": true,
+      "matched": [
+        "chain",
+        "source",
+        "sink",
+        "json"
+      ],
+      "n_matched": 4,
+      "prose_hit": true,
+      "tool_hit": false,
+      "tool_matched": []
+    },
+    {
+      "id": "skill-prefer-critic-early",
+      "hit": true,
+      "matched": [
+        "chain",
+        "critic"
+      ],
+      "n_matched": 2,
+      "prose_hit": true,
+      "tool_hit": false,
+      "tool_matched": []
+    },
+    {
+      "id": "skill-prefer-hub-archival-early",
+      "hit": true,
+      "matched": [
+        "not"
+      ],
+      "n_matched": 1,
+      "prose_hit": true,
+      "tool_hit": false,
+      "tool_matched": []
+    },
+    {
+      "id": "skill-prefer-memory-cli-early",
+      "hit": true,
+      "matched": [
+        "pickle"
+      ],
+      "n_matched": 1,
+      "prose_hit": true,
+      "tool_hit": true,
+      "tool_matched": [
+        "torii.py memory",
+        "torii_memory.py"
+      ]
+    },
+    {
+      "id": "skill-prefer-product-cli",
+      "hit": true,
+      "matched": [
+        "product"
+      ],
+      "n_matched": 1,
+      "prose_hit": true,
+      "tool_hit": false,
+      "tool_matched": []
+    },
+    {
+      "id": "skill-preserve-deep-tools",
+      "hit": false,
+      "matched": [],
+      "n_matched": 0,
+      "prose_hit": false,
+      "tool_hit": false,
+      "tool_matched": []
+    },
+    {
+      "id": "skill-soft-tool-nudge",
+      "hit": true,
+      "matched": [
+        "find",
+        "diff",
+        "blocking"
+      ],
+      "n_matched": 3,
+      "prose_hit": true,
+      "tool_hit": false,
+      "tool_matched": []
+    },
+    {
+      "id": "skill-tool-depth-hunks",
+      "hit": true,
+      "matched": [
+        "diff"
+      ],
+      "n_matched": 1,
+      "prose_hit": true,
+      "tool_hit": true,
+      "tool_matched": [
+        "diff"
+      ]
+    }
+  ],
+  "review": "docs/benchmarks/traces/f158-hub-archival-fitness/live/review-bench-f70.raw.md",
+  "federated_skill_themes": [
+    "skill-archival-memory-search",
+    "skill-f74-exploit-scenario",
+    "skill-f74-prefer-chain-json",
+    "skill-prefer-critic-early",
+    "skill-prefer-hub-archival-early",
+    "skill-prefer-memory-cli-early",
+    "skill-prefer-product-cli",
+    "skill-soft-tool-nudge",
+    "skill-tool-depth-hunks"
+  ],
+  "tool_outcome_skills": [
+    "skill-prefer-memory-cli-early",
+    "skill-tool-depth-hunks"
+  ]
+}

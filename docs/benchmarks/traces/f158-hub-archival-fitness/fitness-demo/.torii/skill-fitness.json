@@ -1,0 +1,103 @@
+{
+  "schema_version": 1,
+  "feature": "F85",
+  "updated_at": "2026-08-01T10:19:51Z",
+  "skills": {
+    "skill-prefer-hub-archival-early": {
+      "id": "skill-prefer-hub-archival-early",
+      "selected_n": 5,
+      "hit_n": 2,
+      "miss_n": 3,
+      "hit_rate": 0.4,
+      "demoted": false,
+      "last_seen": "2026-08-01T10:19:51Z",
+      "hub_archival_selected_n": 5,
+      "hub_archival_gap_n": 3,
+      "tool_hit_rate": 0.4,
+      "hub_archival_util_rate": 0.4,
+      "hub_archival_gap_rate": 0.6,
+      "last_hub_archival_at": "2026-08-01T10:19:51Z",
+      "hub_archival_ops": true,
+      "tool_hit_n": 2,
+      "hub_archival_hit_n": 2
+    }
+  },
+  "history": [
+    {
+      "at": "2026-08-01T10:19:51Z",
+      "run_id": "hub_archival_util",
+      "feature": "F158",
+      "skill_id": "skill-prefer-hub-archival-early",
+      "tool_hit": 0,
+      "util_gap": 1,
+      "hub_archival_gap_n": 1,
+      "hub_archival_hit_n": 0
+    },
+    {
+      "at": "2026-08-01T10:19:51Z",
+      "run_id": "hub_archival_util",
+      "feature": "F158",
+      "skill_id": "skill-prefer-hub-archival-early",
+      "tool_hit": 0,
+      "util_gap": 1,
+      "hub_archival_gap_n": 2,
+      "hub_archival_hit_n": 0
+    },
+    {
+      "at": "2026-08-01T10:19:51Z",
+      "run_id": "hub_archival_util",
+      "feature": "F158",
+      "skill_id": "skill-prefer-hub-archival-early",
+      "tool_hit": 0,
+      "util_gap": 1,
+      "hub_archival_gap_n": 3,
+      "hub_archival_hit_n": 0
+    },
+    {
+      "at": "2026-08-01T10:19:51Z",
+      "run_id": "hub_archival_util",
+      "feature": "F158",
+      "skill_id": "skill-prefer-hub-archival-early",
+      "tool_hit": 1,
+      "util_gap": 0,
+      "hub_archival_gap_n": 3,
+      "hub_archival_hit_n": 1
+    },
+    {
+      "at": "2026-08-01T10:19:51Z",
+      "run_id": "hub_archival_util",
+      "feature": "F158",
+      "skill_id": "skill-prefer-hub-archival-early",
+      "tool_hit": 1,
+      "util_gap": 0,
+      "hub_archival_gap_n": 3,
+      "hub_archival_hit_n": 2
+    }
+  ],
+  "demoted": [],
+  "last_hub_archival_ingest": {
+    "at": "2026-08-01T10:19:51Z",
+    "feature": "F158",
+    "skill_id": "skill-prefer-hub-archival-early",
+    "tool_hit": 1,
+    "util_gap": 0,
+    "gap_n": 3,
+    "hit_n": 2,
+    "util_rate": 0.4
+  },
+  "last_demote": {
+    "at": "2026-08-01T10:19:51Z",
+    "min_n": 3,
+    "threshold": 0.25,
+    "newly_demoted": [],
+    "revived": [],
+    "tool_shielded": [
+      "skill-prefer-hub-archival-early"
+    ],
+    "hub_archival_demoted": [],
+    "hub_archival_gap_thr": 0.67,
+    "demoted_n": 0,
+    "feature_tool": "F116",
+    "feature_hub_archival": "F158"
+  }
+}

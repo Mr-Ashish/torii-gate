@@ -439,6 +439,22 @@ def assess(root: Path | None = None, *, deep: bool = True) -> dict[str, Any]:
         "feature_hub_archival_util_critic": "F156",
         "hub_archival_reprompt_ok": bool(wire.get("hermes_f157_reprompt")),
         "feature_hub_archival_reprompt": "F157",
+        # F158: fitness ledger ingest/demote for hub-archival util
+        "hub_archival_fitness_ok": "ingest_hub_archival_util" in (
+            (root / "scripts" / "skill_fitness.py").read_text(
+                encoding="utf-8", errors="replace"
+            )
+            if (root / "scripts" / "skill_fitness.py").is_file()
+            else ""
+        )
+        and "F158" in (
+            (root / "scripts" / "skill_fitness.py").read_text(
+                encoding="utf-8", errors="replace"
+            )
+            if (root / "scripts" / "skill_fitness.py").is_file()
+            else ""
+        ),
+        "feature_hub_archival_fitness": "F158",
         "feature_scorecard_ops": "F135",
         "scorecard_active": scorecard_active,
         "scorecard_ops_ok": scorecard_ops_ok,
@@ -488,6 +504,7 @@ def to_markdown(report: dict[str, Any]) -> str:
             f"- Hub-archival recovery util (F155): **{'ok' if report.get('hub_archival_util_ok') else 'gap'}**",
             f"- Hub-archival util critic/demote-eval (F156): **{'ok' if report.get('hub_archival_util_critic_ok') else 'gap'}**",
             f"- Hub-archival util soft re-prompt (F157): **{'ok' if report.get('hub_archival_reprompt_ok') else 'gap'}**",
+            f"- Hub-archival fitness demote/boost (F158): **{'ok' if report.get('hub_archival_fitness_ok') else 'gap'}**",
             f"- Recovery hub gap critic/demote-eval (F128): **{'ok' if report.get('recovery_hub_gap_ok') else 'gap'}**",
             f"- Recon-warm hub critic/demote-eval (F151): **{'ok' if report.get('recon_warm_hub_ok') else 'gap'}**",
             f"- Wiring (assemble/run/hermes/save-trace): **{'ok' if report.get('wiring_ok') else 'gap'}**",
@@ -533,6 +550,10 @@ def cmd_scorecard(args: argparse.Namespace) -> int:
                 "hub_archival_reprompt_ok": report.get("hub_archival_reprompt_ok"),
                 "feature_hub_archival_reprompt": report.get(
                     "feature_hub_archival_reprompt"
+                ),
+                "hub_archival_fitness_ok": report.get("hub_archival_fitness_ok"),
+                "feature_hub_archival_fitness": report.get(
+                    "feature_hub_archival_fitness"
                 ),
                 "feature_scorecard_ops": report.get("feature_scorecard_ops"),
                 "scorecard_ops_ok": report.get("scorecard_ops_ok"),
@@ -594,6 +615,8 @@ def cmd_fixture(args: argparse.Namespace) -> int:
                 "feature_hub_archival_util_critic": "F156",
                 "hub_archival_reprompt_ok": report.get("hub_archival_reprompt_ok"),
                 "feature_hub_archival_reprompt": "F157",
+                "hub_archival_fitness_ok": report.get("hub_archival_fitness_ok"),
+                "feature_hub_archival_fitness": "F158",
                 "wiring_ok": report["wiring_ok"],
                 "deep_ok": report["deep_ok"],
                 "ready": report["ready"],

@@ -2707,3 +2707,31 @@ Budgeted recovery (F108) before checker demote (F156) — maker gets one chance.
 
 ### SHA
 `8419005c2275b2a4bac4bea7aa25a808953c70f8`
+
+## 2026-08-01 — F158 hub-archival util fitness demote/boost
+
+### Papers / posts
+- **SkillsBench** (arXiv 2602.12670): measure genuine skill utilization vs inject-only.
+- **Agent skill evaluation survey** (arXiv 2606.11435): longitudinal fitness; drop non-contributors.
+- Assay: chronic idle always skills must be suppressed after evidence.
+
+### Insight
+F155–F157 measure/re-prompt/demote per run. Highest ROI: compound hub_archival util into durable fitness ledger so chronic inject≠hub_boost demotes boosts across PRs and tool hits revive.
+
+### Feature shipped (F158)
+- `ingest_hub_archival_util` → gap_n/hit_n/util_rate counters
+- `apply_demotions` F158: gap_rate≥0.67 after min_n → demote; tool hit revive
+- fitness_boosts util_rate boost − gap_rate penalty
+- cycle + CLI `ingest-hub-archival`; federate hub_archival/f158 tags
+- fixture f158_ok; skill_loop hub_archival_fitness_ok
+
+### Loop-engineering
+Longitudinal scorecard: per-run checkers (F156/F157) + durable fitness (F158).
+
+### Metric
+- Offline fitness fixture f158_ok (gap demote → hit revive boost  -2→0.72)
+- Live insecure-demo recall=1.0
+- Modal pytorch#191831 BIT3_OK ~99s log_streaming
+
+### SHA
+`pending`

@@ -48,6 +48,7 @@ Env:
   TORII_SKILL_FITNESS_TOOL      1 (default) | 0 — F116 tool_hit shield/boost/federate
   TORII_SKILL_FITNESS_HUB       1 (default) | 0 — F126 ingest hub recovery-util deltas
   TORII_SKILL_FITNESS_SCORECARD 1 (default) | 0 — F135 ingest scorecard skill themes
+  TORII_SKILL_FITNESS_HUB_ARCHIVAL 1 (default) | 0 — F158 ingest hub-archival util gap/hit
   TORII_MEMORY_TENANT           optional for federate tenant hash
 """
 
@@ -68,9 +69,11 @@ FEATURE = "F85"
 FEATURE_TOOL = "F116"
 FEATURE_HUB = "F126"
 FEATURE_SCORECARD = "F135"
+FEATURE_HUB_ARCHIVAL = "F158"
 SCHEMA = 1
 LEDGER_NAME = "skill-fitness.json"
 SCORECARD_FED_REL = "memory/federation/scorecard-skill-signals.json"
+HUB_ARCHIVAL_SKILL_ID = "skill-prefer-hub-archival-early"
 
 _FALSEY = frozenset({"0", "false", "no", "off", "disabled", "n", "none", ""})
 _PATH_RX = re.compile(r"(?:/Users/|/home/|C:\\\\Users\\\\)", re.I)
@@ -95,6 +98,12 @@ def enabled() -> bool:
 def tool_fitness_enabled() -> bool:
     """F116: tool_hit_n shields demote, boosts router, federates tool themes."""
     raw = (os.environ.get("TORII_SKILL_FITNESS_TOOL") or "1").strip().lower()
+    return raw not in _FALSEY
+
+
+def hub_archival_fitness_enabled() -> bool:
+    """F158: fold hub-archival util gap/hit into fitness demote/boost."""
+    raw = (os.environ.get("TORII_SKILL_FITNESS_HUB_ARCHIVAL") or "1").strip().lower()
     return raw not in _FALSEY
 
 
@@ -261,6 +270,153 @@ def ingest_scorecard_skills(
         "privacy_ok": privacy_ok,
         "scorecard_ops_ok": len(ingested) >= 1,
         "fed_skill_n": len(doc.get("skill_ids") or []),
+    }
+
+
+def ingest_hub_archival_util(
+    util: dict[str, Any] | None = None,
+    ledger: dict[str, Any] | None = None,
+    *,
+    root: Path | None = None,
+    out_dir: Path | None = None,
+    save: bool = True,
+) -> dict[str, Any]:
+    """F158: fold hub-archival util slice into fitness ledger (hit shield / gap demote).
+
+    Consumes F155 score_recovery_util fields:
+      hub_archival_injected, hub_archival_tool_hit, hub_archival_util_gap
+
+    Privacy: skill id + counters only — no paths, prompts, or tenant strings.
+    SkillsBench / Assay: chronic inject≠hub_boost must compound into demote;
+    tool_hit shields revive.
+    """
+    root = root or _root()
+    if not hub_archival_fitness_enabled():
+        return {
+            "feature": FEATURE_HUB_ARCHIVAL,
+            "ingested": 0,
+            "reason": "hub_archival_fitness_off",
+            "privacy_ok": True,
+        }
+    if util is None and out_dir is not None:
+        up = Path(out_dir) / "recovery-skill-util.json"
+        if up.is_file():
+            try:
+                util = json.loads(up.read_text(encoding="utf-8"))
+            except (OSError, json.JSONDecodeError):
+                util = None
+    if util is None:
+        # soft score from out_dir router artifacts
+        try:
+            sys.path.insert(0, str(Path(__file__).resolve().parent))
+            from skill_router import score_recovery_util  # type: ignore
+
+            util = score_recovery_util(
+                Path(out_dir) if out_dir else None, root=root
+            )
+        except Exception as exc:
+            return {
+                "feature": FEATURE_HUB_ARCHIVAL,
+                "ingested": 0,
+                "error": str(exc)[:120],
+                "privacy_ok": True,
+            }
+    if not isinstance(util, dict):
+        return {
+            "feature": FEATURE_HUB_ARCHIVAL,
+            "ingested": 0,
+            "reason": "no_util",
+            "privacy_ok": True,
+        }
+
+    injected = bool(util.get("hub_archival_injected"))
+    tool_hit = bool(util.get("hub_archival_tool_hit"))
+    gap = bool(util.get("hub_archival_util_gap"))
+    if not injected:
+        return {
+            "feature": FEATURE_HUB_ARCHIVAL,
+            "ingested": 0,
+            "reason": "hub_archival_not_injected",
+            "privacy_ok": True,
+            "skill_id": HUB_ARCHIVAL_SKILL_ID,
+        }
+
+    ledger = ledger if ledger is not None else load_ledger(ledger_path(root))
+    sid = HUB_ARCHIVAL_SKILL_ID
+    ent = _skill_entry(ledger, sid)
+    ent["selected_n"] = int(ent.get("selected_n") or 0) + 1
+    ent["hub_archival_selected_n"] = int(ent.get("hub_archival_selected_n") or 0) + 1
+    if tool_hit:
+        ent["hit_n"] = int(ent.get("hit_n") or 0) + 1
+        ent["tool_hit_n"] = int(ent.get("tool_hit_n") or 0) + 1
+        ent["hub_archival_hit_n"] = int(ent.get("hub_archival_hit_n") or 0) + 1
+        ent["demoted"] = False  # revive on hub_boost evidence
+    else:
+        ent["miss_n"] = int(ent.get("miss_n") or 0) + 1
+        if gap:
+            ent["hub_archival_gap_n"] = int(ent.get("hub_archival_gap_n") or 0) + 1
+    sel = int(ent["selected_n"])
+    ent["hit_rate"] = round(int(ent.get("hit_n") or 0) / sel, 4) if sel else 0.0
+    ent["tool_hit_rate"] = (
+        round(int(ent.get("tool_hit_n") or 0) / sel, 4) if sel else 0.0
+    )
+    ha_sel = int(ent.get("hub_archival_selected_n") or 0)
+    ha_hit = int(ent.get("hub_archival_hit_n") or 0)
+    ha_gap_n = int(ent.get("hub_archival_gap_n") or 0)
+    ent["hub_archival_util_rate"] = (
+        round(ha_hit / ha_sel, 4) if ha_sel else 1.0
+    )
+    ent["hub_archival_gap_rate"] = (
+        round(ha_gap_n / ha_sel, 4) if ha_sel else 0.0
+    )
+    ent["last_seen"] = _now()
+    ent["last_hub_archival_at"] = _now()
+    ent["hub_archival_ops"] = True
+
+    hist = ledger.setdefault("history", [])
+    hist.append(
+        {
+            "at": _now(),
+            "run_id": "hub_archival_util",
+            "feature": FEATURE_HUB_ARCHIVAL,
+            "skill_id": sid,
+            "tool_hit": int(tool_hit),
+            "util_gap": int(gap),
+            "hub_archival_gap_n": ha_gap_n,
+            "hub_archival_hit_n": ha_hit,
+        }
+    )
+    ledger["history"] = hist[-100:]
+    ledger["last_hub_archival_ingest"] = {
+        "at": _now(),
+        "feature": FEATURE_HUB_ARCHIVAL,
+        "skill_id": sid,
+        "tool_hit": int(tool_hit),
+        "util_gap": int(gap),
+        "gap_n": ha_gap_n,
+        "hit_n": ha_hit,
+        "util_rate": ent.get("hub_archival_util_rate"),
+    }
+
+    path = None
+    if save:
+        path = save_ledger(ledger, ledger_path(root))
+
+    blob = json.dumps(ledger.get("last_hub_archival_ingest") or {})
+    privacy_ok = "/Users/" not in blob and "/home/" not in blob
+
+    return {
+        "feature": FEATURE_HUB_ARCHIVAL,
+        "ingested": 1,
+        "skill_id": sid,
+        "tool_hit": int(tool_hit),
+        "util_gap": int(gap),
+        "hub_archival_gap_n": ha_gap_n,
+        "hub_archival_hit_n": ha_hit,
+        "hub_archival_util_rate": ent.get("hub_archival_util_rate"),
+        "hub_archival_gap_rate": ent.get("hub_archival_gap_rate"),
+        "privacy_ok": privacy_ok,
+        "ledger": str(path) if path else None,
     }
 
 
@@ -535,9 +691,12 @@ def _effective_rate(ent: dict[str, Any]) -> float:
 def apply_demotions(ledger: dict[str, Any]) -> dict[str, Any]:
     min_n = _int_env("TORII_SKILL_FITNESS_MIN_N", 3)
     thr = _float_env("TORII_SKILL_FITNESS_DEMOTE", 0.25)
+    # F158: chronic hub-archival util gap thr (gap_rate ≥ this after min samples)
+    ha_gap_thr = _float_env("TORII_SKILL_FITNESS_HUB_ARCHIVAL_GAP_THR", 0.67)
     demoted: list[str] = []
     revived: list[str] = []
     shielded: list[str] = []
+    ha_demoted: list[str] = []
     for sid, ent in (ledger.get("skills") or {}).items():
         n = int(ent.get("selected_n") or 0)
         rate = float(ent.get("hit_rate") or 0.0)
@@ -555,6 +714,25 @@ def apply_demotions(ledger: dict[str, Any]) -> dict[str, Any]:
             ent["demoted"] = False
             shielded.append(sid)
             continue
+        # F158: hub-archival chronic util gap (inject ≠ hub_boost) → demote
+        # even when always:true — soft demote hits fitness_boosts / router, not inject flag
+        if (
+            hub_archival_fitness_enabled()
+            and sid == HUB_ARCHIVAL_SKILL_ID
+            and int(ent.get("hub_archival_selected_n") or 0) >= min_n
+        ):
+            ha_gap_rate = float(ent.get("hub_archival_gap_rate") or 0.0)
+            ha_hit = int(ent.get("hub_archival_hit_n") or 0)
+            if ha_hit < 1 and ha_gap_rate >= ha_gap_thr:
+                ent["demoted"] = True
+                demoted.append(sid)
+                ha_demoted.append(sid)
+                continue
+            if ha_hit >= 1 and float(ent.get("hub_archival_util_rate") or 0) >= 0.34:
+                if was:
+                    revived.append(sid)
+                ent["demoted"] = False
+                continue
         # never demote always-on core by id heuristic — skill_router still
         # respects always flag; ledger may still mark low performers for info
         if n >= min_n and eff < thr:
@@ -576,8 +754,13 @@ def apply_demotions(ledger: dict[str, Any]) -> dict[str, Any]:
         "newly_demoted": demoted,
         "revived": revived,
         "tool_shielded": shielded,
+        "hub_archival_demoted": ha_demoted,
+        "hub_archival_gap_thr": ha_gap_thr,
         "demoted_n": len(ledger["demoted"]),
         "feature_tool": FEATURE_TOOL if tool_fitness_enabled() else None,
+        "feature_hub_archival": FEATURE_HUB_ARCHIVAL
+        if hub_archival_fitness_enabled()
+        else None,
     }
     return ledger
 
@@ -604,6 +787,16 @@ def fitness_boosts(ledger: dict[str, Any] | None = None) -> dict[str, float]:
             tool_rate = tool_n / n if n else 0.0
             # half-weight tool bonus so recovery skills rank above prose-only peers
             score += tool_rate * max_boost * 0.5 * conf
+        # F158: hub-archival util_rate boost / chronic gap penalty (soft rank)
+        if (
+            hub_archival_fitness_enabled()
+            and sid == HUB_ARCHIVAL_SKILL_ID
+            and int(ent.get("hub_archival_selected_n") or 0) >= 1
+        ):
+            ha_rate = float(ent.get("hub_archival_util_rate") or 0.0)
+            ha_gap = float(ent.get("hub_archival_gap_rate") or 0.0)
+            score += ha_rate * max_boost * 0.6 * conf
+            score -= ha_gap * max_boost * 0.8 * conf
         out[sid] = round(score, 3)
     return out
 
@@ -647,6 +840,9 @@ def federate_signals(
         if ent.get("scorecard_ops") or int(ent.get("scorecard_ingested_n") or 0) >= 1:
             tags.extend(["scorecard_ops", "f135"])
             keywords.append("scorecard-ops")
+        if ent.get("hub_archival_ops") or int(ent.get("hub_archival_hit_n") or 0) >= 1:
+            tags.extend(["hub_archival", "f158", "hub_boost"])
+            keywords.extend(["hub-archival", "hub-boost"])
         sig: dict[str, Any] = {
             "id": theme_slug,
             "theme": theme_slug,
@@ -730,6 +926,15 @@ def cycle(out_dir: Path | None = None, root: Path | None = None) -> dict[str, An
             sc_fit = ingest_scorecard_skills(None, ledger, root=root, save=False)
         except Exception as exc:
             sc_fit = {"soft_error": str(exc)[:120]}
+    # F158: fold hub-archival util gap/hit before demote
+    ha_fit = None
+    if hub_archival_fitness_enabled():
+        try:
+            ha_fit = ingest_hub_archival_util(
+                None, ledger, root=root, out_dir=out_dir, save=False
+            )
+        except Exception as exc:
+            ha_fit = {"soft_error": str(exc)[:120]}
     ledger = apply_demotions(ledger)
     path = save_ledger(ledger, ledger_path(root))
     signals = federate_signals(ledger)
@@ -761,18 +966,31 @@ def cycle(out_dir: Path | None = None, root: Path | None = None) -> dict[str, An
         for sid, e in (ledger.get("skills") or {}).items()
         if e.get("scorecard_ops") or int(e.get("scorecard_ingested_n") or 0) >= 1
     ]
+    hub_archival_skills = [
+        sid
+        for sid, e in (ledger.get("skills") or {}).items()
+        if e.get("hub_archival_ops")
+        or int(e.get("hub_archival_selected_n") or 0) >= 1
+    ]
     return {
         "feature": FEATURE,
         "feature_tool": FEATURE_TOOL if tool_fitness_enabled() else None,
         "feature_hub": FEATURE_HUB if hub_fitness_enabled() else None,
         "feature_scorecard": FEATURE_SCORECARD if scorecard_fitness_enabled() else None,
+        "feature_hub_archival": FEATURE_HUB_ARCHIVAL
+        if hub_archival_fitness_enabled()
+        else None,
         "ingested": ingested,
         "hits_path": str(hits_path) if hits_path else None,
         "ledger": str(path),
         "demoted": list(ledger.get("demoted") or []),
         "tool_shielded": list((ledger.get("last_demote") or {}).get("tool_shielded") or []),
+        "hub_archival_demoted": list(
+            (ledger.get("last_demote") or {}).get("hub_archival_demoted") or []
+        ),
         "tool_skills": tool_skills,
         "scorecard_skills": scorecard_skills,
+        "hub_archival_skills": hub_archival_skills,
         "boosts": fitness_boosts(ledger),
         "fed_path": str(fed_path),
         "fed_n": len(signals),
@@ -782,6 +1000,7 @@ def cycle(out_dir: Path | None = None, root: Path | None = None) -> dict[str, An
         "hub": hub_result,
         "hub_fitness": hub_fit,
         "scorecard_fitness": sc_fit,
+        "hub_archival_fitness": ha_fit,
         "privacy_ok": True,
     }
 
@@ -1134,6 +1353,66 @@ def _cmd_fixture_body() -> int:
             for s in federate_signals(ledger, tenant="fixture-tenant-a")
         )
 
+        # F158: chronic hub-archival util gap → demote; hub_boost hit → revive/boost
+        os.environ["TORII_SKILL_FITNESS_HUB_ARCHIVAL"] = "1"
+        ha_sid = HUB_ARCHIVAL_SKILL_ID
+        # 3 gap samples (inject idle)
+        for i in range(3):
+            util_gap = {
+                "hub_archival_injected": True,
+                "hub_archival_tool_hit": False,
+                "hub_archival_util_gap": True,
+                "util_rate": 0.5,
+            }
+            ingest_hub_archival_util(util_gap, ledger, root=root, save=False)
+        ledger = apply_demotions(ledger)
+        ha_gap_demoted = ha_sid in demoted_set(ledger)
+        ha_gap_boost = fitness_boosts(ledger).get(ha_sid, 0)
+        # revive with tool hit samples
+        for i in range(2):
+            util_hit = {
+                "hub_archival_injected": True,
+                "hub_archival_tool_hit": True,
+                "hub_archival_util_gap": False,
+                "util_rate": 1.0,
+            }
+            ingest_hub_archival_util(util_hit, ledger, root=root, save=False)
+        ledger = apply_demotions(ledger)
+        save_ledger(ledger, ledger_path(root))
+        ha_revived = ha_sid not in demoted_set(ledger)
+        ha_hit_boost = fitness_boosts(ledger).get(ha_sid, 0)
+        ha_ent = (ledger.get("skills") or {}).get(ha_sid) or {}
+        ha_privacy = "/Users/" not in json.dumps(ha_ent)
+        ha_in_fed = any(
+            ha_sid in str(s.get("id") or s.get("theme") or "")
+            and "hub_archival" in (s.get("tags") or [])
+            for s in federate_signals(ledger, tenant="fixture-tenant-a")
+        )
+        # cycle path: plant recovery-skill-util and run cycle
+        (out_dir / "recovery-skill-util.json").write_text(
+            json.dumps(
+                {
+                    "hub_archival_injected": True,
+                    "hub_archival_tool_hit": True,
+                    "hub_archival_util_gap": False,
+                    "feature_hub_archival_util": "F155",
+                }
+            )
+            + "\n",
+            encoding="utf-8",
+        )
+        cyc2 = cycle(out_dir=out_dir, root=root)
+        f158_ok = (
+            ha_gap_demoted
+            and ha_revived
+            and ha_hit_boost > ha_gap_boost
+            and float(ha_ent.get("hub_archival_util_rate") or 0) > 0
+            and int(ha_ent.get("hub_archival_hit_n") or 0) >= 2
+            and ha_privacy
+            and ha_in_fed
+            and int((cyc2.get("hub_archival_fitness") or {}).get("ingested") or 0) >= 1
+        )
+
         fixture_pass = all(
             [
                 zombie_demoted,
@@ -1159,6 +1438,8 @@ def _cmd_fixture_body() -> int:
                 sc_ops_ok,
                 int(sc_fit.get("ingested_n") or 0) >= 1,
                 sc_in_fed_out,
+                # F158
+                f158_ok,
             ]
         )
         print(
@@ -1167,8 +1448,10 @@ def _cmd_fixture_body() -> int:
                     "feature": FEATURE,
                     "feature_tool": FEATURE_TOOL,
                     "feature_scorecard": FEATURE_SCORECARD,
+                    "feature_hub_archival": FEATURE_HUB_ARCHIVAL,
                     "f116": True,
                     "f135": True,
+                    "f158": True,
                     "fixture_pass": fixture_pass,
                     "zombie_demoted": zombie_demoted,
                     "good_not_demoted": good_not_demoted,
@@ -1188,6 +1471,16 @@ def _cmd_fixture_body() -> int:
                     "f135_sc_privacy_ok": sc_privacy,
                     "f135_sc_ingested_n": sc_fit.get("ingested_n"),
                     "f135_sc_in_fed": sc_in_fed_out,
+                    "f158_ok": f158_ok,
+                    "f158_ha_gap_demoted": ha_gap_demoted,
+                    "f158_ha_revived": ha_revived,
+                    "f158_ha_gap_boost": ha_gap_boost,
+                    "f158_ha_hit_boost": ha_hit_boost,
+                    "f158_ha_util_rate": ha_ent.get("hub_archival_util_rate"),
+                    "f158_ha_in_fed": ha_in_fed,
+                    "f158_cycle_ingested": (cyc2.get("hub_archival_fitness") or {}).get(
+                        "ingested"
+                    ),
                     "demoted": sorted(demoted_set(ledger)),
                     "cycle_fed_n": cyc.get("fed_n"),
                     "ledger": str(path),
@@ -1234,8 +1527,51 @@ def main(argv: list[str] | None = None) -> int:
     )
     psc.set_defaults(func=cmd_ingest_scorecard)
 
+    pha = sub.add_parser(
+        "ingest-hub-archival",
+        help="F158 fold recovery hub-archival util gap/hit into fitness ledger",
+    )
+    pha.add_argument("--out-dir", default="")
+    pha.add_argument(
+        "--util",
+        default="",
+        help="Optional path to recovery-skill-util.json",
+    )
+    pha.set_defaults(func=cmd_ingest_hub_archival)
+
     args = p.parse_args(argv)
     return int(args.func(args))
+
+
+def cmd_ingest_hub_archival(args: argparse.Namespace) -> int:
+    """F158: CLI for hub-archival util → fitness ledger demote/boost."""
+    root = _root()
+    util = None
+    out_dir = Path(args.out_dir) if args.out_dir else None
+    if args.util:
+        p = Path(args.util)
+        if p.is_file():
+            try:
+                util = json.loads(p.read_text(encoding="utf-8"))
+            except (OSError, json.JSONDecodeError) as exc:
+                print(
+                    json.dumps(
+                        {"feature": FEATURE_HUB_ARCHIVAL, "error": str(exc)[:120]}
+                    )
+                )
+                return 1
+    report = ingest_hub_archival_util(
+        util, root=root, out_dir=out_dir, save=True
+    )
+    ledger = apply_demotions(load_ledger(ledger_path(root)))
+    save_ledger(ledger, ledger_path(root))
+    report["demoted"] = list(ledger.get("demoted") or [])
+    report["hub_archival_demoted"] = list(
+        (ledger.get("last_demote") or {}).get("hub_archival_demoted") or []
+    )
+    report["boost"] = fitness_boosts(ledger).get(HUB_ARCHIVAL_SKILL_ID)
+    print(json.dumps(report, indent=2))
+    return 0 if report.get("privacy_ok", True) else 1
 
 
 def cmd_ingest_scorecard(args: argparse.Namespace) -> int:

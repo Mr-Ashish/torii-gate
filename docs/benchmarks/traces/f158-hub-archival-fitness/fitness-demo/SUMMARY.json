@@ -1,0 +1,9 @@
+{
+  "gap_demoted": true,
+  "revived": true,
+  "boost_gap": -2.0,
+  "boost_hit": 0.72,
+  "util_rate": 0.4,
+  "gap_n": 3,
+  "hit_n": 2
+}
