@@ -522,6 +522,26 @@ def assess(root: Path | None = None, *, deep: bool = True) -> dict[str, Any]:
         and "skill_fitness.py" in hermes_sh
         and "F163" in hermes_sh,
         "feature_hub_archival_loop": "F163",
+        # F165: GEPA-lite skill body refine from util traces (Hermes self-evolution)
+        "hermes_skill_refine": "refine-from-util" in hermes_sh
+        and "F165" in hermes_sh
+        and "self_evolve.py" in hermes_sh,
+        "skill_refine_ok": "refine_from_util" in (
+            (root / "scripts" / "self_evolve.py").read_text(
+                encoding="utf-8", errors="replace"
+            )
+            if (root / "scripts" / "self_evolve.py").is_file()
+            else ""
+        )
+        and "constraint_validate_skill" in (
+            (root / "scripts" / "self_evolve.py").read_text(
+                encoding="utf-8", errors="replace"
+            )
+            if (root / "scripts" / "self_evolve.py").is_file()
+            else ""
+        )
+        and "refine-from-util" in hermes_sh,
+        "feature_skill_refine": "F165",
         # F158: fitness ledger ingest/demote for hub-archival util
         "hub_archival_fitness_ok": "ingest_hub_archival_util" in (
             (root / "scripts" / "skill_fitness.py").read_text(
@@ -641,6 +661,8 @@ def to_markdown(report: dict[str, Any]) -> str:
             f"- Hub-archival fitness demote/boost (F158): **{'ok' if report.get('hub_archival_fitness_ok') else 'gap'}**",
             f"- Hub-archival compound loop (F163): **{'ok' if report.get('hub_archival_loop_ok') else 'gap'}** "
             f"(fitness cycle hermes: **{'ok' if report.get('hermes_hub_archival_fitness_cycle') else 'gap'}**)",
+            f"- GEPA-lite skill refine-from-util (F165): **{'ok' if report.get('skill_refine_ok') else 'gap'}** "
+            f"(hermes: **{'ok' if report.get('hermes_skill_refine') else 'gap'}**)",
             f"- Recovery hub gap critic/demote-eval (F128): **{'ok' if report.get('recovery_hub_gap_ok') else 'gap'}**",
             f"- Recon-warm hub critic/demote-eval (F151): **{'ok' if report.get('recon_warm_hub_ok') else 'gap'}**",
             f"- Wiring (assemble/run/hermes/save-trace): **{'ok' if report.get('wiring_ok') else 'gap'}**",
@@ -706,6 +728,9 @@ def cmd_scorecard(args: argparse.Namespace) -> int:
                     "hermes_hub_archival_fitness_cycle"
                 ),
                 "feature_hub_archival_loop": report.get("feature_hub_archival_loop"),
+                "skill_refine_ok": report.get("skill_refine_ok"),
+                "hermes_skill_refine": report.get("hermes_skill_refine"),
+                "feature_skill_refine": report.get("feature_skill_refine") or "F165",
                 "feature_scorecard_ops": report.get("feature_scorecard_ops"),
                 "scorecard_ops_ok": report.get("scorecard_ops_ok"),
                 "scorecard_active": report.get("scorecard_active"),
@@ -781,6 +806,9 @@ def cmd_fixture(args: argparse.Namespace) -> int:
                     "hermes_hub_archival_fitness_cycle"
                 ),
                 "feature_hub_archival_loop": "F163",
+                "skill_refine_ok": report.get("skill_refine_ok"),
+                "hermes_skill_refine": report.get("hermes_skill_refine"),
+                "feature_skill_refine": "F165",
                 "wiring_ok": report["wiring_ok"],
                 "deep_ok": report["deep_ok"],
                 "ready": report["ready"],

@@ -1,0 +1,44 @@
+{
+  "feature": "F165",
+  "title": "GEPA-lite skill body refine from util traces",
+  "scored_at": "2026-08-01T11:33:20Z",
+  "pattern": "trace \u2192 diagnose \u2192 mutate skill body \u2192 constraint gate",
+  "sources": [
+    "GEPA ICLR 2026 Oral arXiv:2507.19457",
+    "Hermes Agent Self-Evolution constraint gates",
+    "Mem0 inject\u2260utilization"
+  ],
+  "offline": {
+    "fixture_refine": true,
+    "f165_ok": true
+  },
+  "live_local": {
+    "recall": 1.0,
+    "tp": 4,
+    "fn": 0,
+    "verdict": "COMMENT",
+    "util_rate": 1.0,
+    "recovery_injected_n": 3,
+    "hub_archival_tool_hit": true,
+    "refine_ok": true,
+    "refined_n": 1,
+    "refined_skills": [
+      "skill-prefer-memory-cli-early"
+    ],
+    "model": "deepseek/deepseek-v4-pro"
+  },
+  "modal": {
+    "repo": "pytorch/pytorch",
+    "pr": 191831,
+    "outcome": "BIT3_OK",
+    "elapsed_s": 89.6,
+    "log_streaming": true,
+    "post_comment": 0,
+    "app": "https://modal.com/apps/mr-ashish/main/ap-52aGkS82fNi3LbpDNmcJNT"
+  },
+  "skill_loop": {
+    "skill_refine_ok": true,
+    "hermes_skill_refine": true,
+    "hub_archival_loop_ok": true
+  }
+}

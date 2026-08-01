@@ -454,9 +454,75 @@
         "forced": false
       },
       "feature": "F74"
+    },
+    {
+      "id": "skill-prefer-product-cli",
+      "title": "skill-prefer-product-cli",
+      "path": "agent/skills/active/skill-prefer-product-cli.md",
+      "adopted_at": "2026-08-01T05:36:49Z",
+      "eval": {
+        "scored_at": "2026-08-01T05:36:49Z",
+        "dims": {
+          "structure": 5,
+          "actionability": 4,
+          "evidence": 4,
+          "safety": 5,
+          "size": 5
+        },
+        "total": 23,
+        "max": 25,
+        "recommend": "adopt",
+        "weak_dim_coverage": 0.5,
+        "forced": false
+      },
+      "feature": "F74"
+    },
+    {
+      "id": "skill-prefer-critic-early",
+      "title": "skill-prefer-critic-early",
+      "path": "agent/skills/active/skill-prefer-critic-early.md",
+      "adopted_at": "2026-08-01T05:36:49Z",
+      "eval": {
+        "scored_at": "2026-08-01T05:36:49Z",
+        "dims": {
+          "structure": 5,
+          "actionability": 4,
+          "evidence": 4,
+          "safety": 5,
+          "size": 3
+        },
+        "total": 21,
+        "max": 25,
+        "recommend": "adopt",
+        "weak_dim_coverage": 0.5,
+        "forced": false
+      },
+      "feature": "F74"
+    },
+    {
+      "id": "skill-prefer-hub-archival-early",
+      "title": "skill-prefer-hub-archival-early",
+      "path": "agent/skills/active/skill-prefer-hub-archival-early.md",
+      "adopted_at": "2026-08-01T09:48:01Z",
+      "eval": {
+        "scored_at": "2026-08-01T09:48:01Z",
+        "dims": {
+          "structure": 5,
+          "actionability": 5,
+          "evidence": 4,
+          "safety": 5,
+          "size": 5
+        },
+        "total": 24,
+        "max": 25,
+        "recommend": "adopt",
+        "weak_dim_coverage": 0.5,
+        "forced": true
+      },
+      "feature": "F74"
     }
   ],
-  "updated_at": "2026-08-01T04:53:53Z",
+  "updated_at": "2026-08-01T11:32:57Z",
   "fitness_signals": [
     {
       "at": "2026-08-01T00:16:02Z",
@@ -757,6 +823,101 @@
         "free_rider": false,
         "probes_n": 10
       }
+    },
+    {
+      "at": "2026-08-01T05:36:49Z",
+      "id": "skill-prefer-product-cli",
+      "feature": "F82",
+      "f87": true,
+      "f88": true,
+      "total": 23,
+      "forced": false,
+      "attribution": {
+        "id": "skill-prefer-product-cli",
+        "solo_hit": true,
+        "prose_hit": false,
+        "tool_hit": true,
+        "matched": [],
+        "tool_matched": [
+          "torii.py doctor",
+          "torii.py status",
+          "torii.py budget"
+        ],
+        "n_matched": 0,
+        "contribution": 1.5,
+        "free_rider": false,
+        "probes_n": 5,
+        "feature_tool": "F118",
+        "tool_blob_used": true
+      }
+    },
+    {
+      "at": "2026-08-01T05:36:49Z",
+      "id": "skill-prefer-critic-early",
+      "feature": "F82",
+      "f87": true,
+      "f88": true,
+      "total": 21,
+      "forced": false,
+      "attribution": {
+        "id": "skill-prefer-critic-early",
+        "solo_hit": true,
+        "prose_hit": false,
+        "tool_hit": true,
+        "matched": [],
+        "tool_matched": [
+          "second_agent_critic.py",
+          "chain_revalidate.py"
+        ],
+        "n_matched": 0,
+        "contribution": 1.5,
+        "free_rider": false,
+        "probes_n": 6,
+        "feature_tool": "F118",
+        "tool_blob_used": true
+      }
+    },
+    {
+      "at": "2026-08-01T09:45:09Z",
+      "id": "skill-prefer-hub-archival-early",
+      "feature": "F82",
+      "f87": true,
+      "f88": true,
+      "total": 24,
+      "forced": true,
+      "attribution": null
+    },
+    {
+      "at": "2026-08-01T09:48:01Z",
+      "id": "skill-prefer-hub-archival-early",
+      "feature": "F82",
+      "f87": true,
+      "f88": true,
+      "total": 24,
+      "forced": true,
+      "attribution": null
     }
-  ]
+  ],
+  "refines": [
+    {
+      "at": "2026-08-01T11:32:57Z",
+      "feature": "F165",
+      "out_dir": "docs/benchmarks/traces/f165-gepa-lite-skill-refine/live",
+      "refined_n": 1,
+      "target_n": 1,
+      "skill_ids": [
+        "skill-prefer-memory-cli-early"
+      ]
+    }
+  ],
+  "last_refine": {
+    "at": "2026-08-01T11:32:57Z",
+    "feature": "F165",
+    "out_dir": "docs/benchmarks/traces/f165-gepa-lite-skill-refine/live",
+    "refined_n": 1,
+    "target_n": 1,
+    "skill_ids": [
+      "skill-prefer-memory-cli-early"
+    ]
+  }
 }

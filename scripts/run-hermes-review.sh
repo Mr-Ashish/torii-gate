@@ -1041,6 +1041,17 @@ if [[ -f "$SKILL_ROUTER_HELPER" && $TIMED_OUT -eq 0 && "${HERMES_CLI_ARGV_BROKEN
         python3 "$TORII_ROOT/scripts/skill_fitness.py" ingest-hub-archival --out-dir "$OUT_DIR" >/dev/null 2>&1 || true
         python3 "$TORII_ROOT/scripts/skill_fitness.py" cycle --out-dir "$OUT_DIR" >/dev/null 2>&1 || true
       fi
+      # F165: GEPA-lite skill body refine from util traces (Hermes self-evolution pattern)
+      # Reads recovery/hub-archival util + fitness; mutates active skill bodies under size/probe gates.
+      if [[ -f "$TORII_ROOT/scripts/self_evolve.py" ]]; then
+        case "${TORII_SKILL_REFINE:-1}" in
+          0|false|no|off) ;;
+          *)
+            python3 "$TORII_ROOT/scripts/self_evolve.py" refine-from-util --out-dir "$OUT_DIR" --apply >/dev/null 2>&1 || true
+            notice "F165 GEPA-lite refine-from-util (soft) · skill-refine.json"
+            ;;
+        esac
+      fi
       # F136/F137: scorecard util before composite re-prompt decide
       python3 "$SKILL_ROUTER_HELPER" scorecard-util --out-dir "$OUT_DIR" >/dev/null 2>&1 || true
       _rrp_args=(reprompt-decide --out-dir "$OUT_DIR" --review "$RAW_OUT")

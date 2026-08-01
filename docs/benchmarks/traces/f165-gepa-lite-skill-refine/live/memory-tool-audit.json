@@ -1,0 +1,46 @@
+{
+  "feature": "F105",
+  "schema": 1,
+  "score": 1.0,
+  "level": "L3",
+  "hit_count": 4,
+  "tools_used": [
+    "archival_search",
+    "torii_product_memory"
+  ],
+  "by_tool": {
+    "torii_product_memory": 2,
+    "archival_search": 2
+  },
+  "cli_subcmds": {
+    "search": 4
+  },
+  "inject_offered": true,
+  "utilization_gap": false,
+  "tool_call_turns": 1,
+  "feedback": [
+    "memory_tools_used=2 hits=4 tools=['archival_search', 'torii_product_memory']"
+  ],
+  "scored_at": "2026-08-01T11:32:56Z",
+  "hits_detail": [
+    {
+      "tool": "torii_product_memory",
+      "snip": "=1.00** \u2014 prefer early `python3 scripts/torii.py memory -- search` before re-raising themes. <!-- /torii-f142-memory-util-hub --> # Ta"
+    },
+    {
+      "tool": "archival_search",
+      "snip": "ts/experiments/torii && python3 scripts/archival_memory_search.py auto --files demo/insecure/app.py 2>&1 || echo \\\"archival_memory_search.py not"
+    },
+    {
+      "tool": "archival_search",
+      "snip": "les demo/insecure/app.py 2>&1 || echo \\\"archival_memory_search.py not found or failed\\\"\", \"timeout\": 30}"
+    },
+    {
+      "tool": "torii_product_memory",
+      "snip": "ts/experiments/torii && python3 scripts/torii.py memory -- search -- -q \\\"sql OR pickle OR secret OR command injection\\\" 2>&1 || echo \\"
+    }
+  ],
+  "out_dir": "docs/benchmarks/traces/f165-gepa-lite-skill-refine/live",
+  "loop_path": "docs/benchmarks/traces/f165-gepa-lite-skill-refine/live/agent-loop/agent-loop.json",
+  "enabled": true
+}

@@ -280,6 +280,23 @@ class SelfEvolveTests(unittest.TestCase):
                 self.assertNotIn("/Users/", body)
                 self.assertIn("F132", body)
 
+    def test_f165_gepa_lite_refine_fixture(self):
+        """F165: util gap weak body → refine + constraint pass (GEPA-lite)."""
+        r = subprocess.run(
+            [sys.executable, str(SCRIPT), "fixture-refine"],
+            cwd=str(ROOT),
+            capture_output=True,
+            text=True,
+            env={**os.environ, "TORII_SKILL_REFINE": "1"},
+        )
+        self.assertEqual(r.returncode, 0, r.stderr + r.stdout)
+        data = json.loads(r.stdout)
+        self.assertTrue(data.get("fixture_pass") or data.get("f165_ok"), data)
+        self.assertGreaterEqual(int(data.get("refined_n") or 0), 1)
+        self.assertTrue(data.get("has_marker"))
+        self.assertTrue(data.get("after_constraint_ok"))
+        self.assertFalse(data.get("before_constraint_ok"))
+
 
 if __name__ == "__main__":
     unittest.main()

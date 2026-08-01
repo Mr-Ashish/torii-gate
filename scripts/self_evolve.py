@@ -19,16 +19,24 @@ F132: product scorecard gap themes (F129–F131 brand_ready metrics) → skill
 proposals so self-evolution closes install/ops readiness gaps, not only
 trajectory thrash.
 
+F165: GEPA-lite skill body refine from util traces (Hermes self-evolution /
+ICLR 2026 GEPA pattern) — read recovery/hub-archival util + fitness ledger,
+diagnose idle inject≠tool, mutate skill bodies with tool-first nudges under
+constraint gates (size ≤15KB, id preserved, required tool probes present).
+No LLM required for the deterministic path; dual-gate adopt remains separate.
+
 Usage:
   python3 scripts/self_evolve.py ingest --out-dir DIR [--pr N] [--repo R]
   python3 scripts/self_evolve.py propose [--limit N]
   python3 scripts/self_evolve.py propose-scorecard [--scorecard PATH] [--limit N]
   python3 scripts/self_evolve.py mine-probes --out-dir DIR [--propose]
+  python3 scripts/self_evolve.py refine-from-util --out-dir DIR [--apply|--dry-run]
   python3 scripts/self_evolve.py eval [--proposal ID|all]
   python3 scripts/self_evolve.py adopt PROPOSAL_ID [--force]
   python3 scripts/self_evolve.py inject --prompt PATH [--out PATH]
   python3 scripts/self_evolve.py status
   python3 scripts/self_evolve.py fixture   # F117 hermetic mine+score
+  python3 scripts/self_evolve.py fixture-refine  # F165 hermetic refine-from-util
   python3 scripts/self_evolve.py nudge-text   # print soft nudge if warranted
 
 Env:
@@ -38,6 +46,9 @@ Env:
   TORII_EVOLUTION_ROOT           (default: <root>/memory/evolution)
   TORII_TOOL_PROBE_MINE=1        (default 1) — F117 mine-probes soft post-run
   TORII_TOOL_OUTCOME_PROBES_FILE override path for durable probe ledger
+  TORII_SKILL_REFINE=1           (default 1) — F165 GEPA-lite refine-from-util
+  TORII_SKILL_REFINE_MIN_GAP     default 0.33 chronic hub_archival/tool gap rate
+  TORII_SKILL_REFINE_MAX_BYTES   default 15360 (Hermes ≤15KB skill gate)
 """
 
 from __future__ import annotations
@@ -104,6 +115,507 @@ def _save_ledger(root: Path, data: dict[str, Any]) -> Path:
 def _slug(s: str) -> str:
     s = re.sub(r"[^a-zA-Z0-9._-]+", "-", s.strip().lower())
     return s.strip("-")[:72] or "skill"
+
+
+# ---------------------------------------------------------------------------
+# F165: GEPA-lite skill body refine from util traces
+# ---------------------------------------------------------------------------
+
+FEATURE_REFINE = "F165"
+REFINE_MARKER = "<!-- torii-f165-gepa-refine -->"
+REFINE_MARKER_CLOSE = "<!-- /torii-f165-gepa-refine -->"
+# Hermes self-evolution skill size gate (≤15KB)
+DEFAULT_REFINE_MAX_BYTES = 15 * 1024
+
+# Deterministic tool-first nudges when util traces show inject≠tool (GEPA reflection → mutation)
+REFINE_NUDGES: dict[str, dict[str, Any]] = {
+    "skill-prefer-hub-archival-early": {
+        "required_substrings": [
+            "archival_memory_search.py",
+            "hub_boost",
+            "TORII_RECON_WARM_HUB_QUERY",
+        ],
+        "nudge_lines": [
+            "**F165 GEPA-lite (util trace):** hub-archival inject without hub_boost is a measured gap.",
+            "1. **First tool call** this turn: `python3 scripts/archival_memory_search.py auto --files changed.py`",
+            "   Keep `TORII_RECON_WARM_HUB_QUERY=1` so multi-tenant warm themes expand the query.",
+            "2. Prefer hits that carry **hub_boost** / recon-warm hub heat; require path:line evidence.",
+            "3. Do not finish APPROVE while hub-archival is idle — one archival tool fire closes F155 util.",
+        ],
+    },
+    "skill-prefer-memory-cli-early": {
+        "required_substrings": [
+            "torii.py memory",
+            "archival_memory_search",
+        ],
+        "nudge_lines": [
+            "**F165 GEPA-lite (util trace):** memory inject without memory tools is a measured gap.",
+            "1. **First tool call:** `python3 scripts/torii.py memory -- search -- -q \"<path theme>\"`",
+            "2. Page cold TPs: `python3 scripts/archival_memory_search.py auto --files changed.py`",
+            "3. Prefer path-matched memory hits before writing findings.",
+        ],
+    },
+    "skill-prefer-product-cli": {
+        "required_substrings": [
+            "torii.py doctor",
+            "torii.py status",
+        ],
+        "nudge_lines": [
+            "**F165 GEPA-lite (util trace):** product-cli skill must fire doctor/status CLIs.",
+            "1. Run `python3 scripts/torii.py doctor` once when pack health is uncertain.",
+            "2. Surface `python3 scripts/torii.py status` for loop readiness before verdict.",
+        ],
+    },
+    "skill-prefer-critic-early": {
+        "required_substrings": [
+            "second_agent_critic.py",
+        ],
+        "nudge_lines": [
+            "**F165 GEPA-lite (util trace):** critic skill must invoke the checker panel.",
+            "1. Prefer path evidence; optionally `python3 scripts/second_agent_critic.py score --review REVIEW.md`.",
+            "2. Do not APPROVE without path:line on security findings.",
+        ],
+    },
+}
+
+
+def skill_refine_enabled() -> bool:
+    """F165: GEPA-lite refine-from-util (default on for CLI; hermes soft)."""
+    raw = (os.environ.get("TORII_SKILL_REFINE") or "1").strip().lower()
+    return raw not in ("0", "false", "no", "off")
+
+
+def skill_refine_min_gap_rate() -> float:
+    try:
+        return float(os.environ.get("TORII_SKILL_REFINE_MIN_GAP") or "0.33")
+    except (TypeError, ValueError):
+        return 0.33
+
+
+def skill_refine_max_bytes() -> int:
+    try:
+        n = int(os.environ.get("TORII_SKILL_REFINE_MAX_BYTES") or str(DEFAULT_REFINE_MAX_BYTES))
+        return max(2048, min(n, 32 * 1024))
+    except (TypeError, ValueError):
+        return DEFAULT_REFINE_MAX_BYTES
+
+
+def constraint_validate_skill(
+    text: str,
+    skill_id: str,
+    *,
+    max_bytes: int | None = None,
+) -> dict[str, Any]:
+    """Hermes self-evolution / GEPA constraint gate for skill bodies.
+
+    Gates: size ≤ max_bytes, skill id preserved, required tool probe substrings present.
+    """
+    max_b = max_bytes if max_bytes is not None else skill_refine_max_bytes()
+    raw = text if isinstance(text, str) else ""
+    size = len(raw.encode("utf-8"))
+    errors: list[str] = []
+    if size > max_b:
+        errors.append(f"size_{size}_gt_{max_b}")
+    if size < 40:
+        errors.append("size_too_small")
+    # id preserved in frontmatter or body
+    id_ok = bool(
+        re.search(rf"(?m)^id:\s*{re.escape(skill_id)}\s*$", raw)
+        or skill_id in raw
+    )
+    if not id_ok:
+        errors.append("id_missing")
+    req = list((REFINE_NUDGES.get(skill_id) or {}).get("required_substrings") or [])
+    missing = [s for s in req if s.lower() not in raw.lower()]
+    if missing:
+        errors.append("missing_probes:" + ",".join(missing))
+    return {
+        "ok": not errors,
+        "skill_id": skill_id,
+        "size": size,
+        "max_bytes": max_b,
+        "id_ok": id_ok,
+        "missing_probes": missing,
+        "errors": errors,
+        "feature": FEATURE_REFINE,
+    }
+
+
+def _load_json(path: Path) -> dict[str, Any]:
+    if not path.is_file():
+        return {}
+    try:
+        data = json.loads(path.read_text(encoding="utf-8", errors="replace"))
+        return data if isinstance(data, dict) else {}
+    except (json.JSONDecodeError, OSError, TypeError, ValueError):
+        return {}
+
+
+def diagnose_util_gaps(
+    out_dir: Path,
+    root: Path | None = None,
+    *,
+    min_gap_rate: float | None = None,
+) -> list[dict[str, Any]]:
+    """Reflect on util + fitness traces (GEPA: read trajectories, diagnose).
+
+    Returns skill targets with reason tags (this-run idle and/or chronic gap).
+    """
+    root = root or _root()
+    thr = min_gap_rate if min_gap_rate is not None else skill_refine_min_gap_rate()
+    util = _load_json(out_dir / "recovery-skill-util.json")
+    fitness = _load_json(root / ".torii" / "skill-fitness.json")
+    skills_fit = fitness.get("skills") if isinstance(fitness.get("skills"), dict) else {}
+
+    targets: dict[str, dict[str, Any]] = {}
+
+    def _add(sid: str, reason: str, **extra: Any) -> None:
+        if sid not in REFINE_NUDGES:
+            return
+        ent = targets.setdefault(
+            sid,
+            {"skill_id": sid, "reasons": [], "feature": FEATURE_REFINE},
+        )
+        if reason not in ent["reasons"]:
+            ent["reasons"].append(reason)
+        ent.update({k: v for k, v in extra.items() if v is not None})
+
+    idle = list(util.get("idle_ids") or util.get("prose_only_ids") or [])
+    for sid in idle:
+        _add(str(sid), "run_idle", util_rate=util.get("util_rate"))
+
+    if util.get("hub_archival_util_gap") or util.get("hub_archival_idle"):
+        _add(
+            "skill-prefer-hub-archival-early",
+            "hub_archival_util_gap",
+            hub_archival_util_gap=True,
+        )
+    if util.get("utilization_gap") and not idle:
+        # full recovery gap but idle list empty — still refine injected recovery skills
+        for sid in util.get("recovery_injected") or []:
+            if sid not in (util.get("tool_hit_ids") or []):
+                _add(str(sid), "utilization_gap")
+
+    # chronic fitness (F158 hub_archival_gap_rate / tool miss)
+    for sid, ent in skills_fit.items():
+        if not isinstance(ent, dict):
+            continue
+        sid_s = str(sid)
+        ha_gap = float(ent.get("hub_archival_gap_rate") or 0.0)
+        if ha_gap >= thr:
+            _add(sid_s, "chronic_hub_archival_gap", chronic_gap_rate=ha_gap)
+        tool_rate = ent.get("tool_hit_rate")
+        try:
+            tr = float(tool_rate) if tool_rate is not None else None
+        except (TypeError, ValueError):
+            tr = None
+        sel_n = int(ent.get("selected_n") or ent.get("hub_archival_selected_n") or 0)
+        if tr is not None and sel_n >= 2 and tr <= (1.0 - thr):
+            _add(sid_s, "chronic_tool_miss", tool_hit_rate=tr, selected_n=sel_n)
+        if ent.get("demoted"):
+            _add(sid_s, "fitness_demoted")
+
+    return list(targets.values())
+
+
+def refine_skill_body(text: str, skill_id: str, reasons: list[str]) -> tuple[str, bool]:
+    """Mutate skill body with tool-first GEPA-lite nudge block if probes missing or marker absent."""
+    spec = REFINE_NUDGES.get(skill_id) or {}
+    req = list(spec.get("required_substrings") or [])
+    lines = list(spec.get("nudge_lines") or [])
+    raw = text if text.endswith("\n") else text + "\n"
+    missing = [s for s in req if s.lower() not in raw.lower()]
+    already = REFINE_MARKER in raw
+    # re-refine only if still missing required probes
+    if already and not missing:
+        return raw, False
+    if not lines and not missing:
+        return raw, False
+
+    reason_blob = ", ".join(reasons) if reasons else "util_trace"
+    block_lines = [
+        "",
+        REFINE_MARKER,
+        f"## F165 GEPA-lite refine ({reason_blob})",
+        "",
+        *lines,
+        REFINE_MARKER_CLOSE,
+        "",
+    ]
+    block = "\n".join(block_lines)
+    if already:
+        # replace prior refine block
+        raw2 = re.sub(
+            rf"{re.escape(REFINE_MARKER)}.*?{re.escape(REFINE_MARKER_CLOSE)}\n?",
+            block.lstrip("\n"),
+            raw,
+            count=1,
+            flags=re.S,
+        )
+        if raw2 == raw:
+            raw2 = raw.rstrip() + "\n" + block.lstrip("\n")
+        return raw2 if raw2.endswith("\n") else raw2 + "\n", True
+
+    # append after body
+    return raw.rstrip() + "\n" + block.lstrip("\n"), True
+
+
+def refine_from_util(
+    out_dir: Path,
+    root: Path | None = None,
+    *,
+    apply: bool = True,
+    force_skills: list[str] | None = None,
+    min_gap_rate: float | None = None,
+) -> dict[str, Any]:
+    """F165: diagnose util/fitness gaps → constraint-gated skill body refine.
+
+    Writes refined bodies into agent/skills/active/ (apply=True) when constraints pass.
+    Always writes out_dir/skill-refine.json report.
+    """
+    root = root or _root()
+    out_dir = Path(out_dir)
+    report: dict[str, Any] = {
+        "feature": FEATURE_REFINE,
+        "scored_at": _now(),
+        "enabled": skill_refine_enabled(),
+        "apply": bool(apply),
+        "targets": [],
+        "refined": [],
+        "skipped": [],
+        "constraint_failures": [],
+        "ok": True,
+    }
+    if not skill_refine_enabled():
+        report["ok"] = True
+        report["reason"] = "refine_off"
+        _write_refine_report(out_dir, report)
+        return report
+
+    targets = diagnose_util_gaps(out_dir, root, min_gap_rate=min_gap_rate)
+    if force_skills:
+        have = {t["skill_id"] for t in targets}
+        for sid in force_skills:
+            if sid not in have and sid in REFINE_NUDGES:
+                targets.append(
+                    {
+                        "skill_id": sid,
+                        "reasons": ["force"],
+                        "feature": FEATURE_REFINE,
+                    }
+                )
+    report["targets"] = targets
+
+    active_dir = root / "agent" / "skills" / "active"
+    for t in targets:
+        sid = str(t["skill_id"])
+        path = active_dir / f"{sid}.md"
+        if not path.is_file():
+            # try proposal as source of truth
+            prop = root / "agent" / "skills" / "proposals" / f"{sid}.md"
+            if prop.is_file() and apply:
+                active_dir.mkdir(parents=True, exist_ok=True)
+                shutil.copy2(prop, path)
+            else:
+                report["skipped"].append({"skill_id": sid, "reason": "no_active_skill"})
+                continue
+        before = path.read_text(encoding="utf-8", errors="replace")
+        after, changed = refine_skill_body(before, sid, list(t.get("reasons") or []))
+        gate = constraint_validate_skill(after, sid)
+        entry = {
+            "skill_id": sid,
+            "reasons": t.get("reasons"),
+            "changed": changed,
+            "constraint": gate,
+            "path": (
+                str(path.relative_to(root))
+                if str(path).startswith(str(root))
+                else str(path)
+            ),
+        }
+        if not gate["ok"]:
+            report["constraint_failures"].append(entry)
+            report["ok"] = False
+            continue
+        if not changed:
+            report["skipped"].append({**entry, "reason": "already_refined"})
+            continue
+        if apply:
+            path.write_text(after if after.endswith("\n") else after + "\n", encoding="utf-8")
+            entry["applied"] = True
+        else:
+            entry["applied"] = False
+            entry["dry_run_bytes"] = len(after.encode("utf-8"))
+        report["refined"].append(entry)
+
+    report["refined_n"] = len(report["refined"])
+    report["target_n"] = len(targets)
+    # ledger event
+    try:
+        ledger = _load_ledger(root)
+        ledger.setdefault("refines", [])
+        ledger["refines"].append(
+            {
+                "at": _now(),
+                "feature": FEATURE_REFINE,
+                "out_dir": str(out_dir),
+                "refined_n": report["refined_n"],
+                "target_n": report["target_n"],
+                "skill_ids": [r["skill_id"] for r in report["refined"]],
+            }
+        )
+        ledger["refines"] = ledger["refines"][-50:]
+        ledger["last_refine"] = ledger["refines"][-1]
+        _save_ledger(root, ledger)
+    except OSError:
+        pass
+
+    _write_refine_report(out_dir, report)
+    return report
+
+
+def _write_refine_report(out_dir: Path, report: dict[str, Any]) -> Path | None:
+    try:
+        out_dir.mkdir(parents=True, exist_ok=True)
+        dest = out_dir / "skill-refine.json"
+        dest.write_text(json.dumps(report, indent=2) + "\n", encoding="utf-8")
+        return dest
+    except OSError:
+        return None
+
+
+def cmd_refine_from_util(args: argparse.Namespace) -> int:
+    """F165: GEPA-lite refine skill bodies from recovery/hub-archival util traces."""
+    out_dir = Path(args.out_dir)
+    if not out_dir.is_dir():
+        print(json.dumps({"feature": FEATURE_REFINE, "error": "no_out_dir", "ok": False}))
+        return 1
+    apply = not bool(getattr(args, "dry_run", False))
+    if getattr(args, "apply", False):
+        apply = True
+    force = []
+    raw_force = (getattr(args, "force_skills", "") or "").strip()
+    if raw_force:
+        force = [s.strip() for s in raw_force.split(",") if s.strip()]
+    report = refine_from_util(
+        out_dir,
+        root=_root(),
+        apply=apply,
+        force_skills=force or None,
+        min_gap_rate=float(args.min_gap) if getattr(args, "min_gap", None) is not None else None,
+    )
+    print(json.dumps(report, indent=2))
+    return 0 if report.get("ok") else 1
+
+
+def cmd_fixture_refine(args: argparse.Namespace) -> int:
+    """F165 hermetic: weak hub-archival body + util gap → refine + constraint pass."""
+    import tempfile
+
+    root_real = _root()
+    with tempfile.TemporaryDirectory() as td:
+        td_path = Path(td)
+        os.environ["TORII_ROOT"] = str(td_path)
+        os.environ["TORII_EVOLUTION_ROOT"] = str(td_path / "memory" / "evolution")
+        os.environ["TORII_SKILL_REFINE"] = "1"
+        out = td_path / "out"
+        out.mkdir(parents=True)
+        active = td_path / "agent" / "skills" / "active"
+        active.mkdir(parents=True)
+        sid = "skill-prefer-hub-archival-early"
+        # Weak body: missing hub_boost / archival CLI (inject-only slogans)
+        weak = (
+            f"---\nid: {sid}\nfeature: F154\nstatus: adopted\nalways: true\n"
+            f"always_priority: 95\n---\n\n"
+            f"## Skill: prefer-hub-archival-early (weak)\n\n"
+            f"Remember multi-tenant warm themes when reviewing PRs.\n"
+            f"Prefer archival memory if available.\n"
+        )
+        (active / f"{sid}.md").write_text(weak, encoding="utf-8")
+        # this-run util gap
+        (out / "recovery-skill-util.json").write_text(
+            json.dumps(
+                {
+                    "feature": "F121",
+                    "feature_hub_archival_util": "F155",
+                    "recovery_injected": [sid, "skill-prefer-memory-cli-early"],
+                    "recovery_injected_n": 2,
+                    "tool_hit_ids": ["skill-prefer-memory-cli-early"],
+                    "idle_ids": [sid],
+                    "prose_only_ids": [sid],
+                    "util_rate": 0.5,
+                    "utilization_gap": True,
+                    "hub_archival_injected": True,
+                    "hub_archival_tool_hit": False,
+                    "hub_archival_idle": True,
+                    "hub_archival_util_gap": True,
+                }
+            ),
+            encoding="utf-8",
+        )
+        # chronic fitness gap
+        fit_dir = td_path / ".torii"
+        fit_dir.mkdir(parents=True)
+        (fit_dir / "skill-fitness.json").write_text(
+            json.dumps(
+                {
+                    "schema_version": 1,
+                    "feature": "F158",
+                    "skills": {
+                        sid: {
+                            "id": sid,
+                            "hub_archival_selected_n": 3,
+                            "hub_archival_hit_n": 0,
+                            "hub_archival_gap_n": 3,
+                            "hub_archival_util_rate": 0.0,
+                            "hub_archival_gap_rate": 1.0,
+                        }
+                    },
+                }
+            ),
+            encoding="utf-8",
+        )
+
+        before_gate = constraint_validate_skill(weak, sid)
+        report = refine_from_util(out, root=td_path, apply=True)
+        after_text = (active / f"{sid}.md").read_text(encoding="utf-8")
+        after_gate = constraint_validate_skill(after_text, sid)
+        has_marker = REFINE_MARKER in after_text
+        refined_n = int(report.get("refined_n") or 0)
+        # diagnose found target
+        targets = diagnose_util_gaps(out, td_path)
+        has_target = any(t.get("skill_id") == sid for t in targets)
+        f165_ok = (
+            has_target
+            and refined_n >= 1
+            and has_marker
+            and after_gate.get("ok") is True
+            and not before_gate.get("ok")  # weak failed probes; refined passes
+            and "hub_boost" in after_text
+            and "archival_memory_search.py" in after_text
+        )
+        # paper artifact under real repo fixtures (optional write)
+        result = {
+            "feature": FEATURE_REFINE,
+            "fixture_pass": f165_ok,
+            "f165_ok": f165_ok,
+            "has_target": has_target,
+            "refined_n": refined_n,
+            "has_marker": has_marker,
+            "before_constraint_ok": before_gate.get("ok"),
+            "after_constraint_ok": after_gate.get("ok"),
+            "before_errors": before_gate.get("errors"),
+            "after_missing": after_gate.get("missing_probes"),
+            "reasons": next(
+                (t.get("reasons") for t in targets if t.get("skill_id") == sid),
+                [],
+            ),
+            "report_ok": report.get("ok"),
+        }
+        print(json.dumps(result, indent=2))
+        # restore TORII_ROOT for caller
+        os.environ["TORII_ROOT"] = str(root_real)
+        return 0 if f165_ok else 1
 
 
 def cmd_ingest(args: argparse.Namespace) -> int:
@@ -1627,6 +2139,34 @@ def main(argv: list[str] | None = None) -> int:
     pm.add_argument("--force", action="store_true")
     pm.set_defaults(func=cmd_mine_probes)
 
+    prf = sub.add_parser(
+        "refine-from-util",
+        help="F165 GEPA-lite skill body refine from recovery/hub-archival util traces",
+    )
+    prf.add_argument("--out-dir", required=True)
+    prf.add_argument(
+        "--dry-run",
+        action="store_true",
+        help="Diagnose + mutate in memory; do not write skill files",
+    )
+    prf.add_argument(
+        "--apply",
+        action="store_true",
+        help="Write refined bodies to agent/skills/active (default unless --dry-run)",
+    )
+    prf.add_argument(
+        "--force-skills",
+        default="",
+        help="Comma-separated skill ids to refine even without gap",
+    )
+    prf.add_argument(
+        "--min-gap",
+        type=float,
+        default=None,
+        help="Chronic gap_rate threshold (default TORII_SKILL_REFINE_MIN_GAP=0.33)",
+    )
+    prf.set_defaults(func=cmd_refine_from_util)
+
     pe = sub.add_parser("eval", help="Score proposals offline")
     pe.add_argument("--proposal", default="all")
     pe.set_defaults(func=cmd_eval)
@@ -1648,6 +2188,10 @@ def main(argv: list[str] | None = None) -> int:
     sub.add_parser("fixture", help="F117 hermetic mine+score fixture").set_defaults(
         func=cmd_fixture
     )
+    sub.add_parser(
+        "fixture-refine",
+        help="F165 hermetic GEPA-lite refine-from-util fixture",
+    ).set_defaults(func=cmd_fixture_refine)
 
     args = p.parse_args(argv)
     return int(args.func(args))

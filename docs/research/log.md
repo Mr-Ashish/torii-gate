@@ -1,5 +1,40 @@
 # Torii research → product log
 
+## 2026-08-01 — F165 GEPA-lite skill refine-from-util
+
+### Papers / posts
+- **GEPA** (ICLR 2026 Oral, arXiv 2507.19457): reflective evolution reads trajectories, diagnoses failures, mutates text under eval — not scalar RL.
+- **Hermes Agent Self-Evolution**: DSPy+GEPA skill evolution + constraint gates (size ≤15KB, tests, semantic preserve).
+- Loop Engineering: design the loop, get a score — recovery util must compound into skill *text*, not only re-prompt.
+- Mem0 / F155: inject ≠ utilization; idle always skills are measured gaps.
+
+### OSS design patterns stolen
+1. diagnose_util_gaps from recovery-skill-util + fitness chronic gap_rate (GEPA reflection without LLM).
+2. refine_skill_body tool-first nudges + F165 markers for hub-archival/memory/product/critic.
+3. constraint_validate_skill Hermes gates: size, id preserved, required tool probes.
+4. hermes soft refine-from-util after F163 fitness cycle; skill_loop skill_refine_ok.
+
+### Insight
+F155–F163 measure/re-prompt hub-archival util but leave skill bodies static. Highest ROI: GEPA-lite refine active skill text from util traces so next PR fires hub_boost tools without burning F108 again.
+
+### Feature shipped (F165)
+- self_evolve refine-from-util + fixture-refine + constraint gates
+- hermes soft wire TORII_SKILL_REFINE; skill-refine.json artifact
+- skill_loop skill_refine_ok / hermes_skill_refine
+- PRODUCT self-evolve line; research pattern note
+
+### Metric
+- Offline: fixture-refine f165_ok; pytest self_evolve 5 passed
+- Live local: recall=1.0 tp=4 util_rate=1.0 recovery_injected_n=3 refined memory-cli (chronic_tool_miss)
+- Modal pytorch#191831 BIT3_OK ~89.6s REQUEST_CHANGES POST_COMMENT=0 log_streaming=true
+
+### Loop-engineering / Hermes practice used
+**Trace → reflect → mutate → gate** — GEPA/Hermes self-evolution without full DSPy stack.
+
+### SHA
+`(pending)`
+
+
 ## 2026-08-01 — F154 hub-archival cycle-adopt + F119 always priority
 
 ### Papers / posts

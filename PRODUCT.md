@@ -226,6 +226,8 @@ budget always → compact body → score tool_hit → util gap? → budgeted re-
 
 **Hub-archival dual-gate adopt + always budget (F154):** `skill_auto_adopt cycle-hub-archival` adopts the F153 skill into `active/` with `always_priority=95` under F119 (memory 100 > hub-archival 95 > product 90 > critic 85). Soft post-F152 hermes wire closes propose→adopt so multi-tenant warm paging ships in the always inject budget.
 
+**GEPA-lite skill refine-from-util (F165):** Hermes self-evolution / ICLR 2026 GEPA pattern — when recovery or hub-archival util traces show inject≠tool (or chronic fitness gap_rate), `self_evolve.py refine-from-util` mutates active skill bodies with tool-first nudges under constraint gates (size ≤15KB, id preserved, required tool probes). Soft hermes wire after F163 fitness cycle; skill-loop surfaces `skill_refine_ok`.
+
 ---
 
 ## Mental model D — Hub-archival compound loop (F155–F163)

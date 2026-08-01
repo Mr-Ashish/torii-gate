@@ -107,3 +107,7 @@ Generated: `2026-08-01T09:45:56Z`
 - Modal rows may omit composite when fitness was scored only in-container.
 - Source of truth paths: `docs/benchmarks/traces/*/summary.json`.
 
+## F165 GEPA-lite skill refine-from-util
+- Offline fixture-refine f165_ok (weak body → constraint pass after refine)
+- Live local: recall=1.0 util_rate=1.0 refined_n≥0–1 (chronic tool miss)
+- Modal pytorch#191831 BIT3_OK ~89.6s log_streaming POST_COMMENT=0
