@@ -589,6 +589,15 @@ REGISTRY: list[ToggleSpec] = [
         "F98",
     ),
     ToggleSpec(
+        "memory_graph",
+        "TORII_MEMORY_GRAPH",
+        "bool",
+        True,
+        "product",
+        "F100 Zep-style temporal edges on TP/FP memory",
+        "F100",
+    ),
+    ToggleSpec(
         "trace_vault",
         "TORII_TRACE_VAULT",
         "bool",

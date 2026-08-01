@@ -332,6 +332,17 @@ if [[ -f "$SCRIPTS/memory_consolidate.py" ]]; then
   esac
 fi
 
+# F100: rebuild temporal memory graph after writes (soft)
+if [[ -f "$SCRIPTS/memory_temporal_graph.py" ]]; then
+  case "${TORII_MEMORY_GRAPH:-1}" in
+    0|false|no|off) ;;
+    *)
+      stage memory_temporal_graph \
+        python3 "$SCRIPTS/memory_temporal_graph.py" build || true
+      ;;
+  esac
+fi
+
 # F68: research tool candidates from this tree's loops (soft; opt-in)
 case "${TORII_AGENT_TOOLS_RESEARCH:-0}" in
   1|true|yes|on)

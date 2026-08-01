@@ -1,0 +1,13 @@
+{
+  "feature": "F100",
+  "repo": "pytorch/pytorch",
+  "pr": 191813,
+  "model": "deepseek/deepseek-v4-pro",
+  "host": "modal",
+  "outcome": "BIT3_OK",
+  "elapsed_s": 86.2,
+  "log_streaming": true,
+  "post_comment": 0,
+  "tool_call_turns": 4,
+  "captured_at": "2026-08-01T03:23:15Z"
+}

@@ -414,6 +414,75 @@ try:
 except Exception:
     archival_search_on = "0"
 
+# F100: Zep-style temporal memory graph inject (soft)
+memory_graph_on = "0"
+memory_graph_edges = "0"
+try:
+    import sys as _sys_f100
+    _sys_f100.path.insert(0, str(torii_root / "scripts"))
+    from memory_temporal_graph import (  # type: ignore
+        enabled as graph_enabled,
+        build_from_disk as graph_build,
+        save_graph as graph_save,
+        default_graph_path as graph_path,
+        query_graph as graph_query,
+        render_inject as graph_render,
+    )
+
+    if graph_enabled():
+        _g = graph_build(torii_root)
+        graph_save(graph_path(torii_root), _g)
+        (out_dir / "memory-graph.json").write_text(
+            __import__("json").dumps(_g, indent=2) + "\n", encoding="utf-8"
+        )
+        _paths_f100 = []
+        for f in files:
+            pth = f.get("path") or f.get("filename") or ""
+            if pth:
+                _paths_f100.append(pth)
+        _neigh = []
+        _seeds = []
+        _seen = set()
+        for _p in (_paths_f100 or [""])[:20]:
+            _qr = graph_query(_g, path=_p, limit=12)
+            for _s in _qr.get("seeds") or []:
+                if _s not in _seen:
+                    _seen.add(_s)
+                    _seeds.append(_s)
+            for _e in _qr.get("neighbors") or []:
+                _k = f"{_e.get('edge_type')}|{_e.get('from')}|{_e.get('to')}"
+                if _k not in _seen:
+                    _seen.add(_k)
+                    _neigh.append(_e)
+        _seed_nodes = [n for n in (_g.get("nodes") or []) if n.get("id") in set(_seeds)]
+        _res = {
+            "feature": "F100",
+            "seeds": _seeds,
+            "seed_nodes": _seed_nodes,
+            "neighbors": _neigh[:16],
+            "neighbor_count": len(_neigh),
+        }
+        _sec = graph_render(_res, paths=_paths_f100)
+        _pp = Path(os.environ["PROMPT_PATH"])
+        _txt = _pp.read_text(encoding="utf-8") if _pp.is_file() else ""
+        if "<!-- torii-f100-memory-graph -->" in _txt:
+            import re as _re_f100
+            _txt = _re_f100.sub(
+                r"<!-- torii-f100-memory-graph -->.*?<!-- /torii-f100-memory-graph -->\n?",
+                _sec,
+                _txt,
+                count=1,
+                flags=_re_f100.S,
+            )
+        else:
+            _txt = _txt.rstrip() + "\n\n" + _sec
+        _pp.write_text(_txt, encoding="utf-8")
+        memory_graph_on = "1"
+        memory_graph_edges = str(len(_neigh))
+        prompt = _txt
+except Exception:
+    memory_graph_on = "0"
+
 # F71: deterministic source→sink prefilter + federated sanitized signals
 taint_prefilter_on = "0"
 taint_candidates = "0"
@@ -722,6 +791,8 @@ meta = {
     "SCOPED_MEMORY_FP": scoped_memory_fp,
     "ARCHIVAL_SEARCH": archival_search_on,
     "ARCHIVAL_SEARCH_HITS": archival_search_hits,
+    "MEMORY_GRAPH": memory_graph_on,
+    "MEMORY_GRAPH_EDGES": memory_graph_edges,
     "TAINT_PREFILTER": taint_prefilter_on,
     "TAINT_CANDIDATES": taint_candidates,
     "FEDERATED_SIGNALS": federated_signals_on,

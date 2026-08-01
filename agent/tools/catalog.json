@@ -1,8 +1,8 @@
 {
   "schema_version": 1,
-  "feature": "F98",
+  "feature": "F100",
   "description": "Torii agent tool catalog \u2014 research \u2192 eval \u2192 adopt pipeline",
-  "updated_at": "2026-08-01T03:08:55Z",
+  "updated_at": "2026-08-01T03:21:17Z",
   "tools": [
     {
       "id": "terminal",
@@ -377,6 +377,15 @@
       "feature": "F98",
       "source": "memory_oss",
       "toolset": "terminal",
+      "adopted_at": "2026-08-01"
+    },
+    {
+      "id": "memory-temporal-graph",
+      "name": "Zep-style temporal memory edges (F100)",
+      "status": "adopted",
+      "script": "scripts/memory_temporal_graph.py",
+      "feature": "F100",
+      "source": "memory_oss",
       "adopted_at": "2026-08-01"
     }
   ],

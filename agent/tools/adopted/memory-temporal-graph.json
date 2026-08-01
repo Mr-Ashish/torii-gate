@@ -1,0 +1,6 @@
+{
+  "id": "memory-temporal-graph",
+  "feature": "F100",
+  "status": "adopted",
+  "one_liner": "Supersedes/same_theme/co_path edges with valid_from/until for TP/FP"
+}

@@ -1,6 +1,34 @@
 # Torii research → product log
 
 
+## 2026-08-01 — F100 Zep-style temporal memory graph edges
+
+### Papers / posts / OSS
+- **Zep:** temporal knowledge graph — facts as edges with validity windows.
+- Torii F93 `superseded_by` was field-only; F97–F98 tiers/search still flat bags.
+
+### OSS / eng patterns
+1. Edges: supersedes / same_theme / co_path / updated_from + valid_from/until.
+2. Query 1-hop by path/theme/id; inject supersession warnings into prompt.
+3. Soft assemble-context + post-review rebuild; memory_loop stage.
+
+### Insight
+Supersession without a graph is invisible at inject. Highest ROI: **temporal edges as tools-as-code**.
+
+### Feature shipped (F100)
+- `scripts/memory_temporal_graph.py` build/query/inject/fixture
+- assemble + run-torii-review wire; pack; PRODUCT note
+
+### Loop-engineering practice used
+**Structural memory over prose** — edges are deterministic and testable.
+
+### Metric
+- Offline: fixture super+theme+path; memory_loop L3 (9 stages); 553 pytest; smoke PASS
+- Live: **Modal** pytorch#191813 deepseek/deepseek-v4-pro BIT3_OK ~86s; log_streaming=true; POST_COMMENT=0
+
+### SHA
+PENDING
+
 ## 2026-08-01 — F99 brand dual compound loops (skills + memory)
 
 ### Papers / posts / OSS
