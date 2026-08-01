@@ -2,7 +2,7 @@
 
 # Commercial product scorecard
 
-_Generated: `2026-08-01T17:06:40Z` · schema **2** · **overall_est=8.5/10** (baseline 6.6) · commercial_ok=`True`_
+_Generated: `2026-08-01T17:12:20Z` · schema **2** · **overall_est=8.5/10** (baseline 6.6) · commercial_ok=`True`_
 
 Single commercial scorecard: golden path · buyer · public eval · install · ops · enterprise · gate cert · quieter · tool-use · workflow · measured cost/PR
 
@@ -55,9 +55,9 @@ Measured dogfood cost/PR + time-to-signal (local vault only; not federated)
 |--------|------:|
 | cost_honesty_ok | True |
 | cost_ok (≥5 hermes-usage + p50) | True |
-| cost samples | 25 |
+| cost samples | 28 |
 | cost/PR p50 (USD) | 0.016 |
-| time-to-signal p50 (s) | 92.3 |
+| time-to-signal p50 (s) | 92.55 |
 | cost dashboard not stub | True |
 | privacy: cost local (not federated) | True |
 | landing measured dogfood | True |

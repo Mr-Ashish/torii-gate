@@ -48,6 +48,7 @@ python3 scripts/torii.py memory-loop -- fixture
 - Not a full ASPM dashboard  
 - Not “share full findings across orgs”  
 - Not auto-merge  
+- Not the cost/PR ledger — measured dogfood spend lives in ops (`python3 scripts/torii.py ops -- status` · [`ops/cost-pr-dashboard.md`](ops/cost-pr-dashboard.md)); memory federates **themes only** ([`FEDERATION.md`](FEDERATION.md))
 
 Related: [`QUIETER.md`](QUIETER.md) · [`FEDERATION.md`](FEDERATION.md) · [`TOOL-USE.md`](TOOL-USE.md) · [`GATE.md`](GATE.md) · install [`INSTALL.md`](INSTALL.md).
 

@@ -1,0 +1,399 @@
+{
+  "schema_version": 1,
+  "feature": "F78",
+  "at": "2026-08-01T17:13:54Z",
+  "review": "/tmp/torii-run-191840-1785604354/torii/.torii-out/review-191840.md",
+  "out_dir": "/tmp/torii-run-191840-1785604354/torii/.torii-out",
+  "maker_verdict": "APPROVE",
+  "panel": {
+    "composite": 0.7887,
+    "level": "L2",
+    "checkers_ok": 20,
+    "checkers_total": 21,
+    "pass_rate": 0.9524
+  },
+  "decision": {
+    "maker_verdict": "APPROVE",
+    "recommended_verdict": "APPROVE",
+    "demoted": false,
+    "reasons": [],
+    "path_evidence": 1.0,
+    "composite": 0.7887,
+    "applied_demote": false
+  },
+  "checkers": [
+    {
+      "id": "structure",
+      "name": "Verdict structure",
+      "ok": true,
+      "score": 1.0,
+      "level": "",
+      "detail": {
+        "verdict": "APPROVE",
+        "has_summary": true,
+        "has_blocking": true,
+        "has_checked": true,
+        "path_mentions": 16
+      },
+      "error": ""
+    },
+    {
+      "id": "f70_dual_critic",
+      "name": "Dual-pass path/FP/TP critic (F70+F95+F101 graph)",
+      "ok": false,
+      "score": 0.0,
+      "level": "",
+      "detail": {
+        "precision_proxy": 0.0,
+        "effective_precision": 0.0,
+        "effective_aware": true,
+        "graph_supersede_aware": true,
+        "graph_supersede_edges": 0,
+        "effective_floor": 0.25,
+        "weak_evidence": 1,
+        "confirmed_tp": 0,
+        "stale_tp_match": 0,
+        "superseded_tp": 0,
+        "likely_fp": 0,
+        "chunk_count": 1
+      },
+      "error": ""
+    },
+    {
+      "id": "f72_chain",
+      "name": "Full-chain revalidation (F72)",
+      "ok": true,
+      "score": 0.0,
+      "level": "",
+      "detail": {
+        "full_chain_rate": 0.0,
+        "scorecard_pct": 0.0,
+        "verdict_checker": "APPROVE",
+        "finding_count": 0,
+        "unvalidated": 0
+      },
+      "error": ""
+    },
+    {
+      "id": "f73_fitness",
+      "name": "Trajectory fitness (F73)",
+      "ok": true,
+      "score": 0.9094,
+      "level": "L3",
+      "detail": {
+        "composite": 0.9094,
+        "path_evidence": 1.0,
+        "procedure": 0.9375,
+        "tool_use": 0.85,
+        "chain_quality": 0.7,
+        "verdict": "APPROVE"
+      },
+      "error": ""
+    },
+    {
+      "id": "f75_memory",
+      "name": "Scoped memory conflicts (F75)",
+      "ok": true,
+      "score": 1.0,
+      "level": "",
+      "detail": {
+        "conflict_count": 0,
+        "suppress_count": 0,
+        "item_count": 0
+      },
+      "error": ""
+    },
+    {
+      "id": "f121_recovery_util",
+      "name": "Recovery skill utilization (F121)",
+      "ok": true,
+      "score": 1.0,
+      "level": "",
+      "detail": {
+        "utilization_gap": false,
+        "util_rate": 1.0,
+        "recovery_injected": [
+          "skill-prefer-memory-cli-early",
+          "skill-prefer-hub-archival-early",
+          "skill-prefer-product-cli"
+        ],
+        "tool_hit_ids": [
+          "skill-prefer-memory-cli-early",
+          "skill-prefer-hub-archival-early",
+          "skill-prefer-product-cli"
+        ],
+        "idle_ids": [],
+        "inject_chars": 3337,
+        "f120_chars_saved": 1999,
+        "hub_archival_util_gap": false,
+        "hub_archival_injected": true,
+        "hub_archival_tool_hit": true
+      },
+      "error": ""
+    },
+    {
+      "id": "f136_scorecard_util",
+      "name": "Scorecard skill utilization (F136)",
+      "ok": true,
+      "score": 1.0,
+      "level": "",
+      "detail": {
+        "utilization_gap": false,
+        "util_rate": 1.0,
+        "scorecard_injected": [],
+        "scorecard_injected_n": 0,
+        "tool_hit_ids": [],
+        "idle_ids": [],
+        "inject_chars": 3337
+      },
+      "error": ""
+    },
+    {
+      "id": "f127_hub_gap",
+      "name": "Hub gap recovery pressure (F127)",
+      "ok": true,
+      "score": 1.0,
+      "level": "",
+      "detail": {
+        "feature": "F127",
+        "gap_pressure": 0.0,
+        "thr": 0.34,
+        "high": false,
+        "util_rate": 1.0,
+        "idle_ids": [],
+        "local_gap": false,
+        "recovery_injected_n": 3,
+        "hub_skill_n": 4,
+        "privacy_ok": true,
+        "reason": "hub_gap_below_thr"
+      },
+      "error": ""
+    },
+    {
+      "id": "f139_scorecard_hub_gap",
+      "name": "Scorecard hub gap pressure (F139)",
+      "ok": true,
+      "score": 1.0,
+      "level": "",
+      "detail": {
+        "gap_pressure": 0.0,
+        "thr": 0.34,
+        "high": false,
+        "reason": "no_scorecard_injected",
+        "privacy_ok": true,
+        "hub_skill_n": 0
+      },
+      "error": ""
+    },
+    {
+      "id": "f141_memory_util",
+      "name": "Memory tool utilization (F141)",
+      "ok": true,
+      "score": 1.0,
+      "level": "",
+      "detail": {
+        "feature": "F141",
+        "utilization_gap": false,
+        "util_score": 1.0,
+        "hit_count": 8,
+        "inject_offered": true,
+        "tool_call_turns": 4,
+        "tools_used": [
+          "archival_search",
+          "torii_memory",
+          "torii_product_memory"
+        ],
+        "reason": "memory_tools_used"
+      },
+      "error": ""
+    },
+    {
+      "id": "f143_memory_hub_gap",
+      "name": "Memory hub gap pressure (F143)",
+      "ok": true,
+      "score": 1.0,
+      "level": "",
+      "detail": {
+        "feature": "F143",
+        "gap_pressure": 0.0,
+        "thr": 0.34,
+        "high": false,
+        "util_score": 1.0,
+        "hit_count": 8,
+        "local_gap": false,
+        "inject_offered": true,
+        "hub_skill_n": 1,
+        "privacy_ok": true,
+        "reason": "memory_hub_gap_below_thr"
+      },
+      "error": ""
+    },
+    {
+      "id": "f150_recon_warm_hub",
+      "name": "Recon-warm hub heat (F150)",
+      "ok": true,
+      "score": 1.0,
+      "level": "",
+      "detail": {
+        "feature": "F150",
+        "heat": 0.0,
+        "thr": 0.34,
+        "high": false,
+        "theme_n": 0,
+        "max_tenants": 0,
+        "hub_boost_n": 0,
+        "used_hub": true,
+        "privacy_ok": true,
+        "reason": "recon_warm_heat_below_thr"
+      },
+      "error": ""
+    },
+    {
+      "id": "f156_hub_archival_util",
+      "name": "Hub-archival util gap (F156)",
+      "ok": true,
+      "score": 1.0,
+      "level": "",
+      "detail": {
+        "enabled": true,
+        "feature": "F156",
+        "feature_hub": "F161",
+        "skill_id": "skill-prefer-hub-archival-early",
+        "hub_archival_injected": true,
+        "hub_archival_tool_hit": true,
+        "hub_archival_util_gap": false,
+        "hub_archival_ok": true,
+        "hub_archival_gap_pressure": 0.0,
+        "hub_archival_hub_high": false,
+        "hub_archival_hub_gap_hits": 0,
+        "util_rate": 1.0,
+        "idle_ids": [],
+        "tool_hit_ids": [
+          "skill-prefer-memory-cli-early",
+          "skill-prefer-hub-archival-early",
+          "skill-prefer-product-cli"
+        ],
+        "reason": "hub_archival_tool_ok"
+      },
+      "error": ""
+    },
+    {
+      "id": "f169_refine_dual_fail",
+      "name": "GEPA refine dual fail (F169)",
+      "ok": true,
+      "score": 0.95,
+      "level": "",
+      "detail": {
+        "feature": "F169",
+        "dual_fail": false,
+        "dual_pass": null,
+        "refined_injected": true,
+        "tool_contrib_pp": 0.0,
+        "fail_pressure": 0.0,
+        "high_fail": false,
+        "reason": "refine_dual_ok"
+      },
+      "error": ""
+    },
+    {
+      "id": "f173_refine_decay_hub",
+      "name": "Multi-tenant refine dual_fail decay (F173)",
+      "ok": true,
+      "score": 1.0,
+      "level": "",
+      "detail": {
+        "feature": "F173",
+        "reason": "no_multi_tenant_decay",
+        "chronic_n": 0
+      },
+      "error": ""
+    },
+    {
+      "id": "f176_free_rider_revive",
+      "name": "Free-rider dual_pass revive gate (F176)",
+      "ok": true,
+      "score": 1.0,
+      "level": "",
+      "detail": {
+        "feature": "F176",
+        "reason": "no_free_rider_revive",
+        "free_n": 0,
+        "multi_decay_themes": 0
+      },
+      "error": ""
+    },
+    {
+      "id": "f177_revive_pp_gate",
+      "name": "Revive contribution_pp floor (F177)",
+      "ok": true,
+      "score": 1.0,
+      "level": "",
+      "detail": {
+        "feature": "F177",
+        "reason": "no_low_pp_revive_risk",
+        "blocked_n": 0,
+        "min_pp": 10.0,
+        "tool_pp": null
+      },
+      "error": ""
+    },
+    {
+      "id": "f179_revive_loo_gate",
+      "name": "Revive LOO attribution floor (F179)",
+      "ok": true,
+      "score": 1.0,
+      "level": "",
+      "detail": {
+        "feature": "F179",
+        "reason": "no_loo_revive_risk",
+        "blocked_n": 0
+      },
+      "error": ""
+    },
+    {
+      "id": "f180_hub_gepa_compound",
+      "name": "Hub-archival \u00d7 GEPA compound (F180)",
+      "ok": true,
+      "score": 1.0,
+      "level": "",
+      "detail": {
+        "feature": "F180",
+        "reason": "no_compound_pressure",
+        "ha_gap": false,
+        "gepa_pressure": false,
+        "ha_reasons": [],
+        "gepa_reasons": []
+      },
+      "error": ""
+    },
+    {
+      "id": "f186_compound_reprompt_pressure",
+      "name": "Compound re-prompt chronic miss (F186)",
+      "ok": true,
+      "score": 1.0,
+      "level": "",
+      "detail": {
+        "feature": "F186",
+        "reason": "no_chronic_pressure",
+        "chronic": false,
+        "idle": false,
+        "miss_n": 0,
+        "recover_rate": 0.0,
+        "reasons": []
+      },
+      "error": ""
+    },
+    {
+      "id": "f81_llm",
+      "name": "LLM checker (F81, skipped)",
+      "ok": true,
+      "score": 0.5,
+      "level": "",
+      "detail": {
+        "skipped": true,
+        "reason": "TORII_LLM_CRITIC disabled"
+      },
+      "error": ""
+    }
+  ]
+}

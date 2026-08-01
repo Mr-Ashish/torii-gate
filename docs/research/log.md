@@ -1,4 +1,38 @@
 
+## 2026-08-01 — GATE_COST_PAIR: certificate × cost on GATE contract
+
+### Papers / posts
+- Merge-authority buyers ask “why closed?” and “what did it cost?” on the same dogfood row.
+- GATE.md still said cost/PR **stub**; COST_PR destubbed ops long ago.
+- Memory JTBD is quieter FP/TP — must not be confused with spend telemetry.
+
+### Decide / copy / skip
+- **Copy:** GATE.md Certificate × cost table + destub ops language.
+- **Copy:** MEMORY.md “not the cost ledger” + ops pointer.
+- **Copy:** quieter/ops refresh from vault.
+- **Skip:** F185+; no certificate schema change.
+
+### Feature shipped (GATE_COST_PAIR)
+- GATE.md cert×cost buyer section
+- MEMORY.md boundary vs cost/PR
+- quieter + ops report refresh
+
+### Metric
+- Offline: commercial cost_honesty_ok · overall_est 8.5 · GATE cert×cost section present
+- Live Modal: pytorch#191840 BIT3_OK ~99.6s tools=4 POST_COMMENT=0 cert+cost in vault
+- Traces: docs/benchmarks/traces/20260801-1712-pytorch-pytorch-PR191840-modal-gate-cost-pair/
+- Modal: https://modal.com/apps/mr-ashish/main/ap-fAYex7UJozMAfTK6EsTilm
+
+### scorecard_target
+JTBD (#3) · simplicity (#12) · merge-authority honesty
+
+### dim_lift
+gate contract pairs reason codes with measured spend path
+
+### SHA
+`(pending push)`
+
+
 ## 2026-08-01 — DAY2_COST_CLOSE: self-evolve cost first + public-eval cost refresh
 
 ### Papers / posts

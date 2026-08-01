@@ -34,6 +34,23 @@ Artifacts: `gate-certificate.json` / `.md` · scorecard: [`benchmarks/gate-certi
 
 **Soft wire (every run):** `save-trace.sh` emits the certificate into `.torii-out/` + the per-run trace dir (disable with `TORII_GATE_CERTIFICATE=0`). The reusable workflow attaches `--certificate` when posting `torii/gate`. Ops dashboard shows the **last gate certificate** from the dogfood vault (`python3 scripts/torii.py ops -- report`).
 
+### Certificate × cost (dogfood honesty)
+
+Same vault row can answer *why did the gate close?* **and** *what did that PR cost?*
+
+| Artifact | Path | Field |
+|----------|------|--------|
+| Gate certificate | `gate-certificate.json` | `certificate_id`, reason codes, path evidence |
+| Hermes usage | `hermes-usage.json` | `estimated_cost_usd` |
+| Ops rollup | [`ops/cost-pr-dashboard.md`](ops/cost-pr-dashboard.md) | p50 cost/PR · p50 time-to-signal · cert ids |
+
+```bash
+python3 scripts/torii.py ops -- status
+python3 scripts/torii.py commercial -- status   # Cost honesty section
+```
+
+Cost/PR telemetry is **local vault only** (never federated) — [`enterprise/PRIVACY.md`](enterprise/PRIVACY.md).
+
 ## Entry points
 ```bash
 ./scripts/run-torii-gate.sh          # product entry (security forced)
@@ -56,12 +73,13 @@ Required checks for a hard merge gate should use **`torii/gate`**. Optional hard
 
 **Own-repo quieter-over-time:** require **`torii/gate`**, then measure path evidence / tool use / weak APPROVE over dogfood → [`QUIETER.md`](QUIETER.md) · `python3 scripts/torii.py quieter -- report`.
 
-**Reliability / ops:** fail-closed defaults · cost/PR stub · smoke CI → [`ops/RELIABILITY.md`](ops/RELIABILITY.md) · [`ops/DASHBOARD.md`](ops/DASHBOARD.md).
+**Reliability / ops:** fail-closed defaults · **measured** cost/PR · smoke CI → [`ops/RELIABILITY.md`](ops/RELIABILITY.md) · [`ops/DASHBOARD.md`](ops/DASHBOARD.md) · [`ops/cost-pr-dashboard.md`](ops/cost-pr-dashboard.md).
 
 ```bash
 python3 scripts/golden_path_metrics.py fixture
 python3 scripts/golden_path_metrics.py report
 python3 scripts/ops_dashboard.py report --smoke
+python3 scripts/torii.py ops -- status
 ./scripts/smoke-torii-gate.sh   # also .github/workflows/smoke-offline.yml
 ```
 

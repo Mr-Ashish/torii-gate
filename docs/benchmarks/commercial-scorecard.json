@@ -1,7 +1,7 @@
 {
   "feature": "COMMERCIAL",
   "schema": 2,
-  "scored_at": "2026-08-01T17:06:40Z",
+  "scored_at": "2026-08-01T17:12:20Z",
   "scorecard_target": "7.5+",
   "dim_lift": "commercial rollup: priority 1\u20136 + post-queue cert/quieter/tools + workflows-as-code + cost honesty",
   "one_liner": "Single commercial scorecard: golden path \u00b7 buyer \u00b7 public eval \u00b7 install \u00b7 ops \u00b7 enterprise \u00b7 gate cert \u00b7 quieter \u00b7 tool-use \u00b7 workflow \u00b7 measured cost/PR",
@@ -582,9 +582,9 @@
   },
   "cost_honesty": {
     "cost_ok": true,
-    "cost_n": 25,
+    "cost_n": 28,
     "cost_p50_usd": 0.016,
-    "tts_p50_s": 92.3,
+    "tts_p50_s": 92.55,
     "cost_md_not_stub": true,
     "privacy_cost_local": true,
     "landing_measured": true,
