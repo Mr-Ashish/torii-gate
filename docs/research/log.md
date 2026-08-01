@@ -27,7 +27,7 @@ Intelligence without a customer-facing skill loop story under-sells the moat. Hi
 - Live: **Modal** pytorch#191813 deepseek/deepseek-v4-pro BIT3_OK ~80s; log_streaming=true; POST_COMMENT=0
 
 ### SHA
-_PENDING_
+3645a46416fca34b94b67fb8514a6425ab81039e
 
 ## 2026-08-01 — F89 attribution-ranked skill inject (router free-rider skip)
 
