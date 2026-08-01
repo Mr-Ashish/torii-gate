@@ -28,7 +28,7 @@ Attribution LOO is a hard validation gate on recovery re-entry — not optional 
 - Live Modal: pytorch#191836 BIT3_OK ~44.2s POST_COMMENT=0 log_streaming=true F179 soft wire
 
 ### SHA
-`4de7a410b3b7c92a35a1f24714d83239ed759753`
+`3e45904ad88966adb6b77ed31253dfae27868238`
 
 ## 2026-08-01 — F178 GEPA refine full brand+EVAL pack (F165–F177)
 
