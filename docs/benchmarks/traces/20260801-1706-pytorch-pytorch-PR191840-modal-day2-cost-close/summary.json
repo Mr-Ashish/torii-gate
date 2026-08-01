@@ -1,0 +1,20 @@
+{
+  "feature": "DAY2_COST_CLOSE",
+  "schema_version": 1,
+  "repo": "pytorch/pytorch",
+  "pr": "191840",
+  "model": "deepseek/deepseek-v4-pro",
+  "host": "modal",
+  "bit3": true,
+  "elapsed_s": 135.2,
+  "log_streaming": true,
+  "tool_call_turns": 4,
+  "post_comment": 0,
+  "verdict": "APPROVE",
+  "block": false,
+  "certificate_id": "gc-58da0b7175c81ccd",
+  "notes": "DAY2_COST_CLOSE self-evolve cost first + public-eval cost refresh",
+  "scored_at": "2026-08-01T17:09:38Z",
+  "modal_run": "https://modal.com/apps/mr-ashish/main/ap-rlrMXHsyYXNFm1bAaGUfFM",
+  "cost_usd": 0.018487964
+}

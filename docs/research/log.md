@@ -1,4 +1,38 @@
 
+## 2026-08-01 — DAY2_COST_CLOSE: self-evolve cost first + public-eval cost refresh
+
+### Papers / posts
+- Day-2 self-evolution without cost visibility skips the buyer honesty path.
+- Public-eval cost table was stale vs vault; note lacked “local vault only.”
+- Install/smoke already tip cost; self-evolve was the missing day-2 surface.
+
+### Decide / copy / skip
+- **Copy:** SELF-EVOLVE.md Day-2 cost honesty section before evolve.
+- **Copy:** public_eval cost note (never federated) + day-2 ops pointer + cost_samples in fixture.
+- **Copy:** smoke pass tip ops -- status.
+- **Skip:** F185+; cost is not a self-evolve input signal.
+
+### Feature shipped (DAY2_COST_CLOSE)
+- SELF-EVOLVE cost-first day-2
+- public_eval scorecard refresh + cost surface fields
+- smoke tip
+
+### Metric
+- Offline: public_eval cost_samples_n≥27 · cost_p50≈0.016 · commercial cost_honesty_ok · overall_est 8.5
+- Live Modal: pytorch#191840 BIT3_OK ~135.2s tools=4 POST_COMMENT=0 cert in vault
+- Traces: docs/benchmarks/traces/20260801-1706-pytorch-pytorch-PR191840-modal-day2-cost-close/
+- Modal: https://modal.com/apps/mr-ashish/main/ap-rlrMXHsyYXNFm1bAaGUfFM
+
+### scorecard_target
+JTBD (#3) · technical trust · install day-2
+
+### dim_lift
+day-2 surfaces all point at measured cost before optional self-evolve
+
+### SHA
+`(pending push)`
+
+
 ## 2026-08-01 — INSTALL_COST_TIP: day-2 cost/PR from install + pack + workflows
 
 ### Papers / posts

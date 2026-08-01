@@ -16,6 +16,18 @@ run evidence → proposals → offline eval → dual-gate adopt → next PR skil
 
 Self-evolution is **optional day-2**. Day-one is still: install → require **`torii/gate`** → review.
 
+## Day-2 cost honesty (before you evolve)
+
+Measured dogfood cost/PR and time-to-signal are **ops product surfaces**, not self-evolution inputs. Check them first so spend is visible without federating USD:
+
+```bash
+python3 scripts/torii.py ops -- status
+python3 scripts/torii.py commercial -- status
+# → docs/ops/cost-pr-dashboard.md · commercial Cost honesty section
+```
+
+Telemetry is **local vault only** (never federated) — [`enterprise/PRIVACY.md`](enterprise/PRIVACY.md). Soft budget: `TORII_MAX_COST_USD`.
+
 ## Operator path
 
 ```bash
@@ -49,7 +61,8 @@ python3 scripts/skill_auto_adopt.py cycle-scorecard
 ## Related
 
 - Install day-one: [`INSTALL.md`](INSTALL.md)  
+- Cost / PR (day-2): [`ops/cost-pr-dashboard.md`](ops/cost-pr-dashboard.md) · `python3 scripts/torii.py ops -- status`  
 - Quieter over time: [`QUIETER.md`](QUIETER.md)  
 - Workflows-as-code: [`WORKFLOWS.md`](WORKFLOWS.md)  
-- Product scorecard: `python3 scripts/torii.py scorecard`  
+- Product scorecard: `python3 scripts/torii.py scorecard` · commercial: `python3 scripts/torii.py commercial -- status`  
 - Engine: `scripts/self_evolve.py` · `scripts/skill_auto_adopt.py`

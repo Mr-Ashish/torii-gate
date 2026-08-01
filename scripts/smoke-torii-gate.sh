@@ -390,6 +390,7 @@ if [[ "$FAIL" -ne 0 ]]; then
   log "=== SMOKE FAILED ==="
   exit 1
 fi
+log "Tip: day-2 cost honesty → python3 scripts/torii.py ops -- status (docs/ops/cost-pr-dashboard.md)"
 log "=== SMOKE PASSED ==="
 exit 0
 

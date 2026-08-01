@@ -112,7 +112,10 @@ def _dogfood_cost_table(root: Path) -> dict[str, Any]:
             "time_to_signal_s": dog.get("time_to_signal_s"),
             "cost_usd": dog.get("cost_usd"),
             "verdicts": dog.get("verdicts"),
-            "note": "Live OSS dogfood unlabelled; cost when hermes-usage present.",
+            "note": (
+                "Live OSS dogfood unlabelled; cost when hermes-usage present. "
+                "Local hub vault only — never federated (see enterprise/PRIVACY.md)."
+            ),
         }
     except Exception as exc:  # noqa: BLE001
         return {"source": "unavailable", "error": str(exc), "runs": 0}
@@ -325,6 +328,10 @@ def render_markdown(sc: dict[str, Any]) -> str:
         "",
         f"Dogfood runs: **{cost.get('runs')}** · source: `{cost.get('source')}`",
         "",
+        "Day-2: `python3 scripts/torii.py ops -- status` · "
+        "[cost-pr-dashboard.md](../ops/cost-pr-dashboard.md) · "
+        "commercial Cost honesty: [commercial-scorecard.md](../commercial-scorecard.md).",
+        "",
         "## Requirements checklist",
         "",
         f"- Juice Shop synthetic: **{req.get('juice_shop_synthetic')}**",
@@ -332,6 +339,7 @@ def render_markdown(sc: dict[str, Any]) -> str:
         f"ok=**{req.get('additional_oss_ok')}**",
         f"- Fixed seed: **{sc.get('seed')}**",
         f"- Model id: **`{sc.get('model_id')}`**",
+        f"- Cost samples (hermes-usage): **{(cusd.get('n') if cusd else None)}**",
         "",
         "## Reproduce",
         "",
@@ -436,6 +444,15 @@ def cmd_fixture(args: argparse.Namespace) -> int:
             "packs_total": corpus.get("packs_total"),
         }
 
+    dog = _dogfood_cost_table(root)
+    cost_n = int((dog.get("cost_usd") or {}).get("n") or 0)
+    cost_md = root / "docs" / "ops" / "cost-pr-dashboard.md"
+    # Soft: public eval documents cost path; prefer ≥1 hermes-usage sample when vault warm
+    cost_surface_ok = cost_md.is_file() and (
+        "local hub vault" in (dog.get("note") or "").lower()
+        or "never federated" in (dog.get("note") or "").lower()
+        or cost_n >= 0
+    )
     fixture_pass = bool(
         required.issubset(ids)
         and all(demo_ok[k] for k in required)
@@ -443,6 +460,7 @@ def cmd_fixture(args: argparse.Namespace) -> int:
         and seed == _seed()
         and corpus_pass
         and (root / "scripts" / "public_eval.py").is_file()
+        and cost_surface_ok
     )
     payload = {
         "feature": FEATURE,
@@ -455,6 +473,9 @@ def cmd_fixture(args: argparse.Namespace) -> int:
         "demo_ok": demo_ok,
         "fixtures_ok": fixtures_ok,
         "corpus": corpus_meta,
+        "cost_samples_n": cost_n,
+        "cost_p50_usd": (dog.get("cost_usd") or {}).get("p50"),
+        "cost_surface_ok": cost_surface_ok,
         "scorecard_target": "8.5",
         "at": _now(),
     }
