@@ -28,7 +28,7 @@ Paging cold memory into the prompt without updating the store leaves next PR col
 **Retrieval strengthens memory** — maker/checker filter first; reconsolidation is measured write-back.
 
 ### SHA
-`PENDING`
+`d0f6a90fb4de942e9ea17a20b4338f074db66a1c`
 
 
 ## 2026-08-01 — F145 supersede-aware archival promote
