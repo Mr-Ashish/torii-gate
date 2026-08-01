@@ -30,7 +30,7 @@ Measure without action is theater. Highest ROI: **fitness ledger closes F84 → 
 - pytest: 510 passed
 
 ### SHA
-_PENDING_
+58df5c4f24d0d2209b08549d5a151aecf3ceb177
 
 ## 2026-08-01 — F84 progressive skill router + hit scoring
 
