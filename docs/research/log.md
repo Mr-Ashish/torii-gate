@@ -28,7 +28,7 @@ simplicity (#12) · commercial completeness
 workflows-as-code visible to buyers + scored in commercial rollup
 
 ### SHA
-_pending_
+`23d5662ccbad59459eb67b4aeb9efa6ab568ae41`
 
 
 ## 2026-08-01 — COMMERCIAL_V2: post-queue surfaces in commercial rollup
