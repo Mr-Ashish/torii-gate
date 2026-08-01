@@ -94,6 +94,7 @@ python3 scripts/torii.py doctor
 | [`WORKFLOWS.md`](WORKFLOWS.md) | pipelines-as-code (validate offline) |
 | [`QUIETER.md`](QUIETER.md) · [`TOOL-USE.md`](TOOL-USE.md) | quieter + tool-use charts |
 | [`FEDERATION.md`](FEDERATION.md) | privacy-safe multi-tenant heat |
+| [`MEMORY.md`](MEMORY.md) | compound memory — FP die twice |
 | [`SELF-EVOLVE.md`](SELF-EVOLVE.md) | day-2 skill self-evolution (dual-gated) |
 | [`workflows/INSTALL-GUIDE.md`](workflows/INSTALL-GUIDE.md) | full capability matrix |
 | [`brand/BUYER-DIAGRAM.md`](brand/BUYER-DIAGRAM.md) | buyer story |
@@ -105,8 +106,9 @@ After the first green `torii/gate` runs:
 
 ```bash
 python3 scripts/torii.py doctor
+python3 scripts/torii.py memory -- doctor
 python3 scripts/torii.py quieter -- status
 python3 scripts/torii.py self-evolve -- status
 ```
 
-Self-evolution proposes skills from measured gaps; adopt stays dual-gated. Details: [`SELF-EVOLVE.md`](SELF-EVOLVE.md).
+Memory keeps the next PR quieter (path-evidenced FP/TP store). Self-evolution proposes skills from measured gaps; adopt stays dual-gated. Details: [`MEMORY.md`](MEMORY.md) · [`SELF-EVOLVE.md`](SELF-EVOLVE.md).

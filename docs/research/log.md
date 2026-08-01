@@ -1,4 +1,35 @@
 
+## 2026-08-01 — MEMORY: buyer compound-memory surface (FP die twice)
+
+### Papers / posts
+- Mem0 / Letta: inject ≠ utilization; tiers + scoped recall over prompt dumps.
+- Core product: memory for merge-authority JTBD next to federation/workflows.
+- AppSec fatigue: false positives must die twice without ASPM dashboard.
+
+### Decide / copy / skip
+- **Copy:** docs/MEMORY.md buyer one-pager (path-evidenced write, tiers, gate stays).
+- **Copy:** INSTALL deeper + day-2 memory doctor; landing card; commercial memory_md.
+- **Skip:** F185+; no new memory stages.
+
+### Feature shipped (MEMORY)
+- MEMORY.md · PRODUCT/INSTALL/landing · install_ux deeper_memory · tests
+- commercial artifacts memory_md + self_evolve_md
+
+### Metric
+- Offline: install_ux 17/17 · commercial 10/10 · memory doctor + loop L3
+- Live Modal: pytorch#191840 BIT3_OK ~125.6s tools=7 POST_COMMENT=0
+- Traces: docs/benchmarks/traces/20260801-1552-pytorch-pytorch-PR191840-modal-memory/
+
+### scorecard_target
+JTBD (#3) · simplicity (#12) · install (#7)
+
+### dim_lift
+compound memory discoverable as buyer surface not Advanced F-table
+
+### SHA
+_pending_
+
+
 ## 2026-08-01 — SELF_EVOLVE: day-2 buyer surface (dual-gated skills)
 
 ### Papers / posts

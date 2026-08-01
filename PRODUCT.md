@@ -73,6 +73,8 @@ Install path: [`docs/GOLDEN-PATH.md`](docs/GOLDEN-PATH.md) · metrics: [`docs/be
 
 **Self-evolution (day-2):** measured skill proposals + dual-gate adopt (not free-form drift) → [`docs/SELF-EVOLVE.md`](docs/SELF-EVOLVE.md) · `python3 scripts/torii.py self-evolve -- status`.
 
+**Compound memory:** FP die twice · TP stay sharp (path-evidenced write, tiers, scoped recall) → [`docs/MEMORY.md`](docs/MEMORY.md) · `python3 scripts/torii.py memory -- doctor`.
+
 **CLI:** `python3 scripts/torii.py help` · `doctor` · `golden-path -- status` · `certificate -- fixture` · `quieter -- status` · `tool-use -- status` · `commercial -- status` · `enterprise -- status`
 
 **Commercial rollup (queue 1–6 + post-queue + workflow):** `python3 scripts/torii.py commercial -- fixture` → [`docs/benchmarks/commercial-scorecard.md`](docs/benchmarks/commercial-scorecard.md).

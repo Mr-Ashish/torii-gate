@@ -1,0 +1,20 @@
+{
+  "feature": "MEMORY",
+  "schema_version": 1,
+  "repo": "pytorch/pytorch",
+  "pr": "191840",
+  "model": "deepseek/deepseek-v4-pro",
+  "host": "modal",
+  "bit3": true,
+  "elapsed_s": 125.6,
+  "log_streaming": true,
+  "tool_call_turns": 7,
+  "post_comment": 0,
+  "verdict": "APPROVE",
+  "block": false,
+  "certificate_id": "gc-1bf7e01455b0a74d",
+  "notes": "MEMORY buyer surface \u2014 FP die twice; install/commercial artifacts",
+  "scored_at": "2026-08-01T15:56:00Z",
+  "modal_run": "https://modal.com/apps/mr-ashish/main/ap-vTk18pxyLzV3ub0TBg8Tjl",
+  "cost_usd": 0.032760314
+}

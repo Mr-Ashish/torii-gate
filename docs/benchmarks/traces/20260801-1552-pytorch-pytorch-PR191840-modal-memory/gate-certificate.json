@@ -1,0 +1,74 @@
+{
+  "feature": "GATE_CERT",
+  "schema": 1,
+  "one_liner": "Deterministic merge-authority certificate: reason codes + path evidence, not chat.",
+  "scorecard_target": "evidence / simplicity (dim 12)",
+  "dim_lift": "merge-authority evidence + tools-as-code vs LLM prose",
+  "at": "2026-08-01T15:54:42Z",
+  "review": "/tmp/torii-run-191840-1785599573/torii/.torii-out/traces/pr191840-runlocal-a1/review.md",
+  "review_name": "review.md",
+  "certificate_id": "gc-1bf7e01455b0a74d",
+  "content_sha256_16": "1bf7e01455b0a74d",
+  "verdict": "APPROVE",
+  "block": false,
+  "state": "success",
+  "context": "torii/gate",
+  "description": "Torii Gate open \u2014 APPROVE",
+  "reason_codes": [
+    "verdict_approve_open",
+    "strong_path_evidence",
+    "blocking_with_paths"
+  ],
+  "path_evidence": {
+    "score": 1.0,
+    "hits": [
+      "torch/package/analyze/trace_dependencies.py",
+      "test/package/test_analyze.py",
+      "test_analyze.py",
+      "trace_dependencies.py"
+    ],
+    "hit_n": 4,
+    "cites": [
+      {
+        "path": "torch/package/analyze/trace_dependencies.py",
+        "line": 53
+      },
+      {
+        "path": "torch/package/analyze/trace_dependencies.py",
+        "line": 64
+      },
+      {
+        "path": "test/package/test_analyze.py",
+        "line": 21
+      },
+      {
+        "path": "test/package/test_analyze.py",
+        "line": 33
+      },
+      {
+        "path": "test/package/test_analyze.py",
+        "line": null
+      },
+      {
+        "path": "torch/package/analyze/trace_dependencies.py",
+        "line": null
+      }
+    ],
+    "feedback": []
+  },
+  "structure": {
+    "has_blocking_section": true,
+    "security_audit": "",
+    "raw_len": 4948
+  },
+  "merge_authority": {
+    "context": "torii/gate",
+    "open": true,
+    "closed": false,
+    "human_summary": "OPEN \u2014 APPROVE (verdict_approve_open, strong_path_evidence, blocking_with_paths); path_evidence=1.00"
+  },
+  "meta": {
+    "repo": "pytorch/pytorch",
+    "pr": "191840"
+  }
+}
