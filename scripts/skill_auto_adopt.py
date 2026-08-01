@@ -113,6 +113,13 @@ PROPOSAL_TOOL_BLOBS: dict[str, str] = {
         "python3 scripts/torii.py doctor\n"
         "python3 scripts/skill_loop_status.py scorecard --shallow\n"
     ),
+    # F153: hub-aware archival after F152 recon-warm re-prompt
+    "skill-prefer-hub-archival-early": (
+        "tool_call: terminal\n"
+        "python3 scripts/archival_memory_search.py auto --files app.py\n"
+        "python3 scripts/torii.py memory -- search -- -q \"sql OR pickle OR deserial\"\n"
+        "python3 scripts/archival_memory_search.py reprompt-decide --out-dir out\n"
+    ),
 }
 
 
@@ -211,6 +218,7 @@ def _candidate_globs() -> list[str]:
         "skill-prefer-memory-cli-early.md",
         "skill-prefer-product-cli.md",
         "skill-prefer-critic-early.md",
+        "skill-prefer-hub-archival-early.md",
         "skill-prefer-*.md",
     ]
 

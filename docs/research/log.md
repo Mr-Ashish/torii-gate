@@ -1,5 +1,36 @@
 # Torii research → product log
 
+## 2026-08-01 — F153 hub-archival skill self-evolve from F152
+
+### Papers / posts
+- F112 memory-cli skill from F106 re-prompt signals (compound next PR).
+- F152 recon-warm re-prompt without durable skill re-spends F108 every run.
+- F118 dual-gate tool_blob for skill-prefer-* recovery skills.
+
+### OSS design patterns stolen
+1. _signals_from_loop: f152_recon_warm_reprompt / heat_idle from env+decide.
+2. propose skill-prefer-hub-archival-early (F153 body, hub query on).
+3. PROPOSAL_TOOL_BLOBS dual-gate archival auto + memory search.
+4. hermes soft ingest+propose when F152 fires; fixture f153_ok.
+
+### Insight
+Soft re-prompt without skill proposal is one-shot. Highest ROI: F153 proposes hub-archival early skill so next PR avoids F152 spend.
+
+### Feature shipped (F153)
+- self_evolve F152 signals + propose hub-archival; skill_auto_adopt blob
+- hermes soft wire; fixture f153_ok; PRODUCT/research
+
+### Metric
+- Offline: fixture f153_ok; pytest 620
+- Live: Modal pytorch#191813 BIT3_OK ~47s REQUEST_CHANGES POST_COMMENT=0 log_streaming=true
+
+### Loop-engineering / Hermes practice used
+**Trajectory → skill compound** — recovery signals become always-on procedure.
+
+### SHA
+`PENDING`
+
+
 ## 2026-08-01 — F152 recon-warm hub soft re-prompt (F108)
 
 ### Papers / posts

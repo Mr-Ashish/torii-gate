@@ -564,6 +564,29 @@ def _signals_from_loop(data: dict[str, Any], out_dir: Path) -> list[str]:
             signals.append("f106_recovered")
         if "budget_blocked" in txt:
             signals.append("f108_budget_blocked")
+    # F153: F152 recon-warm hub soft re-prompt → prefer hub-aware archival skill
+    rw_env = out_dir / "recon-warm-reprompt.env"
+    if rw_env.is_file():
+        txt = rw_env.read_text(encoding="utf-8", errors="replace")
+        if "reprompt=1" in txt or "attempted=1" in txt:
+            signals.append("f152_recon_warm_reprompt")
+        if "recovered=1" in txt or "reason=reprompt_recovered" in txt:
+            signals.append("f152_recon_warm_recovered")
+        if "budget_blocked" in txt:
+            signals.append("f108_budget_blocked")
+        if "recon_warm_hub_heat_idle" in txt or "reason=recon_warm" in txt:
+            signals.append("f152_recon_warm_heat_idle")
+    rw_dec = out_dir / "recon-warm-reprompt-decide.json"
+    if rw_dec.is_file():
+        try:
+            d = json.loads(rw_dec.read_text(encoding="utf-8", errors="replace"))
+            if isinstance(d, dict):
+                if int(d.get("reprompt") or 0) == 1:
+                    signals.append("f152_recon_warm_reprompt")
+                if d.get("high") and d.get("local_idle"):
+                    signals.append("f152_recon_warm_heat_idle")
+        except (json.JSONDecodeError, TypeError, ValueError):
+            pass
     audit_p = out_dir / "memory-tool-audit.json"
     if audit_p.is_file():
         try:
@@ -995,6 +1018,32 @@ def cmd_propose(args: argparse.Namespace) -> int:
                 ),
             }
         )
+    # F153: F152 recon-warm hub re-prompt / heat idle → hub-aware archival early
+    if (
+        sig_count.get("f152_recon_warm_reprompt", 0) >= 1
+        or sig_count.get("f152_recon_warm_recovered", 0) >= 1
+        or sig_count.get("f152_recon_warm_heat_idle", 0) >= 1
+    ):
+        templates.append(
+            {
+                "id": "skill-prefer-hub-archival-early",
+                "title": "Hub-aware archival search early (multi-tenant warm themes)",
+                "signal": "f152_recon_warm_reprompt|f152_recon_warm_heat_idle",
+                "body": (
+                    "## Skill: prefer-hub-archival-early (F153)\n\n"
+                    "When multi-tenant recon-warm hub heat is elevated (F148–F152):\n"
+                    "1. **Before** finishing findings, run hub-aware archival paging:\n"
+                    "   `python3 scripts/archival_memory_search.py auto --files changed.py`\n"
+                    "   `python3 scripts/torii.py memory -- search -- -q \"hub warm themes\"`\n"
+                    "   Keep `TORII_RECON_WARM_HUB_QUERY=1` (F149 expands auto-query).\n"
+                    "2. Prefer hits with **hub_boost** / multi-tenant warm themes; still require path:line.\n"
+                    "3. Do **not** re-raise F145-superseded cold TPs; skip hub-ignore APPROVE.\n"
+                    "4. Proactive hub paging avoids spending the F108/F152 re-prompt slot.\n"
+                    "5. If F152 already fired, call archival/memory once more with hub themes before verdict.\n"
+                ),
+                "feature": "F153",
+            }
+        )
     # F117: product CLI / critic tools observed in trajectories
     if sig_count.get("f117_product_cli_tools", 0) >= 1 or sig_count.get("f114_tool_hit", 0) >= 2:
         t = F117_SKILL_TEMPLATES["skill-prefer-product-cli"]
@@ -1041,11 +1090,22 @@ def cmd_propose(args: argparse.Namespace) -> int:
         if pid in existing:
             continue
         path = proposals_dir / f"{pid}.md"
+        feat = str(tmpl.get("feature") or "")
+        if not feat:
+            if tmpl["id"].startswith("skill-prefer-product") or tmpl[
+                "id"
+            ].startswith("skill-prefer-critic"):
+                feat = "F117"
+            elif "hub-archival" in tmpl["id"] or "f152" in tmpl["signal"]:
+                feat = "F153"
+            elif "memory-cli" in tmpl["id"] or "f106" in tmpl["signal"]:
+                feat = "F112"
+            else:
+                feat = "F69"
         header = (
             f"---\n"
             f"id: {pid}\n"
-            f"feature: "
-            f"{'F117' if tmpl['id'].startswith('skill-prefer-product') or tmpl['id'].startswith('skill-prefer-critic') else ('F112' if 'memory-cli' in tmpl['id'] or 'f106' in tmpl['signal'] else 'F69')}\n"
+            f"feature: {feat}\n"
             f"status: proposal\n"
             f"signal: {tmpl['signal']}\n"
             f"created_at: {_now()}\n"
@@ -1061,6 +1121,7 @@ def cmd_propose(args: argparse.Namespace) -> int:
             "status": "proposal",
             "created_at": _now(),
             "eval": None,
+            "feature": feat,
         }
         ledger["proposals"] = [p for p in ledger.get("proposals") or [] if p.get("id") != pid]
         ledger["proposals"].append(entry)
@@ -1416,6 +1477,80 @@ def cmd_fixture(args: argparse.Namespace) -> int:
         # privacy: ledger has no absolute home paths from mining
         privacy_ok = bool(mined.get("privacy_ok"))
 
+        # F153: recon-warm re-prompt env → propose skill-prefer-hub-archival-early
+        f153_ok = False
+        has_f152_sig = False
+        prop_ok = False
+        blob_ok = False
+        try:
+            (out / "recon-warm-reprompt.env").write_text(
+                "reprompt=1\nattempted=1\nreason=recon_warm_hub_heat_idle\n"
+                "heat=1.0\nhub_boost_n=0\nfeature=F152\n",
+                encoding="utf-8",
+            )
+            (out / "recon-warm-reprompt-decide.json").write_text(
+                json.dumps(
+                    {
+                        "feature": "F152",
+                        "reprompt": 1,
+                        "high": True,
+                        "local_idle": True,
+                        "heat": 1.0,
+                        "hub_boost_n": 0,
+                    }
+                )
+                + "\n",
+                encoding="utf-8",
+            )
+            loop_data = json.loads((loop / "agent-loop.json").read_text(encoding="utf-8"))
+            evo = td_path / "memory" / "evolution"
+            evo.mkdir(parents=True, exist_ok=True)
+            sigs = _signals_from_loop(loop_data, out)
+            has_f152_sig = any("f152" in s for s in sigs)
+            led = _load_ledger(td_path)
+            led["trajectories"] = [
+                {
+                    "trajectory_id": "f153-rw",
+                    "tool_call_turns": 3,
+                    "signals": list(dict.fromkeys(sigs)),
+                    "created_at": _now(),
+                }
+            ]
+            _save_ledger(td_path, led)
+
+            class _A:
+                limit = 5
+
+            import contextlib
+            import io
+
+            _buf = io.StringIO()
+            with contextlib.redirect_stdout(_buf):
+                cmd_propose(_A())
+            prop_hub = (
+                td_path
+                / "agent"
+                / "skills"
+                / "proposals"
+                / "skill-prefer-hub-archival-early.md"
+            )
+            prop_body = (
+                prop_hub.read_text(encoding="utf-8") if prop_hub.is_file() else ""
+            )
+            prop_ok = (
+                prop_hub.is_file()
+                and "F153" in prop_body
+                and "hub-archival" in prop_body
+                and "F149" in prop_body
+            )
+            sys.path.insert(0, str(Path(__file__).resolve().parent))
+            from skill_auto_adopt import PROPOSAL_TOOL_BLOBS  # type: ignore
+
+            blob_ok = "skill-prefer-hub-archival-early" in PROPOSAL_TOOL_BLOBS
+            f153_ok = has_f152_sig and prop_ok and blob_ok
+        except Exception:
+            f153_ok = False
+
         fixture_pass = all(
             [
                 mined.get("observed_n", 0) >= 3,
@@ -1426,6 +1561,7 @@ def cmd_fixture(args: argparse.Namespace) -> int:
                 prop_product,
                 prop_critic,
                 privacy_ok,
+                f153_ok,
             ]
         )
 
@@ -1438,6 +1574,7 @@ def cmd_fixture(args: argparse.Namespace) -> int:
             json.dumps(
                 {
                     "feature": "F117",
+                    "feature_hub_archival": "F153",
                     "fixture_pass": fixture_pass,
                     "observed_n": mined.get("observed_n"),
                     "observed_skills": mined.get("observed_skills"),
@@ -1449,6 +1586,10 @@ def cmd_fixture(args: argparse.Namespace) -> int:
                     "prop_critic": prop_critic,
                     "privacy_ok": privacy_ok,
                     "proposed": mined.get("proposed"),
+                    "f153_ok": f153_ok,
+                    "f153_has_signal": has_f152_sig,
+                    "f153_prop_ok": prop_ok,
+                    "f153_blob_ok": blob_ok,
                 },
                 indent=2,
             )
