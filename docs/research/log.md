@@ -31,7 +31,7 @@ Shipping skills without progressive load or invocation metrics wastes context an
 - pytest: 506 passed
 
 ### SHA
-_PENDING_
+6bd7d30a81da44bc4443093125265208c9ad56ee
 
 ## 2026-08-01 — F83 pack skills ship + paper eval-trace report
 
