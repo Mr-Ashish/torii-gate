@@ -32,7 +32,7 @@ F103 unified the **read/search** front door; live reviews still only distilled n
 - pytest: 569 passed
 
 ### SHA
-_pending_
+`1daf8af18c65b03c44c98f17d72139121ada52df`
 
 ## 2026-08-01 — F103 unified torii_memory CLI for Hermes
 
