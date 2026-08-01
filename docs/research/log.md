@@ -31,7 +31,7 @@ F165–F166 invest in skill text; dual-rollout proves the investment. Highest RO
 **With vs ablated → score** — SkillsBench dual for GEPA refine bodies.
 
 ### SHA
-`(pending)`
+`b7b41e62a5956c0aeeb6978ae94f908791587f0b`
 
 
 ## 2026-08-01 — F166 GEPA refine dual-gate LOO floor + fitness shield
