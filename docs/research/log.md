@@ -29,7 +29,7 @@ Effective scores without tiering still waste context on cold noise. Highest ROI:
 - Live: **Modal** pytorch#191813 deepseek/deepseek-v4-pro BIT3_OK ~159s; log_streaming=true; POST_COMMENT=0
 
 ### SHA
-PENDING
+79aa3ac6293d02f188cf31a26709338c0bc5b99e
 
 ## 2026-08-01 — F96 memory loop readiness + promoted effective inject rank
 
