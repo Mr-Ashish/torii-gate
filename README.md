@@ -103,6 +103,7 @@ Day-one path stays install → require **`torii/gate`** → first review. Everyt
 | **Commercial rollup** | [`docs/benchmarks/commercial-scorecard.md`](docs/benchmarks/commercial-scorecard.md) | `python3 scripts/torii.py commercial -- status` |
 | **Pricing (open core)** | [`docs/PRICING.md`](docs/PRICING.md) | Open Gate free · Team · Business · Enterprise roadmap |
 | **vs SAST / AI review** | [`docs/DIFF.md`](docs/DIFF.md) | Merge authority matrix + labeled public-eval |
+| **GTM outreach (honest)** | [`docs/GTM.md`](docs/GTM.md) | Ready-to-send design-partner copy · no fake pipeline |
 | **Design partner / pilot** | [`docs/PILOT.md`](docs/PILOT.md) | Free design partner · optional paid pilot · **0 paid customers** (honest) |
 
 **Public labeled eval** (Juice Shop + NodeGoat + Django/Flask themes, fixed **seed 42**, model pin, freshness badge):  

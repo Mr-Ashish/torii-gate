@@ -86,7 +86,7 @@ Install path: [`docs/GOLDEN-PATH.md`](docs/GOLDEN-PATH.md) · metrics: [`docs/be
 
 **Pricing & packaging (open core · pre-revenue):** [`docs/PRICING.md`](docs/PRICING.md) — Open (Gate) free · Team support · Business multi-org · Enterprise Plane roadmap. No Hub71 archaeology required.
 
-**Design partner / paid pilot:** [`docs/PILOT.md`](docs/PILOT.md) — free design partner on a real repo · optional Team/Business pilot · measured readiness `python3 scripts/torii.py pilot -- readiness` · traction stays truthful (**0 paid**). Apply: [issue template](https://github.com/Mr-Ashish/torii-gate/issues/new?template=design-partner.yml).
+**Design partner / paid pilot:** [`docs/PILOT.md`](docs/PILOT.md) — free design partner on a real repo · optional Team/Business pilot · measured readiness `python3 scripts/torii.py pilot -- readiness` · traction stays truthful (**0 paid**). Apply: [issue template](https://github.com/Mr-Ashish/torii-gate/issues/new?template=design-partner.yml). Honest outreach templates: [`docs/GTM.md`](docs/GTM.md).
 
 **Public labeled eval freshness:** seed **42** · model pin · scored_at age (max 72h) — [`docs/benchmarks/public-eval/SCORECARD.md`](docs/benchmarks/public-eval/SCORECARD.md) · badge [`BADGE.md`](docs/benchmarks/public-eval/BADGE.md) · `python3 scripts/torii.py public-eval -- status`.
 

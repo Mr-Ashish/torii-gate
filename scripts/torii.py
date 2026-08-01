@@ -752,7 +752,7 @@ def render_status_text(payload: dict[str, Any], *, verbose: bool = False) -> str
         "## Next",
         "1. Require status check **torii/gate** (merge authority)",
         "2. `python3 scripts/torii.py doctor` · `quieter -- status` · `pilot -- readiness`",
-        "3. Prefer model `deepseek/deepseek-v4-pro` · Pages: https://mr-ashish.github.io/torii-gate/",
+        "3. Prefer model `deepseek/deepseek-v4-pro` · GTM templates: docs/GTM.md · Pages: https://mr-ashish.github.io/torii-gate/",
         "",
         "Detail: `status --verbose` · JSON: `status --json` · help: `python3 scripts/torii.py help`",
         "",

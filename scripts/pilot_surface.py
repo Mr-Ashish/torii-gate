@@ -80,12 +80,14 @@ def _soft_json(root: Path, script: str, args: list[str], timeout: float = 45) ->
 def build_doc_checks(root: Path) -> dict[str, Any]:
     pilot = root / OUT_REL
     pricing = root / "docs" / "PRICING.md"
+    gtm = root / "docs" / "GTM.md"
     tmpl = root / ".github" / "ISSUE_TEMPLATE" / "design-partner.yml"
     readme = root / "README.md"
     product = root / "PRODUCT.md"
     landing = root / "docs" / "brand" / "landing.html"
     pt = _read(pilot)
     pr = _read(pricing)
+    gt = _read(gtm)
     rm = _read(readme)
     prod = _read(product)
     land = _read(landing)
@@ -124,6 +126,18 @@ def build_doc_checks(root: Path) -> dict[str, Any]:
         "cli_group_wired": bool(
             re.search(r'["\']pilot["\']\s*:', _read(root / "scripts" / "torii.py"))
         ),
+        # GTM outreach pack (dim 11) — ready-to-send copy, no fake pipeline
+        "gtm_md": gtm.is_file() and len(gt) > 400,
+        "gtm_honest_traction": bool(
+            re.search(r"0 paid|pre-revenue|Never invent", gt, re.I)
+        ),
+        "gtm_has_templates": bool(
+            re.search(r"design-partner\.yml|Channel A|Channel B", gt, re.I)
+        ),
+        "gtm_path_to_value": "install-torii" in gt and "torii/gate" in gt,
+        "pilot_links_gtm": bool(re.search(r"GTM\.md", pt)),
+        "product_links_gtm": bool(re.search(r"GTM\.md", prod)),
+        "landing_links_gtm": bool(re.search(r"GTM\.md", land)),
     }
     checks = {**structure, **{f"honesty_{k}": v for k, v in honesty.items()}}
     return {

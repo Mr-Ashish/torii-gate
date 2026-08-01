@@ -99,4 +99,6 @@ Landing: https://mr-ashish.github.io/torii-gate/ · Install: [`INSTALL.md`](INST
 - [ ] Do not list a logo without written opt-in  
 - [ ] When first paid pilot closes, update this table and commercial cap narrative  
 
+**GTM outreach copy (honest templates):** [`GTM.md`](GTM.md)
+
 Refresh: `python3 scripts/pilot_surface.py fixture` · `python3 scripts/torii.py pilot -- readiness`

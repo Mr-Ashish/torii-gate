@@ -5230,3 +5230,25 @@ After SCORECARD_NO_DOUBLE_DEMOTE, evolve/fed/consolidate still elongated dogfood
 
 ### SHA
 `40a57811cb8376e27279f40e8700288c8fa1c0ed`
+
+## 2026-08-01 — GTM_OUTREACH honest design-partner pack
+
+### Papers / posts
+- Pre-revenue GTM: templates beat fake logos; path-to-value first.
+- Buyer packaging: dim 11 lag was process, not product missing CLI.
+- Loop Engineering: measure readiness (pilot fixture) for GTM surfaces too.
+
+### Insight
+Remaining scorecard gap #1 is human design-partner close. Highest ROI without inventing customers: ready-to-send GTM.md (issue + DM + community) wired into pilot fixture and landing.
+
+### Feature shipped (GTM_OUTREACH)
+- docs/GTM.md Channel A/B/C + rules + path-to-value
+- pilot_surface checks gtm_* + links
+- PILOT/PRODUCT/README/landing/site
+
+### Metric
+- pilot fixture 23/23
+- Live Modal e2e this fire
+
+### SHA
+`PENDING_PUSH`
