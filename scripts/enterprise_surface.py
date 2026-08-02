@@ -562,15 +562,24 @@ def render_surface_md(report: dict[str, Any]) -> str:
 def cmd_status(args: argparse.Namespace) -> int:
     report = build_report(_root())
     iso = report.get("isolation_proof") or {}
+    fed = report.get("federation_audit") or {}
     print(
         json.dumps(
             {
                 "feature": FEATURE,
                 "enterprise_ok": report.get("enterprise_ok"),
                 "tenant_n": report.get("tenant_n"),
-                "federation_all_ok": (report.get("federation_audit") or {}).get("all_ok"),
+                "federation_all_ok": fed.get("all_ok"),
+                "federation_privacy_ok": fed.get("all_ok"),
+                # Buyer contract: hub exports themes/CWE/hashes only — never paths/snippets
+                "privacy_themes_only": True,
                 "isolation_ok": iso.get("ok"),
+                "isolation_one_liner": iso.get("one_liner"),
                 "docs": report.get("docs"),
+                "one_liner": (
+                    "Org isolation + federation privacy (themes only · no paths/snippets) "
+                    f"· tenants={report.get('tenant_n')} · isolation_ok={iso.get('ok')}"
+                ),
                 "at": report.get("scored_at"),
             },
             indent=2,

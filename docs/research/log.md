@@ -5449,3 +5449,27 @@ already product code; status surfaces pending_ids + dual_gate_hint; pending=0.
 ### SHA
 `0902821f382eb2bc121b586517c5a9ea21cc6f3c`
 
+## 2026-08-02 — ORG_PRIVACY_STATUS themes-only on day-2 org beat
+
+### Papers / posts
+- Enterprise buyers need privacy posture on the one-screen status, not buried CLI.
+- Federation multi_tenant_themes was only on advanced federation -- status.
+
+### Insight
+Highest ROI for dim 9 without F-stack: surface fed themes-only + privacy_ok +
+mt_themes on Org beat; zero_tool rate on Cost & trust for tool honesty.
+
+### Feature shipped (ORG_PRIVACY_STATUS)
+- enterprise status: privacy_themes_only · federation_privacy_ok · one_liner
+- day2 soft peeks: fed multi_tenant_themes · zero_tool_rate
+- status Org/Cost beats render privacy + zero_tool
+- FEDERATION.md operator path: status --text
+
+### Metric
+- status Org: fed themes-only privacy_ok=True mt_themes=2
+- status Cost: zero_tool=12%
+- enterprise fixture pass · Live Modal e2e this fire
+
+### SHA
+`ce3f8303ce70becc3d4486f1a88629f88604bf7e`
+

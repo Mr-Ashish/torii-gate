@@ -534,6 +534,15 @@ def build_status_payload(root: Path | None = None) -> dict[str, Any]:
         day2["enterprise_ok"] = ent.get("enterprise_ok")
         day2["tenant_n"] = ent.get("tenant_n")
         day2["isolation_ok"] = ent.get("isolation_ok")
+        day2["federation_privacy_ok"] = ent.get("federation_privacy_ok") or ent.get(
+            "federation_all_ok"
+        )
+        day2["privacy_themes_only"] = ent.get("privacy_themes_only")
+    # Federation multi-tenant heat (themes only — privacy-safe hub)
+    fed = _soft_script_json(root, "federated_hub_ingest.py", ["status"], timeout=30)
+    if fed:
+        day2["fed_multi_tenant_themes"] = fed.get("multi_tenant_themes")
+        day2["fed_signal_count"] = fed.get("count")
     # Tool-use quality (tools-as-code JTBD)
     tools = _soft_script_json(root, "tool_use_quality.py", ["status"], timeout=45)
     if tools:
@@ -546,6 +555,7 @@ def build_status_payload(root: Path | None = None) -> dict[str, Any]:
         day2["tool_use_n"] = (
             tools.get("measured_n") or tools.get("n") or tools.get("dogfood_n")
         )
+        day2["zero_tool_rate"] = tools.get("zero_tool_rate")
     # Pilot path honesty + measured readiness (pre-revenue design partner)
     pilot = _soft_script_json(root, "pilot_surface.py", ["status"], timeout=120)
     if pilot:
@@ -795,18 +805,38 @@ def render_status_text(payload: dict[str, Any], *, verbose: bool = False) -> str
                 lean_s += f"({lean_src})"
         pref = day2.get("preferred_model") or day2.get("public_eval_model")
         pref_s = f" · model={pref}" if pref else ""
+        ztr = day2.get("zero_tool_rate")
+        ztr_s = (
+            f" · zero_tool={float(ztr):.0%}"
+            if isinstance(ztr, (int, float))
+            else ""
+        )
         lines.append(
             f"- **Cost & trust:** commercial={day2.get('overall_est')}/10 "
             f"ok={day2.get('commercial_ok')} · cost p50={p50_s}/PR "
             f"honesty={day2.get('cost_honesty_ok')} · "
             f"time-to-signal p50={tts_s} · "
             f"public-eval freshness={day2.get('public_eval_freshness_ok')} · "
-            f"tool-use rate={day2.get('tool_use_rate')} · "
+            f"tool-use rate={day2.get('tool_use_rate')}{ztr_s} · "
             f"fail_closed={day2.get('fail_closed_safe_defaults')}{lean_s}{pref_s}"
         )
+        fed_ok = day2.get("federation_privacy_ok")
+        themes_only = day2.get("privacy_themes_only")
+        mt = day2.get("fed_multi_tenant_themes")
+        fed_s = ""
+        if fed_ok is not None or themes_only or mt is not None:
+            parts = []
+            if themes_only:
+                parts.append("themes-only")
+            if fed_ok is not None:
+                parts.append(f"privacy_ok={fed_ok}")
+            if mt is not None:
+                parts.append(f"mt_themes={mt}")
+            fed_s = " · fed " + " ".join(parts) if parts else ""
         lines.append(
             f"- **Org:** enterprise={day2.get('enterprise_ok')} · "
-            f"tenants={day2.get('tenant_n')} · isolation={day2.get('isolation_ok')} · "
+            f"tenants={day2.get('tenant_n')} · isolation={day2.get('isolation_ok')}"
+            f"{fed_s} · "
             f"install --tenant (optional fleet)"
         )
         wf_lv = day2.get("workflow_level")

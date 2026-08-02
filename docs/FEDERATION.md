@@ -41,6 +41,9 @@ Measured dogfood cost/latency lives in the **local hub vault** (`docs/benchmarks
 ## Operator path
 
 ```bash
+# Day-2 one screen — Org beat: isolation · fed themes-only · mt_themes
+python3 scripts/torii.py status --text
+
 # Privacy + isolation product surface
 python3 scripts/torii.py enterprise -- status
 python3 scripts/torii.py enterprise -- fixture
