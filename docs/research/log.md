@@ -5473,3 +5473,26 @@ mt_themes on Org beat; zero_tool rate on Cost & trust for tool honesty.
 ### SHA
 `9fae07bf314d6ac53242ce3a238b3788321e8b20`
 
+## 2026-08-02 — STATUS_MEMORY_PRICING growth beat honesty
+
+### Papers / posts
+- Buyers need memory readiness and open-core price on the same screen as pilot.
+- Memory L3 alone is eng jargon; doctor_pass is the operator check.
+- Pricing dim stayed docs-only while status never said $0 open.
+
+### Insight
+Highest ROI for dims 5+10: soft-peek memory doctor + PRICING.md honesty flags
+onto growth beat (memory doctor=True · open_core=$0 pre-revenue).
+
+### Feature shipped (STATUS_MEMORY_PRICING)
+- day2: memory_doctor_pass · pricing_open_core · pricing_pre_revenue
+- growth beat renders doctor + open_core=$0 pre-revenue
+- re import for pricing scan
+
+### Metric
+- status growth: memory=L3 doctor=True · open_core=$0 pre-revenue
+- Live Modal e2e this fire
+
+### SHA
+`73abe4c82c314118b070005e8972c9a6b14c8bd9`
+

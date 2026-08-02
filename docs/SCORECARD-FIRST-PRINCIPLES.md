@@ -1,6 +1,6 @@
 # Torii Gate — first-principles product scorecard
 
-_Scored: `2026-08-02T02:11:00Z` · commercial **8.5** · overall **8.0** (cap until paid pilot)._
+_Scored: `2026-08-02T02:27:30Z` · commercial **8.5** · overall **8.0** (cap until paid pilot)._
 
 ## Dims 1–12
 
@@ -9,21 +9,21 @@ _Scored: `2026-08-02T02:11:00Z` · commercial **8.5** · overall **8.0** (cap un
 | 1 | Value prop | 8.5 | merge authority · torii/gate |
 | 2 | Diff vs SAST | 8.2 | DIFF.md · labeled_tp=18 |
 | 3 | JTBD | 9.2 | quieter · TTS · proof packet |
-| 4 | Agent tools | **8.4** | tool-use rate + zero_tool on status |
-| 5 | Memory | 8.0 | L3 |
+| 4 | Agent tools | 8.4 | tool-use + zero_tool on status |
+| 5 | Memory | **8.4** | L3 · doctor=True on growth beat |
 | 6 | Self-evolution | 8.3 | pending=0 · dual_gate |
 | 7 | Install | 8.9 | bootstrap --demo |
 | 8 | Ops | 9.1 | LIVE_LEAN · model pin |
-| 9 | Enterprise | **8.5** | org beat: themes-only · privacy_ok · mt_themes · isolation |
-| 10 | Pricing | 8.0 | open core |
+| 9 | Enterprise | 8.5 | themes-only · isolation |
+| 10 | Pricing | **8.5** | open_core=$0 pre-revenue on status |
 | 11 | GTM | 8.4 | PILOT-PROOF |
-| 12 | Simplicity | **9.0** | org+cost beats carry privacy + zero_tool |
+| 12 | Simplicity | **9.1** | growth beat memory doctor + open_core |
 
-**Overall ~8.6 raw** (cap **8.0** until first design partner / paid pilot).
+**Overall ~8.7 raw** (cap **8.0** until first design partner / paid pilot).
 
 ## This fire
 
-**ORG_PRIVACY_STATUS:** day-2 Org beat shows federation themes-only + privacy_ok + multi-tenant themes; Cost & trust shows zero_tool rate; enterprise status one_liner.
+**STATUS_MEMORY_PRICING:** growth beat shows memory=L3 doctor=True and open_core=$0 pre-revenue from PRICING.md honesty.
 
 ## Remaining
 
@@ -34,5 +34,5 @@ _Scored: `2026-08-02T02:11:00Z` · commercial **8.5** · overall **8.0** (cap un
 
 ```bash
 python3 scripts/torii.py status --text
-python3 scripts/torii.py enterprise -- status
+python3 scripts/torii.py memory -- doctor
 ```

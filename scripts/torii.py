@@ -38,6 +38,7 @@ from __future__ import annotations
 import argparse
 import json
 import os
+import re
 import subprocess
 import sys
 from datetime import datetime, timezone
@@ -580,6 +581,34 @@ def build_status_payload(root: Path | None = None) -> dict[str, Any]:
     if dvs:
         day2["diff_vs_sast_ok"] = dvs.get("diff_vs_sast_ok")
         day2["diff_labeled_tp"] = (dvs.get("measured") or {}).get("labeled_tp")
+    # Memory doctor (compound memory buyer path — FP die twice)
+    mem_doc = _soft_script_json(root, "torii_memory.py", ["doctor"], timeout=45)
+    if mem_doc:
+        day2["memory_doctor_pass"] = mem_doc.get("doctor_pass")
+    # Prefer shallow loop if doctor missing but extras already have level
+    if day2.get("memory_doctor_pass") is None:
+        ml_ex = (extras.get("memory_loop") if isinstance(extras, dict) else None) or {}
+        if ml_ex.get("ready") is not None:
+            day2["memory_doctor_pass"] = bool(ml_ex.get("ready"))
+    # Pricing honesty (open core $0 · pre-revenue — never invent ARR)
+    pricing_p = root / "docs" / "PRICING.md"
+    if pricing_p.is_file():
+        try:
+            pt = pricing_p.read_text(encoding="utf-8", errors="replace")[:8000]
+        except OSError:
+            pt = ""
+        day2["pricing_md"] = True
+        day2["pricing_pre_revenue"] = bool(
+            re.search(r"pre-revenue|pre.revenue", pt, re.I)
+        )
+        day2["pricing_open_core"] = bool(
+            re.search(r"open core|Open \(Gate\)|\*\*\$0\*\*", pt, re.I)
+        )
+        day2["pricing_zero_open"] = bool(
+            re.search(r"\*\*\$0\*\*|\$0\s*[—\-]|Open \(Gate\).*\$0", pt, re.I)
+        )
+    else:
+        day2["pricing_md"] = False
     # Model alias SoT present + preferred product model (DeepSeek V4 Pro tool-use)
     day2["model_alias_script"] = (_scripts_dir(root) / "model_alias.py").is_file()
     try:
@@ -850,6 +879,18 @@ def render_status_text(payload: dict[str, Any], *, verbose: bool = False) -> str
             sev_pend_s = f" pending={sev_pend}"
             if sev_ids and int(sev_pend or 0) > 0:
                 sev_pend_s += f"({','.join(str(x) for x in sev_ids[:2])})"
+        # Memory buyer: L3 + doctor + one-line compound story
+        mem_doc = day2.get("memory_doctor_pass")
+        if mem_s and mem_doc is not None:
+            mem_s = mem_s + f" doctor={mem_doc}"
+        elif mem_doc is not None:
+            mem_s = f" · memory doctor={mem_doc}"
+        # Pricing honesty (open core free · pre-revenue)
+        price_s = ""
+        if day2.get("pricing_open_core") or day2.get("pricing_zero_open"):
+            price_s = " · open_core=$0"
+            if day2.get("pricing_pre_revenue"):
+                price_s += " pre-revenue"
         lines.append(
             f"- **Growth:** pilot readiness={day2.get('pilot_readiness_ok')} ({pilot_r})"
             f"{proof_s} · "
@@ -857,7 +898,7 @@ def render_status_text(payload: dict[str, Any], *, verbose: bool = False) -> str
             f"{sev_pend_s} "
             f"dual_gate_safe={day2.get('self_evolve_dual_gate_safe')} · "
             f"vs SAST labeled_tp={day2.get('diff_labeled_tp')} "
-            f"(docs/DIFF.md){mem_s}{wf_s}"
+            f"(docs/DIFF.md){mem_s}{wf_s}{price_s}"
         )
 
     if verbose:
