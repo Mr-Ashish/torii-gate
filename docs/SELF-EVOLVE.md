@@ -57,6 +57,26 @@ python3 scripts/skill_auto_adopt.py cycle-scorecard
 | `propose-scorecard` | Brand/ops metrics show a gap |
 | `refine-from-util` | Advanced: GEPA-lite body tweak from util traces (optional) |
 
+## Pending proposals (dual-gate honesty)
+
+`self-evolve -- status` reports **pending** skill proposals that have not dual-gate adopted.
+
+| State | Meaning |
+|-------|---------|
+| `pending=0` | No open skill proposals — gate runs with measured active skills only |
+| `pending>0` | Dual-gate has not adopted yet (contribution + attribution) — **safe default REJECT** |
+| `superseded_product` | Signal already enforced by product code (e.g. test-gap → REQUEST_CHANGES via severity calibration) |
+
+When a proposal's signal is already a **deterministic product path**, supersede it so pending does not look like a stuck research queue:
+
+```bash
+python3 scripts/torii.py self-evolve -- resolve-productized --dry-run
+python3 scripts/torii.py self-evolve -- resolve-productized
+python3 scripts/torii.py self-evolve -- status
+```
+
+Example: `skill-test-gap-blocking` is productized by `scripts/severity_calibration.py` (APPROVE + self-reported test gap upgrades to REQUEST_CHANGES). Dual-gate does not re-adopt it as free-form skill prose.
+
 ## Guardrails (buyer language)
 
 1. **Allowlisted tools** — probes come from known CLI patterns, not arbitrary log regex.  

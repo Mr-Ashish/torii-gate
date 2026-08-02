@@ -266,9 +266,13 @@
       "title": "Claim-to-fix: missing tests are blocking",
       "path": "agent/skills/proposals/skill-test-gap-blocking.md",
       "signal": "f50_test_gap",
-      "status": "proposal",
+      "status": "superseded_product",
       "created_at": "2026-08-01T04:47:50Z",
-      "eval": null
+      "eval": null,
+      "superseded_at": "2026-08-02T01:54:05Z",
+      "supersede_reason": "productized_signal",
+      "product_module": "scripts/severity_calibration.py",
+      "buyer_line": "APPROVE + self-reported test gap \u2192 REQUEST_CHANGES (deterministic)"
     },
     {
       "id": "skill-prefer-memory-cli-early",
@@ -522,7 +526,7 @@
       "feature": "F74"
     }
   ],
-  "updated_at": "2026-08-01T11:41:16Z",
+  "updated_at": "2026-08-02T01:54:05Z",
   "fitness_signals": [
     {
       "at": "2026-08-01T00:16:02Z",
@@ -917,15 +921,100 @@
       "refined_n": 0,
       "target_n": 1,
       "skill_ids": []
+    },
+    {
+      "at": "2026-08-01T11:49:13Z",
+      "feature": "F165",
+      "dual_gate_feature": "F166",
+      "out_dir": "docs/benchmarks/traces/f167-gepa-refine-dual-rollout/live",
+      "refined_n": 0,
+      "target_n": 1,
+      "skill_ids": []
+    },
+    {
+      "at": "2026-08-01T11:57:13Z",
+      "feature": "F165",
+      "dual_gate_feature": "F166",
+      "out_dir": "docs/benchmarks/traces/f168-refine-dual-federate-promote/live",
+      "refined_n": 0,
+      "target_n": 1,
+      "skill_ids": []
+    },
+    {
+      "at": "2026-08-01T12:04:19Z",
+      "feature": "F165",
+      "dual_gate_feature": "F166",
+      "out_dir": "docs/benchmarks/traces/f169-refine-dual-hub-critic/live",
+      "refined_n": 0,
+      "target_n": 1,
+      "skill_ids": []
+    },
+    {
+      "at": "2026-08-01T12:11:38Z",
+      "feature": "F165",
+      "dual_gate_feature": "F166",
+      "out_dir": "docs/benchmarks/traces/f170-gepa-refine-eval-pack/live",
+      "refined_n": 0,
+      "target_n": 1,
+      "skill_ids": []
+    },
+    {
+      "at": "2026-08-01T12:19:43Z",
+      "feature": "F165",
+      "dual_gate_feature": "F166",
+      "out_dir": "docs/benchmarks/traces/f171-refine-dual-fail-decay/live",
+      "refined_n": 0,
+      "target_n": 1,
+      "skill_ids": []
+    },
+    {
+      "at": "2026-08-01T12:24:54Z",
+      "feature": "F165",
+      "dual_gate_feature": "F166",
+      "out_dir": "docs/benchmarks/traces/f172-refine-decay-federate/live",
+      "refined_n": 0,
+      "target_n": 1,
+      "skill_ids": []
+    },
+    {
+      "at": "2026-08-01T12:31:00Z",
+      "feature": "F165",
+      "dual_gate_feature": "F166",
+      "out_dir": "docs/benchmarks/traces/f173-refine-decay-hub-critic/live",
+      "refined_n": 0,
+      "target_n": 1,
+      "skill_ids": []
+    },
+    {
+      "at": "2026-08-01T12:36:03Z",
+      "feature": "F165",
+      "dual_gate_feature": "F166",
+      "out_dir": "docs/benchmarks/traces/f174-gepa-refine-full-eval-pack/live",
+      "refined_n": 0,
+      "target_n": 1,
+      "skill_ids": []
+    },
+    {
+      "at": "2026-08-01T12:46:19Z",
+      "feature": "F165",
+      "dual_gate_feature": "F166",
+      "out_dir": "docs/benchmarks/traces/f175-refine-dual-pass-revive/live",
+      "refined_n": 1,
+      "target_n": 2,
+      "skill_ids": [
+        "skill-prefer-hub-archival-early"
+      ]
     }
   ],
   "last_refine": {
-    "at": "2026-08-01T11:41:16Z",
+    "at": "2026-08-01T12:46:19Z",
     "feature": "F165",
     "dual_gate_feature": "F166",
-    "out_dir": "docs/benchmarks/traces/f166-gepa-refine-dual-gate-attr/live",
-    "refined_n": 0,
-    "target_n": 1,
-    "skill_ids": []
+    "out_dir": "docs/benchmarks/traces/f175-refine-dual-pass-revive/live",
+    "refined_n": 1,
+    "target_n": 2,
+    "skill_ids": [
+      "skill-prefer-hub-archival-early"
+    ]
   }
 }

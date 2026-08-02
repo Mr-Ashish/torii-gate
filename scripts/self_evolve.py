@@ -1985,6 +1985,101 @@ def cmd_nudge_text(args: argparse.Namespace) -> int:
     return 0
 
 
+# Signals already enforced by product code (not free-form skill bodies).
+# Pending proposals with these signals can be superseded_product — dual-gate honesty.
+PRODUCTIZED_SIGNALS: dict[str, dict[str, str]] = {
+    "f50_test_gap": {
+        "module": "scripts/severity_calibration.py",
+        "buyer_line": (
+            "APPROVE + self-reported test gap → REQUEST_CHANGES (deterministic)"
+        ),
+        "skill_id": "skill-test-gap-blocking",
+    },
+}
+
+
+def _proposal_id(p: dict[str, Any]) -> str:
+    return str(p.get("id") or p.get("skill_id") or "").strip()
+
+
+def _pending_status(s: str) -> bool:
+    return str(s or "").lower() in {
+        "proposal",
+        "proposed",
+        "pending",
+        "eval",
+        "evaluated",
+        "",
+    }
+
+
+def resolve_productized_proposals(
+    root: Path,
+    *,
+    dry_run: bool = False,
+) -> dict[str, Any]:
+    """Supersede pending proposals whose signal is already product code.
+
+    Buyer honesty: dual-gate does not re-adopt a skill that is already a
+    deterministic critic/calibration path. Leaves skill file in proposals/
+    for audit; ledger status → superseded_product.
+    """
+    root = root or _root()
+    ledger = _load_ledger(root)
+    props = list(ledger.get("proposals") or [])
+    superseded: list[dict[str, Any]] = []
+    for p in props:
+        if not _pending_status(str(p.get("status") or "")):
+            continue
+        sig = str(p.get("signal") or "").strip().lower()
+        pid = _proposal_id(p)
+        meta = PRODUCTIZED_SIGNALS.get(sig)
+        if meta is None:
+            # also match by skill id
+            for s_key, s_meta in PRODUCTIZED_SIGNALS.items():
+                if pid == s_meta.get("skill_id"):
+                    meta = s_meta
+                    sig = s_key
+                    break
+        if meta is None:
+            continue
+        mod = root / meta["module"]
+        if not mod.is_file():
+            continue
+        entry = {
+            "id": pid,
+            "signal": sig,
+            "module": meta["module"],
+            "buyer_line": meta["buyer_line"],
+            "prev_status": p.get("status"),
+        }
+        if not dry_run:
+            p["status"] = "superseded_product"
+            p["superseded_at"] = _now()
+            p["supersede_reason"] = "productized_signal"
+            p["product_module"] = meta["module"]
+            p["buyer_line"] = meta["buyer_line"]
+        superseded.append(entry)
+    if superseded and not dry_run:
+        ledger["proposals"] = props
+        ledger["updated_at"] = _now()
+        _save_ledger(root, ledger)
+    pending_left = sum(1 for p in props if _pending_status(str(p.get("status") or "")))
+    return {
+        "feature": "SELF_EVOLVE",
+        "resolve_ok": True,
+        "dry_run": dry_run,
+        "superseded_n": len(superseded),
+        "superseded": superseded,
+        "pending_proposals_n": pending_left,
+        "one_liner": (
+            f"Productized signals supersede skill proposals "
+            f"(superseded={len(superseded)} · pending_left={pending_left})"
+        ),
+        "at": _now(),
+    }
+
+
 def build_status_payload(root: Path | None = None) -> dict[str, Any]:
     """Buyer day-2 self-evolution status (no research F-IDs on the one-liner)."""
     root = root or _root()
@@ -1993,14 +2088,14 @@ def build_status_payload(root: Path | None = None) -> dict[str, Any]:
     trajs = list(ledger.get("trajectories") or [])
     props = list(ledger.get("proposals") or [])
     adopted = list(ledger.get("adopted") or [])
-    pending = [
-        p
-        for p in props
-        if str(p.get("status") or "").lower()
-        in {"proposal", "proposed", "pending", "eval", ""}
-    ]
+    pending = [p for p in props if _pending_status(str(p.get("status") or ""))]
     adopted_status = [
         p for p in props if str(p.get("status") or "").lower() in {"adopted", "active"}
+    ]
+    superseded_product = [
+        p
+        for p in props
+        if str(p.get("status") or "").lower() == "superseded_product"
     ]
     # Dual-gate discipline: default auto-adopt off; skills only land when gates pass
     auto_adopt = (os.environ.get("TORII_SELF_EVOLVE_AUTO_ADOPT") or "0").strip() == "1"
@@ -2020,6 +2115,29 @@ def build_status_payload(root: Path | None = None) -> dict[str, Any]:
         for n in active_names
         if not re.match(r"skill-f\d+", n, re.I)
     ][:8]
+    pending_ids = [_proposal_id(p) for p in pending if _proposal_id(p)][:6]
+    # Productized pending candidates (still in proposal state)
+    productizable = []
+    for p in pending:
+        sig = str(p.get("signal") or "").strip().lower()
+        pid = _proposal_id(p)
+        meta = PRODUCTIZED_SIGNALS.get(sig)
+        if meta is None:
+            for s_key, s_meta in PRODUCTIZED_SIGNALS.items():
+                if pid == s_meta.get("skill_id"):
+                    meta = s_meta
+                    break
+        if meta and (root / meta["module"]).is_file():
+            productizable.append(pid)
+    dual_gate_hint = (
+        "dual_gate REJECT until contribution + attribution"
+        if pending_ids and not productizable
+        else (
+            "run self-evolve -- resolve-productized for product-enforced signals"
+            if productizable
+            else "no pending · dual_gate safe default"
+        )
+    )
     return {
         "feature": "SELF_EVOLVE",
         "self_evolve_ok": self_evolve_ok,
@@ -2029,6 +2147,10 @@ def build_status_payload(root: Path | None = None) -> dict[str, Any]:
         "trajectories_n": len(trajs),
         "proposals_n": len(props),
         "pending_proposals_n": len(pending),
+        "pending_ids": pending_ids,
+        "productizable_pending": productizable,
+        "superseded_product_n": len(superseded_product),
+        "dual_gate_hint": dual_gate_hint,
         "adopted_ledger_n": len(adopted),
         "adopted_proposals_n": len(adopted_status),
         "active_skills_n": len(active),
@@ -2045,6 +2167,14 @@ def build_status_payload(root: Path | None = None) -> dict[str, Any]:
         "at": _now(),
     }
 
+def cmd_resolve_productized(args: argparse.Namespace) -> int:
+    """Supersede pending proposals already enforced by product modules."""
+    report = resolve_productized_proposals(
+        _root(), dry_run=bool(getattr(args, "dry_run", False))
+    )
+    print(json.dumps(report, indent=2))
+    return 0 if report.get("resolve_ok") else 1
+
 
 def cmd_status(args: argparse.Namespace) -> int:
     root = _root()
@@ -2056,6 +2186,10 @@ def cmd_status(args: argparse.Namespace) -> int:
         print(f"trajectories={payload.get('trajectories_n')}")
         print(f"proposals={payload.get('proposals_n')}")
         print(f"pending={payload.get('pending_proposals_n')}")
+        pids = payload.get("pending_ids") or []
+        if pids:
+            print(f"pending_ids={','.join(pids)}")
+        print(f"dual_gate_hint={payload.get('dual_gate_hint')}")
         print(f"adopted_ledger={payload.get('adopted_ledger_n')}")
         print(f"active_skills={payload.get('active_skills_n')}")
         print(f"dual_gate_default_safe={payload.get('dual_gate_default_safe')}")
@@ -2385,6 +2519,16 @@ def main(argv: list[str] | None = None) -> int:
         help="Human ledger dump (default: buyer JSON for torii.py soft peeks)",
     )
     pst.set_defaults(func=cmd_status)
+    prp = sub.add_parser(
+        "resolve-productized",
+        help="Supersede pending proposals already enforced by product modules",
+    )
+    prp.add_argument(
+        "--dry-run",
+        action="store_true",
+        help="Report matches without writing ledger",
+    )
+    prp.set_defaults(func=cmd_resolve_productized)
     sub.add_parser("fixture", help="F117 hermetic mine+score fixture").set_defaults(
         func=cmd_fixture
     )

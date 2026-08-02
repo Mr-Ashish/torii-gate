@@ -5424,3 +5424,28 @@ on Modal, fixture fails closed without it, day-2 status shows model= pin.
 ### SHA
 `82efec6e6a8e81a90df0a968b14fdb327185ec23`
 
+## 2026-08-02 — SELF_EVOLVE_PRODUCTIZED pending dual-gate honesty
+
+### Papers / posts
+- Dual-gate adopt: free-form skill bodies must not re-implement product critics.
+- f50_test_gap already enforced by severity_calibration (APPROVE→REQUEST_CHANGES).
+- Pending=1 looked like a stuck research queue to buyers.
+
+### Insight
+Highest ROI for dim 6: resolve-productized supersedes proposals whose signal is
+already product code; status surfaces pending_ids + dual_gate_hint; pending=0.
+
+### Feature shipped (SELF_EVOLVE_PRODUCTIZED)
+- self_evolve resolve-productized (+ dry-run)
+- PRODUCTIZED_SIGNALS map (f50_test_gap)
+- status: pending_ids · dual_gate_hint · superseded_product_n
+- growth beat: self-evolve pending=N
+- SELF-EVOLVE.md pending table
+
+### Metric
+- pending_proposals_n=0 · superseded_product_n=1 · dual_gate_safe=True
+- Live Modal e2e this fire
+
+### SHA
+`2befed591348e7b4a1540fe57815bc8061217ce1`
+

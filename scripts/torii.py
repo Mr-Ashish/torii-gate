@@ -183,6 +183,7 @@ GROUPS: dict[str, dict[str, Any]] = {
         "tier": "day2",
         "examples": [
             "self-evolve -- status",
+            "self-evolve -- resolve-productized",
             "self-evolve -- fixture",
             "self-evolve -- propose-scorecard",
         ],
@@ -560,7 +561,9 @@ def build_status_payload(root: Path | None = None) -> dict[str, Any]:
         day2["self_evolve_ok"] = sev.get("self_evolve_ok")
         day2["self_evolve_active_n"] = sev.get("active_skills_n")
         day2["self_evolve_pending_n"] = sev.get("pending_proposals_n")
+        day2["self_evolve_pending_ids"] = sev.get("pending_ids")
         day2["self_evolve_dual_gate_safe"] = sev.get("dual_gate_default_safe")
+        day2["self_evolve_dual_gate_hint"] = sev.get("dual_gate_hint")
         day2["self_evolve_one_liner"] = sev.get("one_liner")
     # Diff vs SAST / AI review (buyer differentiation)
     dvs = _soft_script_json(root, "diff_vs_sast.py", ["status"], timeout=20)
@@ -810,10 +813,18 @@ def render_status_text(payload: dict[str, Any], *, verbose: bool = False) -> str
         wf_s = f" · workflow={wf_lv}" if wf_lv is not None else ""
         proof_ok = day2.get("pilot_proof_packet_ok")
         proof_s = " · proof=docs/PILOT-PROOF.md" if proof_ok else ""
+        sev_pend = day2.get("self_evolve_pending_n")
+        sev_ids = day2.get("self_evolve_pending_ids") or []
+        sev_pend_s = ""
+        if sev_pend is not None:
+            sev_pend_s = f" pending={sev_pend}"
+            if sev_ids and int(sev_pend or 0) > 0:
+                sev_pend_s += f"({','.join(str(x) for x in sev_ids[:2])})"
         lines.append(
             f"- **Growth:** pilot readiness={day2.get('pilot_readiness_ok')} ({pilot_r})"
             f"{proof_s} · "
-            f"self-evolve active={day2.get('self_evolve_active_n')} "
+            f"self-evolve active={day2.get('self_evolve_active_n')}"
+            f"{sev_pend_s} "
             f"dual_gate_safe={day2.get('self_evolve_dual_gate_safe')} · "
             f"vs SAST labeled_tp={day2.get('diff_labeled_tp')} "
             f"(docs/DIFF.md){mem_s}{wf_s}"
