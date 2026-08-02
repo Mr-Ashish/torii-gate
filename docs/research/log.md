@@ -5400,3 +5400,27 @@ tool-use · public-eval) with pre-revenue honesty banner.
 ### SHA
 `34c2f2194b8edb5e723537fffe8c799972b46572`
 
+## 2026-08-02 — MODEL_SOT_DEEPSEEK Modal + status pin
+
+### Papers / posts
+- Product SoT: DeepSeek V4 Pro tool-use; chat-v4-pro slug often 0 tool turns.
+- Modal still defaulted gpt-4.1-mini while status/help said prefer deepseek-v4-pro.
+
+### Insight
+Highest ROI for agent-tools + ops honesty: DEFAULT_MODEL = deepseek/deepseek-v4-pro
+on Modal, fixture fails closed without it, day-2 status shows model= pin.
+
+### Feature shipped (MODEL_SOT_DEEPSEEK)
+- modal_app DEFAULT_MODEL deepseek/deepseek-v4-pro
+- model_alias fixture modal_default_deepseek
+- status cost/trust: model=deepseek/deepseek-v4-pro
+- public-eval report refresh (age 0h)
+- landing PILOT-PROOF link
+
+### Metric
+- model_alias fixture 7/7 · status shows model pin · public-eval freshness age 0h
+- Live Modal e2e this fire (default model, no --model override)
+
+### SHA
+`a59befdac1ffbaf52cd983cdf2e4c046e5b5deac`
+

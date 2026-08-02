@@ -4,7 +4,7 @@ Cost rules (Modal bills max(request, usage)):
   - Do NOT reserve high cpu/memory (defaults = 0.125 core, ~128MiB soft)
   - No GPU
   - Sparse shallow PR checkout (avoid monorepo full clone wall-time)
-  - Cheap OpenRouter model default (gpt-4.1-mini)
+  - OpenRouter model default: deepseek/deepseek-v4-pro (tool-use SoT; aliases chat→pro)
   - Hermes baked in image once (amortized; not per-run cold install)
 
 Run:
@@ -34,9 +34,9 @@ APP_NAME = "torii-pr-review"
 # F66: Modal is the default prod live e2e host (lens auto + F65 tenant pass-through)
 TORII_MODAL_VERSION = "0.8.0-f67"
 HERMES_PIN = "53559aaf86b84dadae83cd9bb605ca476f9a0606"
-# OpenRouter — keep Modal compute cheap AND LLM spend low
-DEFAULT_MODEL = "openai/gpt-4.1-mini"
-# Dogfood: deepseek-chat-v4-pro often yields 0 tool turns; prefer v4-pro tool-use slug.
+# OpenRouter product SoT: DeepSeek V4 Pro (tool-use). Override: --model / TORII_MODEL.
+# Dogfood: deepseek-chat-v4-pro often yields 0 tool turns; always normalize to v4-pro.
+DEFAULT_MODEL = "deepseek/deepseek-v4-pro"
 _MODEL_ALIASES = {
     "deepseek/deepseek-chat-v4-pro": "deepseek/deepseek-v4-pro",
     "deepseek-chat-v4-pro": "deepseek/deepseek-v4-pro",

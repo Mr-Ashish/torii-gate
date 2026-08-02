@@ -1,6 +1,6 @@
 # Torii Gate — first-principles product scorecard
 
-_Scored: `2026-08-02T01:20:30Z` · commercial **8.5** · overall **8.0** (cap until paid pilot)._
+_Scored: `2026-08-02T01:39:00Z` · commercial **8.5** · overall **8.0** (cap until paid pilot)._
 
 ## Dims 1–12
 
@@ -8,22 +8,22 @@ _Scored: `2026-08-02T01:20:30Z` · commercial **8.5** · overall **8.0** (cap un
 |--:|-----|------:|-------------------|
 | 1 | Value prop | 8.5 | merge authority · torii/gate |
 | 2 | Diff vs SAST | 8.2 | DIFF.md · labeled_tp=18 |
-| 3 | JTBD | 9.2 | quieter organic + TTS + proof packet path |
-| 4 | Agent tools | 8.0 | tool_use 0.875 on proof packet |
+| 3 | JTBD | 9.2 | quieter organic + TTS + proof packet |
+| 4 | Agent tools | **8.3** | Modal DEFAULT_MODEL=deepseek-v4-pro tool-use SoT |
 | 5 | Memory | 8.0 | L3 |
-| 6 | Self-evolution | 7.8 | dual_gate |
+| 6 | Self-evolution | 7.8 | dual_gate · pending=1 |
 | 7 | Install | 8.9 | bootstrap --demo |
-| 8 | Ops | 9.0 | LIVE_LEAN product_default |
+| 8 | Ops | **9.1** | LIVE_LEAN · model SoT on status · public-eval age 0h |
 | 9 | Enterprise | 8.0 | isolation |
-| 10 | Pricing | 8.0 | open core · pilot terms |
-| 11 | GTM | **8.4** | PILOT-PROOF.md measured packet · GTM/PILOT links · 0 paid honest |
-| 12 | Simplicity | **8.7** | status growth shows proof=docs/PILOT-PROOF.md |
+| 10 | Pricing | 8.0 | open core |
+| 11 | GTM | 8.4 | PILOT-PROOF + landing link |
+| 12 | Simplicity | **8.8** | status cost/trust shows model=deepseek/deepseek-v4-pro |
 
 **Overall ~8.5 raw** (cap **8.0** until first design partner / paid pilot).
 
 ## This fire
 
-**PILOT_PROOF_PACKET:** `pilot -- packet` writes docs/PILOT-PROOF.md from measured vault (TTS · cost · quieter · tool-use · public-eval); fixture 28/28; status growth beat links proof.
+**MODEL_SOT_DEEPSEEK:** Modal `DEFAULT_MODEL` → `deepseek/deepseek-v4-pro`; model_alias fixture gates modal default; status cost/trust shows preferred model; public-eval refreshed; landing links PILOT-PROOF.
 
 ## Remaining
 
@@ -33,6 +33,6 @@ _Scored: `2026-08-02T01:20:30Z` · commercial **8.5** · overall **8.0** (cap un
 | 2 | No F185+ without customer win | standing | — |
 
 ```bash
-python3 scripts/torii.py pilot -- packet
+python3 scripts/model_alias.py fixture
 python3 scripts/torii.py status --text
 ```

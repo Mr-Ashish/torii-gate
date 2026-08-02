@@ -567,8 +567,17 @@ def build_status_payload(root: Path | None = None) -> dict[str, Any]:
     if dvs:
         day2["diff_vs_sast_ok"] = dvs.get("diff_vs_sast_ok")
         day2["diff_labeled_tp"] = (dvs.get("measured") or {}).get("labeled_tp")
-    # Model alias SoT present
+    # Model alias SoT present + preferred product model (DeepSeek V4 Pro tool-use)
     day2["model_alias_script"] = (_scripts_dir(root) / "model_alias.py").is_file()
+    try:
+        sys.path.insert(0, str(_scripts_dir(root)))
+        from model_alias import PREFERRED_DEEPSEEK, from_env  # type: ignore
+
+        day2["preferred_model"] = PREFERRED_DEEPSEEK
+        day2["model_from_env"] = from_env()
+    except Exception:
+        day2["preferred_model"] = "deepseek/deepseek-v4-pro"
+        day2["model_from_env"] = day2["preferred_model"]
     # Public eval freshness (soft) — normalize model id for display honesty
     pe = _soft_script_json(root, "public_eval.py", ["status"], timeout=30)
     if pe:
@@ -781,6 +790,8 @@ def render_status_text(payload: dict[str, Any], *, verbose: bool = False) -> str
             lean_s = f" · live_lean={lean}"
             if lean_src and lean_src != "env":
                 lean_s += f"({lean_src})"
+        pref = day2.get("preferred_model") or day2.get("public_eval_model")
+        pref_s = f" · model={pref}" if pref else ""
         lines.append(
             f"- **Cost & trust:** commercial={day2.get('overall_est')}/10 "
             f"ok={day2.get('commercial_ok')} · cost p50={p50_s}/PR "
@@ -788,7 +799,7 @@ def render_status_text(payload: dict[str, Any], *, verbose: bool = False) -> str
             f"time-to-signal p50={tts_s} · "
             f"public-eval freshness={day2.get('public_eval_freshness_ok')} · "
             f"tool-use rate={day2.get('tool_use_rate')} · "
-            f"fail_closed={day2.get('fail_closed_safe_defaults')}{lean_s}"
+            f"fail_closed={day2.get('fail_closed_safe_defaults')}{lean_s}{pref_s}"
         )
         lines.append(
             f"- **Org:** enterprise={day2.get('enterprise_ok')} · "

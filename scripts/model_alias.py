@@ -65,8 +65,11 @@ def main(argv: list[str] | None = None) -> int:
             "pro_stable": normalize_model(PREFERRED_DEEPSEEK) == PREFERRED_DEEPSEEK,
             "other_passthrough": normalize_model("openai/gpt-4.1-mini")
             == "openai/gpt-4.1-mini",
+            "from_env_default": from_env(default=PREFERRED_DEEPSEEK) == PREFERRED_DEEPSEEK
+            or bool(os.environ.get("TORII_MODEL") or os.environ.get("OPENROUTER_MODEL")),
             "bash_case_present": False,
             "modal_alias_present": False,
+            "modal_default_deepseek": False,
         }
         root = os.environ.get("TORII_ROOT") or os.path.dirname(
             os.path.dirname(os.path.abspath(__file__))
@@ -87,6 +90,11 @@ def main(argv: list[str] | None = None) -> int:
             checks["modal_alias_present"] = (
                 "_normalize_model" in mt and "deepseek-chat-v4-pro" in mt
             )
+            # Product SoT: Modal DEFAULT_MODEL pins DeepSeek V4 Pro tool-use slug
+            checks["modal_default_deepseek"] = (
+                'DEFAULT_MODEL = "deepseek/deepseek-v4-pro"' in mt
+                or "DEFAULT_MODEL = 'deepseek/deepseek-v4-pro'" in mt
+            )
         except OSError:
             pass
         ok = all(checks.values())
@@ -98,8 +106,8 @@ def main(argv: list[str] | None = None) -> int:
                     "fixture_pass": ok,
                     "checks": checks,
                     "preferred": PREFERRED_DEEPSEEK,
-                    "scorecard_target": "JTBD / tool-use",
-                    "dim_lift": "one alias map for Hermes + Modal + public-eval",
+                    "scorecard_target": "JTBD / tool-use / ops (dims 4 + 8)",
+                    "dim_lift": "one alias map + Modal default = DeepSeek V4 Pro tool-use",
                 },
                 indent=2,
             )

@@ -2,7 +2,7 @@
 
 # Torii Gate — design partner proof packet
 
-_Generated: `2026-08-02T01:35:55Z` · measured dogfood vault only · **pre-revenue · 0 paid customers**_
+_Generated: `2026-08-02T01:39:05Z` · measured dogfood vault only · **pre-revenue · 0 paid customers**_
 
 > **Never invent** customers, logos, ARR, or closed deals. This page is an auto-refresh of **local measured** metrics for outreach.
 
