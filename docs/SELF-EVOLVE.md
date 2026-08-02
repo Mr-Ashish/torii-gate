@@ -37,8 +37,11 @@ python3 scripts/torii.py self-evolve -- status
 # Human ledger dump
 python3 scripts/self_evolve.py status --text
 
-# Day-2 one screen: growth beat shows self-evolve active=N buyer=M auto_adopt=off dual_gate_safe=
+# Day-2 one screen: growth beat shows self-evolve active=N buyer=M auto_adopt=off
+# demoted=0 free_riders=0 top=<skill> dual_gate_safe=
 python3 scripts/torii.py status --text
+python3 scripts/skill_fitness.py status      # measured hit_rate / demotions
+python3 scripts/skill_attribution.py status  # free-rider ledger
 
 # Day-2 one screen includes self-evolution
 python3 scripts/torii.py status --text

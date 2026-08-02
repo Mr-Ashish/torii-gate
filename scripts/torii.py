@@ -671,6 +671,9 @@ def build_status_payload(root: Path | None = None) -> dict[str, Any]:
         day2["self_evolve_dual_gate_hint"] = sev.get("dual_gate_hint")
         day2["self_evolve_one_liner"] = sev.get("one_liner")
         day2["self_evolve_auto_adopt"] = sev.get("auto_adopt_enabled")
+        day2["self_evolve_adopted_n"] = sev.get("adopted_ledger_n") or sev.get(
+            "adopted_proposals_n"
+        )
         buyer = sev.get("buyer_skills") or []
         if isinstance(buyer, list):
             day2["self_evolve_buyer_n"] = len(buyer)
@@ -682,6 +685,22 @@ def build_status_payload(root: Path | None = None) -> dict[str, Any]:
             day2["self_evolve_buyer_head"] = heads
         elif sev.get("buyer_skills_n") is not None:
             day2["self_evolve_buyer_n"] = sev.get("buyer_skills_n")
+    # Skill fitness + attribution (measured adopt fuel — free-riders die)
+    fit = _soft_script_json(root, "skill_fitness.py", ["status"], timeout=25)
+    if fit:
+        dem = fit.get("demoted") or []
+        day2["skill_fitness_n"] = fit.get("skills_n")
+        day2["skill_fitness_demoted_n"] = len(dem) if isinstance(dem, list) else 0
+        top = fit.get("top") if isinstance(fit.get("top"), list) else []
+        if top and isinstance(top[0], dict):
+            tid = str(top[0].get("id") or "").replace("skill-", "")
+            day2["skill_fitness_top"] = tid
+            day2["skill_fitness_top_hit_rate"] = top[0].get("hit_rate")
+    attr = _soft_script_json(root, "skill_attribution.py", ["status"], timeout=25)
+    if attr:
+        fr = attr.get("free_riders") or []
+        day2["skill_free_riders_n"] = len(fr) if isinstance(fr, list) else 0
+        day2["skill_attr_n"] = attr.get("skills_n")
     # Diff vs SAST / AI review (buyer differentiation)
     dvs = _soft_script_json(root, "diff_vs_sast.py", ["status"], timeout=20)
     if dvs:
@@ -1110,6 +1129,21 @@ def render_status_text(payload: dict[str, Any], *, verbose: bool = False) -> str
             auto_s = " auto_adopt=off"
         elif auto_ad is True:
             auto_s = " auto_adopt=on"
+        # Measured fitness: demoted free-riders stay out of the prompt
+        dem_n = day2.get("skill_fitness_demoted_n")
+        fr_n = day2.get("skill_free_riders_n")
+        fit_s = ""
+        if dem_n is not None or fr_n is not None:
+            parts = []
+            if dem_n is not None:
+                parts.append(f"demoted={dem_n}")
+            if fr_n is not None:
+                parts.append(f"free_riders={fr_n}")
+            top = day2.get("skill_fitness_top")
+            if top:
+                parts.append(f"top={top}")
+            if parts:
+                fit_s = " " + " ".join(parts)
         # Memory buyer: L3 + TP/FP counts + doctor (FP die twice · TP stay sharp)
         mem_doc = day2.get("memory_doctor_pass")
         mtp, mfp = day2.get("memory_tp_n"), day2.get("memory_fp_n")
@@ -1159,7 +1193,7 @@ def render_status_text(payload: dict[str, Any], *, verbose: bool = False) -> str
             f"- **Growth:** pilot readiness={day2.get('pilot_readiness_ok')} ({pilot_r})"
             f"{proof_s}{apply_s}{gtm_s}{pages_s}{week1_s} · "
             f"self-evolve active={day2.get('self_evolve_active_n')}"
-            f"{buyer_s}{sev_pend_s}{auto_s} "
+            f"{buyer_s}{sev_pend_s}{auto_s}{fit_s} "
             f"dual_gate_safe={day2.get('self_evolve_dual_gate_safe')} · "
             f"vs SAST labeled_tp={day2.get('diff_labeled_tp')} "
             f"(docs/DIFF.md){mem_s}{wf_s}{price_s}"

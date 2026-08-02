@@ -5776,3 +5776,25 @@ tool_turns_gate default on cost/trust. No F-stack — path-to-value for compound
 
 ### SHA
 `3dcaf8f4c36373b27c98d74759c147f0354f1e16`
+
+
+## 2026-08-02 — SELF_EVOLVE_FITNESS day-2 measured adopt
+
+### Papers / posts
+- Self-evolve dim lag: active/buyer counts without free-rider / demotion honesty.
+- Buyers need “skills measure in” proof on one growth line.
+
+### Insight
+Highest ROI for dim 6: soft-peek skill_fitness demoted + skill_attribution free_riders
++ top hit skill on status growth — dual-gate story becomes auditable.
+
+### Feature shipped (SELF_EVOLVE_FITNESS)
+- status growth: demoted=0 free_riders=0 top=prefer-hub-archival-early
+- SELF-EVOLVE.md day-2 fitness/attribution commands
+
+### Metric
+- demoted=0 · free_riders=0 · fitness skills_n measured
+- Live Modal e2e this fire
+
+### SHA
+_(filled after commit)_
