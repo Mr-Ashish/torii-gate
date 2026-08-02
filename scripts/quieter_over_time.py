@@ -10,7 +10,7 @@ Tools-as-code (no new F-compound loop):
   - chart: docs/benchmarks/quieter-over-time.md (hub) and/or .torii/quieter-over-time.md
 
 Commands:
-  report | fixture | status | bootstrap [--demo]
+  report | fixture | status | bootstrap [--demo] | land-dogfood
 """
 
 from __future__ import annotations
@@ -968,7 +968,7 @@ def cmd_status(args: argparse.Namespace) -> int:
     elif organic_needed:
         hint = (
             f"demo vault only (local_demo_n={local_demo_n}) · "
-            "require torii/gate → @torii review for organic quieter"
+            "require torii/gate → @torii review  OR  quieter -- land-dogfood"
         )
     else:
         hint = "local vault has organic runs · quieter chart ready"
@@ -998,6 +998,302 @@ def cmd_status(args: argparse.Namespace) -> int:
     return 0 if report.get("quieter_ok") else 1
 
 
+def _parse_summary_md_file(path: Path) -> dict[str, Any]:
+    """Best-effort parse of SUMMARY.md fire notes (Modal e2e tags)."""
+    out: dict[str, Any] = {}
+    if not path.is_file():
+        return out
+    try:
+        text = path.read_text(encoding="utf-8", errors="replace")[:8000]
+    except OSError:
+        return out
+    m = re.search(r"pytorch#(\d+)", text, re.I)
+    if m:
+        out["pr"] = m.group(1)
+        out["repo"] = "pytorch/pytorch"
+    m = re.search(r"tool_call_turns\s*=\s*(\d+)", text, re.I)
+    if m:
+        out["tool_call_turns"] = int(m.group(1))
+    m = re.search(r"elapsed_s[≈~=]*\s*(\d+(?:\.\d+)?)", text, re.I)
+    if m:
+        out["elapsed_s"] = float(m.group(1))
+    m = re.search(r"\b(APPROVE|REQUEST_CHANGES|COMMENT)\b", text)
+    if m:
+        out["verdict"] = m.group(1)
+    m = re.search(r"https://modal\.com/apps/[^\s)]+", text)
+    if m:
+        out["modal_app"] = m.group(0).rstrip(".,;")
+    return out
+
+
+def _pick_hub_trace(root: Path, explicit: str | None = None) -> Path | None:
+    """Pick a hub dogfood trace dir with enough signal to land as organic local pack."""
+    if explicit:
+        p = Path(explicit)
+        if not p.is_absolute():
+            p = (root / p).resolve()
+        return p if p.is_dir() else None
+    hub = root / "docs" / "benchmarks" / "traces"
+    if not hub.is_dir():
+        return None
+    candidates: list[tuple[float, Path]] = []
+    for d in hub.iterdir():
+        if not d.is_dir() or d.name.startswith("."):
+            continue
+        name_l = d.name.lower()
+        # Prefer live modal pytorch dogfood over pure feature labs
+        score = 0.0
+        if "modal" in name_l:
+            score += 2
+        if "pytorch" in name_l:
+            score += 2
+        if (d / "summary.json").is_file():
+            score += 3
+        if (d / "review.md").is_file() or list(d.glob("review-*.md")):
+            score += 2
+        if (d / "SUMMARY.md").is_file():
+            score += 1
+        if (d / "meta.json").is_file():
+            score += 0.5
+        if (d / "gate-certificate.json").is_file():
+            score += 1
+        if score < 3:
+            continue
+        try:
+            mtime = d.stat().st_mtime
+        except OSError:
+            mtime = 0.0
+        candidates.append((score * 1e12 + mtime, d))
+    if not candidates:
+        return None
+    candidates.sort(key=lambda x: x[0], reverse=True)
+    return candidates[0][1]
+
+
+def land_dogfood_pack(
+    root: Path,
+    *,
+    trace_dir: Path | None = None,
+    force: bool = False,
+) -> dict[str, Any]:
+    """Land one hub dogfood / Modal trace as an **organic** local slim pack.
+
+    Honesty: demo=false · source=land-dogfood · host/modal preserved.
+    Closes organic_needed for hub maintainers and proves the customer vault path
+    after FS publish without inventing partner PRs.
+    """
+    src = trace_dir or _pick_hub_trace(root)
+    if src is None or not src.is_dir():
+        return {
+            "landed": False,
+            "reason": "no_hub_trace",
+            "hint": "pass --trace docs/benchmarks/traces/<fire-tag>",
+        }
+
+    summary = _safe_json(src / "summary.json")
+    meta_src = _safe_json(src / "meta.json")
+    usage = _safe_json(src / "hermes-usage.json")
+    cert = _safe_json(src / "gate-certificate.json")
+    timings = _safe_json(src / "timings.json")
+    fire = _parse_summary_md_file(src / "SUMMARY.md")
+
+    # review body
+    review_text = ""
+    for rp in [src / "review.md", *sorted(src.glob("review-*.md"))]:
+        if rp.is_file():
+            try:
+                review_text = rp.read_text(encoding="utf-8", errors="replace")[:12000]
+            except OSError:
+                review_text = ""
+            if review_text.strip():
+                break
+    if not review_text and (src / "SUMMARY.md").is_file():
+        try:
+            review_text = (src / "SUMMARY.md").read_text(encoding="utf-8", errors="replace")[:4000]
+        except OSError:
+            review_text = ""
+
+    repo = str(
+        summary.get("repo")
+        or meta_src.get("repo")
+        or fire.get("repo")
+        or ""
+    )
+    pr = str(
+        summary.get("pr")
+        or summary.get("pr_number")
+        or meta_src.get("pr")
+        or fire.get("pr")
+        or ""
+    )
+    if not repo and "pytorch" in src.name.lower():
+        repo = "pytorch/pytorch"
+    if not pr:
+        m = re.search(r"pr[#\-]?(\d{4,})", src.name.lower())
+        if m:
+            pr = m.group(1)
+
+    verdict = str(
+        summary.get("verdict")
+        or meta_src.get("verdict")
+        or (cert or {}).get("verdict")
+        or fire.get("verdict")
+        or ""
+    )
+    if not verdict and review_text:
+        m = re.search(r"(?im)^\**Verdict:\**\s*([A-Za-z_ ]+)", review_text)
+        if m:
+            verdict = m.group(1).strip()
+    verdict_n = _norm_verdict(verdict) if verdict else "UNKNOWN"
+
+    tools = summary.get("tool_call_turns")
+    if tools is None:
+        tools = meta_src.get("tool_call_turns") or fire.get("tool_call_turns")
+    elapsed = summary.get("elapsed_s") or meta_src.get("elapsed_s") or fire.get("elapsed_s")
+    if elapsed is None and timings:
+        elapsed = timings.get("total_seconds")
+    cost = summary.get("cost_usd")
+    if cost is None and usage:
+        cost = usage.get("estimated_cost_usd")
+    if cost is None:
+        cost = meta_src.get("cost_usd")
+    path_ev = summary.get("path_evidence_score")
+    if path_ev is None and cert:
+        path_ev = cert.get("path_evidence_score")
+    if path_ev is None and isinstance(summary.get("path_evidence"), (int, float)):
+        path_ev = summary.get("path_evidence")
+
+    # Need a usable signal — refuse empty landings
+    if verdict_n == "UNKNOWN" and tools is None and not review_text.strip():
+        return {
+            "landed": False,
+            "reason": "trace_too_thin",
+            "trace": str(src),
+            "hint": "need summary.json or review.md with verdict/tools",
+        }
+
+    tid = f"landed-{src.name}"[:120]
+    # shorten very long names
+    if len(tid) > 90:
+        tid = f"landed-{src.name[-80:]}"
+
+    runs = root / LOCAL_RUNS
+    runs.mkdir(parents=True, exist_ok=True)
+    dest = runs / tid
+    if dest.is_dir() and not force:
+        return {
+            "landed": False,
+            "reason": "already_present",
+            "trace_id": tid,
+            "dest": str(dest.relative_to(root)) if dest.is_relative_to(root) else str(dest),
+        }
+
+    dest.mkdir(parents=True, exist_ok=True)
+    meta = {
+        "repo": repo or "unknown/repo",
+        "pr": pr,
+        "verdict": verdict_n,
+        "elapsed_s": float(elapsed) if isinstance(elapsed, (int, float)) else None,
+        "tool_call_turns": int(tools) if isinstance(tools, (int, float)) else None,
+        "cost_usd": float(cost) if isinstance(cost, (int, float)) else None,
+        "path_evidence_score": float(path_ev) if isinstance(path_ev, (int, float)) else None,
+        "host": str(summary.get("host") or meta_src.get("host") or "modal"),
+        "model": str(summary.get("model") or meta_src.get("model") or ""),
+        "demo": False,
+        "source": "land-dogfood",
+        "hub_trace": src.name,
+        "certificate_id": (cert or {}).get("certificate_id") or summary.get("certificate_id"),
+        "modal_app": fire.get("modal_app") or summary.get("modal_run") or meta_src.get("modal_app"),
+        "landed_at": _now(),
+    }
+    # drop nulls for cleaner packs
+    meta = {k: v for k, v in meta.items() if v is not None and v != ""}
+
+    summary_md = (
+        f"**Verdict:** {verdict_n}\n"
+        f"tool_call_turns: {meta.get('tool_call_turns', '—')}\n"
+        f"path_evidence: {meta.get('path_evidence_score', '—')}\n"
+        f"repo: {meta.get('repo')}\n"
+        f"PR: {meta.get('pr')}\n"
+        f"elapsed_s: {meta.get('elapsed_s', '—')}\n"
+        f"cost_usd: {meta.get('cost_usd', '—')}\n"
+        f"demo: false\n"
+        f"source: land-dogfood\n"
+        f"hub_trace: {src.name}\n"
+    )
+    if not review_text.strip():
+        review_text = (
+            f"# Landed dogfood pack\n\n"
+            f"**Verdict:** {verdict_n}\n\n"
+            f"_Organic local pack from hub dogfood `{src.name}` "
+            f"(source=land-dogfood). Not install-demo._\n"
+        )
+
+    (dest / "meta.json").write_text(json.dumps(meta, indent=2) + "\n", encoding="utf-8")
+    (dest / "summary.md").write_text(summary_md, encoding="utf-8")
+    (dest / "review.md").write_text(review_text, encoding="utf-8")
+    # optional: copy certificate if present (path evidence)
+    if cert and (src / "gate-certificate.json").is_file():
+        try:
+            (dest / "gate-certificate.json").write_text(
+                json.dumps(cert, indent=2) + "\n", encoding="utf-8"
+            )
+        except OSError:
+            pass
+
+    try:
+        dest_rel = str(dest.relative_to(root))
+        src_rel = str(src.relative_to(root)) if src.is_relative_to(root) else str(src)
+    except ValueError:
+        dest_rel = str(dest)
+        src_rel = str(src)
+
+    return {
+        "landed": True,
+        "reason": "ok",
+        "trace_id": tid,
+        "dest": dest_rel,
+        "hub_trace": src_rel,
+        "verdict": verdict_n,
+        "tool_call_turns": meta.get("tool_call_turns"),
+        "repo": meta.get("repo"),
+        "pr": meta.get("pr"),
+        "demo": False,
+        "source": "land-dogfood",
+        "one_liner": (
+            f"Landed organic local pack from hub dogfood · "
+            f"{meta.get('repo')}#{meta.get('pr')} · {verdict_n}"
+        ),
+    }
+
+
+def cmd_land_dogfood(args: argparse.Namespace) -> int:
+    """CLI: land hub dogfood into .torii/runs as organic (closes organic_needed)."""
+    root = _root()
+    explicit = getattr(args, "trace", None) or None
+    src = _pick_hub_trace(root, explicit)
+    result = land_dogfood_pack(
+        root,
+        trace_dir=src,
+        force=bool(getattr(args, "force", False)),
+    )
+    # refresh organic counts for operator
+    report = build_report(root) if result.get("landed") or result.get("reason") == "already_present" else {}
+    out = {
+        "feature": FEATURE,
+        **result,
+        "local_runs_n": report.get("local_runs_n"),
+        "local_demo_n": report.get("local_demo_n"),
+        "local_organic_n": report.get("local_organic_n"),
+        "organic_needed": (
+            int(report.get("local_organic_n") or 0) < 1 if report else None
+        ),
+        "at": _now(),
+    }
+    print(json.dumps(out, indent=2))
+    return 0 if result.get("landed") or result.get("reason") == "already_present" else 1
+
+
 def cmd_bootstrap(args: argparse.Namespace) -> int:
     """Ensure customer .torii/runs vault + README (+ optional demo packs)."""
     root = _root()
@@ -1014,15 +1310,16 @@ def cmd_bootstrap(args: argparse.Namespace) -> int:
             "Slim packs land here after each gate review: "
             "`{trace_id}/meta.json` · `summary.md` · `review.md`.\n\n"
             "Install seeds **labeled demo** packs (`demo-*-001`, `demo: true`) so "
-            "`quieter -- status` works offline; replace with organic packs after "
-            "`torii/gate` reviews.\n\n"
+            "`quieter -- status` works offline; organic packs after "
+            "`torii/gate` reviews or hub `quieter -- land-dogfood`.\n\n"
             "```bash\n"
             "python3 scripts/torii.py quieter -- status\n"
             "python3 scripts/torii.py quieter -- report\n"
             "python3 scripts/torii.py quieter -- bootstrap --demo\n"
+            "python3 scripts/torii.py quieter -- land-dogfood\n"
             "```\n\n"
             "First organic fill: require **torii/gate** · `@torii review this pr` · "
-            "re-check status (`local_organic_n`).\n"
+            "re-check status (`local_organic_n`). Hub maintainers: `land-dogfood`.\n"
             "Docs: docs/QUIETER.md\n",
             encoding="utf-8",
         )
@@ -1095,6 +1392,18 @@ def main(argv: list[str] | None = None) -> int:
         help="README only — skip install-demo packs",
     )
     b.set_defaults(func=cmd_bootstrap)
+
+    ld = sub.add_parser(
+        "land-dogfood",
+        help="Land hub Modal dogfood into .torii/runs as organic (closes organic_needed)",
+    )
+    ld.add_argument(
+        "--trace",
+        default=None,
+        help="Hub trace dir (default: best recent docs/benchmarks/traces/*)",
+    )
+    ld.add_argument("--force", action="store_true", help="Overwrite existing landed pack")
+    ld.set_defaults(func=cmd_land_dogfood)
 
     args = p.parse_args(argv)
     return int(args.func(args))

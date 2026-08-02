@@ -15,13 +15,14 @@ Install stamps **`.torii/runs/README.md`** and **two labeled demo packs** (`demo
 | State | What status shows |
 |-------|-------------------|
 | Empty vault | `local_runs_n=0` · `bootstrap_needed` · run `quieter -- bootstrap --demo` |
-| Demo only | `local_demo_n≥1` · chart works · `organic_needed` · require **`torii/gate`** |
-| Organic | `local_organic_n≥1` · quieter chart from **your** PRs |
+| Demo only | `local_demo_n≥1` · chart works · `organic_needed` · require **`torii/gate`** or `land-dogfood` |
+| Organic | `local_organic_n≥1` · quieter chart from real reviews / landed dogfood |
 
-Honesty: demo packs prove the vault path; trajectory prefers organic/hub rows when present (`trajectory_source=measured|demo`).
+Honesty: demo packs prove the vault path; trajectory prefers organic/hub rows when present (`trajectory_source=measured|demo`). Landed packs use `source=land-dogfood` · `demo=false` (not install-demo).
 
 ```bash
 python3 scripts/torii.py quieter -- bootstrap --demo   # README + labeled demos
+python3 scripts/torii.py quieter -- land-dogfood       # organic from hub Modal dogfood
 python3 scripts/torii.py quieter -- status             # local_runs_n · demo · organic
 ```
 ## 1. Install on your repo

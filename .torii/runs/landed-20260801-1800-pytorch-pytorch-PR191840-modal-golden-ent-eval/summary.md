@@ -1,0 +1,10 @@
+**Verdict:** APPROVE
+tool_call_turns: 5
+path_evidence: —
+repo: pytorch/pytorch
+PR: 191840
+elapsed_s: 179.0
+cost_usd: 0.010264579000000001
+demo: false
+source: land-dogfood
+hub_trace: 20260801-1800-pytorch-pytorch-PR191840-modal-golden-ent-eval

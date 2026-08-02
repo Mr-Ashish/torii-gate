@@ -5350,3 +5350,29 @@ demo vs organic. live_lean reports product_default when env unset.
 ### SHA
 `88b017e812d3bc62ba92892fb82192ca7b296a75`
 
+## 2026-08-02 — QUIETER_LAND_DOGFOOD organic local vault
+
+### Papers / posts
+- Loop Engineering: demo ≠ organic measure; customers need real vault rows.
+- After QUIETER_DEMO_SEED, organic_needed stayed True on hub (credibility hole).
+- FS publish lands on Modal workspace only — maintainers need land path into .torii/runs.
+
+### Insight
+Highest ROI for JTBD gap #2: land-dogfood CLI copies best hub Modal trace into
+.torii/runs as demo=false source=land-dogfood. Honesty preserved (not install-demo);
+organic_needed clears; trajectory stays measured from hub+organic.
+
+### Feature shipped (QUIETER_LAND_DOGFOOD)
+- quieter_over_time land-dogfood + _pick_hub_trace
+- status bootstrap_hint mentions land-dogfood
+- QUIETER.md §0 organic row
+- pytest land_dogfood hermetic
+
+### Metric
+- local_organic_n=1 · organic_needed=False · local_runs_n=3
+- status merge beat organic=1
+- Live Modal e2e this fire
+
+### SHA
+`133bff22158e13c9c8a9182fd6e4bd802da008a5`
+

@@ -1,0 +1,16 @@
+{
+  "repo": "pytorch/pytorch",
+  "pr": "191840",
+  "verdict": "APPROVE",
+  "elapsed_s": 179.0,
+  "tool_call_turns": 5,
+  "cost_usd": 0.010264579000000001,
+  "host": "modal",
+  "model": "deepseek/deepseek-v4-pro",
+  "demo": false,
+  "source": "land-dogfood",
+  "hub_trace": "20260801-1800-pytorch-pytorch-PR191840-modal-golden-ent-eval",
+  "certificate_id": "gc-810df2f120dd4956",
+  "modal_app": "https://modal.com/apps/mr-ashish/main/ap-0qNCUhxOGU41fdPQXjsLIF",
+  "landed_at": "2026-08-02T01:04:19Z"
+}

@@ -175,6 +175,50 @@ class QuieterOverTimeTests(unittest.TestCase):
         self.assertEqual(len(traj), 1)
         self.assertEqual(traj[0]["trace_id"], "organic-1")
 
+    def test_land_dogfood_hermetic(self):
+        """Hub dogfood → organic local pack (demo=false, source=land-dogfood)."""
+        sys.path.insert(0, str(ROOT / "scripts"))
+        import quieter_over_time as q  # type: ignore
+
+        with tempfile.TemporaryDirectory(prefix="torii-land-") as td:
+            fake = Path(td)
+            hub = fake / "docs" / "benchmarks" / "traces" / "20260802-modal-pytorch-PR99999"
+            hub.mkdir(parents=True)
+            (hub / "summary.json").write_text(
+                json.dumps(
+                    {
+                        "repo": "pytorch/pytorch",
+                        "pr": "99999",
+                        "verdict": "REQUEST_CHANGES",
+                        "tool_call_turns": 5,
+                        "elapsed_s": 120,
+                        "cost_usd": 0.02,
+                        "path_evidence_score": 0.85,
+                        "host": "modal",
+                        "model": "deepseek/deepseek-v4-pro",
+                    }
+                ),
+                encoding="utf-8",
+            )
+            (hub / "review.md").write_text(
+                "**Verdict:** REQUEST_CHANGES\n\nPath-evidenced dogfood review.\n",
+                encoding="utf-8",
+            )
+            result = q.land_dogfood_pack(fake, trace_dir=hub, force=True)
+            self.assertTrue(result.get("landed"), result)
+            self.assertEqual(result.get("source"), "land-dogfood")
+            dest = fake / ".torii" / "runs" / result["trace_id"]
+            self.assertTrue((dest / "meta.json").is_file())
+            meta = json.loads((dest / "meta.json").read_text(encoding="utf-8"))
+            self.assertFalse(meta.get("demo"))
+            self.assertEqual(meta.get("source"), "land-dogfood")
+            rows = q.collect_dogfood_rows(fake / ".torii" / "runs", vault_kind="local_runs")
+            self.assertGreaterEqual(len(rows), 1)
+            self.assertFalse(rows[0].get("demo"))
+            # status shape: organic_needed false when only organic present
+            report = q.build_report(fake)
+            self.assertGreaterEqual(int(report.get("local_organic_n") or 0), 1)
+
 
 if __name__ == "__main__":
     unittest.main()
