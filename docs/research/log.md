@@ -5612,3 +5612,27 @@ PARTNER-WEEK1.md — collapses cognitive load without F-stack.
 
 ### SHA
 `e525ac57e19ce8c25212c6ce9fe8e40d4877234e`
+
+
+## 2026-08-02 — QUIETER_DELTA_MEMORY day-2 honesty
+
+### Papers / posts
+- getting_quieter flipped false (delta just under flat band) — buyers need delta + next step, not a green badge.
+- Memory dim lagging: L3 alone does not show TP/FP compound counts.
+
+### Insight
+Highest ROI for dims 3+5+12: surface delta_quiet_score on merge beat; when not quieter
+show next=land-dogfood|report; growth memory=L3 tp=N fp=M. Land recent Modal dogfood
+as organic local packs to prove land-dogfood path.
+
+### Feature shipped (QUIETER_DELTA_MEMORY)
+- status merge: delta= ± · next= when getting_quieter=False
+- status growth: memory=L3 tp= fp= doctor=
+- land-dogfood PARTNER_WEEK1 + LANDING packs → organic_n=3 · getting_quieter recovered
+
+### Metric
+- quieter delta=-0.0151 · getting_quieter=True · local organic=3
+- memory tp=4 fp=0 · Live Modal e2e this fire
+
+### SHA
+_(filled after commit)_

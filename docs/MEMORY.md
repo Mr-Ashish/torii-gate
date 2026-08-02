@@ -58,4 +58,7 @@ Related: [`QUIETER.md`](QUIETER.md) · [`FEDERATION.md`](FEDERATION.md) · [`TOO
 python3 scripts/torii.py doctor
 python3 scripts/torii.py memory -- doctor
 python3 scripts/torii.py quieter -- status
+python3 scripts/torii.py status --text   # growth: memory=L3 tp=N fp=M doctor=…
 ```
+
+Scoped store counts (`tp` / `fp`) on the growth beat make “FP die twice · TP stay sharp” auditable without opening `.torii/scoped-memory.json`.

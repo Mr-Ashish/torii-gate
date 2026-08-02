@@ -1,0 +1,10 @@
+**Verdict:** APPROVE
+tool_call_turns: 10
+path_evidence: —
+repo: pytorch/pytorch
+PR: 191854
+elapsed_s: 843.7
+cost_usd: —
+demo: false
+source: land-dogfood
+hub_trace: LANDING_PARTNER_CTA-20260802T034847Z

@@ -1,0 +1,14 @@
+{
+  "feature": "QUIETER_DELTA_MEMORY",
+  "bit": 3,
+  "result": "BIT3_OK",
+  "repo": "pytorch/pytorch",
+  "pr": 191857,
+  "model": "deepseek/deepseek-v4-pro",
+  "POST_COMMENT": 0,
+  "verdict": "REQUEST_CHANGES",
+  "tool_call_turns": 12,
+  "elapsed_s": 925.0,
+  "modal_app": "ap-BvkUJrQqtbH9S0qV8Sjh3u",
+  "at": "2026-08-02T04:53:00Z"
+}

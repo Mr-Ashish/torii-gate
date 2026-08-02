@@ -522,12 +522,24 @@ def build_status_payload(root: Path | None = None) -> dict[str, Any]:
         day2["quieter_ok"] = quieter.get("quieter_ok")
         day2["getting_quieter"] = quieter.get("getting_quieter")
         day2["quiet_score_all"] = quieter.get("quiet_score_all")
+        day2["delta_quiet_score"] = quieter.get("delta_quiet_score")
         day2["quieter_local_runs_n"] = quieter.get("local_runs_n")
         day2["quieter_local_demo_n"] = quieter.get("local_demo_n")
         day2["quieter_local_organic_n"] = quieter.get("local_organic_n")
         day2["quieter_bootstrap_needed"] = quieter.get("bootstrap_needed")
         day2["quieter_organic_needed"] = quieter.get("organic_needed")
         day2["quieter_trajectory_source"] = quieter.get("trajectory_source")
+        day2["quieter_bootstrap_hint"] = quieter.get("bootstrap_hint")
+    # Scoped memory TP/FP counts (FP die twice · TP stay sharp — dim 5)
+    mem_scoped = _soft_script_json(
+        root, "scoped_memory_recall.py", ["status"], timeout=20
+    )
+    if mem_scoped:
+        by_kind = mem_scoped.get("by_kind") if isinstance(mem_scoped.get("by_kind"), dict) else {}
+        day2["memory_tp_n"] = by_kind.get("tp") if by_kind else mem_scoped.get("count")
+        day2["memory_fp_n"] = by_kind.get("fp")
+        day2["memory_scoped_n"] = mem_scoped.get("count")
+        day2["memory_scoped_ok"] = bool(mem_scoped.get("exists") or mem_scoped.get("count"))
     ops = _soft_script_json(root, "ops_dashboard.py", ["status"], timeout=45)
     if ops:
         day2["ops_ok"] = ops.get("ops_ok")
@@ -854,10 +866,25 @@ def render_status_text(payload: dict[str, Any], *, verbose: bool = False) -> str
                 parts.append(f"weak_fp={float(wfp):.2f}")
             if parts:
                 diff_s = " · vs SAST " + " ".join(parts)
+        # Trajectory honesty: delta quiet_score (late − early); surface when not quieter
+        dq = day2.get("delta_quiet_score")
+        delta_s = ""
+        if isinstance(dq, (int, float)):
+            delta_s = f" delta={float(dq):+.4f}"
+        traj_s = ""
+        if day2.get("getting_quieter") is False:
+            # Honest next step — not a greenwashed quieter claim
+            if day2.get("quieter_organic_needed") or (
+                isinstance(day2.get("quieter_local_organic_n"), int)
+                and int(day2.get("quieter_local_organic_n") or 0) < 2
+            ):
+                traj_s = " · next=land-dogfood|organic review"
+            else:
+                traj_s = " · next=quieter -- report"
         lines.append(
             f"- **Merge authority:** quieter={day2.get('quieter_ok')} "
             f"(getting_quieter={day2.get('getting_quieter')} score={day2.get('quiet_score_all')}"
-            f"{qboot_s}) · "
+            f"{delta_s}{qboot_s}){traj_s} · "
             f"certs n={day2.get('cert_vault_n')} ({cp_s}/PR){cert_extra}"
             f"{diff_s} · "
             f"require **torii/gate**"
@@ -918,12 +945,21 @@ def render_status_text(payload: dict[str, Any], *, verbose: bool = False) -> str
             sev_pend_s = f" pending={sev_pend}"
             if sev_ids and int(sev_pend or 0) > 0:
                 sev_pend_s += f"({','.join(str(x) for x in sev_ids[:2])})"
-        # Memory buyer: L3 + doctor + one-line compound story
+        # Memory buyer: L3 + TP/FP counts + doctor (FP die twice · TP stay sharp)
         mem_doc = day2.get("memory_doctor_pass")
-        if mem_s and mem_doc is not None:
-            mem_s = mem_s + f" doctor={mem_doc}"
-        elif mem_doc is not None:
-            mem_s = f" · memory doctor={mem_doc}"
+        mtp, mfp = day2.get("memory_tp_n"), day2.get("memory_fp_n")
+        mcounts = ""
+        if mtp is not None or mfp is not None:
+            mcounts = f" tp={mtp if mtp is not None else '—'} fp={mfp if mfp is not None else '—'}"
+        if mem_s and (mem_doc is not None or mcounts):
+            if mcounts:
+                mem_s = mem_s + mcounts
+            if mem_doc is not None:
+                mem_s = mem_s + f" doctor={mem_doc}"
+        elif mem_doc is not None or mcounts:
+            mem_s = f" · memory{mcounts}"
+            if mem_doc is not None:
+                mem_s = mem_s + f" doctor={mem_doc}"
         # Pricing honesty (open core free · pre-revenue)
         price_s = ""
         if day2.get("pricing_open_core") or day2.get("pricing_zero_open"):

@@ -2,7 +2,7 @@
 
 # Quieter-over-time (own-repo required check)
 
-_Generated: `2026-08-02T01:04:33Z` · feature **QUIETER** · quieter_ok=`True`_
+_Generated: `2026-08-02T04:37:25Z` · feature **QUIETER** · quieter_ok=`True`_
 
 **One-liner:** Own-repo required check torii/gate + quieter chart from .torii/runs (customer) and/or hub dogfood vault
 
@@ -21,9 +21,9 @@ Buyer doc: [`docs/QUIETER.md`](../QUIETER.md) · Golden path: [`GOLDEN-PATH.md`]
 
 | Metric | Value |
 |--------|------:|
-| local `.torii/runs` rows | 3 |
-| hub dogfood rows | 102 |
-| total rows | 103 |
+| local `.torii/runs` rows | 5 |
+| hub dogfood rows | 113 |
+| total rows | 116 |
 
 Customer repos measure quieter from **`.torii/runs/`** after pack install — no hub clone required.
 
@@ -59,19 +59,19 @@ Quieter means: more path evidence + tool use + certificates; fewer weak APPROVEs
 
 | Window | n | path_ev mean | tool_use rate | cert rate | weak APPROVE | quiet_score |
 |--------|--:|-------------:|--------------:|----------:|-------------:|------------:|
-| early | 51 | 0.8938 | 0.7255 | 0.0196 | 0.0 | 0.6844 |
-| late | 52 | 1.0 | 0.5192 | 0.5192 | 0.0 | 0.7596 |
-| all | 103 | 0.9757 | 0.6214 | 0.2718 | 0.0 | 0.7323 |
+| early | 58 | 0.9346 | 0.7586 | 0.1034 | 0.0 | 0.7254 |
+| late | 58 | 1.0 | 0.4483 | 0.3793 | 0.0 | 0.7103 |
+| all | 116 | 0.9757 | 0.6034 | 0.2414 | 0.0 | 0.7208 |
 
-**delta quiet_score (late − early):** `0.0752` · **getting_quieter:** `True`
+**delta quiet_score (late − early):** `-0.0151` · **getting_quieter:** `True`
 
 ## Agent tool-use quality (tools-as-code)
 
 | Metric | Value |
 |--------|------:|
-| measured runs | 73 |
-| tool_use_rate | 0.8767 |
-| mean turns | 5.58 |
+| measured runs | 79 |
+| tool_use_rate | 0.8861 |
+| mean turns | 6.03 |
 | zero-tool runs | 9 |
 | quality_ok | True |
 
@@ -80,24 +80,24 @@ Quieter means: more path evidence + tool use + certificates; fewer weak APPROVEs
 | Metric | Value |
 |--------|------:|
 | cost/PR mean USD | 0.0168 (n=35) |
-| time-to-signal mean s | 102.8 |
+| time-to-signal mean s | 173.4 |
 
 ## Recent rows
 
 | trace | vault | repo | pr | verdict | tools | path_ev | cert | weak_appr |
 |-------|-------|------|---:|---------|------:|--------:|:----:|:---------:|
-| `20260801-2042-pytorch-pytorch-PR191842-m` | hub_traces | pytorch/pytorch | 191840 | UNKNOWN | None | None |  |  |
-| `20260801-2107-pytorch-pytorch-PR191840-m` | hub_traces | pytorch/pytorch | 191840 | UNKNOWN | None | None |  |  |
-| `20260801-2130-pytorch-pytorch-PR191840-m` | hub_traces | pytorch/pytorch | 191840 | UNKNOWN | None | None |  |  |
-| `20260801-2156-pytorch-pytorch-PR191840-m` | hub_traces | pytorch/pytorch | 191840 | UNKNOWN | None | None |  |  |
-| `20260801-2221-pytorch-pytorch-PR191840-m` | hub_traces | pytorch/pytorch | 191840 | UNKNOWN | None | None |  |  |
-| `20260801-2238-pytorch-pytorch-PR191844-m` | hub_traces | pytorch/pytorch | 191844 | UNKNOWN | None | None |  |  |
-| `20260801-2254-pytorch-pytorch-PR191840-m` | hub_traces | pytorch/pytorch | 191840 | UNKNOWN | None | None |  |  |
-| `20260801-2313-pytorch-pytorch-PR191840-m` | hub_traces | pytorch/pytorch | 191840 | UNKNOWN | None | None |  |  |
-| `20260801-2342-pytorch-pytorch-PR191842-m` | hub_traces | pytorch/pytorch | 191840 | UNKNOWN | None | None |  |  |
-| `20260802-0019-pytorch-pytorch-PR191840-m` | hub_traces | pytorch/pytorch | 191840 | UNKNOWN | None | None |  |  |
-| `20260802-0042-pytorch-pytorch-PR191852-m` | hub_traces | pytorch/pytorch | 191852 | UNKNOWN | None | None |  |  |
+| `20260802-0105-pytorch-pytorch-PR191854-m` | hub_traces | pytorch/pytorch | 191854 | UNKNOWN | None | None |  |  |
+| `20260802-0121-pytorch-pytorch-PR191851-m` | hub_traces | pytorch/pytorch | 191851 | UNKNOWN | None | None |  |  |
+| `20260802-0139-pytorch-pytorch-PR191853-m` | hub_traces | pytorch/pytorch | 191853 | UNKNOWN | None | None |  |  |
+| `20260802-0154-pytorch-pytorch-PR191852-m` | hub_traces | pytorch/pytorch | 191852 | UNKNOWN | None | None |  |  |
+| `20260802-0211-pytorch-pytorch-PR191854-m` | hub_traces | pytorch/pytorch | 191854 | UNKNOWN | None | None |  |  |
+| `20260802-0227-pytorch-pytorch-PR191851-m` | hub_traces | pytorch/pytorch | 191851 | UNKNOWN | None | None |  |  |
+| `20260802-0249-pytorch-pytorch-PR191852-m` | hub_traces | pytorch/pytorch | 191852 | UNKNOWN | None | None |  |  |
+| `LANDING_PARTNER_CTA-20260802T034847Z` | hub_traces | pytorch/pytorch | 191854 | APPROVE | 10 | None |  |  |
+| `PARTNER_WEEK1-20260802T041230Z` | hub_traces | pytorch/pytorch | 191854 | APPROVE | 15 | None |  |  |
 | `f176-free-rider-revive-gate` | hub_traces | pytorch/pytorch | 191836 | UNKNOWN | None | None |  |  |
+| `merge-diff-vs-sast-20260802T0306Z` | hub_traces | pytorch/pytorch | 191852 | APPROVE | 9 | None |  |  |
+| `pilot-proof-gtm-apply-20260802T0326Z` | hub_traces | pytorch/pytorch | 191854 | APPROVE | 10 | None |  |  |
 
 ## Refresh
 
