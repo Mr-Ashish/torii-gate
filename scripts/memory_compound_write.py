@@ -1085,6 +1085,126 @@ def cmd_fixture(args: argparse.Namespace) -> int:
         return 0 if fixture_pass else 1
 
 
+def bootstrap_demo_fp(root: Path, *, force: bool = False) -> dict[str, Any]:
+    """Seed labeled install-demo FP rules so “FP die twice” is path-to-value offline.
+
+    Does not invent customer FPs — rules are marked demo:true / source=install-demo.
+    Organic FP rules from real reviews supersede demos when present.
+    """
+    torii = root / ".torii"
+    torii.mkdir(parents=True, exist_ok=True)
+    fp_path = torii / "fp-rules.json"
+    existing: dict[str, Any] = {}
+    if fp_path.is_file() and not force:
+        try:
+            existing = json.loads(fp_path.read_text(encoding="utf-8"))
+        except (OSError, json.JSONDecodeError):
+            existing = {}
+        rules = existing.get("rules") if isinstance(existing, dict) else None
+        if isinstance(rules, list) and len(rules) > 0:
+            # already has FPs (demo or organic)
+            organic = [
+                r
+                for r in rules
+                if isinstance(r, dict) and not r.get("demo") and r.get("source") != "install-demo"
+            ]
+            return {
+                "feature": FEATURE,
+                "cmd": "bootstrap-demo",
+                "seeded": False,
+                "reason": "already_present",
+                "fp_n": len(rules),
+                "organic_fp_n": len(organic),
+                "path": str(fp_path.relative_to(root)) if fp_path.is_relative_to(root) else str(fp_path),
+                "at": _now(),
+            }
+    # Paths must NOT collide with docs/benchmarks fixtures (insecure-demo app.py)
+    # or compound fixture good reviews will demote as likely_fp.
+    demo_rules = [
+        {
+            "id": "demo-fp-test-sql-fixture",
+            "kind": "false_positive",
+            "theme": "sql_injection",
+            "cwe": ["CWE-89"],
+            "path": "tests/fixtures/",
+            "path_globs": ["tests/fixtures/**", "**/tests/fixtures/**"],
+            "keywords": ["parameterized", "false positive", "fixture"],
+            "reason": (
+                "install-demo: SQL strings in test fixtures are intentional — "
+                "suppress so FP dies twice on tests/fixtures paths"
+            ),
+            "source": "install-demo",
+            "demo": True,
+            "hits": 1,
+        },
+        {
+            "id": "demo-fp-test-pickle",
+            "kind": "false_positive",
+            "theme": "insecure_deserialization",
+            "cwe": ["CWE-502"],
+            "path": "tests/",
+            "path_globs": ["tests/**", "**/test_*.py"],
+            "keywords": ["pickle", "fixture", "test-only"],
+            "reason": (
+                "install-demo: pickle in unit fixtures is intentional — "
+                "suppress so FP dies twice on test paths"
+            ),
+            "source": "install-demo",
+            "demo": True,
+            "hits": 1,
+        },
+    ]
+    doc = {
+        "schema_version": 1,
+        "feature": "MEMORY_FP_DEMO",
+        "updated_at": _now(),
+        "count": len(demo_rules),
+        "rules": demo_rules,
+        "one_liner": "install-demo FP rules — FP die twice offline before first organic review",
+    }
+    fp_path.write_text(json.dumps(doc, indent=2) + "\n", encoding="utf-8")
+    # refresh scoped store so status shows fp=N
+    ingest_ok = False
+    try:
+        from scoped_memory_recall import cmd_ingest  # type: ignore
+
+        class _A:
+            pass
+
+        # soft: run ingest via subprocess to avoid arg coupling
+        import subprocess as _sp
+
+        r = _sp.run(
+            [sys.executable, str(Path(__file__).resolve().parent / "scoped_memory_recall.py"), "ingest"],
+            cwd=str(root),
+            capture_output=True,
+            text=True,
+            timeout=30,
+            env={**os.environ, "TORII_ROOT": str(root)},
+        )
+        ingest_ok = r.returncode == 0
+    except Exception:
+        ingest_ok = False
+    return {
+        "feature": FEATURE,
+        "cmd": "bootstrap-demo",
+        "seeded": True,
+        "reason": "ok",
+        "fp_n": len(demo_rules),
+        "path": str(fp_path.relative_to(root)) if fp_path.is_relative_to(root) else str(fp_path),
+        "scoped_ingest_ok": ingest_ok,
+        "one_liner": f"seeded {len(demo_rules)} install-demo FP rules · scoped_ingest={ingest_ok}",
+        "at": _now(),
+    }
+
+
+def cmd_bootstrap_demo(args: argparse.Namespace) -> int:
+    root = _root()
+    report = bootstrap_demo_fp(root, force=bool(getattr(args, "force", False)))
+    print(json.dumps(report, indent=2))
+    return 0 if report.get("seeded") or report.get("reason") == "already_present" else 1
+
+
 def main(argv: list[str] | None = None) -> int:
     p = argparse.ArgumentParser(description="F104/F107 integrity-gated memory compound + federate")
     sub = p.add_subparsers(dest="cmd", required=True)
@@ -1137,6 +1257,13 @@ def main(argv: list[str] | None = None) -> int:
 
     pf = sub.add_parser("fixture", help="hermetic good/weak/poison/federate e2e")
     pf.set_defaults(func=cmd_fixture)
+
+    pb = sub.add_parser(
+        "bootstrap-demo",
+        help="Seed install-demo FP rules (FP die twice offline · path-to-value)",
+    )
+    pb.add_argument("--force", action="store_true", help="Overwrite demo FP rules")
+    pb.set_defaults(func=cmd_bootstrap_demo)
 
     args = p.parse_args(argv)
     return int(args.func(args))

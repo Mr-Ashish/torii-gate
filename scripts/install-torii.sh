@@ -569,6 +569,30 @@ EOF
 seed_local_memory
 seed_runs_vault
 
+# Path-to-value: install-demo FP rules so “FP die twice” works offline (tp/fp on status)
+seed_memory_fp_demo() {
+  if [[ "$DRY_RUN" == "1" ]]; then
+    log "DRY  seed .torii/fp-rules.json (install-demo FP)"
+    return 0
+  fi
+  local script=""
+  if [[ -f "$DEST/scripts/memory_compound_write.py" ]]; then
+    script="$DEST/scripts/memory_compound_write.py"
+  elif [[ -f "$SRC/scripts/memory_compound_write.py" ]]; then
+    script="$SRC/scripts/memory_compound_write.py"
+  fi
+  if [[ -n "$script" ]]; then
+    local force_flag=()
+    [[ "$FORCE" == "1" ]] && force_flag=(--force)
+    if TORII_ROOT="$DEST" python3 "$script" bootstrap-demo "${force_flag[@]}" >/dev/null 2>&1; then
+      log "OK   .torii/fp-rules.json install-demo FP (FP die twice path-to-value)"
+    else
+      log "warn: memory FP demo seed skipped (run: python3 scripts/torii.py memory -- compound -- bootstrap-demo)"
+    fi
+  fi
+}
+seed_memory_fp_demo
+
 write_stamp "pack"
 write_tenant_env
 

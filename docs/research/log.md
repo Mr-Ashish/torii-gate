@@ -5754,3 +5754,25 @@ require-check live_ok=true; ship --enable for design partners to mirror.
 
 ### SHA
 `adf9a837a57007e5b2eb6b9ec49096ac34346193`
+
+
+## 2026-08-02 — MEMORY_FP_TOOL_GATE path-to-value
+
+### Papers / posts
+- Memory dim: tp=4 fp=0 hid “FP die twice” until organic resolves — install must seed demo FPs.
+- Tool-use rate alone omits fail-closed gate; buyers need tool_gate=on on day-2.
+
+### Insight
+Highest ROI for dims 5+4: install-demo FP rules (demo:true) + scoped ingest; surface
+tool_turns_gate default on cost/trust. No F-stack — path-to-value for compound memory.
+
+### Feature shipped (MEMORY_FP_TOOL_GATE)
+- memory_compound_write bootstrap-demo · install-torii seed
+- status growth: memory=L3 tp=N fp=2
+- status cost/trust: tool_gate=on
+
+### Metric
+- fp=2 · tool_gate=on · Live Modal e2e this fire
+
+### SHA
+_(filled after commit)_

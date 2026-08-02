@@ -1,0 +1,10 @@
+**Verdict:** REQUEST_CHANGES
+tool_call_turns: 9
+path_evidence: —
+repo: pytorch/pytorch
+PR: 191859
+elapsed_s: 816.2
+cost_usd: —
+demo: false
+source: land-dogfood
+hub_trace: HUB_REQUIRE_GATE_LIVE-20260802T060500Z

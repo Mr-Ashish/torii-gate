@@ -65,6 +65,7 @@ GROUPS: dict[str, dict[str, Any]] = {
             "memory -- help",
             "memory -- doctor",
             'memory -- search -- -q "sql injection"',
+            "memory -- compound -- bootstrap-demo",
             "memory -- compound -- fixture",
         ],
     },
@@ -596,8 +597,8 @@ def build_status_payload(root: Path | None = None) -> dict[str, Any]:
         # Buyer security heat (skip util/skill research noise on day-2 glance)
         top = fed.get("top") if isinstance(fed.get("top"), list) else []
         skip_rx = re.compile(
-            r"util-ok|skill-prefer|recon-warm|recovery|scorecard|refine|"
-            r"federated_skill|\bf\d{2,3}\b",
+            r"util-ok|util-gap|skill-prefer|recon-warm|recovery|scorecard|refine|"
+            r"federated_skill|memory-tool|memory-util|\bf\d{2,3}\b",
             re.I,
         )
         buyer_heat: list[str] = []
@@ -626,6 +627,26 @@ def build_status_payload(root: Path | None = None) -> dict[str, Any]:
         day2["zero_tool_rate"] = tools.get("zero_tool_rate")
         day2["tool_mean_turns"] = tools.get("mean_turns")
         day2["tool_quality_score"] = tools.get("quality_score")
+        day2["tool_turns_gate_ok"] = tools.get("tool_turns_gate_ok")
+        ready = tools.get("readiness") if isinstance(tools.get("readiness"), dict) else {}
+        checks = ready.get("checks") if isinstance(ready.get("checks"), dict) else {}
+        if day2.get("tool_turns_gate_ok") is None:
+            day2["tool_turns_gate_ok"] = checks.get("tool_turns_gate_script")
+        if checks.get("tool_turns_default_on") is not None:
+            day2["tool_turns_gate_default_on"] = checks.get("tool_turns_default_on")
+        elif tools.get("tool_turns_default_on") is not None:
+            day2["tool_turns_gate_default_on"] = tools.get("tool_turns_default_on")
+    # Fail-closed tool_turns_gate is product default ON (file present + env not off)
+    if day2.get("tool_turns_gate_default_on") is None:
+        tt_script = root / "scripts" / "tool_turns_gate.py"
+        env_off = (os.environ.get("TORII_TOOL_TURNS_GATE") or "").strip().lower() in {
+            "0",
+            "false",
+            "off",
+            "no",
+        }
+        day2["tool_turns_gate_default_on"] = bool(tt_script.is_file()) and not env_off
+        day2["tool_turns_gate_ok"] = day2["tool_turns_gate_default_on"]
     # Pilot path honesty + measured readiness (pre-revenue design partner)
     pilot = _soft_script_json(root, "pilot_surface.py", ["status"], timeout=120)
     if pilot:
@@ -1017,6 +1038,11 @@ def render_status_text(payload: dict[str, Any], *, verbose: bool = False) -> str
             if isinstance(mt_turns, (int, float))
             else ""
         )
+        # tool_turns_gate fail-closed (zero-tool multi-file APPROVE demote)
+        tg = day2.get("tool_turns_gate_default_on")
+        if tg is None:
+            tg = day2.get("tool_turns_gate_ok")
+        tg_s = " · tool_gate=on" if tg else ("" if tg is None else " · tool_gate=off")
         age_h = day2.get("public_eval_age_hours")
         age_s = (
             f" age={float(age_h):.1f}h"
@@ -1029,7 +1055,7 @@ def render_status_text(payload: dict[str, Any], *, verbose: bool = False) -> str
             f"honesty={day2.get('cost_honesty_ok')} · "
             f"time-to-signal p50={tts_s} · "
             f"public-eval freshness={day2.get('public_eval_freshness_ok')}{age_s} · "
-            f"tool-use rate={day2.get('tool_use_rate')}{mt_s}{ztr_s} · "
+            f"tool-use rate={day2.get('tool_use_rate')}{mt_s}{ztr_s}{tg_s} · "
             f"fail_closed={day2.get('fail_closed_safe_defaults')}{lean_s}{pref_s}"
         )
         fed_ok = day2.get("federation_privacy_ok")

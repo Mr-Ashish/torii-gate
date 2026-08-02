@@ -1,0 +1,14 @@
+{
+  "feature": "MEMORY_FP_TOOL_GATE",
+  "bit": 3,
+  "result": "BIT3_OK",
+  "repo": "pytorch/pytorch",
+  "pr": 191857,
+  "model": "deepseek/deepseek-v4-pro",
+  "POST_COMMENT": 0,
+  "verdict": "REQUEST_CHANGES",
+  "tool_call_turns": 5,
+  "elapsed_s": 781.9,
+  "modal_app": "ap-Q7plD0MmdH9vWz4cGxw7vm",
+  "at": "2026-08-02T07:11:00Z"
+}

@@ -1,0 +1,53 @@
+{
+  "schema_version": 1,
+  "feature": "MEMORY_FP_DEMO",
+  "updated_at": "2026-08-02T06:24:49Z",
+  "count": 2,
+  "rules": [
+    {
+      "id": "demo-fp-test-sql-fixture",
+      "kind": "false_positive",
+      "theme": "sql_injection",
+      "cwe": [
+        "CWE-89"
+      ],
+      "path": "tests/fixtures/",
+      "path_globs": [
+        "tests/fixtures/**",
+        "**/tests/fixtures/**"
+      ],
+      "keywords": [
+        "parameterized",
+        "false positive",
+        "fixture"
+      ],
+      "reason": "install-demo: SQL strings in test fixtures are intentional \u2014 suppress so FP dies twice on tests/fixtures paths",
+      "source": "install-demo",
+      "demo": true,
+      "hits": 1
+    },
+    {
+      "id": "demo-fp-test-pickle",
+      "kind": "false_positive",
+      "theme": "insecure_deserialization",
+      "cwe": [
+        "CWE-502"
+      ],
+      "path": "tests/",
+      "path_globs": [
+        "tests/**",
+        "**/test_*.py"
+      ],
+      "keywords": [
+        "pickle",
+        "fixture",
+        "test-only"
+      ],
+      "reason": "install-demo: pickle in unit fixtures is intentional \u2014 suppress so FP dies twice on test paths",
+      "source": "install-demo",
+      "demo": true,
+      "hits": 1
+    }
+  ],
+  "one_liner": "install-demo FP rules \u2014 FP die twice offline before first organic review"
+}

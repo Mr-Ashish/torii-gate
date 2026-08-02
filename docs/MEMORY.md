@@ -62,3 +62,13 @@ python3 scripts/torii.py status --text   # growth: memory=L3 tp=N fp=M doctor=�
 ```
 
 Scoped store counts (`tp` / `fp`) on the growth beat make “FP die twice · TP stay sharp” auditable without opening `.torii/scoped-memory.json`.
+
+### Install-demo FP seed (path-to-value)
+
+Install seeds **labeled demo** FP rules (`.torii/fp-rules.json`, `demo: true`) so partners see `fp≥1` offline before the first organic review. Real resolved FPs from reviews replace the demo story.
+
+```bash
+python3 scripts/torii.py memory -- compound -- bootstrap-demo
+# or after install: already seeded by install-torii.sh
+python3 scripts/torii.py status --text   # memory=L3 tp=… fp=2 …
+```

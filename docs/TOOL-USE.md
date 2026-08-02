@@ -47,6 +47,7 @@ Related:
 ```bash
 python3 scripts/torii.py tool-use -- report
 python3 scripts/torii.py quieter -- status
+python3 scripts/torii.py status --text   # cost/trust: tool_gate=on · zero_tool=%
 ```
 
 ## What this is *not*
