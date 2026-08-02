@@ -48,7 +48,15 @@ Docs: [`INSTALL.md`](INSTALL.md) · [`GOLDEN-PATH.md`](GOLDEN-PATH.md) · [`QUIE
 - Route cheap models for triage; escalate only when evidence is thin  
 - Memory + dual gates cut repeat false positives (spend compounds down, not up)  
 - Fail-closed tool-turns: no silent APPROVE burn  
-- Soft budget: `TORII_MAX_COST_USD`
+- Soft budget: `TORII_MAX_COST_USD`  
+- **Day-2 one screen:** `status --text` growth beat shows `open_core=$0 pre-revenue · unit=$X.XXX/PR` from the **local measured vault** (not list price · not federated)
+
+Validate the workflow graph offline before any model spend:
+
+```bash
+python3 scripts/torii.py workflow -- validate   # free
+python3 scripts/torii.py status --text          # unit=$…/PR when vault has cost samples
+```
 
 ## Contact / design partners
 

@@ -23,12 +23,14 @@ Source of truth: [`docs/workflows/torii-gate.workflow.yaml`](workflows/torii-gat
 ## Operator commands
 
 ```bash
-python3 scripts/torii.py workflow -- validate
+python3 scripts/torii.py workflow -- validate   # free · no OpenRouter $
 python3 scripts/torii.py workflow -- status
-python3 scripts/torii.py workflow -- scorecard
+python3 scripts/torii.py workflow -- scorecard  # L3 + triple_ready (skill+memory+workflow)
 python3 scripts/torii.py workflow -- fixture
 # install guide (capability matrix):
 python3 scripts/workflow_as_code.py install-guide
+# day-2 one screen: growth beat shows workflow=L3 stages=N triple_ready
+python3 scripts/torii.py status --text
 ```
 
 Offline smoke still covers the gate path:

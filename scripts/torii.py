@@ -711,6 +711,25 @@ def build_status_payload(root: Path | None = None) -> dict[str, Any]:
         day2["workflow_level"] = wf.get("level")
         day2["workflow_valid"] = wf.get("valid")
         day2["workflow_ok"] = bool(wf.get("valid") and wf.get("level") in ("L2", "L3"))
+        dual = wf.get("dual_compound") if isinstance(wf.get("dual_compound"), dict) else {}
+        day2["workflow_triple_ready"] = dual.get("triple_ready")
+        day2["workflow_skill_level"] = dual.get("skill_level")
+        day2["workflow_memory_level"] = dual.get("memory_level")
+    # Stage count from validate/status (offline graph size — free to inspect)
+    wf_st = _soft_script_json(root, "workflow_as_code.py", ["status"], timeout=30)
+    if wf_st:
+        if day2.get("workflow_valid") is None:
+            day2["workflow_valid"] = wf_st.get("valid")
+        for chk in wf_st.get("checks") or []:
+            if not isinstance(chk, dict):
+                continue
+            if chk.get("name") == "stages_nonempty":
+                m = re.search(r"n=(\d+)", str(chk.get("detail") or ""))
+                if m:
+                    day2["workflow_stages_n"] = int(m.group(1))
+                break
+        if day2.get("workflow_stages_n") is None and isinstance(wf_st.get("stages"), list):
+            day2["workflow_stages_n"] = len(wf_st["stages"])
     # Live lean: product default ON for merge-signal path (Modal/GHA dogfood).
     # Env override only when TORII_LIVE_LEAN is explicitly set.
     day2["live_lean_default"] = True
@@ -994,7 +1013,16 @@ def render_status_text(payload: dict[str, Any], *, verbose: bool = False) -> str
             f"install --tenant (optional fleet)"
         )
         wf_lv = day2.get("workflow_level")
-        wf_s = f" · workflow={wf_lv}" if wf_lv is not None else ""
+        wf_s = ""
+        if wf_lv is not None:
+            wf_s = f" · workflow={wf_lv}"
+            stn = day2.get("workflow_stages_n")
+            if isinstance(stn, int) and stn > 0:
+                wf_s += f" stages={stn}"
+            if day2.get("workflow_triple_ready"):
+                wf_s += " triple_ready"
+            elif day2.get("workflow_valid") is True:
+                wf_s += " valid"
         proof_ok = day2.get("pilot_proof_packet_ok")
         proof_s = " · proof=docs/PILOT-PROOF.md" if proof_ok else ""
         sev_pend = day2.get("self_evolve_pending_n")
@@ -1028,12 +1056,16 @@ def render_status_text(payload: dict[str, Any], *, verbose: bool = False) -> str
             mem_s = f" · memory{mcounts}"
             if mem_doc is not None:
                 mem_s = mem_s + f" doctor={mem_doc}"
-        # Pricing honesty (open core free · pre-revenue)
+        # Pricing honesty (open core free · pre-revenue · measured unit economics)
         price_s = ""
         if day2.get("pricing_open_core") or day2.get("pricing_zero_open"):
             price_s = " · open_core=$0"
             if day2.get("pricing_pre_revenue"):
                 price_s += " pre-revenue"
+            # Unit economics from local vault (not list price) — honesty for buyers
+            unit = day2.get("cost_p50_usd")
+            if isinstance(unit, (int, float)) and float(unit) > 0:
+                price_s += f" · unit=${float(unit):.3f}/PR"
         # GTM conversion: design-partner apply + GTM pack + public Pages on growth beat
         apply_u = str(day2.get("pilot_apply_url") or "")
         apply_s = ""

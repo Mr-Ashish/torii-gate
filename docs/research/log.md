@@ -5684,3 +5684,26 @@ surface age_hours on cost/trust. Federation compounds merge authority without F-
 
 ### SHA
 `5cd805d3a9431f24016bf387201ebe10a774255f`
+
+
+## 2026-08-02 — WORKFLOW_UNIT_PRICING day-2 honesty
+
+### Papers / posts
+- Pricing dim lagging: open_core=$0 without measured unit economics on the same line.
+- Workflows-as-code is core product but growth only showed L3 — need stages + triple_ready.
+
+### Insight
+Highest ROI for dims 10+12: growth `unit=$p50/PR` from local vault + `workflow=L3 stages=N
+triple_ready`; week1 offline validate path before OpenRouter spend.
+
+### Feature shipped (WORKFLOW_UNIT_PRICING)
+- status growth: workflow=L3 stages=N triple_ready · open_core=$0 · unit=$/PR
+- pilot week1: workflow_as_code_yaml + workflow_validate_offline
+- WORKFLOWS.md + PRICING.md day-2 notes
+
+### Metric
+- stages=20 · triple_ready · unit from cost p50
+- Live Modal e2e this fire
+
+### SHA
+_(filled after commit)_

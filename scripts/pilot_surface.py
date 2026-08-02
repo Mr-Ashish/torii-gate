@@ -601,6 +601,14 @@ def build_week1(root: Path) -> dict[str, Any]:
                 re.I,
             )
         ),
+        # Offline workflows-as-code (validate free — before OpenRouter $)
+        "workflow_as_code_yaml": (
+            (root / "docs" / "workflows" / "torii-gate.workflow.yaml").is_file()
+            or (root / "docs" / "WORKFLOWS.md").is_file()
+        ),
+        "workflow_validate_offline": bool(
+            (root / "scripts" / "workflow_as_code.py").is_file()
+        ),
     }
     # Soft: organic signal (not required for week1_ok — demo seed is enough day-1)
     checks["organic_run_or_demo"] = organic_n >= 1 or demo_n >= 1
@@ -702,6 +710,8 @@ def render_week1_md(week: dict[str, Any]) -> str:
         f"| quieter surface | {'yes' if checks.get('quieter_surface') else 'no'} | Own-repo quieter path |",
         f"| doctor or smoke | {'yes' if checks.get('doctor_or_smoke') else 'no'} | Day-2 health |",
         f"| feedback path docs | {'yes' if checks.get('feedback_path_docs') else 'no'} | What to send us |",
+        f"| workflow-as-code yaml | {'yes' if checks.get('workflow_as_code_yaml') else 'no'} | Declarative pipeline graph |",
+        f"| workflow validate CLI | {'yes' if checks.get('workflow_validate_offline') else 'no'} | Free offline before model $ |",
         f"| organic or demo run | {'yes' if checks.get('organic_run_or_demo') else 'no'} | At least one local pack |",
         "",
         "## Local vault",

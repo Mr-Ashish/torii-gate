@@ -2,13 +2,13 @@
 
 # Torii Gate — design partner week-1 checklist
 
-_Generated: `2026-08-02T04:12:22Z` · measured local install · **not** a sales deck_
+_Generated: `2026-08-02T05:28:49Z` · measured local install · **not** a sales deck_
 
 > Path: install free → require **`torii/gate`** → first review → quieter · 1–2 feedback notes.
 
-**Status:** 10/10 · core_ok=`True` · week1_ok=`True` · full=`True`
+**Status:** 12/12 · core_ok=`True` · week1_ok=`True` · full=`True`
 
-Partner week-1 10/10 · core_ok=True · week1_ok=True (install → torii/gate → review → feedback)
+Partner week-1 12/12 · core_ok=True · week1_ok=True (install → torii/gate → review → feedback)
 
 ## Checklist
 
@@ -23,11 +23,13 @@ Partner week-1 10/10 · core_ok=True · week1_ok=True (install → torii/gate �
 | quieter surface | yes | Own-repo quieter path |
 | doctor or smoke | yes | Day-2 health |
 | feedback path docs | yes | What to send us |
+| workflow-as-code yaml | yes | Declarative pipeline graph |
+| workflow validate CLI | yes | Free offline before model $ |
 | organic or demo run | yes | At least one local pack |
 
 ## Local vault
 
-- runs: **3** · demo=2 · organic=1
+- runs: **7** · demo=2 · organic=5
 - quieter_ok=True · getting_quieter=True
 - doctor_pass=True · install_stamp=False
 

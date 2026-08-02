@@ -1,0 +1,14 @@
+{
+  "feature": "WORKFLOW_UNIT_PRICING",
+  "bit": 3,
+  "result": "BIT3_OK",
+  "repo": "pytorch/pytorch",
+  "pr": 191854,
+  "model": "deepseek/deepseek-v4-pro",
+  "POST_COMMENT": 0,
+  "verdict": "REQUEST_CHANGES",
+  "tool_call_turns": 10,
+  "elapsed_s": 868.8,
+  "modal_app": "ap-nbii2ga0Kyslkl3erFiY73",
+  "at": "2026-08-02T05:44:00Z"
+}
