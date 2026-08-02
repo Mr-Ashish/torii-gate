@@ -511,6 +511,10 @@ def build_status_payload(root: Path | None = None) -> dict[str, Any]:
         day2["cert_vault_n"] = cert.get("vault_n")
         day2["cert_vault_cost_p50"] = cert.get("vault_cost_p50_usd")
         day2["cert_vault_ok"] = cert.get("vault_ok")
+        day2["cert_reason_codes_head"] = cert.get("vault_reason_codes_head") or cert.get(
+            "reason_codes"
+        )
+        day2["cert_path_score_p50"] = cert.get("vault_path_score_p50")
     quieter = _soft_script_json(root, "quieter_over_time.py", ["status"], timeout=45)
     if quieter:
         day2["quieter_ok"] = quieter.get("quieter_ok")
@@ -816,11 +820,20 @@ def render_status_text(payload: dict[str, Any], *, verbose: bool = False) -> str
             elif qorg_need:
                 extra += " organic_needed=True"
             qboot_s = f" · {extra}"
+        codes = day2.get("cert_reason_codes_head") or []
+        if isinstance(codes, list) and codes:
+            codes_s = ",".join(str(c) for c in codes[:3])
+            cert_extra = f" · reasons={codes_s}"
+        else:
+            cert_extra = ""
+        ps = day2.get("cert_path_score_p50")
+        if isinstance(ps, (int, float)):
+            cert_extra += f" · path_p50={float(ps):.2f}"
         lines.append(
             f"- **Merge authority:** quieter={day2.get('quieter_ok')} "
             f"(getting_quieter={day2.get('getting_quieter')} score={day2.get('quiet_score_all')}"
             f"{qboot_s}) · "
-            f"certs n={day2.get('cert_vault_n')} ({cp_s}/PR) · "
+            f"certs n={day2.get('cert_vault_n')} ({cp_s}/PR){cert_extra} · "
             f"require **torii/gate**"
         )
         tts = day2.get("time_to_signal_p50_s")

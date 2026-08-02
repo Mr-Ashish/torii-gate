@@ -719,6 +719,24 @@ def cmd_status(args: argparse.Namespace) -> int:
     for p in candidates:
         if p.is_file():
             data = json.loads(p.read_text(encoding="utf-8"))
+            # Recent vault reason codes (buyer merge-authority evidence, not chat)
+            recent = vault.get("recent") or []
+            codes_head: list[str] = []
+            path_scores: list[float] = []
+            for r in recent:
+                if not isinstance(r, dict):
+                    continue
+                for c in r.get("reason_codes_head") or []:
+                    cs = str(c)
+                    if cs and cs not in codes_head:
+                        codes_head.append(cs)
+                ps = r.get("path_score")
+                if isinstance(ps, (int, float)):
+                    path_scores.append(float(ps))
+            vault_path_p50 = None
+            if path_scores:
+                sp = sorted(path_scores)
+                vault_path_p50 = sp[len(sp) // 2]
             out = {
                 "feature": FEATURE,
                 "schema": SCHEMA,
@@ -736,6 +754,8 @@ def cmd_status(args: argparse.Namespace) -> int:
                 "vault_cost_p50_usd": vault.get("cost_p50_usd"),
                 "vault_ok": vault.get("vault_ok"),
                 "vault_one_liner": vault.get("one_liner"),
+                "vault_reason_codes_head": codes_head[:6],
+                "vault_path_score_p50": vault_path_p50,
             }
             print(json.dumps(out, indent=2, default=str))
             return 0

@@ -5496,3 +5496,26 @@ onto growth beat (memory doctor=True · open_core=$0 pre-revenue).
 ### SHA
 `b912255e7e72a3aaf30089af82b9422bc18eda40`
 
+## 2026-08-02 — MERGE_CERT_TOOLUSE_REFRESH vault honesty
+
+### Papers / posts
+- Slim Modal traces commit SUMMARY only — tool-use vault missed recent dogfood.
+- Merge authority buyers need reason codes on one screen, not buried cert JSON.
+
+### Insight
+Highest ROI for dims 3+4: parse SUMMARY.md tool_call_turns; surface vault
+reason_codes_head + path_p50 on merge beat.
+
+### Feature shipped (MERGE_CERT_TOOLUSE_REFRESH)
+- tool_use_quality _turns_from_summary_md
+- gate_certificate status: vault_reason_codes_head · vault_path_score_p50
+- status merge beat: reasons=… · path_p50=
+
+### Metric
+- tool-use measured_n=92 · rate=0.902 · zero_tool=0.098
+- merge: reasons=verdict_approve_open,strong_path_evidence,blocking_with_paths · path_p50=1.0
+- Live Modal e2e this fire
+
+### SHA
+`15f60024c6a52e7e8d4161a7c02ea42419230482`
+

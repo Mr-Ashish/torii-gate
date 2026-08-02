@@ -149,6 +149,33 @@ def _turns_from_sources(
     return None
 
 
+def _turns_from_summary_md(d: Path) -> tuple[int | None, str]:
+    """Parse fire SUMMARY.md / modal logs when fat agent-loop is not committed."""
+    turns: int | None = None
+    verdict = ""
+    for name in ("SUMMARY.md", "summary.md", "modal-bit3.log"):
+        p = d / name
+        if not p.is_file():
+            continue
+        try:
+            text = p.read_text(encoding="utf-8", errors="replace")[:12000]
+        except OSError:
+            continue
+        if turns is None:
+            m = re.search(r"tool_call_turns\s*=\s*(\d+)", text, re.I)
+            if not m:
+                m = re.search(r'"tool_call_turns"\s*:\s*(\d+)', text)
+            if m:
+                turns = int(m.group(1))
+        if not verdict:
+            m = re.search(r"\b(APPROVE|REQUEST_CHANGES|COMMENT)\b", text)
+            if m:
+                verdict = m.group(1).upper().replace(" ", "_")
+        if turns is not None and verdict:
+            break
+    return turns, verdict
+
+
 def collect_rows(vroot: Path) -> list[dict[str, Any]]:
     rows: list[dict[str, Any]] = []
     if not vroot.is_dir():
@@ -173,6 +200,9 @@ def collect_rows(vroot: Path) -> list[dict[str, Any]]:
                 pr = m.group(1)
 
         turns = _turns_from_sources(summary, loop, fitness if isinstance(fitness, dict) else None)
+        md_turns, md_verdict = _turns_from_summary_md(d)
+        if turns is None and md_turns is not None:
+            turns = md_turns
         tool_names = _tool_names_from_loop(loop) if loop else []
         has_loop = bool(loop)
         verdict = str(
@@ -180,6 +210,7 @@ def collect_rows(vroot: Path) -> list[dict[str, Any]]:
             if isinstance(fitness, dict)
             else ""
             or summary.get("verdict")
+            or md_verdict
             or ""
         ).upper().replace(" ", "_")
 
