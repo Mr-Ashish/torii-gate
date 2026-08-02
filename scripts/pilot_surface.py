@@ -124,6 +124,12 @@ def build_doc_checks(root: Path) -> dict[str, Any]:
         "landing_links_pilot": bool(
             re.search(r"PILOT\.md|design.partner|Design partner|pre-revenue", land, re.I)
         ),
+        # Public Pages CTA must convert to design-partner apply (not Hub71 / wrong repo)
+        "landing_design_partner_cta": bool(
+            re.search(r"design-partner\.yml|template=design-partner", land, re.I)
+        ),
+        "landing_no_hub71_primary_cta": "hub71.com" not in land.lower(),
+        "landing_no_wrong_repo": "luffy-pr-review-agent" not in land,
         "cli_group_wired": bool(
             re.search(r'["\']pilot["\']\s*:', _read(root / "scripts" / "torii.py"))
         ),

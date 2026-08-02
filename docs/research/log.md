@@ -5563,3 +5563,28 @@ Highest ROI for dims 11+3+2: soft-peek diff_vs_sast into pilot readiness measure
 
 ### SHA
 `a13f427815eb7aa37fd04a61f34d297c582f34e0`
+
+
+## 2026-08-02 — LANDING_PARTNER_CTA GTM conversion
+
+### Papers / posts
+- Public landing was still Hub71 Access + luffy control-plane CTAs — breaks design-partner funnel.
+- Pages is the buyer URL; CTAs must match GTM Channel A (design-partner.yml).
+
+### Insight
+Highest ROI for dims 11+1+12: fix landing primary CTAs to apply/install; enforce in
+build_landing_site + pilot fixtures so Hub71 detours cannot regress.
+
+### Feature shipped (LANDING_PARTNER_CTA)
+- landing.html: Apply design partner · Install free · 18 TP hero · open core pill
+- removed hub71.com primary CTA + luffy-pr-review-agent link
+- build_landing_site checks: design_partner_cta · no_hub71 · no_wrong_repo
+- pilot fixture: landing_design_partner_cta · growth pages= on status
+
+### Metric
+- landing fixture_pass=True · pilot docs 31/31
+- growth: apply= + gtm= + pages=mr-ashish.github.io/torii-gate
+- Live Modal e2e this fire
+
+### SHA
+_(filled after commit)_

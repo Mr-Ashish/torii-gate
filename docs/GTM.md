@@ -16,6 +16,12 @@ Auto-refreshed measured metrics (TTS · cost/PR · quieter · tool-use · public
 
 [`docs/PILOT-PROOF.md`](PILOT-PROOF.md) · regenerate: `python3 scripts/torii.py pilot -- packet`
 
+## Public landing (Pages)
+
+Deployed buyer URL (not monorepo-only): https://mr-ashish.github.io/torii-gate/
+
+Primary CTAs on the landing are **Apply design partner** + **Install free** (not incubator/Hub71 detours). Source: [`docs/brand/landing.html`](brand/landing.html) · rebuild: `python3 scripts/build_landing_site.py build`.
+
 ## Who to message (ICP)
 
 | Persona | Why they care | Ask |

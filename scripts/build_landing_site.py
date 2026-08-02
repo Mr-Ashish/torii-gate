@@ -156,16 +156,24 @@ def build(root: Path | None = None) -> dict[str, Any]:
         ),
         encoding="utf-8",
     )
+    # Buyer GTM: primary CTA is design-partner apply, not incubator/Hub71 detours
+    primary_slice = html.split("<details")[0] if "<details" in html else html
     checks = {
         "index_exists": index.is_file(),
         "has_torii_gate": "torii/gate" in html,
         "has_stricter_quieter": "stricter and quieter" in html.lower(),
         "no_f_compound_marketing": not re.search(
-            r"\bF18[5-9]\b|\bF186\b", html.split("<details")[0] if "<details" in html else html
+            r"\bF18[5-9]\b|\bF186\b", primary_slice
         ),
         "blob_links": blob.rstrip("/") in html or "github.com/" in html,
         "nojekyll": (site / ".nojekyll").is_file(),
         "workflow": (root / ".github" / "workflows" / "pages-landing.yml").is_file(),
+        "design_partner_cta": "design-partner.yml" in html
+        or "template=design-partner" in html,
+        "no_hub71_primary_cta": "hub71.com" not in primary_slice.lower(),
+        "no_wrong_repo_control_plane": "luffy-pr-review-agent" not in html,
+        "install_cta": "INSTALL.md" in html or "install-torii" in html.lower(),
+        "proof_packet_link": "PILOT-PROOF" in html,
     }
     return {
         "feature": FEATURE,

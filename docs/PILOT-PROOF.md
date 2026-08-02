@@ -2,7 +2,7 @@
 
 # Torii Gate — design partner proof packet
 
-_Generated: `2026-08-02T03:26:42Z` · measured dogfood vault only · **pre-revenue · 0 paid customers**_
+_Generated: `2026-08-02T04:08:29Z` · measured dogfood vault only · **pre-revenue · 0 paid customers**_
 
 > **Never invent** customers, logos, ARR, or closed deals. This page is an auto-refresh of **local measured** metrics for outreach.
 
@@ -25,11 +25,11 @@ Torii Gate is a PR/CI **security merge authority**: agent tools on the diff, pat
 |--------|------:|
 | Time-to-signal p50 | **93s** |
 | Cost/PR p50 | **$0.014** |
-| Dogfood runs | 78 |
+| Dogfood runs | 80 |
 | Gate certificates (vault n) | 27 |
-| Quieter | ok=True · getting_quieter=True · score=0.7176 |
+| Quieter | ok=True · getting_quieter=True · score=0.7189 |
 | Local vault | organic=1 · demo=2 |
-| Tool-use rate | **90%** · ok=True |
+| Tool-use rate | **91%** · ok=True |
 | Public eval | ok=True · fresh=True · model=`deepseek/deepseek-v4-pro` |
 | vs SAST / AI review | labeled_tp=**18** · good_recall=1.0 · weak_fp=0.0 · [DIFF.md](DIFF.md) |
 
