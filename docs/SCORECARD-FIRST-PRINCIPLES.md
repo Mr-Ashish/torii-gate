@@ -1,6 +1,6 @@
 # Torii Gate — first-principles product scorecard
 
-_Scored: `2026-08-02T01:04:30Z` · commercial **8.5** · overall **8.0** (cap until paid pilot)._
+_Scored: `2026-08-02T01:20:30Z` · commercial **8.5** · overall **8.0** (cap until paid pilot)._
 
 ## Dims 1–12
 
@@ -8,32 +8,31 @@ _Scored: `2026-08-02T01:04:30Z` · commercial **8.5** · overall **8.0** (cap un
 |--:|-----|------:|-------------------|
 | 1 | Value prop | 8.5 | merge authority · torii/gate |
 | 2 | Diff vs SAST | 8.2 | DIFF.md · labeled_tp=18 |
-| 3 | JTBD | **9.2** | organic local quieter via land-dogfood · demo path · TTS |
-| 4 | Agent tools | 8.0 | tool_use rate 0.875 |
-| 5 | Memory | 8.0 | L3 compound |
-| 6 | Self-evolution | 7.8 | dual_gate · active=10 |
+| 3 | JTBD | 9.2 | quieter organic + TTS + proof packet path |
+| 4 | Agent tools | 8.0 | tool_use 0.875 on proof packet |
+| 5 | Memory | 8.0 | L3 |
+| 6 | Self-evolution | 7.8 | dual_gate |
 | 7 | Install | 8.9 | bootstrap --demo |
-| 8 | Ops | 9.0 | LIVE_LEAN product_default · FS vault |
-| 9 | Enterprise | 8.0 | isolation · tenants |
-| 10 | Pricing | 8.0 | open core |
-| 11 | GTM | 8.0 | GTM.md · pilot 8/8 · 0 closed partners |
-| 12 | Simplicity | **8.6** | status organic=1 · land-dogfood one command |
+| 8 | Ops | 9.0 | LIVE_LEAN product_default |
+| 9 | Enterprise | 8.0 | isolation |
+| 10 | Pricing | 8.0 | open core · pilot terms |
+| 11 | GTM | **8.4** | PILOT-PROOF.md measured packet · GTM/PILOT links · 0 paid honest |
+| 12 | Simplicity | **8.7** | status growth shows proof=docs/PILOT-PROOF.md |
 
 **Overall ~8.5 raw** (cap **8.0** until first design partner / paid pilot).
 
 ## This fire
 
-**QUIETER_LAND_DOGFOOD:** `quieter -- land-dogfood` lands hub Modal dogfood as organic local pack (`demo=false`, `source=land-dogfood`); closes `organic_needed`; status merge beat shows organic≥1.
+**PILOT_PROOF_PACKET:** `pilot -- packet` writes docs/PILOT-PROOF.md from measured vault (TTS · cost · quieter · tool-use · public-eval); fixture 28/28; status growth beat links proof.
 
 ## Remaining
 
 | Rank | Gap | Status | ROI |
 |-----:|-----|--------|-----|
-| 1 | First closed design partner | human GTM | high / non-code |
+| 1 | First closed design partner | human GTM (packet ready) | high / non-code |
 | 2 | No F185+ without customer win | standing | — |
 
 ```bash
-python3 scripts/torii.py quieter -- land-dogfood
-python3 scripts/torii.py quieter -- status
+python3 scripts/torii.py pilot -- packet
 python3 scripts/torii.py status --text
 ```

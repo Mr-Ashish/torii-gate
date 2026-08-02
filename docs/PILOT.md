@@ -7,6 +7,17 @@ This page is how serious teams become **design partners** or start a **paid pilo
 install free Gate  →  dogfood on real PRs  →  design partner feedback  →  optional paid Team/Business pilot
 ```
 
+## Proof packet (measured · shareable)
+
+One page of **local vault metrics** for design-partner conversations (auto-refresh, never invents customers):
+
+[`docs/PILOT-PROOF.md`](PILOT-PROOF.md)
+
+```bash
+python3 scripts/torii.py pilot -- packet   # refresh docs/PILOT-PROOF.md
+python3 scripts/torii.py pilot -- readiness
+```
+
 ## What we will never do here
 
 - Invent customers, logos, ARR, or “in talks with FAANG”  

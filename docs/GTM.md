@@ -10,6 +10,12 @@ open pack install  →  require torii/gate  →  design partner feedback  →  o
 **Traction truth:** paid customers **0** · revenue **$0** · design partners **open (apply via issue)**.  
 SoT: [`PILOT.md`](PILOT.md) · pricing: [`PRICING.md`](PRICING.md).
 
+## Proof packet (paste into partner threads)
+
+Auto-refreshed measured metrics (TTS · cost/PR · quieter · tool-use · public-eval) — **no fake logos**:
+
+[`docs/PILOT-PROOF.md`](PILOT-PROOF.md) · regenerate: `python3 scripts/torii.py pilot -- packet`
+
 ## Who to message (ICP)
 
 | Persona | Why they care | Ask |

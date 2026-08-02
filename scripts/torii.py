@@ -552,6 +552,8 @@ def build_status_payload(root: Path | None = None) -> dict[str, Any]:
         day2["pilot_readiness_ok"] = pilot.get("readiness_ok")
         day2["pilot_ready_n"] = pilot.get("ready_n")
         day2["pilot_ready_total"] = pilot.get("ready_total")
+        day2["pilot_proof_packet_ok"] = pilot.get("proof_packet_ok")
+        day2["pilot_apply_url"] = pilot.get("apply_url")
     # Self-evolution day-2 (dual-gate adopt — buyer language, no F-IDs)
     sev = _soft_script_json(root, "self_evolve.py", ["status"], timeout=30)
     if sev:
@@ -795,8 +797,11 @@ def render_status_text(payload: dict[str, Any], *, verbose: bool = False) -> str
         )
         wf_lv = day2.get("workflow_level")
         wf_s = f" · workflow={wf_lv}" if wf_lv is not None else ""
+        proof_ok = day2.get("pilot_proof_packet_ok")
+        proof_s = " · proof=docs/PILOT-PROOF.md" if proof_ok else ""
         lines.append(
-            f"- **Growth:** pilot readiness={day2.get('pilot_readiness_ok')} ({pilot_r}) · "
+            f"- **Growth:** pilot readiness={day2.get('pilot_readiness_ok')} ({pilot_r})"
+            f"{proof_s} · "
             f"self-evolve active={day2.get('self_evolve_active_n')} "
             f"dual_gate_safe={day2.get('self_evolve_dual_gate_safe')} · "
             f"vs SAST labeled_tp={day2.get('diff_labeled_tp')} "

@@ -8,7 +8,7 @@ success criteria (cost/PR · quieter · gate certs · public-eval) — not docs 
 Never invent customers. Fixture fails if pilot docs claim fake revenue/logos.
 
 Commands:
-  fixture | status | report | readiness
+  fixture | status | report | readiness | packet
 """
 
 from __future__ import annotations
@@ -26,8 +26,9 @@ from typing import Any
 FEATURE = "PILOT"
 SCHEMA = 2
 OUT_REL = Path("docs/PILOT.md")
+PROOF_REL = Path("docs/PILOT-PROOF.md")
 REPORT_REL = Path("docs/benchmarks/pilot-surface.md")
-
+CUSTOMER_PROOF_REL = Path(".torii/pilot-proof.md")
 
 def _root() -> Path:
     env = (os.environ.get("TORII_ROOT") or "").strip()
@@ -138,6 +139,28 @@ def build_doc_checks(root: Path) -> dict[str, Any]:
         "pilot_links_gtm": bool(re.search(r"GTM\.md", pt)),
         "product_links_gtm": bool(re.search(r"GTM\.md", prod)),
         "landing_links_gtm": bool(re.search(r"GTM\.md", land)),
+        # Proof packet (GTM conversion) — measured one-pager, not fake logos
+        "proof_packet_md": (root / PROOF_REL).is_file() and len(_read(root / PROOF_REL)) > 400,
+        "proof_packet_honest": bool(
+            re.search(
+                r"0 paid|pre-revenue|Never invent",
+                _read(root / PROOF_REL),
+                re.I,
+            )
+        )
+        if (root / PROOF_REL).is_file()
+        else False,
+        "proof_packet_measured": bool(
+            re.search(
+                r"time-to-signal|cost/PR|quieter|torii/gate",
+                _read(root / PROOF_REL),
+                re.I,
+            )
+        )
+        if (root / PROOF_REL).is_file()
+        else False,
+        "gtm_links_proof": bool(re.search(r"PILOT-PROOF\.md", gt)),
+        "pilot_links_proof": bool(re.search(r"PILOT-PROOF\.md", pt)),
     }
     checks = {**structure, **{f"honesty_{k}": v for k, v in honesty.items()}}
     return {
@@ -149,6 +172,7 @@ def build_doc_checks(root: Path) -> dict[str, Any]:
         "total": len(checks),
         "paths": {
             "pilot_md": str(OUT_REL),
+            "proof_md": str(PROOF_REL),
             "issue_template": ".github/ISSUE_TEMPLATE/design-partner.yml",
             "pricing": "docs/PRICING.md",
         },
@@ -164,7 +188,6 @@ def build_doc_checks(root: Path) -> dict[str, Any]:
         "at": _now(),
     }
 
-
 def build_readiness(root: Path) -> dict[str, Any]:
     """Measured pilot success criteria from local dogfood vault (not inventing customers)."""
     docs = build_doc_checks(root)
@@ -174,10 +197,21 @@ def build_readiness(root: Path) -> dict[str, Any]:
     ops = _soft_json(root, "ops_dashboard.py", ["status"], timeout=40)
     pe = _soft_json(root, "public_eval.py", ["status"], timeout=30)
     commercial = _soft_json(root, "commercial_scorecard.py", ["status"], timeout=90)
+    tools = _soft_json(root, "tool_use_quality.py", ["status"], timeout=30)
+
+    # Core honesty (pre-revenue / 0 paid) — not full fixture (proof packet may refresh later)
+    dchecks = docs.get("checks") if isinstance(docs.get("checks"), dict) else {}
+    core_honest = bool(
+        dchecks.get("honesty_pre_revenue")
+        and dchecks.get("honesty_zero_paid")
+        and dchecks.get("honesty_never_invent")
+        and dchecks.get("honesty_no_fake_arr")
+        and dchecks.get("pilot_md")
+    ) or bool(docs.get("fixture_pass"))
 
     # Success criteria shared with PILOT.md (path-evidenced, not vanity comments)
     criteria: dict[str, bool] = {
-        "docs_honest": bool(docs.get("fixture_pass")),
+        "docs_honest": core_honest,
         "golden_path_ready": bool(golden.get("ready")),
         "time_to_signal_measured": (
             isinstance(golden.get("time_to_signal_p50_s"), (int, float))
@@ -197,6 +231,8 @@ def build_readiness(root: Path) -> dict[str, Any]:
     total = len(criteria)
     readiness_ok = ready_n >= 6 and bool(criteria["docs_honest"])  # allow 2 soft gaps
     full_ok = all(criteria.values())
+    proof_path = root / PROOF_REL
+    proof_ok = proof_path.is_file() and len(_read(proof_path)) > 400
 
     return {
         "feature": FEATURE,
@@ -207,6 +243,8 @@ def build_readiness(root: Path) -> dict[str, Any]:
         "ready_n": ready_n,
         "ready_total": total,
         "criteria": criteria,
+        "proof_packet_ok": proof_ok,
+        "proof_packet_path": str(PROOF_REL),
         "measured": {
             "time_to_signal_p50_s": golden.get("time_to_signal_p50_s"),
             "dogfood_runs": golden.get("dogfood_runs"),
@@ -217,11 +255,15 @@ def build_readiness(root: Path) -> dict[str, Any]:
             "quieter_ok": quieter.get("quieter_ok"),
             "getting_quieter": quieter.get("getting_quieter"),
             "quiet_score": quieter.get("quiet_score_all"),
+            "local_organic_n": quieter.get("local_organic_n"),
+            "local_demo_n": quieter.get("local_demo_n"),
             "public_eval_ok": pe.get("public_eval_ok"),
             "public_eval_freshness_ok": pe.get("freshness_ok"),
             "public_eval_model": pe.get("model_id"),
             "commercial_ok": commercial.get("commercial_ok"),
             "overall_est": commercial.get("overall_est"),
+            "tool_use_rate": tools.get("tool_use_rate"),
+            "tool_use_ok": tools.get("tool_use_ok") or tools.get("quality_ok"),
         },
         "docs": {
             "ok_n": docs.get("ok_n"),
@@ -239,6 +281,148 @@ def build_readiness(root: Path) -> dict[str, Any]:
             "?template=design-partner.yml"
         ),
         "at": _now(),
+    }
+
+
+def render_proof_packet(ready: dict[str, Any]) -> str:
+    """Buyer-facing design-partner proof one-pager (measured · no fake logos)."""
+    m = ready.get("measured") or {}
+    crit = ready.get("criteria") or {}
+    tts = m.get("time_to_signal_p50_s")
+    tts_s = f"{float(tts):.0f}s" if isinstance(tts, (int, float)) else "—"
+    cost = m.get("cost_p50_usd")
+    cost_s = f"${float(cost):.3f}" if isinstance(cost, (int, float)) else "—"
+    overall = m.get("overall_est")
+    overall_s = f"{overall}/10" if overall is not None else "—"
+    tool_r = m.get("tool_use_rate")
+    tool_s = f"{float(tool_r):.0%}" if isinstance(tool_r, (int, float)) else "—"
+    apply = ready.get("apply_url") or (
+        "https://github.com/Mr-Ashish/torii-gate/issues/new?template=design-partner.yml"
+    )
+
+    crit_rows = "\n".join(
+        f"| `{k}` | {'yes' if v else 'no'} |" for k, v in crit.items()
+    ) or "| _(run readiness)_ | — |"
+
+    return "\n".join(
+        [
+            "<!-- torii-pilot-proof-packet -->",
+            "",
+            "# Torii Gate — design partner proof packet",
+            "",
+            f"_Generated: `{ready.get('at')}` · measured dogfood vault only · "
+            f"**pre-revenue · 0 paid customers**_",
+            "",
+            "> **Never invent** customers, logos, ARR, or closed deals. "
+            "This page is an auto-refresh of **local measured** metrics for outreach.",
+            "",
+            "## One sentence",
+            "",
+            "Torii Gate is a PR/CI **security merge authority**: agent tools on the diff, "
+            "path-evidenced findings, required check **`torii/gate`**, quieter over time.",
+            "",
+            "## Traction truth",
+            "",
+            "| Fact | Value |",
+            "|------|------:|",
+            "| Paid customers | **0** |",
+            "| Revenue | **$0** |",
+            "| License | MIT open core |",
+            f"| Commercial surface est. | **{overall_s}** (cap until paid pilot) |",
+            "",
+            "## Measured dogfood (local vault · not federated)",
+            "",
+            "| Metric | Value |",
+            "|--------|------:|",
+            f"| Time-to-signal p50 | **{tts_s}** |",
+            f"| Cost/PR p50 | **{cost_s}** |",
+            f"| Dogfood runs | {m.get('dogfood_runs') if m.get('dogfood_runs') is not None else '—'} |",
+            f"| Gate certificates (vault n) | {m.get('vault_n') if m.get('vault_n') is not None else '—'} |",
+            f"| Quieter | ok={m.get('quieter_ok')} · getting_quieter={m.get('getting_quieter')} · score={m.get('quiet_score')} |",
+            f"| Local vault | organic={m.get('local_organic_n')} · demo={m.get('local_demo_n')} |",
+            f"| Tool-use rate | **{tool_s}** · ok={m.get('tool_use_ok')} |",
+            f"| Public eval | ok={m.get('public_eval_ok')} · fresh={m.get('public_eval_freshness_ok')} · model=`{m.get('public_eval_model') or '—'}` |",
+            "",
+            "Audit: [cost/PR dashboard](ops/cost-pr-dashboard.md) · "
+            "[golden-path metrics](benchmarks/golden-path-metrics.md) · "
+            "[public eval](benchmarks/public-eval/SCORECARD.md) · "
+            "[quieter](QUIETER.md).",
+            "",
+            "## Shared success criteria (partner pilot)",
+            "",
+            "| Criterion | Pass |",
+            "|-----------|:----:|",
+            crit_rows,
+            "",
+            f"**Readiness:** {ready.get('ready_n')}/{ready.get('ready_total')} · "
+            f"ok=`{ready.get('readiness_ok')}` · full=`{ready.get('readiness_full_ok')}`",
+            "",
+            "## Path to value (5 minutes)",
+            "",
+            "```bash",
+            "./scripts/install-torii.sh --minimal /path/to/your-app",
+            "# secret: OPENROUTER_API_KEY",
+            "# branch protection: require status check torii/gate",
+            "# on a PR: @torii review this pr",
+            "python3 scripts/torii.py status --text",
+            "python3 scripts/torii.py quieter -- status",
+            "python3 scripts/torii.py pilot -- readiness",
+            "```",
+            "",
+            "## Apply (design partner · free)",
+            "",
+            f"{apply}",
+            "",
+            "Or: [docs/PILOT.md](PILOT.md) · [docs/GTM.md](GTM.md) · "
+            "Pages: https://mr-ashish.github.io/torii-gate/",
+            "",
+            "## Refresh this packet",
+            "",
+            "```bash",
+            "python3 scripts/torii.py pilot -- packet",
+            "# → docs/PILOT-PROOF.md (+ .torii/pilot-proof.md when .torii/ exists)",
+            "```",
+            "",
+            "---",
+            "",
+            f"_One-liner:_ {ready.get('one_liner') or 'Pilot path measured · 0 paid'}",
+            "",
+        ]
+    )
+
+
+def write_proof_packet(root: Path, ready: dict[str, Any] | None = None) -> dict[str, Any]:
+    ready = ready or build_readiness(root)
+    body = render_proof_packet(ready)
+    hub = root / PROOF_REL
+    hub.parent.mkdir(parents=True, exist_ok=True)
+    hub.write_text(body, encoding="utf-8")
+    wrote = [str(PROOF_REL)]
+    # Customer install: also drop a copy under .torii when present
+    torii = root / ".torii"
+    if torii.is_dir():
+        cust = root / CUSTOMER_PROOF_REL
+        try:
+            cust.write_text(body, encoding="utf-8")
+            wrote.append(str(CUSTOMER_PROOF_REL))
+        except OSError:
+            pass
+    return {
+        "feature": FEATURE,
+        "packet_ok": True,
+        "proof_packet_ok": True,
+        "wrote": wrote,
+        "bytes": len(body.encode("utf-8")),
+        "readiness_ok": ready.get("readiness_ok"),
+        "ready_n": ready.get("ready_n"),
+        "ready_total": ready.get("ready_total"),
+        "apply_url": ready.get("apply_url"),
+        "measured": ready.get("measured"),
+        "one_liner": (
+            "Design-partner proof packet refreshed from measured vault "
+            "(pre-revenue · 0 paid · no fake logos)"
+        ),
+        "at": ready.get("at") or _now(),
     }
 
 
@@ -280,6 +464,8 @@ def cmd_status(args: argparse.Namespace) -> int:
                 "total": docs.get("total"),
                 "criteria": ready.get("criteria"),
                 "measured": ready.get("measured"),
+                "proof_packet_ok": ready.get("proof_packet_ok"),
+                "proof_packet_path": ready.get("proof_packet_path") or str(PROOF_REL),
                 "one_liner": ready.get("one_liner"),
                 "apply_url": ready.get("apply_url"),
                 "at": ready.get("at") or _now(),
@@ -294,6 +480,15 @@ def cmd_readiness(args: argparse.Namespace) -> int:
     report = build_readiness(_root())
     print(json.dumps(report, indent=2))
     return 0 if report.get("readiness_ok") else 1
+
+
+def cmd_packet(args: argparse.Namespace) -> int:
+    """Write design-partner proof one-pager from measured vault metrics."""
+    root = _root()
+    ready = build_readiness(root)
+    out = write_proof_packet(root, ready)
+    print(json.dumps(out, indent=2))
+    return 0 if out.get("packet_ok") else 1
 
 
 def cmd_report(args: argparse.Namespace) -> int:
@@ -339,13 +534,16 @@ def cmd_report(args: argparse.Namespace) -> int:
         f"- quieter: ok={m.get('quieter_ok')} · getting_quieter={m.get('getting_quieter')} · score={m.get('quiet_score')}",
         f"- public eval: ok={m.get('public_eval_ok')} · freshness={m.get('public_eval_freshness_ok')} · model={m.get('public_eval_model')}",
         f"- commercial: ok={m.get('commercial_ok')} · overall_est={m.get('overall_est')}",
+        f"- tool-use: rate={m.get('tool_use_rate')} · ok={m.get('tool_use_ok')}",
         "",
+        "Proof packet: [`docs/PILOT-PROOF.md`](../PILOT-PROOF.md) · "
         "Source: [`docs/PILOT.md`](../PILOT.md) · issue template: "
         "`.github/ISSUE_TEMPLATE/design-partner.yml`",
         "",
         "```bash",
         "python3 scripts/pilot_surface.py fixture",
         "python3 scripts/pilot_surface.py readiness",
+        "python3 scripts/pilot_surface.py packet",
         "python3 scripts/torii.py pilot -- status",
         "```",
         "",
@@ -360,6 +558,7 @@ def cmd_report(args: argparse.Namespace) -> int:
                 "readiness_ok": ready.get("readiness_ok"),
                 "ready_n": ready.get("ready_n"),
                 "ready_total": ready.get("ready_total"),
+                "proof_packet_ok": ready.get("proof_packet_ok"),
                 "wrote": str(out.relative_to(root)),
             },
             indent=2,
@@ -376,6 +575,7 @@ def main(argv: list[str] | None = None) -> int:
         "status": cmd_status,
         "report": cmd_report,
         "readiness": cmd_readiness,
+        "packet": cmd_packet,
     }
     for name, fn in handlers.items():
         sp = sub.add_parser(name)

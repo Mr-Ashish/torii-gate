@@ -5376,3 +5376,27 @@ organic_needed clears; trajectory stays measured from hub+organic.
 ### SHA
 `e667b125353c459dd76d11ec823d683ec8f3e93e`
 
+## 2026-08-02 — PILOT_PROOF_PACKET design-partner one-pager
+
+### Papers / posts
+- Loop Engineering: conversion assets must be measured, not decks with fake logos.
+- Remaining gap #1 (closed design partner) is human; highest code ROI is ready-to-send proof.
+
+### Insight
+GTM.md templates alone still force operators to assemble metrics by hand. Highest ROI:
+pilot -- packet auto-refreshes docs/PILOT-PROOF.md from local vault (TTS · cost · quieter ·
+tool-use · public-eval) with pre-revenue honesty banner.
+
+### Feature shipped (PILOT_PROOF_PACKET)
+- pilot_surface packet + render_proof_packet
+- docs/PILOT-PROOF.md · .torii/pilot-proof.md
+- GTM.md + PILOT.md links · fixture 28/28 proof checks
+- status growth beat: proof=docs/PILOT-PROOF.md
+
+### Metric
+- fixture_pass 28/28 · proof_packet_ok · readiness 8/8
+- Live Modal e2e this fire
+
+### SHA
+`9c4c695bffb42c11c26e3200178b5f73dd396f2a`
+
