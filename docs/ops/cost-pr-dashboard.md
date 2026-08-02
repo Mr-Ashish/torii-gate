@@ -2,7 +2,7 @@
 
 # Cost / PR dashboard
 
-_Generated: `2026-08-01T18:07:17Z` · cost_ok=**True** · from dogfood vault_
+_Generated: `2026-08-01T23:42:44Z` · cost_ok=**True** · from dogfood vault_
 
 Measured cost/PR + time-to-signal from live Modal dogfood (hermes-usage) with gate certificate ids — not a stub.
 

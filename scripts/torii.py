@@ -581,6 +581,25 @@ def build_status_payload(root: Path | None = None) -> dict[str, Any]:
             }:
                 mid = "deepseek/deepseek-v4-pro"
         day2["public_eval_model"] = mid
+    # Golden path: time-to-signal p50 (buyer path-to-value honesty)
+    golden = _soft_script_json(root, "golden_path_metrics.py", ["status"], timeout=40)
+    if golden:
+        day2["golden_ready"] = golden.get("ready")
+        day2["time_to_signal_p50_s"] = golden.get("time_to_signal_p50_s")
+        day2["golden_dogfood_runs"] = golden.get("dogfood_runs")
+    # Workflows-as-code (deterministic pipeline vs LLM prose)
+    wf = _soft_script_json(root, "workflow_as_code.py", ["scorecard"], timeout=45)
+    if wf:
+        day2["workflow_level"] = wf.get("level")
+        day2["workflow_valid"] = wf.get("valid")
+        day2["workflow_ok"] = bool(wf.get("valid") and wf.get("level") in ("L2", "L3"))
+    # Live lean path flag (Modal default) — path-to-value vs full compound
+    day2["live_lean"] = (os.environ.get("TORII_LIVE_LEAN") or "").strip().lower() in {
+        "1",
+        "true",
+        "yes",
+        "on",
+    }
 
     groups_n = sum(1 for v in present.values() if v)
     return {
@@ -595,7 +614,7 @@ def build_status_payload(root: Path | None = None) -> dict[str, Any]:
         "extras": extras,
         "day2": day2,
         "one_liner": (
-            "Day-2 four beats: merge authority · cost & trust · org · growth — "
+            "Day-2 four beats: merge authority · cost/trust (TTS+cost) · org · growth — "
             "require torii/gate."
         ),
         "status_compact": True,
@@ -730,25 +749,32 @@ def render_status_text(payload: dict[str, Any], *, verbose: bool = False) -> str
             f"certs n={day2.get('cert_vault_n')} ({cp_s}/PR) · "
             f"require **torii/gate**"
         )
+        tts = day2.get("time_to_signal_p50_s")
+        tts_s = f"{float(tts):.0f}s" if isinstance(tts, (int, float)) else "—"
+        lean = day2.get("live_lean")
+        lean_s = f" · live_lean={lean}" if lean is not None else ""
         lines.append(
             f"- **Cost & trust:** commercial={day2.get('overall_est')}/10 "
             f"ok={day2.get('commercial_ok')} · cost p50={p50_s}/PR "
             f"honesty={day2.get('cost_honesty_ok')} · "
+            f"time-to-signal p50={tts_s} · "
             f"public-eval freshness={day2.get('public_eval_freshness_ok')} · "
             f"tool-use rate={day2.get('tool_use_rate')} · "
-            f"fail_closed={day2.get('fail_closed_safe_defaults')}"
+            f"fail_closed={day2.get('fail_closed_safe_defaults')}{lean_s}"
         )
         lines.append(
             f"- **Org:** enterprise={day2.get('enterprise_ok')} · "
             f"tenants={day2.get('tenant_n')} · isolation={day2.get('isolation_ok')} · "
             f"install --tenant (optional fleet)"
         )
+        wf_lv = day2.get("workflow_level")
+        wf_s = f" · workflow={wf_lv}" if wf_lv is not None else ""
         lines.append(
             f"- **Growth:** pilot readiness={day2.get('pilot_readiness_ok')} ({pilot_r}) · "
             f"self-evolve active={day2.get('self_evolve_active_n')} "
             f"dual_gate_safe={day2.get('self_evolve_dual_gate_safe')} · "
             f"vs SAST labeled_tp={day2.get('diff_labeled_tp')} "
-            f"(docs/DIFF.md){mem_s}"
+            f"(docs/DIFF.md){mem_s}{wf_s}"
         )
 
     if verbose:

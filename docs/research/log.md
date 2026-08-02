@@ -5297,3 +5297,25 @@ FS publish was behind LOCAL_PUBLISH=0 early-return. Highest ROI: always run FS v
 
 ### SHA
 `6a79e91ca36c1bdc857042c51341857629126095`
+
+## 2026-08-01 — STATUS_TTS_WORKFLOW path-to-value on day-2 screen
+
+### Papers / posts
+- Path-to-value: buyers need TTS + cost on one screen, not buried in golden-path.
+- Workflows-as-code: deterministic graph readiness belongs on growth beat.
+- Loop Engineering: surface measured p50s operators already paid for.
+
+### Insight
+Status cost/trust beat had cost/eval but not time-to-signal p50. Highest ROI: soft-peek golden-path TTS + workflow scorecard L3 without new F-stack.
+
+### Feature shipped (STATUS_TTS_WORKFLOW)
+- status day2: time_to_signal_p50_s · live_lean · workflow_level
+- cost/trust beat TTS line · growth workflow=L3
+- commercial + ops report refresh
+
+### Metric
+- status shows time-to-signal p50=93s · workflow=L3
+- Live Modal e2e this fire
+
+### SHA
+`PENDING_PUSH`

@@ -78,7 +78,7 @@ Install path: [`docs/GOLDEN-PATH.md`](docs/GOLDEN-PATH.md) · metrics: [`docs/be
 
 **Compound memory:** FP die twice · TP stay sharp (path-evidenced write, tiers, scoped recall) → [`docs/MEMORY.md`](docs/MEMORY.md) · `python3 scripts/torii.py memory -- doctor`.
 
-**CLI:** `python3 scripts/torii.py help` · `status --text` (four beats) · `doctor` · `golden-path -- status` · `certificate -- fixture` · `quieter -- status` · `tool-use -- status` · `ops -- status` · `commercial -- status` · `enterprise -- status` · `pilot -- readiness` · `diff -- status`
+**CLI:** `python3 scripts/torii.py help` · `status --text` (four beats: merge · **cost/TTS** · org · growth+workflow) · `doctor` · `golden-path -- status` · `certificate -- fixture` · `quieter -- status` · `tool-use -- status` · `ops -- status` · `commercial -- status` · `enterprise -- status` · `pilot -- readiness` · `diff -- status`
 
 **Commercial rollup (queue 1–6 + post-queue + workflow):** `python3 scripts/torii.py commercial -- fixture` → [`docs/benchmarks/commercial-scorecard.md`](docs/benchmarks/commercial-scorecard.md).
 

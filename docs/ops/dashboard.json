@@ -3,7 +3,7 @@
   "schema": 1,
   "scorecard_target": "ops",
   "dim_lift": "reliability/ops (dim 8) + certificate + product surface map",
-  "scored_at": "2026-08-01T18:07:15Z",
+  "scored_at": "2026-08-01T23:42:44Z",
   "one_liner": "Fail-closed defaults \u00b7 measured cost/PR \u00b7 gate certificate \u00b7 smoke CI \u00b7 product surfaces \u00b7 torii/gate",
   "fail_closed": [
     {
@@ -259,8 +259,10 @@
   "smoke": {
     "script_present": true,
     "ci_workflow_present": true,
-    "ran": false,
-    "pass": null
+    "ran": true,
+    "pass": true,
+    "rc": 0,
+    "tail": "[8/9] product CLI doctor (F110)\n  ok  torii.py doctor_pass\n[9/9] integrity compound+federate insecure-demo (F104/F107)\n  ok  compound+federate fixture_pass fed_count=2\n[10/10] tool-probe mine + dual-gate adopt (F117/F118)\n  ok  skip tool-evolve fixtures (TORII_SMOKE_TOOL_EVOLVE=0)\nTip: day-2 cost honesty \u2192 python3 scripts/torii.py ops -- status (docs/ops/cost-pr-dashboard.md)\n=== SMOKE PASSED ===\n"
   },
   "last_gate_certificate": {
     "available": true,

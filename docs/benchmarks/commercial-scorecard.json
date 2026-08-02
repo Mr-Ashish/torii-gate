@@ -1,7 +1,7 @@
 {
   "feature": "COMMERCIAL",
   "schema": 2,
-  "scored_at": "2026-08-01T18:21:06Z",
+  "scored_at": "2026-08-01T23:42:41Z",
   "scorecard_target": "7.5+",
   "dim_lift": "commercial rollup: priority 1\u20136 + post-queue cert/quieter/tools + workflows-as-code + cost honesty",
   "one_liner": "Single commercial scorecard: golden path \u00b7 buyer \u00b7 public eval \u00b7 install \u00b7 ops \u00b7 enterprise \u00b7 gate cert \u00b7 quieter \u00b7 tool-use \u00b7 workflow \u00b7 measured cost/PR",
@@ -164,6 +164,7 @@
           "schema",
           "fixture_pass",
           "checks",
+          "isolation_proof",
           "tenant_n",
           "scorecard_target",
           "at"
@@ -214,13 +215,17 @@
         "script": "quieter_over_time.py",
         "payload_keys": [
           "feature",
+          "schema",
           "fixture_pass",
           "core_ok",
           "buyer_doc_ok",
+          "local_collect_ok",
+          "local_fixture_n",
+          "install_ships_quieter",
           "own_repo_ok_n",
           "own_repo_total",
-          "required_check",
-          "scorecard_target"
+          "pack_surface_ok",
+          "required_check"
         ]
       }
     },
@@ -437,6 +442,7 @@
           "schema",
           "fixture_pass",
           "checks",
+          "isolation_proof",
           "tenant_n",
           "scorecard_target",
           "at"
@@ -489,13 +495,17 @@
         "script": "quieter_over_time.py",
         "payload_keys": [
           "feature",
+          "schema",
           "fixture_pass",
           "core_ok",
           "buyer_doc_ok",
+          "local_collect_ok",
+          "local_fixture_n",
+          "install_ships_quieter",
           "own_repo_ok_n",
           "own_repo_total",
-          "required_check",
-          "scorecard_target"
+          "pack_surface_ok",
+          "required_check"
         ]
       }
     },

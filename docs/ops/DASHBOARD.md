@@ -2,7 +2,7 @@
 
 # Torii ops dashboard
 
-_Generated: `2026-08-01T18:07:17Z` · **ops_ok=True** · target **ops / dim 8**_
+_Generated: `2026-08-01T23:42:44Z` · **ops_ok=True** · target **ops / dim 8**_
 
 Fail-closed defaults · measured cost/PR · gate certificate · smoke CI · product surfaces · torii/gate
 
@@ -28,7 +28,7 @@ Branch protection must require **`torii/gate`** (see `docs/INSTALL.md`, `docs/GA
 ## Smoke
 
 - Script: `True` · CI workflow: `True`
-- Last run in this report: ran=False pass=None
+- Last run in this report: ran=True pass=True
 
 ```bash
 ./scripts/smoke-torii-gate.sh
