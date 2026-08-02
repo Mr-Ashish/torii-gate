@@ -5707,3 +5707,27 @@ triple_ready`; week1 offline validate path before OpenRouter spend.
 
 ### SHA
 `6d1cac68e6e3b0710cd830b42b15a0492ca74437`
+
+
+## 2026-08-02 — REQUIRE_CHECK_LIVE path-to-value
+
+### Papers / posts
+- Docs say “require torii/gate” but partners cannot prove branch protection is on.
+- Hub torii-gate main is not protected — status must not greenwash require-check.
+
+### Insight
+Highest ROI for dims 3+7+11: live `gh` check for required status context torii/gate;
+surface require_check=live|off on merge; week1 + issue template point at the CLI.
+
+### Feature shipped (REQUIRE_CHECK_LIVE)
+- quieter -- require-check (live_ok · contexts · next)
+- status merge: require_check=off|live|missing
+- soft JSON parse on non-zero peer exit
+- INSTALL / QUIETER / design-partner.yml / week1 CLI wire
+
+### Metric
+- hub: live_ok=false reason=branch_not_protected (honest)
+- week1 13/13 · Live Modal e2e this fire
+
+### SHA
+_(filled after commit)_

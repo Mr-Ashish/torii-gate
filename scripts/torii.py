@@ -216,6 +216,7 @@ GROUPS: dict[str, dict[str, Any]] = {
         "examples": [
             "quieter -- bootstrap",
             "quieter -- status",
+            "quieter -- require-check",
             "quieter -- report",
             "quieter -- fixture",
         ],
@@ -451,7 +452,11 @@ def run_group(group: str, passthrough: list[str], *, root: Path | None = None) -
 def _soft_script_json(
     root: Path, script: str, argv: list[str], *, timeout: int = 45
 ) -> dict[str, Any] | None:
-    """Best-effort peer script JSON (never fails status/doctor)."""
+    """Best-effort peer script JSON (never fails status/doctor).
+
+    Parses JSON even when the peer exits non-zero (e.g. require-check live_ok=false)
+    so honesty signals still surface on day-2.
+    """
     path = _scripts_dir(root) / script
     if not path.is_file():
         return None
@@ -464,9 +469,17 @@ def _soft_script_json(
             timeout=timeout,
             env={**os.environ, "TORII_ROOT": str(root)},
         )
-        if r.returncode != 0 or not (r.stdout or "").strip():
+        out = (r.stdout or "").strip()
+        if not out:
             return None
-        data = json.loads(r.stdout)
+        # peer may print logs before JSON — take last object
+        if not out.startswith("{"):
+            idx = out.rfind("\n{")
+            if idx >= 0:
+                out = out[idx + 1 :]
+            else:
+                return None
+        data = json.loads(out)
         return data if isinstance(data, dict) else None
     except Exception:
         return None
@@ -530,6 +543,23 @@ def build_status_payload(root: Path | None = None) -> dict[str, Any]:
         day2["quieter_organic_needed"] = quieter.get("organic_needed")
         day2["quieter_trajectory_source"] = quieter.get("trajectory_source")
         day2["quieter_bootstrap_hint"] = quieter.get("bootstrap_hint")
+    # Live required-check (partner path-to-value) — soft, skip with TORII_SKIP_LIVE_REQUIRE=1
+    if (os.environ.get("TORII_SKIP_LIVE_REQUIRE") or "").strip().lower() not in {
+        "1",
+        "true",
+        "yes",
+        "on",
+    }:
+        req = _soft_script_json(
+            root, "quieter_over_time.py", ["require-check"], timeout=45
+        )
+        if req:
+            day2["require_check_live_ok"] = req.get("live_ok")
+            day2["require_check_checked"] = req.get("checked")
+            day2["require_check_reason"] = req.get("reason")
+            day2["require_check_repo"] = req.get("repo")
+            day2["require_check_branch"] = req.get("branch")
+            day2["require_check_next"] = req.get("next")
     # Scoped memory TP/FP counts (FP die twice · TP stay sharp — dim 5)
     mem_scoped = _soft_script_json(
         root, "scoped_memory_recall.py", ["status"], timeout=20
@@ -943,12 +973,25 @@ def render_status_text(payload: dict[str, Any], *, verbose: bool = False) -> str
             mt = day2.get("fed_multi_tenant_themes")
             if mt is not None:
                 heat_s += f" (mt={mt})"
+        # Live require-check (honest: hub may be docs-only until protection is on)
+        rc_live = day2.get("require_check_live_ok")
+        rc_s = ""
+        if day2.get("require_check_checked") is True:
+            if rc_live is True:
+                rc_s = " · require_check=live"
+            elif rc_live is False:
+                reason = str(day2.get("require_check_reason") or "missing")
+                # short reason token
+                if "not_protected" in reason:
+                    rc_s = " · require_check=off"
+                else:
+                    rc_s = " · require_check=missing"
         lines.append(
             f"- **Merge authority:** quieter={day2.get('quieter_ok')} "
             f"(getting_quieter={day2.get('getting_quieter')} score={day2.get('quiet_score_all')}"
             f"{delta_s}{qboot_s}){traj_s} · "
             f"certs n={day2.get('cert_vault_n')} ({cp_s}/PR){cert_extra}"
-            f"{diff_s}{heat_s} · "
+            f"{diff_s}{heat_s}{rc_s} · "
             f"require **torii/gate**"
         )
         tts = day2.get("time_to_signal_p50_s")
@@ -1109,7 +1152,7 @@ def render_status_text(payload: dict[str, Any], *, verbose: bool = False) -> str
     lines += [
         "",
         "## Next",
-        "1. Require status check **torii/gate** (merge authority)",
+        "1. Require status check **torii/gate** (merge authority) · verify: `quieter -- require-check`",
         "2. `python3 scripts/torii.py doctor` · `quieter -- status` · `pilot -- week1` · `pilot -- readiness`",
         "3. Prefer model `deepseek/deepseek-v4-pro` · GTM templates: docs/GTM.md · Pages: https://mr-ashish.github.io/torii-gate/",
         "",

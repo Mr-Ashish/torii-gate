@@ -24,10 +24,13 @@ Honesty: demo packs prove the vault path; trajectory prefers organic/hub rows wh
 python3 scripts/torii.py quieter -- bootstrap --demo   # README + labeled demos
 python3 scripts/torii.py quieter -- land-dogfood       # organic from hub Modal dogfood
 python3 scripts/torii.py quieter -- status             # local_runs_n · demo · organic · delta
-python3 scripts/torii.py status --text                 # merge beat: getting_quieter · delta=
+python3 scripts/torii.py quieter -- require-check      # LIVE: is torii/gate required on default branch?
+python3 scripts/torii.py status --text                 # merge: getting_quieter · delta= · require_check=
 ```
 
 **Trajectory honesty (day-2 one screen):** `status --text` shows `delta=` (late − early quiet_score). If `getting_quieter=False`, merge beat adds `next=land-dogfood|organic review` or `next=quieter -- report` — never greenwash a flat/noisy window.
+
+**Required-check honesty:** `quieter -- require-check` uses `gh` against the current repo (or `REPO=owner/name`). Returns `live_ok=true` only when branch protection / rulesets list **`torii/gate`**. Docs-only “require the check” is not enough for design-partner week-1.
 ## 1. Install on your repo
 
 ```bash

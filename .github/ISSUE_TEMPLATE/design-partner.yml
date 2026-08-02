@@ -43,6 +43,8 @@ body:
       options:
         - label: I can require status check torii/gate (or explain blockers)
           required: true
+        - label: I will run `python3 scripts/torii.py quieter -- require-check` after install (live_ok target)
+          required: false
         - label: I will share 1–2 short feedback notes after first runs
           required: true
         - label: Public “design partner” mention only if I opt in later

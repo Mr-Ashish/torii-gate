@@ -2,13 +2,13 @@
 
 # Torii Gate — design partner week-1 checklist
 
-_Generated: `2026-08-02T05:28:49Z` · measured local install · **not** a sales deck_
+_Generated: `2026-08-02T05:48:53Z` · measured local install · **not** a sales deck_
 
 > Path: install free → require **`torii/gate`** → first review → quieter · 1–2 feedback notes.
 
-**Status:** 12/12 · core_ok=`True` · week1_ok=`True` · full=`True`
+**Status:** 13/13 · core_ok=`True` · week1_ok=`True` · full=`True`
 
-Partner week-1 12/12 · core_ok=True · week1_ok=True (install → torii/gate → review → feedback)
+Partner week-1 13/13 · core_ok=True · week1_ok=True (install → torii/gate → review → feedback)
 
 ## Checklist
 
@@ -25,18 +25,20 @@ Partner week-1 12/12 · core_ok=True · week1_ok=True (install → torii/gate �
 | feedback path docs | yes | What to send us |
 | workflow-as-code yaml | yes | Declarative pipeline graph |
 | workflow validate CLI | yes | Free offline before model $ |
+| require-check CLI | yes | Live: is torii/gate required? |
 | organic or demo run | yes | At least one local pack |
 
 ## Local vault
 
 - runs: **7** · demo=2 · organic=5
-- quieter_ok=True · getting_quieter=True
+- quieter_ok=True · getting_quieter=False
 - doctor_pass=True · install_stamp=False
 
 ## Next (this week)
 
-1. Send 1–2 feedback notes (what blocked / cost / quieter) via design-partner issue
-2. python3 scripts/torii.py pilot -- readiness · pilot -- packet
+1. Verify live: `python3 scripts/torii.py quieter -- require-check` (must show live_ok=true)
+2. Send 1–2 feedback notes (what blocked / cost / quieter) via design-partner issue
+3. python3 scripts/torii.py pilot -- readiness · pilot -- packet
 
 ## CLI
 

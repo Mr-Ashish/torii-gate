@@ -609,6 +609,13 @@ def build_week1(root: Path) -> dict[str, Any]:
         "workflow_validate_offline": bool(
             (root / "scripts" / "workflow_as_code.py").is_file()
         ),
+        # Live require-check CLI (partner proves torii/gate is actually required)
+        "require_check_cli": bool(
+            re.search(
+                r"require-check|live_require_check",
+                _read(root / "scripts" / "quieter_over_time.py"),
+            )
+        ),
     }
     # Soft: organic signal (not required for week1_ok — demo seed is enough day-1)
     checks["organic_run_or_demo"] = organic_n >= 1 or demo_n >= 1
@@ -638,6 +645,9 @@ def build_week1(root: Path) -> dict[str, Any]:
         next_steps.append(
             "Require status check **torii/gate** · @torii review on one real PR"
         )
+    next_steps.append(
+        "Verify live: `python3 scripts/torii.py quieter -- require-check` (must show live_ok=true)"
+    )
     next_steps.append(
         "Send 1–2 feedback notes (what blocked / cost / quieter) via design-partner issue"
     )
@@ -712,6 +722,7 @@ def render_week1_md(week: dict[str, Any]) -> str:
         f"| feedback path docs | {'yes' if checks.get('feedback_path_docs') else 'no'} | What to send us |",
         f"| workflow-as-code yaml | {'yes' if checks.get('workflow_as_code_yaml') else 'no'} | Declarative pipeline graph |",
         f"| workflow validate CLI | {'yes' if checks.get('workflow_validate_offline') else 'no'} | Free offline before model $ |",
+        f"| require-check CLI | {'yes' if checks.get('require_check_cli') else 'no'} | Live: is torii/gate required? |",
         f"| organic or demo run | {'yes' if checks.get('organic_run_or_demo') else 'no'} | At least one local pack |",
         "",
         "## Local vault",

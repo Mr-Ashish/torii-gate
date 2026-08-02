@@ -20,6 +20,7 @@ import json
 import os
 import re
 import statistics
+import subprocess
 import sys
 from datetime import datetime, timezone
 from pathlib import Path
@@ -477,6 +478,202 @@ def own_repo_required_check(root: Path) -> dict[str, Any]:
         "one_liner": (
             "install pack → require torii/gate → reviews land in .torii/runs → quieter chart"
         ),
+    }
+
+
+def _gh_json(args: list[str], *, timeout: float = 20) -> tuple[int, Any, str]:
+    """Run gh and parse JSON stdout. Returns (rc, data|None, err)."""
+    try:
+        r = subprocess.run(
+            ["gh", *args],
+            capture_output=True,
+            text=True,
+            timeout=timeout,
+            env={**os.environ},
+        )
+    except FileNotFoundError:
+        return 127, None, "gh_not_installed"
+    except subprocess.TimeoutExpired:
+        return 124, None, "gh_timeout"
+    err = (r.stderr or "").strip()
+    out = (r.stdout or "").strip()
+    if r.returncode != 0:
+        return r.returncode, None, err or out or f"gh_rc={r.returncode}"
+    if not out:
+        return 0, None, "empty"
+    try:
+        return 0, json.loads(out), ""
+    except json.JSONDecodeError:
+        return 0, out, "not_json"
+
+
+def live_require_check(
+    *,
+    repo: str | None = None,
+    branch: str | None = None,
+) -> dict[str, Any]:
+    """Live GitHub check: is **torii/gate** a required status context?
+
+    Partner week-1 path-to-value: after install, prove branch protection (or
+    rulesets) actually requires the merge-authority context — not docs-only.
+    Soft-fail when gh missing / no protection / private-fork limits.
+    """
+    repo = (repo or os.environ.get("REPO") or os.environ.get("GITHUB_REPOSITORY") or "").strip()
+    if not repo:
+        rc, data, err = _gh_json(["repo", "view", "--json", "nameWithOwner,defaultBranchRef"])
+        if rc == 0 and isinstance(data, dict):
+            repo = str(data.get("nameWithOwner") or "").strip()
+            if not branch:
+                dbr = data.get("defaultBranchRef") or {}
+                if isinstance(dbr, dict):
+                    branch = str(dbr.get("name") or "").strip() or None
+        elif rc == 127:
+            return {
+                "feature": FEATURE,
+                "cmd": "require-check",
+                "live_ok": False,
+                "checked": False,
+                "reason": "gh_not_installed",
+                "required_check": "torii/gate",
+                "next": "install GitHub CLI (gh) · auth login · re-run quieter -- require-check",
+                "at": _now(),
+            }
+    if not repo:
+        return {
+            "feature": FEATURE,
+            "cmd": "require-check",
+            "live_ok": False,
+            "checked": False,
+            "reason": "no_repo",
+            "required_check": "torii/gate",
+            "next": "export REPO=owner/name or run inside a gh-linked git checkout",
+            "at": _now(),
+        }
+    if not branch:
+        rc, data, err = _gh_json(
+            ["api", f"repos/{repo}", "--jq", ".default_branch"]
+        )
+        # --jq returns plain string not JSON object
+        if rc == 0 and isinstance(data, str) and data.strip():
+            branch = data.strip().strip('"')
+        else:
+            rc2, data2, _ = _gh_json(["repo", "view", repo, "--json", "defaultBranchRef"])
+            if rc2 == 0 and isinstance(data2, dict):
+                dbr = data2.get("defaultBranchRef") or {}
+                if isinstance(dbr, dict):
+                    branch = str(dbr.get("name") or "") or None
+    branch = branch or "main"
+
+    # Classic branch protection required status checks
+    rc, prot, err = _gh_json(
+        ["api", f"repos/{repo}/branches/{branch}/protection/required_status_checks"]
+    )
+    contexts: list[str] = []
+    checks_ctx: list[str] = []
+    protection_present = False
+    if rc == 0 and isinstance(prot, dict):
+        protection_present = True
+        contexts = [str(c) for c in (prot.get("contexts") or []) if c]
+        # newer API: checks: [{context: ...}]
+        for ch in prot.get("checks") or []:
+            if isinstance(ch, dict) and ch.get("context"):
+                checks_ctx.append(str(ch["context"]))
+        contexts = list(dict.fromkeys(contexts + checks_ctx))
+    elif rc != 0:
+        # 404 = no protection or no required checks object
+        low = (err or "").lower()
+        if "404" in low or "not protected" in low or "branch not protected" in low:
+            protection_present = False
+        else:
+            # try full protection endpoint for message
+            rc_p, full, err_p = _gh_json(
+                ["api", f"repos/{repo}/branches/{branch}/protection"]
+            )
+            if rc_p == 0 and isinstance(full, dict):
+                protection_present = True
+                rsc = full.get("required_status_checks") or {}
+                if isinstance(rsc, dict):
+                    contexts = [str(c) for c in (rsc.get("contexts") or []) if c]
+                    for ch in rsc.get("checks") or []:
+                        if isinstance(ch, dict) and ch.get("context"):
+                            contexts.append(str(ch["context"]))
+                    contexts = list(dict.fromkeys(contexts))
+            else:
+                err = err_p or err
+
+    # Rulesets (org/repo) — best-effort scrape for required status checks
+    ruleset_contexts: list[str] = []
+    rc_r, rules, _ = _gh_json(
+        ["api", f"repos/{repo}/rulesets", "--jq", "."]
+    )
+    if rc_r == 0 and isinstance(rules, list):
+        for rs in rules:
+            if not isinstance(rs, dict):
+                continue
+            # need rules detail
+            rid = rs.get("id")
+            if rid is None:
+                continue
+            rc_d, detail, _ = _gh_json(
+                ["api", f"repos/{repo}/rulesets/{rid}"]
+            )
+            if rc_d != 0 or not isinstance(detail, dict):
+                continue
+            for rule in detail.get("rules") or []:
+                if not isinstance(rule, dict):
+                    continue
+                if str(rule.get("type") or "") != "required_status_checks":
+                    continue
+                params = rule.get("parameters") or {}
+                if not isinstance(params, dict):
+                    continue
+                for ch in params.get("required_status_checks") or []:
+                    if isinstance(ch, dict) and ch.get("context"):
+                        ruleset_contexts.append(str(ch["context"]))
+    all_ctx = list(dict.fromkeys(contexts + ruleset_contexts))
+    has_gate = any(
+        c == "torii/gate" or c.endswith("torii/gate") or c == "torii/gate "
+        for c in all_ctx
+    )
+    # also accept exact match case-insensitive
+    if not has_gate:
+        has_gate = any(c.strip().lower() == "torii/gate" for c in all_ctx)
+
+    live_ok = bool(has_gate)
+    if not protection_present and not ruleset_contexts:
+        reason = "branch_not_protected"
+        next_step = (
+            f"GitHub → {repo} → Settings → Branches → protect `{branch}` → "
+            "require status check **torii/gate** (run one review first if missing from picker)"
+        )
+    elif not has_gate:
+        reason = "torii_gate_not_required"
+        next_step = (
+            f"Add required context **torii/gate** on `{branch}` "
+            f"(current contexts: {all_ctx[:8] or 'none'})"
+        )
+    else:
+        reason = "ok"
+        next_step = "required check torii/gate live · quieter -- status after reviews"
+
+    return {
+        "feature": FEATURE,
+        "cmd": "require-check",
+        "live_ok": live_ok,
+        "checked": True,
+        "repo": repo,
+        "branch": branch,
+        "protection_present": protection_present or bool(ruleset_contexts),
+        "contexts": all_ctx[:20],
+        "has_torii_gate": has_gate,
+        "required_check": "torii/gate",
+        "reason": reason,
+        "next": next_step,
+        "one_liner": (
+            f"require-check live_ok={live_ok} · {repo}@{branch} · "
+            f"contexts={len(all_ctx)} · torii/gate={'yes' if has_gate else 'no'}"
+        ),
+        "at": _now(),
     }
 
 
@@ -992,10 +1189,26 @@ def cmd_status(args: argparse.Namespace) -> int:
         "bootstrap_needed": bootstrap_needed,
         "organic_needed": organic_needed,
         "bootstrap_hint": hint,
+        # Live require-check is explicit: quieter -- require-check (not every status)
+        "require_check_cmd": "quieter -- require-check",
         "at": report.get("at"),
     }
     print(json.dumps(slim, indent=2))
     return 0 if report.get("quieter_ok") else 1
+
+
+def cmd_require_check(args: argparse.Namespace) -> int:
+    """Live: is torii/gate a required status check on default branch?"""
+    repo = getattr(args, "repo", None) or None
+    branch = getattr(args, "branch", None) or None
+    report = live_require_check(repo=repo, branch=branch)
+    print(json.dumps(report, indent=2))
+    # exit 0 when live_ok; exit 1 when checked and missing; exit 2 when not checked
+    if report.get("live_ok"):
+        return 0
+    if report.get("checked"):
+        return 1
+    return 2
 
 
 def _parse_summary_md_file(path: Path) -> dict[str, Any]:
@@ -1404,6 +1617,14 @@ def main(argv: list[str] | None = None) -> int:
     )
     ld.add_argument("--force", action="store_true", help="Overwrite existing landed pack")
     ld.set_defaults(func=cmd_land_dogfood)
+
+    rc = sub.add_parser(
+        "require-check",
+        help="Live GitHub: is torii/gate required on default branch? (partner week-1)",
+    )
+    rc.add_argument("--repo", default=None, help="owner/name (default: gh repo view / REPO)")
+    rc.add_argument("--branch", default=None, help="branch (default: repo default)")
+    rc.set_defaults(func=cmd_require_check)
 
     args = p.parse_args(argv)
     return int(args.func(args))

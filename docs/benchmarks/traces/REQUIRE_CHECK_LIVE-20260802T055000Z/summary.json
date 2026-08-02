@@ -1,0 +1,14 @@
+{
+  "feature": "REQUIRE_CHECK_LIVE",
+  "bit": 3,
+  "result": "BIT3_OK",
+  "repo": "pytorch/pytorch",
+  "pr": 191859,
+  "model": "deepseek/deepseek-v4-pro",
+  "POST_COMMENT": 0,
+  "verdict": "REQUEST_CHANGES",
+  "tool_call_turns": 16,
+  "elapsed_s": 688.1,
+  "modal_app": "ap-xvTjLAi5i6QsFqZf8rLO8C",
+  "at": "2026-08-02T06:01:00Z"
+}
