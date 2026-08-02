@@ -5731,3 +5731,26 @@ surface require_check=live|off on merge; week1 + issue template point at the CLI
 
 ### SHA
 `3d075bbf8dcf867f99bcdaf9224a1db717c3b1e5`
+
+
+## 2026-08-02 — HUB_REQUIRE_GATE_LIVE dogfood
+
+### Papers / posts
+- require_check=off on hub undermined “require torii/gate” partner story.
+- Admin API can set required_status_checks without enforce_admins (safe dogfood).
+
+### Insight
+Highest ROI for dims 1+3+7+11: turn hub main protection on (torii/gate) so
+require-check live_ok=true; ship --enable for design partners to mirror.
+
+### Feature shipped (HUB_REQUIRE_GATE_LIVE)
+- GitHub: Mr-Ashish/torii-gate@main requires torii/gate (strict=false, enforce_admins=false)
+- quieter -- require-check --enable [--yes]
+- status merge: require_check=live
+
+### Metric
+- live_ok=true · contexts=[torii/gate]
+- Live Modal e2e this fire
+
+### SHA
+_(filled after commit)_

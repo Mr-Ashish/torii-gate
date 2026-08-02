@@ -31,6 +31,16 @@ python3 scripts/torii.py status --text                 # merge: getting_quieter 
 **Trajectory honesty (day-2 one screen):** `status --text` shows `delta=` (late − early quiet_score). If `getting_quieter=False`, merge beat adds `next=land-dogfood|organic review` or `next=quieter -- report` — never greenwash a flat/noisy window.
 
 **Required-check honesty:** `quieter -- require-check` uses `gh` against the current repo (or `REPO=owner/name`). Returns `live_ok=true` only when branch protection / rulesets list **`torii/gate`**. Docs-only “require the check” is not enough for design-partner week-1.
+
+**Enable (admin · partner week-1):** dry-run first, then apply:
+
+```bash
+python3 scripts/torii.py quieter -- require-check -- --enable          # dry-run payload
+python3 scripts/torii.py quieter -- require-check -- --enable --yes    # apply (admin)
+python3 scripts/torii.py quieter -- require-check                      # expect live_ok=true
+```
+
+Safe defaults: `enforce_admins=false` · `strict=false` · only required context **`torii/gate`**. Hub **Mr-Ashish/torii-gate@main** dogfoods this (`require_check=live` on `status --text`).
 ## 1. Install on your repo
 
 ```bash

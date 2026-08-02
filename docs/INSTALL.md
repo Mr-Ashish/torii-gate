@@ -52,6 +52,10 @@ GitHub → **Settings → Secrets and variables → Actions**
 python3 scripts/torii.py quieter -- require-check
 # live_ok=true · has_torii_gate=true  →  merge authority is real
 # live_ok=false · reason=branch_not_protected → finish branch protection first
+
+# Admin shortcut (dry-run, then apply):
+python3 scripts/torii.py quieter -- require-check -- --enable
+python3 scripts/torii.py quieter -- require-check -- --enable --yes
 ```
 
 `status --text` also shows `require_check=live|off|missing` on the merge beat when `gh` can see the repo.

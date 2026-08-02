@@ -76,6 +76,15 @@ Required checks for a hard merge gate should use **`torii/gate`**. Optional hard
 
 **Own-repo quieter-over-time:** require **`torii/gate`**, then measure path evidence / tool use / weak APPROVE over dogfood → [`QUIETER.md`](QUIETER.md) · `python3 scripts/torii.py quieter -- report`.
 
+**Live required-check (dogfood):**
+
+```bash
+python3 scripts/torii.py quieter -- require-check              # live_ok?
+python3 scripts/torii.py quieter -- require-check -- --enable --yes   # admin apply
+```
+
+Hub **Mr-Ashish/torii-gate@main** requires context **`torii/gate`** (`status --text` → `require_check=live`).
+
 **Reliability / ops:** fail-closed defaults · **measured** cost/PR · smoke CI → [`ops/RELIABILITY.md`](ops/RELIABILITY.md) · [`ops/DASHBOARD.md`](ops/DASHBOARD.md) · [`ops/cost-pr-dashboard.md`](ops/cost-pr-dashboard.md).
 
 ```bash

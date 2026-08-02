@@ -1197,10 +1197,165 @@ def cmd_status(args: argparse.Namespace) -> int:
     return 0 if report.get("quieter_ok") else 1
 
 
+def enable_require_check(
+    *,
+    repo: str | None = None,
+    branch: str | None = None,
+    dry_run: bool = True,
+    yes: bool = False,
+) -> dict[str, Any]:
+    """Enable branch protection requiring **torii/gate** (admin; partner week-1).
+
+    Safe defaults: enforce_admins=false · strict=false · no PR reviews forced ·
+    no push restrictions. Dry-run by default; pass --yes to apply.
+    """
+    # Resolve repo/branch via same path as live check
+    probe = live_require_check(repo=repo, branch=branch)
+    repo = str(probe.get("repo") or repo or "").strip()
+    branch = str(probe.get("branch") or branch or "main").strip()
+    if not repo:
+        return {
+            "feature": FEATURE,
+            "cmd": "require-check-enable",
+            "enabled": False,
+            "reason": probe.get("reason") or "no_repo",
+            "next": probe.get("next"),
+            "at": _now(),
+        }
+    if probe.get("live_ok"):
+        return {
+            "feature": FEATURE,
+            "cmd": "require-check-enable",
+            "enabled": True,
+            "already": True,
+            "repo": repo,
+            "branch": branch,
+            "required_check": "torii/gate",
+            "one_liner": f"already live · {repo}@{branch} · torii/gate required",
+            "at": _now(),
+        }
+    body = {
+        "required_status_checks": {
+            "strict": False,
+            "contexts": ["torii/gate"],
+        },
+        "enforce_admins": False,
+        "required_pull_request_reviews": None,
+        "restrictions": None,
+        "allow_force_pushes": False,
+        "allow_deletions": False,
+    }
+    if dry_run or not yes:
+        return {
+            "feature": FEATURE,
+            "cmd": "require-check-enable",
+            "enabled": False,
+            "dry_run": True,
+            "would_apply": body,
+            "repo": repo,
+            "branch": branch,
+            "required_check": "torii/gate",
+            "reason": "dry_run" if dry_run or not yes else "pending",
+            "next": (
+                f"re-run with --yes to protect {repo}@{branch} requiring torii/gate "
+                "(needs admin; enforce_admins stays false)"
+            ),
+            "at": _now(),
+        }
+    # Apply via gh api PUT
+    import tempfile
+
+    try:
+        with tempfile.NamedTemporaryFile(
+            "w", suffix=".json", delete=False, encoding="utf-8"
+        ) as tf:
+            json.dump(body, tf)
+            tf_path = tf.name
+        try:
+            r = subprocess.run(
+                [
+                    "gh",
+                    "api",
+                    "--method",
+                    "PUT",
+                    f"repos/{repo}/branches/{branch}/protection",
+                    "-H",
+                    "Accept: application/vnd.github+json",
+                    "--input",
+                    tf_path,
+                ],
+                capture_output=True,
+                text=True,
+                timeout=30,
+            )
+        finally:
+            try:
+                Path(tf_path).unlink(missing_ok=True)
+            except OSError:
+                pass
+    except FileNotFoundError:
+        return {
+            "feature": FEATURE,
+            "cmd": "require-check-enable",
+            "enabled": False,
+            "reason": "gh_not_installed",
+            "at": _now(),
+        }
+    except subprocess.TimeoutExpired:
+        return {
+            "feature": FEATURE,
+            "cmd": "require-check-enable",
+            "enabled": False,
+            "reason": "gh_timeout",
+            "at": _now(),
+        }
+    if r.returncode != 0:
+        return {
+            "feature": FEATURE,
+            "cmd": "require-check-enable",
+            "enabled": False,
+            "reason": "api_error",
+            "error": (r.stderr or r.stdout or "")[-800:],
+            "repo": repo,
+            "branch": branch,
+            "next": "needs admin on repo · or set protection in GitHub Settings → Branches",
+            "at": _now(),
+        }
+    # Re-probe
+    after = live_require_check(repo=repo, branch=branch)
+    return {
+        "feature": FEATURE,
+        "cmd": "require-check-enable",
+        "enabled": bool(after.get("live_ok")),
+        "repo": repo,
+        "branch": branch,
+        "required_check": "torii/gate",
+        "live": after,
+        "one_liner": (
+            f"enabled={after.get('live_ok')} · {repo}@{branch} · torii/gate "
+            f"({'live' if after.get('live_ok') else 'verify manually'})"
+        ),
+        "at": _now(),
+    }
+
+
 def cmd_require_check(args: argparse.Namespace) -> int:
     """Live: is torii/gate a required status check on default branch?"""
     repo = getattr(args, "repo", None) or None
     branch = getattr(args, "branch", None) or None
+    if getattr(args, "enable", False):
+        yes = bool(getattr(args, "yes", False))
+        # dry-run unless --yes (explicit --dry-run also forces dry)
+        dry = (not yes) or bool(getattr(args, "dry_run", False))
+        if yes and not getattr(args, "dry_run", False):
+            dry = False
+        report = enable_require_check(
+            repo=repo, branch=branch, dry_run=dry, yes=yes and not dry
+        )
+        print(json.dumps(report, indent=2))
+        if report.get("enabled") or report.get("already") or report.get("dry_run"):
+            return 0
+        return 1
     report = live_require_check(repo=repo, branch=branch)
     print(json.dumps(report, indent=2))
     # exit 0 when live_ok; exit 1 when checked and missing; exit 2 when not checked
@@ -1624,6 +1779,21 @@ def main(argv: list[str] | None = None) -> int:
     )
     rc.add_argument("--repo", default=None, help="owner/name (default: gh repo view / REPO)")
     rc.add_argument("--branch", default=None, help="branch (default: repo default)")
+    rc.add_argument(
+        "--enable",
+        action="store_true",
+        help="Enable branch protection requiring torii/gate (admin; dry-run unless --yes)",
+    )
+    rc.add_argument(
+        "--yes",
+        action="store_true",
+        help="With --enable: actually apply protection (default is dry-run)",
+    )
+    rc.add_argument(
+        "--dry-run",
+        action="store_true",
+        help="With --enable: show payload only (default when --yes omitted)",
+    )
     rc.set_defaults(func=cmd_require_check)
 
     args = p.parse_args(argv)
