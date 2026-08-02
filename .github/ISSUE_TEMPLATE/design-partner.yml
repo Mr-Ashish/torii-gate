@@ -8,6 +8,9 @@ body:
       value: |
         Thanks for interest in Torii Gate. We are **pre-revenue** and welcome design partners who will install on a **real** repo and require **`torii/gate`**.
 
+        Path after you apply: [INSTALL.md](https://github.com/Mr-Ashish/torii-gate/blob/main/docs/INSTALL.md) → require `torii/gate` → `python3 scripts/torii.py pilot -- week1` → 1–2 feedback notes.
+        Proof (measured dogfood): [PILOT-PROOF.md](https://github.com/Mr-Ashish/torii-gate/blob/main/docs/PILOT-PROOF.md) · landing: https://mr-ashish.github.io/torii-gate/
+
         Please do **not** invent company logos for us — we will not invent yours.
   - type: input
     id: org

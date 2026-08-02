@@ -5821,3 +5821,25 @@ copy-paste with vault TTS/cost/tool-use/TP — no fake logos, refresh before cam
 
 ### SHA
 `f463457529eb03e135a7db874495848639fd7ea8`
+
+## 2026-08-02 — GTM_FOLLOWUP_LIVE apply→install→feedback close
+
+### Papers / posts
+- Outbound packs alone do not close partners; operators need <48h reply + day-3 nudge.
+- Cadence templates beat more status-line polish for GTM conversion.
+
+### Insight
+Highest ROI under cap for dims 11+3: operator follow-up with live TTS/cost after
+apply/star — first response path, week-1 feedback ask, honest not-ICP decline.
+
+### Feature shipped (GTM_FOLLOWUP_LIVE)
+- pilot -- followup → docs/GTM-FOLLOWUP.md (6 templates)
+- GTM.md / PILOT.md / design-partner.yml path + landing CTA note
+- landing hero stats refreshed (~97s · torii/gate live) · Pages rebuild
+
+### Metric
+- templates=6 · fixture 45/45 · readiness 8/8 · require_check=live
+- Live Modal e2e this fire
+
+### SHA
+`(pending commit)`

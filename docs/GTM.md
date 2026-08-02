@@ -22,8 +22,15 @@ Ready-to-send channel copy with **filled live vault metrics** (LinkedIn · X · 
 
 [`docs/GTM-OUTREACH.md`](GTM-OUTREACH.md) · regenerate: `python3 scripts/torii.py pilot -- outreach`
 
+## Operator follow-up (after apply)
+
+Reply packs for **apply → install → feedback** close (first response · day-3 nudge · week-1 ask · star/fork · not-ICP · after require-check):
+
+[`docs/GTM-FOLLOWUP.md`](GTM-FOLLOWUP.md) · regenerate: `python3 scripts/torii.py pilot -- followup`
+
 ```bash
-python3 scripts/torii.py pilot -- outreach   # refresh live numbers into GTM-OUTREACH.md
+python3 scripts/torii.py pilot -- outreach   # outbound channel packs
+python3 scripts/torii.py pilot -- followup   # operator reply cadence
 python3 scripts/torii.py pilot -- packet     # proof one-pager
 ```
 
@@ -120,8 +127,9 @@ first review, quieter vault, and the 1–2 feedback notes we care about.
 ## Operator checklist (us)
 
 - [ ] Refresh `pilot -- outreach` before a campaign (live TTS/cost/TP)  
+- [ ] Refresh `pilot -- followup` before reply wave  
 - [ ] Prefer issue template over private promises  
-- [ ] Respond within a few business days  
+- [ ] Respond within a few business days (template A in GTM-FOLLOWUP)  
 - [ ] After install: point them at `pilot -- week1`  
 - [ ] After first partner: update PILOT.md traction **only with opt-in truth**  
 - [ ] Keep public-eval freshness + cost vault honest (`public-eval -- status` · `ops -- status`)  
@@ -131,9 +139,10 @@ first review, quieter vault, and the 1–2 feedback notes we care about.
 
 ```bash
 python3 scripts/torii.py pilot -- outreach   # live-metrics channel packs
+python3 scripts/torii.py pilot -- followup   # operator reply cadence
 python3 scripts/torii.py pilot -- readiness
 python3 scripts/torii.py pilot -- fixture
 python3 scripts/diff_vs_sast.py fixture   # vs SAST one-pager for objections
 ```
 
-Related: [`PILOT.md`](PILOT.md) · [`GTM-OUTREACH.md`](GTM-OUTREACH.md) · [`DIFF.md`](DIFF.md) · [`INSTALL.md`](INSTALL.md) · [`PRODUCT.md`](../PRODUCT.md).
+Related: [`PILOT.md`](PILOT.md) · [`GTM-OUTREACH.md`](GTM-OUTREACH.md) · [`GTM-FOLLOWUP.md`](GTM-FOLLOWUP.md) · [`DIFF.md`](DIFF.md) · [`INSTALL.md`](INSTALL.md) · [`PRODUCT.md`](../PRODUCT.md).

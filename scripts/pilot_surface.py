@@ -12,10 +12,14 @@ Outreach (`outreach`): ready-to-send channel packs with **live** vault metrics
 (TTS · cost/PR · tool-use · labeled_tp) so a human can copy-paste without
 hand-editing numbers. Never invents customers/logos.
 
+Follow-up (`followup`): operator reply packs after apply/star — first response,
+day-3 nudge, week-1 feedback ask, not-ICP soft decline. Closes path from
+apply → install → feedback without inventing pipeline.
+
 Never invent customers. Fixture fails if pilot docs claim fake revenue/logos.
 
 Commands:
-  fixture | status | report | readiness | packet | week1 | outreach
+  fixture | status | report | readiness | packet | week1 | outreach | followup
 """
 
 from __future__ import annotations
@@ -36,10 +40,12 @@ OUT_REL = Path("docs/PILOT.md")
 PROOF_REL = Path("docs/PILOT-PROOF.md")
 WEEK1_DOC_REL = Path("docs/PARTNER-WEEK1.md")
 OUTREACH_REL = Path("docs/GTM-OUTREACH.md")
+FOLLOWUP_REL = Path("docs/GTM-FOLLOWUP.md")
 REPORT_REL = Path("docs/benchmarks/pilot-surface.md")
 CUSTOMER_PROOF_REL = Path(".torii/pilot-proof.md")
 CUSTOMER_WEEK1_REL = Path(".torii/partner-week1.md")
 CUSTOMER_OUTREACH_REL = Path(".torii/gtm-outreach.md")
+CUSTOMER_FOLLOWUP_REL = Path(".torii/gtm-followup.md")
 
 def _root() -> Path:
     env = (os.environ.get("TORII_ROOT") or "").strip()
@@ -216,6 +222,37 @@ def build_doc_checks(root: Path) -> dict[str, Any]:
         ),
         "pilot_links_outreach": bool(
             re.search(r"GTM-OUTREACH|pilot -- outreach|outreach", pt, re.I)
+        ),
+        # Operator follow-up packs (apply → install → feedback close)
+        "followup_cmd_wired": bool(
+            re.search(r'["\']followup["\']\s*:', _read(root / "scripts" / "pilot_surface.py"))
+            or re.search(r"cmd_followup|def render_followup", _read(root / "scripts" / "pilot_surface.py"))
+        ),
+        "followup_md": (root / FOLLOWUP_REL).is_file()
+        and len(_read(root / FOLLOWUP_REL)) > 400,
+        "followup_honest": bool(
+            re.search(
+                r"0 paid|pre-revenue|Never invent",
+                _read(root / FOLLOWUP_REL),
+                re.I,
+            )
+        )
+        if (root / FOLLOWUP_REL).is_file()
+        else False,
+        "followup_has_templates": bool(
+            re.search(
+                r"first response|day-3|week-1 feedback|not-ICP|star",
+                _read(root / FOLLOWUP_REL),
+                re.I,
+            )
+        )
+        if (root / FOLLOWUP_REL).is_file()
+        else False,
+        "gtm_links_followup": bool(
+            re.search(r"GTM-FOLLOWUP|pilot -- followup|followup", gt, re.I)
+        ),
+        "pilot_links_followup": bool(
+            re.search(r"GTM-FOLLOWUP|pilot -- followup|followup", pt, re.I)
         ),
     }
     checks = {**structure, **{f"honesty_{k}": v for k, v in honesty.items()}}
@@ -544,6 +581,9 @@ def cmd_status(args: argparse.Namespace) -> int:
                 "week1_one_liner": week.get("one_liner"),
                 "outreach_ok": outreach_exists,
                 "outreach_path": str(OUTREACH_REL),
+                "followup_ok": (root / FOLLOWUP_REL).is_file()
+                and len(_read(root / FOLLOWUP_REL)) > 400,
+                "followup_path": str(FOLLOWUP_REL),
                 "one_liner": ready.get("one_liner"),
                 "apply_url": ready.get("apply_url") or week.get("apply_url"),
                 "at": ready.get("at") or _now(),
@@ -1130,6 +1170,278 @@ def cmd_outreach(args: argparse.Namespace) -> int:
     return 0 if out.get("outreach_ok") else 1
 
 
+def build_followup(root: Path, ready: dict[str, Any] | None = None) -> dict[str, Any]:
+    """Operator reply packs after design-partner apply / warm interest."""
+    ready = ready or build_readiness(root)
+    m = ready.get("measured") or {}
+    fmt = _fmt_metrics(m)
+    apply = ready.get("apply_url") or (
+        "https://github.com/Mr-Ashish/torii-gate/issues/new?template=design-partner.yml"
+    )
+    templates = (
+        "first_response",
+        "day3_nudge",
+        "week1_feedback",
+        "star_fork_warm",
+        "not_icp_decline",
+        "after_require_check",
+    )
+    return {
+        "feature": FEATURE,
+        "schema": SCHEMA,
+        "cmd": "followup",
+        "followup_ok": True,
+        "templates": list(templates),
+        "template_n": len(templates),
+        "metrics": fmt,
+        "measured": m,
+        "readiness_ok": ready.get("readiness_ok"),
+        "ready_n": ready.get("ready_n"),
+        "ready_total": ready.get("ready_total"),
+        "apply_url": apply,
+        "landing_url": "https://mr-ashish.github.io/torii-gate/",
+        "install_url": "https://github.com/Mr-Ashish/torii-gate/blob/main/docs/INSTALL.md",
+        "week1_cmd": "python3 scripts/torii.py pilot -- week1",
+        "scorecard_target": "GTM / JTBD (dims 11 + 3)",
+        "dim_lift": "operator follow-up collapses apply→install→feedback time-to-close",
+        "one_liner": (
+            f"Follow-up packs ready · templates={len(templates)} · "
+            f"TTS {fmt['tts']} · cost {fmt['cost']}/PR · 0 paid · human sends"
+        ),
+        "at": _now(),
+    }
+
+
+def render_followup_md(pack: dict[str, Any]) -> str:
+    """Operator-facing reply templates with live vault metrics."""
+    fmt = pack.get("metrics") or {}
+    apply = pack.get("apply_url") or ""
+    landing = pack.get("landing_url") or "https://mr-ashish.github.io/torii-gate/"
+    install = pack.get("install_url") or ""
+    week1 = pack.get("week1_cmd") or "python3 scripts/torii.py pilot -- week1"
+    tts = fmt.get("tts") or "~90s"
+    cost = fmt.get("cost") or "~$0.01"
+    tool = fmt.get("tool") or "high"
+    tp = fmt.get("tp") or "18"
+
+    first = f"""Thanks for applying — happy to design-partner with you (free · pre-revenue · 0 paid).
+
+Path that works:
+1. Install: {install}
+2. Secret: OPENROUTER_API_KEY (or your OpenRouter path)
+3. Branch protection: require status check **torii/gate**
+   · dry-run: `python3 scripts/torii.py quieter -- require-check`
+   · enable (admin): `… quieter -- require-check -- --enable --yes`
+4. On a PR: `@torii review this pr` (or pack workflow)
+5. Week-1 checklist: `{week1}` → docs/PARTNER-WEEK1.md
+
+Our dogfood (own vault, not inventing logos): TTS p50 {tts} · cost/PR {cost} ·
+tool-use {tool} · labeled TP={tp}. Proof: docs/PILOT-PROOF.md · {landing}
+
+What we need back in week 1: 1–2 notes on what blocked / cost / quieter.
+No public logo mention unless you opt in later."""
+
+    day3 = f"""Quick nudge on the design-partner path — no pressure.
+
+If install is stuck, the usual blockers are:
+- missing OPENROUTER_API_KEY
+- torii/gate not yet required on default branch
+- pack workflow not on the PR event
+
+Five-minute path: {install}
+Live check: `python3 scripts/torii.py quieter -- require-check` (want live_ok=true)
+Week-1: `{week1}`
+
+Happy to jump on a 15-min async thread if useful. Still free · 0 paid · MIT."""
+
+    week1_fb = f"""If you got through install + require torii/gate — thank you.
+
+When you have a minute, 1–2 short notes help more than a deck:
+1. What blocked or surprised on first review?
+2. Cost / time-to-signal vs expectation?
+3. Did quieter / gate certificate feel useful?
+
+Optional: paste `python3 scripts/torii.py status --text` (redact secrets).
+We will not list you as a design partner publicly without opt-in.
+
+Dogfood reference: TTS {tts} · {cost}/PR · TP={tp} · {landing}"""
+
+    star = f"""Saw the star/fork — thanks.
+
+If you want a free design partner install on one real repo (require `torii/gate`,
+send 1–2 feedback notes), apply here:
+{apply}
+
+Install: {install}
+Landing: {landing}
+Measured dogfood: {tts} · {cost}/PR · tool-use {tool} · 0 paid customers."""
+
+    not_icp = f"""Thanks for the interest.
+
+Honest take: Torii v1 is a **PR/CI security merge authority** (require `torii/gate`,
+path-evidenced findings) for Platform/AppSec/eng leads — not full ASPM, not a
+red-team agency product, and not a style-comment bot.
+
+If that still fits one real repo, happy to design-partner free:
+{apply} · {install}
+
+If not, no hard feelings — the MIT pack stays open either way. Pre-revenue · 0 paid."""
+
+    after_rc = f"""Nice — `require-check` live_ok on your side is the real merge-authority step.
+
+Next:
+1. `{week1}` and confirm week1_ok
+2. One organic `@torii review` on a real PR
+3. 1–2 feedback notes (blocked / cost / quieter)
+
+We measure quieter + certificates on *your* vault — not ours.
+Reference dogfood: TTS {tts} · {cost}/PR · labeled TP={tp}.
+Questions welcome. Still free · no logo without opt-in."""
+
+    lines = [
+        "<!-- torii-gtm-followup -->",
+        "",
+        "# Torii Gate — operator follow-up (live metrics · ready to reply)",
+        "",
+        f"_Generated: `{pack.get('at')}` · metrics from local dogfood vault · "
+        f"**pre-revenue · 0 paid customers**_",
+        "",
+        "> **Human sends these** after apply / star / install. "
+        "Never invent customers, logos, ARR, or closed deals. "
+        "Respond within a few business days.",
+        "",
+        str(pack.get("one_liner") or ""),
+        "",
+        "## Cadence (us)",
+        "",
+        "| When | Action | Template |",
+        "|------|--------|----------|",
+        "| <48h after apply issue | First response + install path | A |",
+        "| Day 3 no install signal | Soft nudge + blockers | B |",
+        "| After require-check live | Celebrate + week-1 feedback | F |",
+        "| Week 1 post-install | Ask 1–2 feedback notes | C |",
+        "| Star/fork warm lead | Short invite | D |",
+        "| Not ICP | Honest decline + open pack | E |",
+        "",
+        "## Live metrics (paste-ready)",
+        "",
+        "| Metric | Value |",
+        "|--------|------:|",
+        f"| Time-to-signal p50 | **{tts}** |",
+        f"| Cost/PR p50 | **{cost}** |",
+        f"| Tool-use rate | **{tool}** |",
+        f"| Labeled TP | **{tp}** |",
+        "| Paid customers | **0** |",
+        "",
+        f"Apply: {apply}  ",
+        f"Landing: {landing}  ",
+        "Outbound packs: [GTM-OUTREACH.md](GTM-OUTREACH.md) · static: [GTM.md](GTM.md)",
+        "",
+        "---",
+        "",
+        "## A — First response (apply issue)",
+        "",
+        "```text",
+        first.strip(),
+        "```",
+        "",
+        "## B — Day-3 nudge (no install yet)",
+        "",
+        "```text",
+        day3.strip(),
+        "```",
+        "",
+        "## C — Week-1 feedback ask",
+        "",
+        "```text",
+        week1_fb.strip(),
+        "```",
+        "",
+        "## D — Star / fork warm reply",
+        "",
+        "```text",
+        star.strip(),
+        "```",
+        "",
+        "## E — Not-ICP soft decline",
+        "",
+        "```text",
+        not_icp.strip(),
+        "```",
+        "",
+        "## F — After require-check live_ok",
+        "",
+        "```text",
+        after_rc.strip(),
+        "```",
+        "",
+        "---",
+        "",
+        "## Operator rules",
+        "",
+        "1. Never invent customers, logos, ARR, or closed deals",
+        "2. Refresh before a reply wave: `python3 scripts/torii.py pilot -- followup`",
+        "3. Prefer one real repo over fleet pitch",
+        "4. Public “design partner” only with written opt-in",
+        "5. Update PILOT.md traction **only with truth**",
+        "",
+        "## CLI",
+        "",
+        "```bash",
+        "python3 scripts/torii.py pilot -- followup   # refresh this file",
+        "python3 scripts/torii.py pilot -- outreach   # outbound channel packs",
+        "python3 scripts/torii.py pilot -- week1",
+        "python3 scripts/torii.py pilot -- readiness",
+        "```",
+        "",
+        "Related: [PILOT.md](PILOT.md) · [GTM.md](GTM.md) · [GTM-OUTREACH.md](GTM-OUTREACH.md) · [PARTNER-WEEK1.md](PARTNER-WEEK1.md)",
+        "",
+    ]
+    return "\n".join(lines)
+
+
+def write_followup(root: Path, pack: dict[str, Any] | None = None) -> dict[str, Any]:
+    pack = pack or build_followup(root)
+    body = render_followup_md(pack)
+    wrote: list[str] = []
+    hub = root / FOLLOWUP_REL
+    hub.parent.mkdir(parents=True, exist_ok=True)
+    hub.write_text(body, encoding="utf-8")
+    wrote.append(str(FOLLOWUP_REL))
+    cust = root / CUSTOMER_FOLLOWUP_REL
+    cust.parent.mkdir(parents=True, exist_ok=True)
+    try:
+        cust.write_text(body, encoding="utf-8")
+        wrote.append(str(CUSTOMER_FOLLOWUP_REL))
+    except OSError:
+        pass
+    return {
+        "feature": FEATURE,
+        "followup_ok": True,
+        "template_n": pack.get("template_n"),
+        "templates": pack.get("templates"),
+        "wrote": wrote,
+        "bytes": len(body.encode("utf-8")),
+        "metrics": pack.get("metrics"),
+        "readiness_ok": pack.get("readiness_ok"),
+        "ready_n": pack.get("ready_n"),
+        "ready_total": pack.get("ready_total"),
+        "apply_url": pack.get("apply_url"),
+        "one_liner": pack.get("one_liner"),
+        "at": pack.get("at") or _now(),
+    }
+
+
+def cmd_followup(args: argparse.Namespace) -> int:
+    """Write operator follow-up reply packs (docs/GTM-FOLLOWUP.md)."""
+    root = _root()
+    ready = build_readiness(root)
+    pack = build_followup(root, ready)
+    out = write_followup(root, pack)
+    print(json.dumps(out, indent=2))
+    return 0 if out.get("followup_ok") else 1
+
+
 def cmd_report(args: argparse.Namespace) -> int:
     root = _root()
     docs = build_doc_checks(root)
@@ -1217,6 +1529,7 @@ def main(argv: list[str] | None = None) -> int:
         "packet": cmd_packet,
         "week1": cmd_week1,
         "outreach": cmd_outreach,
+        "followup": cmd_followup,
     }
     for name, fn in handlers.items():
         sp = sub.add_parser(name)

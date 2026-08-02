@@ -241,6 +241,7 @@ GROUPS: dict[str, dict[str, Any]] = {
             "pilot -- readiness",
             "pilot -- week1",
             "pilot -- outreach",
+            "pilot -- followup",
             "pilot -- packet",
             "pilot -- fixture",
             "pilot -- report",
