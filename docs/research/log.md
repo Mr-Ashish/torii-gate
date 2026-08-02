@@ -5775,4 +5775,4 @@ tool_turns_gate default on cost/trust. No F-stack — path-to-value for compound
 - fp=2 · tool_gate=on · Live Modal e2e this fire
 
 ### SHA
-_(filled after commit)_
+`3dcaf8f4c36373b27c98d74759c147f0354f1e16`
