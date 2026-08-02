@@ -5706,4 +5706,4 @@ triple_ready`; week1 offline validate path before OpenRouter spend.
 - Live Modal e2e this fire
 
 ### SHA
-_(filled after commit)_
+`6d1cac68e6e3b0710cd830b42b15a0492ca74437`
