@@ -31,11 +31,14 @@ Telemetry is **local vault only** (never federated) — [`enterprise/PRIVACY.md`
 ## Operator path
 
 ```bash
-# Day-2 readiness (JSON: active / pending / dual_gate_safe — no research IDs)
+# Day-2 readiness (JSON: active / pending / dual_gate_safe / buyer_skills — no research IDs)
 python3 scripts/torii.py self-evolve -- status
 
 # Human ledger dump
 python3 scripts/self_evolve.py status --text
+
+# Day-2 one screen: growth beat shows self-evolve active=N buyer=M auto_adopt=off dual_gate_safe=
+python3 scripts/torii.py status --text
 
 # Day-2 one screen includes self-evolution
 python3 scripts/torii.py status --text

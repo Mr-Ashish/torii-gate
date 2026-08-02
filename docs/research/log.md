@@ -5636,3 +5636,28 @@ as organic local packs to prove land-dogfood path.
 
 ### SHA
 `bcdfb7652130c27f544312e04a2b7b7f48689275`
+
+
+## 2026-08-02 — SELF_EVOLVE_BUYER_TOOLS day-2 surface
+
+### Papers / posts
+- Dim 6 lag: self-evolve only showed active/pending — buyers need product skill count + auto_adopt=off.
+- Tool-use rate alone hides depth; mean_turns is the Hermes loop signal.
+- Enterprise isolation was a boolean — short “no cross-tenant path/snippet” lands the promise.
+
+### Insight
+Highest ROI for dims 6+4+9: soft-peek buyer_skills n + auto_adopt default; mean_turns on
+cost/trust; isolation glance on org — no F-stack, pure day-2 cognitive collapse.
+
+### Feature shipped (SELF_EVOLVE_BUYER_TOOLS)
+- growth: self-evolve active=N buyer=M auto_adopt=off dual_gate_safe=
+- cost/trust: mean_turns=
+- org: no cross-tenant path/snippet
+- SELF-EVOLVE.md status --text note
+
+### Metric
+- buyer=8 · auto_adopt=off · mean_turns=6.9 · isolation glance
+- Live Modal e2e this fire
+
+### SHA
+_(filled after commit)_

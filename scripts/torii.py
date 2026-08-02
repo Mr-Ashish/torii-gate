@@ -553,6 +553,7 @@ def build_status_payload(root: Path | None = None) -> dict[str, Any]:
         day2["enterprise_ok"] = ent.get("enterprise_ok")
         day2["tenant_n"] = ent.get("tenant_n")
         day2["isolation_ok"] = ent.get("isolation_ok")
+        day2["isolation_one_liner"] = ent.get("isolation_one_liner")
         day2["federation_privacy_ok"] = ent.get("federation_privacy_ok") or ent.get(
             "federation_all_ok"
         )
@@ -575,6 +576,8 @@ def build_status_payload(root: Path | None = None) -> dict[str, Any]:
             tools.get("measured_n") or tools.get("n") or tools.get("dogfood_n")
         )
         day2["zero_tool_rate"] = tools.get("zero_tool_rate")
+        day2["tool_mean_turns"] = tools.get("mean_turns")
+        day2["tool_quality_score"] = tools.get("quality_score")
     # Pilot path honesty + measured readiness (pre-revenue design partner)
     pilot = _soft_script_json(root, "pilot_surface.py", ["status"], timeout=120)
     if pilot:
@@ -598,6 +601,18 @@ def build_status_payload(root: Path | None = None) -> dict[str, Any]:
         day2["self_evolve_dual_gate_safe"] = sev.get("dual_gate_default_safe")
         day2["self_evolve_dual_gate_hint"] = sev.get("dual_gate_hint")
         day2["self_evolve_one_liner"] = sev.get("one_liner")
+        day2["self_evolve_auto_adopt"] = sev.get("auto_adopt_enabled")
+        buyer = sev.get("buyer_skills") or []
+        if isinstance(buyer, list):
+            day2["self_evolve_buyer_n"] = len(buyer)
+            # short names for glance (no .md, no skill- prefix noise)
+            heads: list[str] = []
+            for s in buyer[:3]:
+                name = str(s).replace(".md", "").replace("skill-", "")
+                heads.append(name)
+            day2["self_evolve_buyer_head"] = heads
+        elif sev.get("buyer_skills_n") is not None:
+            day2["self_evolve_buyer_n"] = sev.get("buyer_skills_n")
     # Diff vs SAST / AI review (buyer differentiation)
     dvs = _soft_script_json(root, "diff_vs_sast.py", ["status"], timeout=20)
     if dvs:
@@ -906,13 +921,19 @@ def render_status_text(payload: dict[str, Any], *, verbose: bool = False) -> str
             if isinstance(ztr, (int, float))
             else ""
         )
+        mt_turns = day2.get("tool_mean_turns")
+        mt_s = (
+            f" · mean_turns={float(mt_turns):.1f}"
+            if isinstance(mt_turns, (int, float))
+            else ""
+        )
         lines.append(
             f"- **Cost & trust:** commercial={day2.get('overall_est')}/10 "
             f"ok={day2.get('commercial_ok')} · cost p50={p50_s}/PR "
             f"honesty={day2.get('cost_honesty_ok')} · "
             f"time-to-signal p50={tts_s} · "
             f"public-eval freshness={day2.get('public_eval_freshness_ok')} · "
-            f"tool-use rate={day2.get('tool_use_rate')}{ztr_s} · "
+            f"tool-use rate={day2.get('tool_use_rate')}{mt_s}{ztr_s} · "
             f"fail_closed={day2.get('fail_closed_safe_defaults')}{lean_s}{pref_s}"
         )
         fed_ok = day2.get("federation_privacy_ok")
@@ -928,10 +949,14 @@ def render_status_text(payload: dict[str, Any], *, verbose: bool = False) -> str
             if mt is not None:
                 parts.append(f"mt_themes={mt}")
             fed_s = " · fed " + " ".join(parts) if parts else ""
+        # Isolation buyer glance (enterprise dim) — short, not the full hermetic essay
+        iso_s = ""
+        if day2.get("isolation_ok"):
+            iso_s = " · no cross-tenant path/snippet"
         lines.append(
             f"- **Org:** enterprise={day2.get('enterprise_ok')} · "
             f"tenants={day2.get('tenant_n')} · isolation={day2.get('isolation_ok')}"
-            f"{fed_s} · "
+            f"{iso_s}{fed_s} · "
             f"install --tenant (optional fleet)"
         )
         wf_lv = day2.get("workflow_level")
@@ -945,6 +970,15 @@ def render_status_text(payload: dict[str, Any], *, verbose: bool = False) -> str
             sev_pend_s = f" pending={sev_pend}"
             if sev_ids and int(sev_pend or 0) > 0:
                 sev_pend_s += f"({','.join(str(x) for x in sev_ids[:2])})"
+        # Buyer skills (product path skills, not research F-stack) + auto-adopt safe default
+        buyer_n = day2.get("self_evolve_buyer_n")
+        buyer_s = f" buyer={buyer_n}" if buyer_n is not None else ""
+        auto_ad = day2.get("self_evolve_auto_adopt")
+        auto_s = ""
+        if auto_ad is False:
+            auto_s = " auto_adopt=off"
+        elif auto_ad is True:
+            auto_s = " auto_adopt=on"
         # Memory buyer: L3 + TP/FP counts + doctor (FP die twice · TP stay sharp)
         mem_doc = day2.get("memory_doctor_pass")
         mtp, mfp = day2.get("memory_tp_n"), day2.get("memory_fp_n")
@@ -990,7 +1024,7 @@ def render_status_text(payload: dict[str, Any], *, verbose: bool = False) -> str
             f"- **Growth:** pilot readiness={day2.get('pilot_readiness_ok')} ({pilot_r})"
             f"{proof_s}{apply_s}{gtm_s}{pages_s}{week1_s} · "
             f"self-evolve active={day2.get('self_evolve_active_n')}"
-            f"{sev_pend_s} "
+            f"{buyer_s}{sev_pend_s}{auto_s} "
             f"dual_gate_safe={day2.get('self_evolve_dual_gate_safe')} · "
             f"vs SAST labeled_tp={day2.get('diff_labeled_tp')} "
             f"(docs/DIFF.md){mem_s}{wf_s}{price_s}"
@@ -1002,6 +1036,9 @@ def render_status_text(payload: dict[str, Any], *, verbose: bool = False) -> str
             lines.append(
                 f"- memory loop: level={ml.get('level')} ready={ml.get('ready')}"
             )
+        heads = day2.get("self_evolve_buyer_head") or []
+        if heads:
+            lines.append(f"- buyer skills (head): {', '.join(str(h) for h in heads)}")
 
     lines += [
         "",
