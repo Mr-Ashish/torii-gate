@@ -77,6 +77,7 @@ Not vanity comment volume. Same criteria the Day-2 CLI scores:
 ```bash
 python3 scripts/torii.py pilot -- readiness   # measured hub readiness
 python3 scripts/torii.py pilot -- week1       # partner install path-to-value checklist
+python3 scripts/torii.py pilot -- outreach    # live-metrics GTM channel packs (human send)
 python3 scripts/torii.py pilot -- status
 python3 scripts/torii.py status --text        # day-2 one screen includes pilot + week1
 ```
@@ -123,6 +124,6 @@ Landing: https://mr-ashish.github.io/torii-gate/ · Install: [`INSTALL.md`](INST
 - [ ] Do not list a logo without written opt-in  
 - [ ] When first paid pilot closes, update this table and commercial cap narrative  
 
-**GTM outreach copy (honest templates):** [`GTM.md`](GTM.md)
+**GTM outreach copy (honest templates):** [`GTM.md`](GTM.md) · **live packs:** [`GTM-OUTREACH.md`](GTM-OUTREACH.md) (`pilot -- outreach`)
 
-Refresh: `python3 scripts/pilot_surface.py fixture` · `python3 scripts/torii.py pilot -- readiness`
+Refresh: `python3 scripts/pilot_surface.py fixture` · `python3 scripts/torii.py pilot -- readiness` · `python3 scripts/torii.py pilot -- outreach`

@@ -2,7 +2,7 @@
 
 # Torii Gate — design partner proof packet
 
-_Generated: `2026-08-02T01:39:05Z` · measured dogfood vault only · **pre-revenue · 0 paid customers**_
+_Generated: `2026-08-02T08:30:17Z` · measured dogfood vault only · **pre-revenue · 0 paid customers**_
 
 > **Never invent** customers, logos, ARR, or closed deals. This page is an auto-refresh of **local measured** metrics for outreach.
 
@@ -23,14 +23,15 @@ Torii Gate is a PR/CI **security merge authority**: agent tools on the diff, pat
 
 | Metric | Value |
 |--------|------:|
-| Time-to-signal p50 | **93s** |
+| Time-to-signal p50 | **97s** |
 | Cost/PR p50 | **$0.014** |
-| Dogfood runs | 77 |
+| Dogfood runs | 89 |
 | Gate certificates (vault n) | 27 |
-| Quieter | ok=True · getting_quieter=True · score=0.7277 |
-| Local vault | organic=1 · demo=2 |
-| Tool-use rate | **88%** · ok=True |
+| Quieter | ok=True · getting_quieter=False · score=0.7274 |
+| Local vault | organic=7 · demo=2 |
+| Tool-use rate | **91%** · ok=True |
 | Public eval | ok=True · fresh=True · model=`deepseek/deepseek-v4-pro` |
+| vs SAST / AI review | labeled_tp=**18** · good_recall=1.0 · weak_fp=0.0 · [DIFF.md](DIFF.md) |
 
 Audit: [cost/PR dashboard](ops/cost-pr-dashboard.md) · [golden-path metrics](benchmarks/golden-path-metrics.md) · [public eval](benchmarks/public-eval/SCORECARD.md) · [quieter](QUIETER.md).
 

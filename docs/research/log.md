@@ -5798,3 +5798,26 @@ Highest ROI for dim 6: soft-peek skill_fitness demoted + skill_attribution free_
 
 ### SHA
 `746a3a4f1272c81a4f858893d41aee63ef5fb7bd`
+
+## 2026-08-02 — GTM_OUTREACH_LIVE design-partner send packs
+
+### Papers / posts
+- Path-to-first-partner was docs-ready (GTM/PILOT/week1) but still required hand-editing metrics before send.
+- Channel breadth (LinkedIn · X · Show HN · objection) beats more compound F-loops for GTM dim.
+
+### Insight
+Highest ROI for dims 11+3 under overall cap: live-metrics channel packs so a human can
+copy-paste with vault TTS/cost/tool-use/TP — no fake logos, refresh before campaign.
+
+### Feature shipped (GTM_OUTREACH_LIVE)
+- pilot -- outreach → docs/GTM-OUTREACH.md (+ .torii/gtm-outreach.md)
+- 7 channels: issue · email · community · LinkedIn · X · Show HN · vs-SAST objection
+- GTM.md / PILOT.md / torii.py wire · fixture checks outreach_*
+- Metrics filled from readiness vault (TTS · cost · tool · labeled_tp · model)
+
+### Metric
+- channels=7 · readiness 8/8 · require_check=live · fixture 39/39
+- Live Modal e2e this fire
+
+### SHA
+`(pending commit)`

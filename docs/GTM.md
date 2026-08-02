@@ -16,6 +16,17 @@ Auto-refreshed measured metrics (TTS · cost/PR · quieter · tool-use · public
 
 [`docs/PILOT-PROOF.md`](PILOT-PROOF.md) · regenerate: `python3 scripts/torii.py pilot -- packet`
 
+## Live outreach packs (send these)
+
+Ready-to-send channel copy with **filled live vault metrics** (LinkedIn · X · Show HN · email · issue nudge · vs-SAST objection). Human sends — never invents logos:
+
+[`docs/GTM-OUTREACH.md`](GTM-OUTREACH.md) · regenerate: `python3 scripts/torii.py pilot -- outreach`
+
+```bash
+python3 scripts/torii.py pilot -- outreach   # refresh live numbers into GTM-OUTREACH.md
+python3 scripts/torii.py pilot -- packet     # proof one-pager
+```
+
 ## Public landing (Pages)
 
 Deployed buyer URL (not monorepo-only): https://mr-ashish.github.io/torii-gate/
@@ -108,6 +119,7 @@ first review, quieter vault, and the 1–2 feedback notes we care about.
 
 ## Operator checklist (us)
 
+- [ ] Refresh `pilot -- outreach` before a campaign (live TTS/cost/TP)  
 - [ ] Prefer issue template over private promises  
 - [ ] Respond within a few business days  
 - [ ] After install: point them at `pilot -- week1`  
@@ -118,9 +130,10 @@ first review, quieter vault, and the 1–2 feedback notes we care about.
 ## CLI
 
 ```bash
+python3 scripts/torii.py pilot -- outreach   # live-metrics channel packs
 python3 scripts/torii.py pilot -- readiness
 python3 scripts/torii.py pilot -- fixture
 python3 scripts/diff_vs_sast.py fixture   # vs SAST one-pager for objections
 ```
 
-Related: [`PILOT.md`](PILOT.md) · [`DIFF.md`](DIFF.md) · [`INSTALL.md`](INSTALL.md) · [`PRODUCT.md`](../PRODUCT.md).
+Related: [`PILOT.md`](PILOT.md) · [`GTM-OUTREACH.md`](GTM-OUTREACH.md) · [`DIFF.md`](DIFF.md) · [`INSTALL.md`](INSTALL.md) · [`PRODUCT.md`](../PRODUCT.md).

@@ -2,7 +2,7 @@
 
 # Torii Gate — design partner week-1 checklist
 
-_Generated: `2026-08-02T05:48:53Z` · measured local install · **not** a sales deck_
+_Generated: `2026-08-02T08:30:17Z` · measured local install · **not** a sales deck_
 
 > Path: install free → require **`torii/gate`** → first review → quieter · 1–2 feedback notes.
 
@@ -30,7 +30,7 @@ Partner week-1 13/13 · core_ok=True · week1_ok=True (install → torii/gate �
 
 ## Local vault
 
-- runs: **7** · demo=2 · organic=5
+- runs: **9** · demo=2 · organic=7
 - quieter_ok=True · getting_quieter=False
 - doctor_pass=True · install_stamp=False
 

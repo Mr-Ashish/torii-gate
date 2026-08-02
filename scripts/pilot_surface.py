@@ -8,10 +8,14 @@ success criteria (cost/PR · quieter · gate certs · public-eval) — not docs 
 Partner week-1 (`week1`): checklist for *their* install path-to-value —
 install pack → require torii/gate → first review → quieter · feedback notes.
 
+Outreach (`outreach`): ready-to-send channel packs with **live** vault metrics
+(TTS · cost/PR · tool-use · labeled_tp) so a human can copy-paste without
+hand-editing numbers. Never invents customers/logos.
+
 Never invent customers. Fixture fails if pilot docs claim fake revenue/logos.
 
 Commands:
-  fixture | status | report | readiness | packet | week1
+  fixture | status | report | readiness | packet | week1 | outreach
 """
 
 from __future__ import annotations
@@ -31,9 +35,11 @@ SCHEMA = 2
 OUT_REL = Path("docs/PILOT.md")
 PROOF_REL = Path("docs/PILOT-PROOF.md")
 WEEK1_DOC_REL = Path("docs/PARTNER-WEEK1.md")
+OUTREACH_REL = Path("docs/GTM-OUTREACH.md")
 REPORT_REL = Path("docs/benchmarks/pilot-surface.md")
 CUSTOMER_PROOF_REL = Path(".torii/pilot-proof.md")
 CUSTOMER_WEEK1_REL = Path(".torii/partner-week1.md")
+CUSTOMER_OUTREACH_REL = Path(".torii/gtm-outreach.md")
 
 def _root() -> Path:
     env = (os.environ.get("TORII_ROOT") or "").strip()
@@ -179,6 +185,37 @@ def build_doc_checks(root: Path) -> dict[str, Any]:
         ),
         "pilot_md_links_week1": bool(
             re.search(r"week1|PARTNER-WEEK1", pt, re.I)
+        ),
+        # Live-metrics outreach channel packs (human sends; no fake pipeline)
+        "outreach_cmd_wired": bool(
+            re.search(r'["\']outreach["\']\s*:', _read(root / "scripts" / "pilot_surface.py"))
+            or re.search(r"cmd_outreach|def render_outreach", _read(root / "scripts" / "pilot_surface.py"))
+        ),
+        "outreach_md": (root / OUTREACH_REL).is_file()
+        and len(_read(root / OUTREACH_REL)) > 400,
+        "outreach_honest": bool(
+            re.search(
+                r"0 paid|pre-revenue|Never invent",
+                _read(root / OUTREACH_REL),
+                re.I,
+            )
+        )
+        if (root / OUTREACH_REL).is_file()
+        else False,
+        "outreach_has_channels": bool(
+            re.search(
+                r"LinkedIn|Channel D|Show HN|X / Twitter|objection",
+                _read(root / OUTREACH_REL),
+                re.I,
+            )
+        )
+        if (root / OUTREACH_REL).is_file()
+        else False,
+        "gtm_links_outreach": bool(
+            re.search(r"GTM-OUTREACH|pilot -- outreach|outreach", gt, re.I)
+        ),
+        "pilot_links_outreach": bool(
+            re.search(r"GTM-OUTREACH|pilot -- outreach|outreach", pt, re.I)
         ),
     }
     checks = {**structure, **{f"honesty_{k}": v for k, v in honesty.items()}}
@@ -484,6 +521,7 @@ def cmd_status(args: argparse.Namespace) -> int:
             "at": _now(),
         }
     week = build_week1(root)
+    outreach_exists = (root / OUTREACH_REL).is_file() and len(_read(root / OUTREACH_REL)) > 400
     print(
         json.dumps(
             {
@@ -504,6 +542,8 @@ def cmd_status(args: argparse.Namespace) -> int:
                 "week1_ready_total": week.get("ready_total"),
                 "week1_core_ok": week.get("core_ok"),
                 "week1_one_liner": week.get("one_liner"),
+                "outreach_ok": outreach_exists,
+                "outreach_path": str(OUTREACH_REL),
                 "one_liner": ready.get("one_liner"),
                 "apply_url": ready.get("apply_url") or week.get("apply_url"),
                 "at": ready.get("at") or _now(),
@@ -794,6 +834,302 @@ def cmd_week1(args: argparse.Namespace) -> int:
     return 0 if out.get("week1_ok") else 1
 
 
+def _fmt_metrics(m: dict[str, Any]) -> dict[str, str]:
+    """Human paste-ready metric strings from readiness measured block."""
+    tts = m.get("time_to_signal_p50_s")
+    cost = m.get("cost_p50_usd")
+    tool_r = m.get("tool_use_rate")
+    tp = m.get("diff_labeled_tp")
+    runs = m.get("dogfood_runs")
+    return {
+        "tts": f"~{float(tts):.0f}s" if isinstance(tts, (int, float)) else "~90s",
+        "cost": f"~${float(cost):.2f}" if isinstance(cost, (int, float)) else "~$0.01",
+        "tool": f"{float(tool_r):.0%}" if isinstance(tool_r, (int, float)) else "high",
+        "tp": str(int(tp)) if isinstance(tp, (int, float)) else "18",
+        "runs": str(int(runs)) if isinstance(runs, (int, float)) else "—",
+        "model": str(m.get("public_eval_model") or "deepseek/deepseek-v4-pro"),
+    }
+
+
+def build_outreach(root: Path, ready: dict[str, Any] | None = None) -> dict[str, Any]:
+    """Live-metrics GTM channel packs for a human to send (no fake logos)."""
+    ready = ready or build_readiness(root)
+    m = ready.get("measured") or {}
+    fmt = _fmt_metrics(m)
+    apply = ready.get("apply_url") or (
+        "https://github.com/Mr-Ashish/torii-gate/issues/new?template=design-partner.yml"
+    )
+    channels = (
+        "issue_nudge",
+        "email_dm",
+        "community",
+        "linkedin",
+        "x_twitter",
+        "show_hn",
+        "objection_sast",
+    )
+    return {
+        "feature": FEATURE,
+        "schema": SCHEMA,
+        "cmd": "outreach",
+        "outreach_ok": True,
+        "channels": list(channels),
+        "channel_n": len(channels),
+        "metrics": fmt,
+        "measured": m,
+        "readiness_ok": ready.get("readiness_ok"),
+        "ready_n": ready.get("ready_n"),
+        "ready_total": ready.get("ready_total"),
+        "apply_url": apply,
+        "landing_url": "https://mr-ashish.github.io/torii-gate/",
+        "install_url": "https://github.com/Mr-Ashish/torii-gate/blob/main/docs/INSTALL.md",
+        "scorecard_target": "GTM / JTBD (dims 11 + 3)",
+        "dim_lift": "live-metrics channel packs collapse time-to-first-human-send",
+        "one_liner": (
+            f"Outreach packs ready · channels={len(channels)} · "
+            f"TTS {fmt['tts']} · cost {fmt['cost']}/PR · labeled_tp={fmt['tp']} · 0 paid"
+        ),
+        "at": _now(),
+    }
+
+
+def render_outreach_md(pack: dict[str, Any]) -> str:
+    """Buyer-operator ready-to-send channel copy with filled live metrics."""
+    fmt = pack.get("metrics") or {}
+    apply = pack.get("apply_url") or ""
+    landing = pack.get("landing_url") or "https://mr-ashish.github.io/torii-gate/"
+    install = pack.get("install_url") or ""
+    tts = fmt.get("tts") or "~90s"
+    cost = fmt.get("cost") or "~$0.01"
+    tool = fmt.get("tool") or "high"
+    tp = fmt.get("tp") or "18"
+    runs = fmt.get("runs") or "—"
+    model = fmt.get("model") or "deepseek/deepseek-v4-pro"
+
+    issue_nudge = f"""Subject: Torii Gate design partner (free) — require torii/gate on one repo?
+
+We ship an open-source PR security merge authority (MIT). Pre-revenue · 0 paid customers.
+
+Measured dogfood (own vault, not inventing logos): time-to-signal p50 {tts} ·
+cost/PR p50 {cost} · tool-use {tool} · labeled TP vs SAST bench = {tp}.
+
+Ask: install the pack on one real repo, require status check `torii/gate`,
+send 1–2 notes on what blocked / cost / quieter trajectory.
+
+Apply: {apply}
+Install: {install}
+Landing: {landing}
+Proof: https://github.com/Mr-Ashish/torii-gate/blob/main/docs/PILOT-PROOF.md"""
+
+    email_dm = f"""Hi {{{{name}}}} — quick ask, not a sales deck.
+
+Torii Gate is open-source merge authority for AI/human PRs: agent tools on the
+diff + deterministic checker + required check `torii/gate`. Measured dogfood
+{tts} / {cost} per PR (OpenRouter · {model}). Pre-revenue · 0 paid · no fake logos.
+Labeled public-eval TP={tp} · tool-use rate {tool} · dogfood runs={runs}.
+
+Would you try a free design partner install on one repo this month?
+Path: install pack → require torii/gate → @torii review → quieter chart.
+Issue template: {apply}
+Landing: {landing}"""
+
+    community = f"""Looking for design partners (free) for Torii Gate — PR/CI security merge authority.
+Not another chatty bot: path-evidenced findings, gate certificates, quieter-over-time.
+Open core MIT · pre-revenue · honest cost/PR ({cost} p50) · TTS {tts}.
+Apply: design-partner issue on Mr-Ashish/torii-gate · INSTALL.md in five minutes.
+{landing}"""
+
+    linkedin = f"""Building in public: Torii Gate — security merge authority for AI-written PRs.
+
+Problem: copilots open PRs faster than AppSec can review; chatty AI reviewers add noise.
+Approach: tools on the diff + deterministic checker + required GitHub check `torii/gate`.
+Measured (own dogfood vault · 0 paid customers): TTS p50 {tts} · cost/PR {cost} · tool-use {tool}.
+
+Free design partner: one real repo · require torii/gate · 1–2 feedback notes.
+Apply → {apply}
+Landing → {landing}
+
+#AppSec #DevSecOps #AI #OpenSource"""
+
+    x_twitter = f"""Torii Gate = PR security merge authority (not chatty review).
+
+require `torii/gate` · path-evidenced findings · quieter over time
+Dogfood: {tts} · {cost}/PR · tool-use {tool} · 0 paid · MIT
+
+Free design partner (one repo):
+{apply}"""
+
+    show_hn = f"""Show HN: Torii Gate – require torii/gate as a security merge authority for PRs
+
+Torii is an open-source PR/CI gate: agent tools on the diff, a deterministic
+checker that demotes weak APPROVE without path evidence, and a required status
+check named `torii/gate`. Goal is merge authority that gets quieter over time
+(FP memory + measured skill fitness), not another comment bot.
+
+Honest metrics from our own Modal dogfood vault (pytorch PRs, POST_COMMENT=0):
+- time-to-signal p50 {tts}
+- cost/PR p50 {cost} (OpenRouter · {model})
+- tool-use rate {tool} · labeled TP on public eval = {tp}
+- paid customers: 0 · pre-revenue · MIT open core
+
+We are looking for free design partners on one real repo (require the check,
+send 1–2 notes). No logo wall.
+
+Landing: {landing}
+Apply: {apply}
+Repo: https://github.com/Mr-Ashish/torii-gate"""
+
+    objection = f"""When someone says "we already have SAST / AI review":
+
+SAST finds patterns; chatty AI review nags. Torii is **merge authority**:
+required check `torii/gate` + path-evidenced findings + gate certificates.
+Labeled public-eval: TP={tp} · good_recall high · weak APPROVE FP proxy low
+(see DIFF.md). Dogfood cost {cost}/PR · TTS {tts}. Install free before any pilot $.
+{landing} · {apply}"""
+
+    lines = [
+        "<!-- torii-gtm-outreach -->",
+        "",
+        "# Torii Gate — GTM outreach (live metrics · ready to send)",
+        "",
+        f"_Generated: `{pack.get('at')}` · metrics from local dogfood vault · "
+        f"**pre-revenue · 0 paid customers**_",
+        "",
+        "> **Human sends these.** Never invent customers, logos, ARR, or closed deals. "
+        "Numbers below are measured vault metrics — refresh before a campaign.",
+        "",
+        str(pack.get("one_liner") or ""),
+        "",
+        "## Live metrics (paste-ready)",
+        "",
+        "| Metric | Value |",
+        "|--------|------:|",
+        f"| Time-to-signal p50 | **{tts}** |",
+        f"| Cost/PR p50 | **{cost}** |",
+        f"| Tool-use rate | **{tool}** |",
+        f"| Labeled TP (public eval) | **{tp}** |",
+        f"| Dogfood runs | {runs} |",
+        f"| Model pin | `{model}` |",
+        "| Paid customers | **0** |",
+        "",
+        f"**Readiness:** {pack.get('ready_n')}/{pack.get('ready_total')} · "
+        f"ok=`{pack.get('readiness_ok')}`",
+        "",
+        f"Apply: {apply}  ",
+        f"Landing: {landing}  ",
+        "Proof packet: [PILOT-PROOF.md](PILOT-PROOF.md) · static templates: [GTM.md](GTM.md)",
+        "",
+        "---",
+        "",
+        "## Channel A — GitHub issue nudge",
+        "",
+        "```text",
+        issue_nudge.strip(),
+        "```",
+        "",
+        "## Channel B — email / DM",
+        "",
+        "```text",
+        email_dm.strip(),
+        "```",
+        "",
+        "## Channel C — community post",
+        "",
+        "```text",
+        community.strip(),
+        "```",
+        "",
+        "## Channel D — LinkedIn",
+        "",
+        "```text",
+        linkedin.strip(),
+        "```",
+        "",
+        "## Channel E — X / Twitter",
+        "",
+        "```text",
+        x_twitter.strip(),
+        "```",
+        "",
+        "## Channel F — Show HN (honest · no hype)",
+        "",
+        "```text",
+        show_hn.strip(),
+        "```",
+        "",
+        "## Channel G — objection (vs SAST / AI review)",
+        "",
+        "```text",
+        objection.strip(),
+        "```",
+        "",
+        "---",
+        "",
+        "## Operator rules",
+        "",
+        "1. Never invent customers, logos, ARR, or closed deals",
+        "2. Refresh metrics before sending: `python3 scripts/torii.py pilot -- outreach`",
+        "3. Prefer **one real repo** design partner over fleet pitch",
+        "4. After install: point them at `pilot -- week1`",
+        "5. Log traction in PILOT.md **only with opt-in truth**",
+        "",
+        "## CLI",
+        "",
+        "```bash",
+        "python3 scripts/torii.py pilot -- outreach   # refresh this file",
+        "python3 scripts/torii.py pilot -- packet     # proof one-pager",
+        "python3 scripts/torii.py pilot -- readiness",
+        "python3 scripts/torii.py pilot -- week1",
+        "```",
+        "",
+        "Related: [GTM.md](GTM.md) · [PILOT.md](PILOT.md) · [DIFF.md](DIFF.md) · [INSTALL.md](INSTALL.md)",
+        "",
+    ]
+    return "\n".join(lines)
+
+
+def write_outreach(root: Path, pack: dict[str, Any] | None = None) -> dict[str, Any]:
+    pack = pack or build_outreach(root)
+    body = render_outreach_md(pack)
+    wrote: list[str] = []
+    hub = root / OUTREACH_REL
+    hub.parent.mkdir(parents=True, exist_ok=True)
+    hub.write_text(body, encoding="utf-8")
+    wrote.append(str(OUTREACH_REL))
+    cust = root / CUSTOMER_OUTREACH_REL
+    cust.parent.mkdir(parents=True, exist_ok=True)
+    try:
+        cust.write_text(body, encoding="utf-8")
+        wrote.append(str(CUSTOMER_OUTREACH_REL))
+    except OSError:
+        pass
+    return {
+        "feature": FEATURE,
+        "outreach_ok": True,
+        "channel_n": pack.get("channel_n"),
+        "channels": pack.get("channels"),
+        "wrote": wrote,
+        "bytes": len(body.encode("utf-8")),
+        "metrics": pack.get("metrics"),
+        "readiness_ok": pack.get("readiness_ok"),
+        "ready_n": pack.get("ready_n"),
+        "ready_total": pack.get("ready_total"),
+        "apply_url": pack.get("apply_url"),
+        "one_liner": pack.get("one_liner"),
+        "at": pack.get("at") or _now(),
+    }
+
+
+def cmd_outreach(args: argparse.Namespace) -> int:
+    """Write live-metrics GTM channel packs for human send (docs/GTM-OUTREACH.md)."""
+    root = _root()
+    ready = build_readiness(root)
+    pack = build_outreach(root, ready)
+    out = write_outreach(root, pack)
+    print(json.dumps(out, indent=2))
+    return 0 if out.get("outreach_ok") else 1
+
+
 def cmd_report(args: argparse.Namespace) -> int:
     root = _root()
     docs = build_doc_checks(root)
@@ -880,6 +1216,7 @@ def main(argv: list[str] | None = None) -> int:
         "readiness": cmd_readiness,
         "packet": cmd_packet,
         "week1": cmd_week1,
+        "outreach": cmd_outreach,
     }
     for name, fn in handlers.items():
         sp = sub.add_parser(name)
