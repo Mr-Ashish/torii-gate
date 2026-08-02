@@ -5661,3 +5661,26 @@ cost/trust; isolation glance on org — no F-stack, pure day-2 cognitive collaps
 
 ### SHA
 `2786a482c809e58e6698487b7998ce2171266bb0`
+
+
+## 2026-08-02 — FED_HEAT_EVAL_AGE merge authority
+
+### Papers / posts
+- Federation status top was recovery-util / skill-prefer noise — AppSec needs attack themes.
+- Public-eval freshness boolean hides age; buyers ask “how fresh is the labeled eval?”
+
+### Insight
+Highest ROI for dims 9+3+12: filter fed top to buyer security heat on merge beat;
+surface age_hours on cost/trust. Federation compounds merge authority without F-stack.
+
+### Feature shipped (FED_HEAT_EVAL_AGE)
+- status merge: fed heat=sql_injection,… (mt=N)
+- status cost/trust: public-eval freshness + age=Nh
+- FEDERATION.md day-2 note
+
+### Metric
+- fed buyer heat filtered · eval age on day-2
+- Live Modal e2e this fire
+
+### SHA
+_(filled after commit)_

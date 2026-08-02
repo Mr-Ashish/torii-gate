@@ -1,0 +1,14 @@
+{
+  "feature": "FED_HEAT_EVAL_AGE",
+  "bit": 3,
+  "result": "BIT3_OK",
+  "repo": "pytorch/pytorch",
+  "pr": 191856,
+  "model": "deepseek/deepseek-v4-pro",
+  "POST_COMMENT": 0,
+  "verdict": "REQUEST_CHANGES",
+  "tool_call_turns": 9,
+  "elapsed_s": 731.8,
+  "modal_app": "ap-rTjiWq9j1ImIXwRs20y6zA",
+  "at": "2026-08-02T05:25:00Z"
+}

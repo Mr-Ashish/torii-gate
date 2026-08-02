@@ -20,6 +20,8 @@ tenant B review ──► same allowlist only                  ──► hub
 
 Federation does **not** replace the required check **`torii/gate`**. It makes the next run **stricter and quieter** when multi-tenant heat agrees.
 
+**Day-2 one screen:** `python3 scripts/torii.py status --text` shows buyer security heat on the **merge** beat (`fed heat=sql_injection,… (mt=N)`) — util/skill research themes are filtered so AppSec sees attack themes, not ops noise.
+
 ## What is shared (allowlist)
 
 | Field | Example |

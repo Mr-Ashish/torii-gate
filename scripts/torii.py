@@ -563,6 +563,24 @@ def build_status_payload(root: Path | None = None) -> dict[str, Any]:
     if fed:
         day2["fed_multi_tenant_themes"] = fed.get("multi_tenant_themes")
         day2["fed_signal_count"] = fed.get("count")
+        # Buyer security heat (skip util/skill research noise on day-2 glance)
+        top = fed.get("top") if isinstance(fed.get("top"), list) else []
+        skip_rx = re.compile(
+            r"util-ok|skill-prefer|recon-warm|recovery|scorecard|refine|"
+            r"federated_skill|\bf\d{2,3}\b",
+            re.I,
+        )
+        buyer_heat: list[str] = []
+        for row in top:
+            if not isinstance(row, dict):
+                continue
+            th = str(row.get("theme") or "").strip()
+            if not th or skip_rx.search(th):
+                continue
+            buyer_heat.append(th)
+            if len(buyer_heat) >= 3:
+                break
+        day2["fed_buyer_heat"] = buyer_heat
     # Tool-use quality (tools-as-code JTBD)
     tools = _soft_script_json(root, "tool_use_quality.py", ["status"], timeout=45)
     if tools:
@@ -666,6 +684,8 @@ def build_status_payload(root: Path | None = None) -> dict[str, Any]:
     if pe:
         day2["public_eval_ok"] = pe.get("public_eval_ok")
         day2["public_eval_freshness_ok"] = pe.get("freshness_ok")
+        day2["public_eval_age_hours"] = pe.get("age_hours")
+        day2["public_eval_labeled_tp"] = pe.get("labeled_tp")
         mid = pe.get("model_id") or ""
         try:
             sys.path.insert(0, str(_scripts_dir(root)))
@@ -896,12 +916,20 @@ def render_status_text(payload: dict[str, Any], *, verbose: bool = False) -> str
                 traj_s = " · next=land-dogfood|organic review"
             else:
                 traj_s = " · next=quieter -- report"
+        # Federation buyer heat on merge (themes only — compounds quieter gate)
+        heat = day2.get("fed_buyer_heat") or []
+        heat_s = ""
+        if heat:
+            heat_s = f" · fed heat={','.join(str(h) for h in heat[:3])}"
+            mt = day2.get("fed_multi_tenant_themes")
+            if mt is not None:
+                heat_s += f" (mt={mt})"
         lines.append(
             f"- **Merge authority:** quieter={day2.get('quieter_ok')} "
             f"(getting_quieter={day2.get('getting_quieter')} score={day2.get('quiet_score_all')}"
             f"{delta_s}{qboot_s}){traj_s} · "
             f"certs n={day2.get('cert_vault_n')} ({cp_s}/PR){cert_extra}"
-            f"{diff_s} · "
+            f"{diff_s}{heat_s} · "
             f"require **torii/gate**"
         )
         tts = day2.get("time_to_signal_p50_s")
@@ -927,12 +955,18 @@ def render_status_text(payload: dict[str, Any], *, verbose: bool = False) -> str
             if isinstance(mt_turns, (int, float))
             else ""
         )
+        age_h = day2.get("public_eval_age_hours")
+        age_s = (
+            f" age={float(age_h):.1f}h"
+            if isinstance(age_h, (int, float))
+            else ""
+        )
         lines.append(
             f"- **Cost & trust:** commercial={day2.get('overall_est')}/10 "
             f"ok={day2.get('commercial_ok')} · cost p50={p50_s}/PR "
             f"honesty={day2.get('cost_honesty_ok')} · "
             f"time-to-signal p50={tts_s} · "
-            f"public-eval freshness={day2.get('public_eval_freshness_ok')} · "
+            f"public-eval freshness={day2.get('public_eval_freshness_ok')}{age_s} · "
             f"tool-use rate={day2.get('tool_use_rate')}{mt_s}{ztr_s} · "
             f"fail_closed={day2.get('fail_closed_safe_defaults')}{lean_s}{pref_s}"
         )

@@ -1,0 +1,13 @@
+{
+  "repo": "pytorch/pytorch",
+  "pr": "191854",
+  "verdict": "APPROVE",
+  "elapsed_s": 776.4,
+  "tool_call_turns": 7,
+  "host": "modal",
+  "model": "deepseek/deepseek-v4-pro",
+  "demo": false,
+  "source": "land-dogfood",
+  "hub_trace": "SELF_EVOLVE_BUYER_TOOLS-20260802T045700Z",
+  "landed_at": "2026-08-02T05:13:07Z"
+}

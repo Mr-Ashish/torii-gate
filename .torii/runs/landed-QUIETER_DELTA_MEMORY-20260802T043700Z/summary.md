@@ -1,0 +1,10 @@
+**Verdict:** REQUEST_CHANGES
+tool_call_turns: 12
+path_evidence: —
+repo: pytorch/pytorch
+PR: 191857
+elapsed_s: 925.0
+cost_usd: —
+demo: false
+source: land-dogfood
+hub_trace: QUIETER_DELTA_MEMORY-20260802T043700Z
