@@ -5611,4 +5611,4 @@ PARTNER-WEEK1.md — collapses cognitive load without F-stack.
 - Live Modal e2e this fire
 
 ### SHA
-_(filled after commit)_
+`e525ac57e19ce8c25212c6ce9fe8e40d4877234e`
