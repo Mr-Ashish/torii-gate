@@ -5588,3 +5588,27 @@ build_landing_site + pilot fixtures so Hub71 detours cannot regress.
 
 ### SHA
 `9b8f5e5b38a6c9053f5eab0b92bb3ceb0c60686f`
+
+
+## 2026-08-02 — PARTNER_WEEK1 path-to-value checklist
+
+### Papers / posts
+- Design partners stall after install: unclear “am I done week 1?”
+- PILOT.md “you give” criteria were prose-only; need measured local CLI.
+
+### Insight
+Highest ROI for dims 3+7+12: one `pilot -- week1` command that scores their
+pack (workflow · torii/gate · secret · vault · quieter · feedback) and writes
+PARTNER-WEEK1.md — collapses cognitive load without F-stack.
+
+### Feature shipped (PARTNER_WEEK1)
+- pilot_surface week1 · docs/PARTNER-WEEK1.md · .torii/partner-week1.md
+- growth beat: week1=True (n/total)
+- PILOT.md + GTM.md wire week1 command
+
+### Metric
+- week1 10/10 · core_ok=True · fixture 33/33
+- Live Modal e2e this fire
+
+### SHA
+_(filled after commit)_

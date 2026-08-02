@@ -75,10 +75,22 @@ Not vanity comment volume. Same criteria the Day-2 CLI scores:
 | Public eval freshness (hub) | `python3 scripts/torii.py public-eval -- status` |
 
 ```bash
-python3 scripts/torii.py pilot -- readiness   # measured checklist
+python3 scripts/torii.py pilot -- readiness   # measured hub readiness
+python3 scripts/torii.py pilot -- week1       # partner install path-to-value checklist
 python3 scripts/torii.py pilot -- status
-python3 scripts/torii.py status --text        # day-2 one screen includes pilot
+python3 scripts/torii.py status --text        # day-2 one screen includes pilot + week1
 ```
+
+### Partner week-1 (your install)
+
+After you install on a real repo, run the week-1 checklist — it scores **your** pack path (workflow · `torii/gate` docs · secret · vault · quieter · feedback), not vanity metrics:
+
+```bash
+python3 scripts/torii.py pilot -- week1
+# → docs/PARTNER-WEEK1.md · .torii/partner-week1.md
+```
+
+Full write-up: [`PARTNER-WEEK1.md`](PARTNER-WEEK1.md).
 
 ## Path to value (before any money)
 
@@ -86,6 +98,7 @@ python3 scripts/torii.py status --text        # day-2 one screen includes pilot
 ./scripts/install-torii.sh --minimal /path/to/your-app
 # OPENROUTER_API_KEY · require torii/gate (job summary teaches this)
 # @torii review this pr
+python3 scripts/torii.py pilot -- week1
 python3 scripts/torii.py status --text
 python3 scripts/torii.py quieter -- status
 ```

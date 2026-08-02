@@ -95,10 +95,22 @@ python3 scripts/torii.py quieter -- status
 python3 scripts/torii.py pilot -- readiness
 ```
 
+## Partner week-1 (send after they install)
+
+```text
+Once the pack is on your repo, run:
+
+  python3 scripts/torii.py pilot -- week1
+
+That writes docs/PARTNER-WEEK1.md — checklist for require torii/gate,
+first review, quieter vault, and the 1–2 feedback notes we care about.
+```
+
 ## Operator checklist (us)
 
 - [ ] Prefer issue template over private promises  
 - [ ] Respond within a few business days  
+- [ ] After install: point them at `pilot -- week1`  
 - [ ] After first partner: update PILOT.md traction **only with opt-in truth**  
 - [ ] Keep public-eval freshness + cost vault honest (`public-eval -- status` · `ops -- status`)  
 - [ ] Do not list logos without written opt-in  

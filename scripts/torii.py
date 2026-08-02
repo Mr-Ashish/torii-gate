@@ -237,6 +237,8 @@ GROUPS: dict[str, dict[str, Any]] = {
         "examples": [
             "pilot -- status",
             "pilot -- readiness",
+            "pilot -- week1",
+            "pilot -- packet",
             "pilot -- fixture",
             "pilot -- report",
         ],
@@ -570,6 +572,10 @@ def build_status_payload(root: Path | None = None) -> dict[str, Any]:
         day2["pilot_ready_total"] = pilot.get("ready_total")
         day2["pilot_proof_packet_ok"] = pilot.get("proof_packet_ok")
         day2["pilot_apply_url"] = pilot.get("apply_url")
+        day2["pilot_week1_ok"] = pilot.get("week1_ok")
+        day2["pilot_week1_ready_n"] = pilot.get("week1_ready_n")
+        day2["pilot_week1_ready_total"] = pilot.get("week1_ready_total")
+        day2["pilot_week1_core_ok"] = pilot.get("week1_core_ok")
     # Self-evolution day-2 (dual-gate adopt — buyer language, no F-IDs)
     sev = _soft_script_json(root, "self_evolve.py", ["status"], timeout=30)
     if sev:
@@ -936,9 +942,17 @@ def render_status_text(payload: dict[str, Any], *, verbose: bool = False) -> str
             gtm_s = " · gtm=docs/GTM.md"
         # Deployed landing (GitHub Pages) — primary buyer URL with partner CTAs
         pages_s = " · pages=mr-ashish.github.io/torii-gate"
+        # Partner week-1 path-to-value checklist
+        w1n, w1t = day2.get("pilot_week1_ready_n"), day2.get("pilot_week1_ready_total")
+        week1_s = ""
+        if day2.get("pilot_week1_ok") is not None:
+            if w1n is not None and w1t is not None:
+                week1_s = f" · week1={day2.get('pilot_week1_ok')} ({w1n}/{w1t})"
+            else:
+                week1_s = f" · week1={day2.get('pilot_week1_ok')}"
         lines.append(
             f"- **Growth:** pilot readiness={day2.get('pilot_readiness_ok')} ({pilot_r})"
-            f"{proof_s}{apply_s}{gtm_s}{pages_s} · "
+            f"{proof_s}{apply_s}{gtm_s}{pages_s}{week1_s} · "
             f"self-evolve active={day2.get('self_evolve_active_n')}"
             f"{sev_pend_s} "
             f"dual_gate_safe={day2.get('self_evolve_dual_gate_safe')} · "
@@ -957,7 +971,7 @@ def render_status_text(payload: dict[str, Any], *, verbose: bool = False) -> str
         "",
         "## Next",
         "1. Require status check **torii/gate** (merge authority)",
-        "2. `python3 scripts/torii.py doctor` · `quieter -- status` · `pilot -- readiness`",
+        "2. `python3 scripts/torii.py doctor` · `quieter -- status` · `pilot -- week1` · `pilot -- readiness`",
         "3. Prefer model `deepseek/deepseek-v4-pro` · GTM templates: docs/GTM.md · Pages: https://mr-ashish.github.io/torii-gate/",
         "",
         "Detail: `status --verbose` · JSON: `status --json` · help: `python3 scripts/torii.py help`",

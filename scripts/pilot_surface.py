@@ -5,10 +5,13 @@ Buyer gap: pricing + apply path exist, but operators need a Day-2 CLI that
 answers "are we ready to run a design-partner / paid pilot?" with **measured**
 success criteria (cost/PR · quieter · gate certs · public-eval) — not docs only.
 
+Partner week-1 (`week1`): checklist for *their* install path-to-value —
+install pack → require torii/gate → first review → quieter · feedback notes.
+
 Never invent customers. Fixture fails if pilot docs claim fake revenue/logos.
 
 Commands:
-  fixture | status | report | readiness | packet
+  fixture | status | report | readiness | packet | week1
 """
 
 from __future__ import annotations
@@ -27,8 +30,10 @@ FEATURE = "PILOT"
 SCHEMA = 2
 OUT_REL = Path("docs/PILOT.md")
 PROOF_REL = Path("docs/PILOT-PROOF.md")
+WEEK1_DOC_REL = Path("docs/PARTNER-WEEK1.md")
 REPORT_REL = Path("docs/benchmarks/pilot-surface.md")
 CUSTOMER_PROOF_REL = Path(".torii/pilot-proof.md")
+CUSTOMER_WEEK1_REL = Path(".torii/partner-week1.md")
 
 def _root() -> Path:
     env = (os.environ.get("TORII_ROOT") or "").strip()
@@ -167,6 +172,14 @@ def build_doc_checks(root: Path) -> dict[str, Any]:
         else False,
         "gtm_links_proof": bool(re.search(r"PILOT-PROOF\.md", gt)),
         "pilot_links_proof": bool(re.search(r"PILOT-PROOF\.md", pt)),
+        # Partner week-1 checklist CLI (path-to-value on their install)
+        "week1_cmd_wired": bool(
+            re.search(r'["\']week1["\']\s*:', _read(root / "scripts" / "pilot_surface.py"))
+            or re.search(r"cmd_week1|week1", _read(root / "scripts" / "pilot_surface.py"))
+        ),
+        "pilot_md_links_week1": bool(
+            re.search(r"week1|PARTNER-WEEK1", pt, re.I)
+        ),
     }
     checks = {**structure, **{f"honesty_{k}": v for k, v in honesty.items()}}
     return {
@@ -470,6 +483,7 @@ def cmd_status(args: argparse.Namespace) -> int:
             "ready_total": docs.get("total"),
             "at": _now(),
         }
+    week = build_week1(root)
     print(
         json.dumps(
             {
@@ -485,8 +499,13 @@ def cmd_status(args: argparse.Namespace) -> int:
                 "measured": ready.get("measured"),
                 "proof_packet_ok": ready.get("proof_packet_ok"),
                 "proof_packet_path": ready.get("proof_packet_path") or str(PROOF_REL),
+                "week1_ok": week.get("week1_ok"),
+                "week1_ready_n": week.get("ready_n"),
+                "week1_ready_total": week.get("ready_total"),
+                "week1_core_ok": week.get("core_ok"),
+                "week1_one_liner": week.get("one_liner"),
                 "one_liner": ready.get("one_liner"),
-                "apply_url": ready.get("apply_url"),
+                "apply_url": ready.get("apply_url") or week.get("apply_url"),
                 "at": ready.get("at") or _now(),
             },
             indent=2,
@@ -508,6 +527,250 @@ def cmd_packet(args: argparse.Namespace) -> int:
     out = write_proof_packet(root, ready)
     print(json.dumps(out, indent=2))
     return 0 if out.get("packet_ok") else 1
+
+
+def build_week1(root: Path) -> dict[str, Any]:
+    """Partner week-1 path-to-value checklist (customer install · not hub GTM).
+
+    Maps PILOT.md "you give" + path-to-value into measured local checks so a
+    design partner knows what to finish in the first week.
+    """
+    wf_dir = root / ".github" / "workflows"
+    wf_bodies = []
+    if wf_dir.is_dir():
+        for p in sorted(wf_dir.glob("*.yml")) + sorted(wf_dir.glob("*.yaml")):
+            wf_bodies.append(_read(p))
+    wf_text = "\n".join(wf_bodies)
+    pack_caller = root / "pack" / "torii-pr-review-caller.yml"
+    stamp = root / ".torii-install-stamp"
+    env_ex = root / ".env.example"
+    install_md = root / "docs" / "INSTALL.md"
+    gate_md = root / "docs" / "GATE.md"
+    quieter_md = root / "docs" / "QUIETER.md"
+    pilot_md = root / OUT_REL
+    runs = root / ".torii" / "runs"
+    run_dirs = [p for p in runs.iterdir() if p.is_dir()] if runs.is_dir() else []
+    organic_n = 0
+    demo_n = 0
+    for d in run_dirs:
+        name = d.name.lower()
+        meta = _read(d / "meta.json")
+        if "demo" in name or re.search(r'"demo"\s*:\s*true', meta, re.I):
+            demo_n += 1
+        else:
+            organic_n += 1
+
+    quieter = _soft_json(root, "quieter_over_time.py", ["status"], timeout=40)
+    # Light health surface (avoid re-running full doctor inside status peeks)
+    smoke = (root / "scripts" / "smoke-torii-gate.sh").is_file()
+    torii_cli = (root / "scripts" / "torii.py").is_file()
+    doctor_pass = smoke and torii_cli
+
+    checks: dict[str, bool] = {
+        "workflow_torii_present": bool(
+            re.search(r"torii", wf_text, re.I)
+            or pack_caller.is_file()
+            or (
+                (root / ".github" / "workflows").is_dir()
+                and any((root / ".github" / "workflows").glob("torii*.yml"))
+            )
+        ),
+        "workflow_mentions_gate": "torii/gate" in wf_text
+        or "torii/gate" in _read(pack_caller)
+        or (gate_md.is_file() and "torii/gate" in _read(gate_md)),
+        "install_docs": install_md.is_file()
+        and "torii/gate" in _read(install_md)
+        and "install-torii" in _read(install_md),
+        "required_check_docs": (
+            "torii/gate" in _read(gate_md)
+            or "Branch protection" in _read(install_md)
+            or "branch protection" in _read(install_md).lower()
+        ),
+        "openrouter_secret_docs": bool(
+            re.search(r"OPENROUTER_API_KEY", _read(env_ex) + _read(install_md))
+        ),
+        "runs_vault_seeded": runs.is_dir() and len(run_dirs) >= 1,
+        "quieter_surface": bool(quieter.get("quieter_ok"))
+        or quieter_md.is_file()
+        and "torii/gate" in _read(quieter_md),
+        "doctor_or_smoke": doctor_pass or smoke,
+        "feedback_path_docs": bool(
+            re.search(
+                r"feedback|1–2|1-2 short|what blocked",
+                _read(pilot_md),
+                re.I,
+            )
+        ),
+    }
+    # Soft: organic signal (not required for week1_ok — demo seed is enough day-1)
+    checks["organic_run_or_demo"] = organic_n >= 1 or demo_n >= 1
+
+    ready_n = sum(1 for v in checks.values() if v)
+    total = len(checks)
+    # Pass bar: core install path (not all optional organic)
+    core_keys = (
+        "workflow_torii_present",
+        "workflow_mentions_gate",
+        "install_docs",
+        "required_check_docs",
+        "openrouter_secret_docs",
+        "runs_vault_seeded",
+        "feedback_path_docs",
+    )
+    core_ok = all(checks.get(k) for k in core_keys)
+    week1_ok = core_ok and ready_n >= 8
+    week1_full = all(checks.values())
+
+    next_steps: list[str] = []
+    if not checks.get("workflow_torii_present"):
+        next_steps.append("Install pack: ./scripts/install-torii.sh --minimal /path/to/repo")
+    if not checks.get("runs_vault_seeded"):
+        next_steps.append("Seed quieter vault: python3 scripts/torii.py quieter -- bootstrap --demo")
+    if organic_n < 1:
+        next_steps.append(
+            "Require status check **torii/gate** · @torii review on one real PR"
+        )
+    next_steps.append(
+        "Send 1–2 feedback notes (what blocked / cost / quieter) via design-partner issue"
+    )
+    next_steps.append("python3 scripts/torii.py pilot -- readiness · pilot -- packet")
+
+    return {
+        "feature": FEATURE,
+        "schema": SCHEMA,
+        "cmd": "week1",
+        "week1_ok": week1_ok,
+        "week1_full_ok": week1_full,
+        "ready_n": ready_n,
+        "ready_total": total,
+        "core_ok": core_ok,
+        "checks": checks,
+        "measured": {
+            "local_runs_n": len(run_dirs),
+            "local_demo_n": demo_n,
+            "local_organic_n": organic_n,
+            "quieter_ok": quieter.get("quieter_ok"),
+            "getting_quieter": quieter.get("getting_quieter"),
+            "doctor_pass": doctor_pass,
+            "install_stamp": stamp.is_file(),
+        },
+        "next_steps": next_steps,
+        "apply_url": (
+            "https://github.com/Mr-Ashish/torii-gate/issues/new"
+            "?template=design-partner.yml"
+        ),
+        "scorecard_target": "JTBD / install / GTM (dims 3 + 7 + 11)",
+        "dim_lift": "partner week-1 checklist collapses path-to-value cognitive load",
+        "one_liner": (
+            f"Partner week-1 {ready_n}/{total} · core_ok={core_ok} · "
+            f"week1_ok={week1_ok} (install → torii/gate → review → feedback)"
+        ),
+        "at": _now(),
+    }
+
+
+def render_week1_md(week: dict[str, Any]) -> str:
+    """Buyer-facing week-1 checklist markdown."""
+    checks = week.get("checks") or {}
+    m = week.get("measured") or {}
+    steps = week.get("next_steps") or []
+    lines = [
+        "<!-- torii-partner-week1 -->",
+        "",
+        "# Torii Gate — design partner week-1 checklist",
+        "",
+        f"_Generated: `{week.get('at')}` · measured local install · **not** a sales deck_",
+        "",
+        "> Path: install free → require **`torii/gate`** → first review → quieter · 1–2 feedback notes.",
+        "",
+        f"**Status:** {week.get('ready_n')}/{week.get('ready_total')} · "
+        f"core_ok=`{week.get('core_ok')}` · week1_ok=`{week.get('week1_ok')}` · "
+        f"full=`{week.get('week1_full_ok')}`",
+        "",
+        str(week.get("one_liner") or ""),
+        "",
+        "## Checklist",
+        "",
+        "| Check | Pass | Why it matters |",
+        "|-------|:----:|----------------|",
+        f"| workflow present | {'yes' if checks.get('workflow_torii_present') else 'no'} | Pack can run on PRs |",
+        f"| mentions `torii/gate` | {'yes' if checks.get('workflow_mentions_gate') else 'no'} | Required check name exists |",
+        f"| install docs | {'yes' if checks.get('install_docs') else 'no'} | 5-minute path documented |",
+        f"| required-check docs | {'yes' if checks.get('required_check_docs') else 'no'} | Branch protection how-to |",
+        f"| OPENROUTER secret docs | {'yes' if checks.get('openrouter_secret_docs') else 'no'} | Model key path |",
+        f"| runs vault seeded | {'yes' if checks.get('runs_vault_seeded') else 'no'} | Quieter chart has data |",
+        f"| quieter surface | {'yes' if checks.get('quieter_surface') else 'no'} | Own-repo quieter path |",
+        f"| doctor or smoke | {'yes' if checks.get('doctor_or_smoke') else 'no'} | Day-2 health |",
+        f"| feedback path docs | {'yes' if checks.get('feedback_path_docs') else 'no'} | What to send us |",
+        f"| organic or demo run | {'yes' if checks.get('organic_run_or_demo') else 'no'} | At least one local pack |",
+        "",
+        "## Local vault",
+        "",
+        f"- runs: **{m.get('local_runs_n')}** · demo={m.get('local_demo_n')} · organic={m.get('local_organic_n')}",
+        f"- quieter_ok={m.get('quieter_ok')} · getting_quieter={m.get('getting_quieter')}",
+        f"- doctor_pass={m.get('doctor_pass')} · install_stamp={m.get('install_stamp')}",
+        "",
+        "## Next (this week)",
+        "",
+    ]
+    for i, s in enumerate(steps, 1):
+        lines.append(f"{i}. {s}")
+    lines += [
+        "",
+        "## CLI",
+        "",
+        "```bash",
+        "python3 scripts/torii.py pilot -- week1",
+        "python3 scripts/torii.py pilot -- readiness",
+        "python3 scripts/torii.py quieter -- status",
+        "python3 scripts/torii.py status --text",
+        "```",
+        "",
+        f"Apply / feedback: {week.get('apply_url')}",
+        "",
+        "Docs: [PILOT.md](PILOT.md) · [INSTALL.md](INSTALL.md) · [GTM.md](GTM.md) · [QUIETER.md](QUIETER.md)",
+        "",
+    ]
+    return "\n".join(lines)
+
+
+def write_week1(root: Path, week: dict[str, Any] | None = None) -> dict[str, Any]:
+    week = week or build_week1(root)
+    body = render_week1_md(week)
+    wrote: list[str] = []
+    hub = root / WEEK1_DOC_REL
+    hub.parent.mkdir(parents=True, exist_ok=True)
+    hub.write_text(body, encoding="utf-8")
+    wrote.append(str(WEEK1_DOC_REL))
+    cust = root / CUSTOMER_WEEK1_REL
+    if (root / ".torii").is_dir() or True:
+        cust.parent.mkdir(parents=True, exist_ok=True)
+        cust.write_text(body, encoding="utf-8")
+        wrote.append(str(CUSTOMER_WEEK1_REL))
+    return {
+        "feature": FEATURE,
+        "week1_ok": week.get("week1_ok"),
+        "week1_full_ok": week.get("week1_full_ok"),
+        "ready_n": week.get("ready_n"),
+        "ready_total": week.get("ready_total"),
+        "core_ok": week.get("core_ok"),
+        "wrote": wrote,
+        "bytes": len(body.encode("utf-8")),
+        "checks": week.get("checks"),
+        "measured": week.get("measured"),
+        "next_steps": week.get("next_steps"),
+        "one_liner": week.get("one_liner"),
+        "apply_url": week.get("apply_url"),
+        "at": week.get("at") or _now(),
+    }
+
+
+def cmd_week1(args: argparse.Namespace) -> int:
+    """Partner week-1 path-to-value checklist + write docs/PARTNER-WEEK1.md."""
+    root = _root()
+    out = write_week1(root)
+    print(json.dumps(out, indent=2))
+    return 0 if out.get("week1_ok") else 1
 
 
 def cmd_report(args: argparse.Namespace) -> int:
@@ -595,6 +858,7 @@ def main(argv: list[str] | None = None) -> int:
         "report": cmd_report,
         "readiness": cmd_readiness,
         "packet": cmd_packet,
+        "week1": cmd_week1,
     }
     for name, fn in handlers.items():
         sp = sub.add_parser(name)
