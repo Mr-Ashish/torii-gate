@@ -5683,4 +5683,4 @@ surface age_hours on cost/trust. Federation compounds merge authority without F-
 - Live Modal e2e this fire
 
 ### SHA
-_(filled after commit)_
+`5cd805d3a9431f24016bf387201ebe10a774255f`
