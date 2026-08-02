@@ -1,0 +1,13 @@
+{
+  "fire": "MERGE_DIFF_VS_SAST",
+  "tag": "merge-diff-vs-sast-20260802T0306Z",
+  "repo": "pytorch/pytorch",
+  "pr": 191852,
+  "model": "deepseek/deepseek-v4-pro",
+  "post_comment": 0,
+  "verdict": "APPROVE",
+  "tool_call_turns": 9,
+  "elapsed_s": 989.9,
+  "bit3_ok": true,
+  "modal_app": "ap-xCujP7DHdOkepETxWTGHgq"
+}

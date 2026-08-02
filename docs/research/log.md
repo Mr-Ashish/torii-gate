@@ -5519,3 +5519,25 @@ reason_codes_head + path_p50 on merge beat.
 ### SHA
 `ea71b1975c39e55a6eb174271185d999384c71dd`
 
+
+## 2026-08-02 — MERGE_DIFF_VS_SAST merge-beat differentiation
+
+### Papers / posts
+- Buyer objection path: SAST floods + AI review chat vs path-grounded merge gate (docs/DIFF.md).
+- Surface measured labeled_tp / good_recall / weak_fp on the same line as quieter+certs.
+
+### Insight
+Highest ROI for dims 2+3+12: move vs-SAST metrics from growth-only peek onto merge authority
+beat so design partners see differentiation without a second doc open.
+
+### Feature shipped (MERGE_DIFF_VS_SAST)
+- day2: diff_good_recall · diff_weak_fp_proxy · diff_one_liner
+- merge beat: · vs SAST labeled_tp=N good_recall=X weak_fp=Y
+- pilot packet refresh (tool-use 90%)
+
+### Metric
+- merge: vs SAST labeled_tp=18 good_recall=1.00 weak_fp=0.00
+- Live Modal e2e this fire
+
+### SHA
+`PENDING`

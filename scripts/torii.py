@@ -584,7 +584,11 @@ def build_status_payload(root: Path | None = None) -> dict[str, Any]:
     dvs = _soft_script_json(root, "diff_vs_sast.py", ["status"], timeout=20)
     if dvs:
         day2["diff_vs_sast_ok"] = dvs.get("diff_vs_sast_ok")
-        day2["diff_labeled_tp"] = (dvs.get("measured") or {}).get("labeled_tp")
+        m = dvs.get("measured") if isinstance(dvs.get("measured"), dict) else {}
+        day2["diff_labeled_tp"] = m.get("labeled_tp")
+        day2["diff_good_recall"] = m.get("good_recall_mean")
+        day2["diff_weak_fp_proxy"] = m.get("weak_recall_mean")
+        day2["diff_one_liner"] = dvs.get("one_liner")
     # Memory doctor (compound memory buyer path — FP die twice)
     mem_doc = _soft_script_json(root, "torii_memory.py", ["doctor"], timeout=45)
     if mem_doc:
@@ -829,11 +833,27 @@ def render_status_text(payload: dict[str, Any], *, verbose: bool = False) -> str
         ps = day2.get("cert_path_score_p50")
         if isinstance(ps, (int, float)):
             cert_extra += f" · path_p50={float(ps):.2f}"
+        # vs SAST/AI-review differentiation (merge job, not growth fluff)
+        dtp = day2.get("diff_labeled_tp")
+        dgr = day2.get("diff_good_recall")
+        diff_s = ""
+        if dtp is not None or dgr is not None:
+            parts = []
+            if dtp is not None:
+                parts.append(f"labeled_tp={dtp}")
+            if isinstance(dgr, (int, float)):
+                parts.append(f"good_recall={float(dgr):.2f}")
+            wfp = day2.get("diff_weak_fp_proxy")
+            if isinstance(wfp, (int, float)):
+                parts.append(f"weak_fp={float(wfp):.2f}")
+            if parts:
+                diff_s = " · vs SAST " + " ".join(parts)
         lines.append(
             f"- **Merge authority:** quieter={day2.get('quieter_ok')} "
             f"(getting_quieter={day2.get('getting_quieter')} score={day2.get('quiet_score_all')}"
             f"{qboot_s}) · "
-            f"certs n={day2.get('cert_vault_n')} ({cp_s}/PR){cert_extra} · "
+            f"certs n={day2.get('cert_vault_n')} ({cp_s}/PR){cert_extra}"
+            f"{diff_s} · "
             f"require **torii/gate**"
         )
         tts = day2.get("time_to_signal_p50_s")
