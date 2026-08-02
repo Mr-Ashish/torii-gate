@@ -515,7 +515,11 @@ def build_status_payload(root: Path | None = None) -> dict[str, Any]:
         day2["getting_quieter"] = quieter.get("getting_quieter")
         day2["quiet_score_all"] = quieter.get("quiet_score_all")
         day2["quieter_local_runs_n"] = quieter.get("local_runs_n")
+        day2["quieter_local_demo_n"] = quieter.get("local_demo_n")
+        day2["quieter_local_organic_n"] = quieter.get("local_organic_n")
         day2["quieter_bootstrap_needed"] = quieter.get("bootstrap_needed")
+        day2["quieter_organic_needed"] = quieter.get("organic_needed")
+        day2["quieter_trajectory_source"] = quieter.get("trajectory_source")
     ops = _soft_script_json(root, "ops_dashboard.py", ["status"], timeout=45)
     if ops:
         day2["ops_ok"] = ops.get("ops_ok")
@@ -593,13 +597,20 @@ def build_status_payload(root: Path | None = None) -> dict[str, Any]:
         day2["workflow_level"] = wf.get("level")
         day2["workflow_valid"] = wf.get("valid")
         day2["workflow_ok"] = bool(wf.get("valid") and wf.get("level") in ("L2", "L3"))
-    # Live lean path flag (Modal default) — path-to-value vs full compound
-    day2["live_lean"] = (os.environ.get("TORII_LIVE_LEAN") or "").strip().lower() in {
-        "1",
-        "true",
-        "yes",
-        "on",
-    }
+    # Live lean: product default ON for merge-signal path (Modal/GHA dogfood).
+    # Env override only when TORII_LIVE_LEAN is explicitly set.
+    day2["live_lean_default"] = True
+    _ll_env = (os.environ.get("TORII_LIVE_LEAN") or "").strip().lower()
+    if _ll_env in {"1", "true", "yes", "on"}:
+        day2["live_lean"] = True
+        day2["live_lean_source"] = "env"
+    elif _ll_env in {"0", "false", "no", "off"}:
+        day2["live_lean"] = False
+        day2["live_lean_source"] = "env"
+    else:
+        # Unset → report product default (not "False" which misleads day-2 buyers)
+        day2["live_lean"] = True
+        day2["live_lean_source"] = "product_default"
 
     groups_n = sum(1 for v in present.values() if v)
     return {
@@ -736,12 +747,22 @@ def render_status_text(payload: dict[str, Any], *, verbose: bool = False) -> str
             mem_s = f" · memory={ml.get('level')}"
 
         qloc = day2.get("quieter_local_runs_n")
+        qdemo = day2.get("quieter_local_demo_n")
+        qorg = day2.get("quieter_local_organic_n")
         qboot = day2.get("quieter_bootstrap_needed")
-        qboot_s = (
-            f" · local_runs={qloc} bootstrap={qboot}"
-            if qloc is not None
-            else ""
-        )
+        qorg_need = day2.get("quieter_organic_needed")
+        qboot_s = ""
+        if qloc is not None:
+            extra = f"local_runs={qloc}"
+            if qdemo is not None:
+                extra += f" demo={qdemo}"
+            if qorg is not None:
+                extra += f" organic={qorg}"
+            if qboot:
+                extra += " bootstrap=True"
+            elif qorg_need:
+                extra += " organic_needed=True"
+            qboot_s = f" · {extra}"
         lines.append(
             f"- **Merge authority:** quieter={day2.get('quieter_ok')} "
             f"(getting_quieter={day2.get('getting_quieter')} score={day2.get('quiet_score_all')}"
@@ -752,7 +773,12 @@ def render_status_text(payload: dict[str, Any], *, verbose: bool = False) -> str
         tts = day2.get("time_to_signal_p50_s")
         tts_s = f"{float(tts):.0f}s" if isinstance(tts, (int, float)) else "—"
         lean = day2.get("live_lean")
-        lean_s = f" · live_lean={lean}" if lean is not None else ""
+        lean_src = day2.get("live_lean_source")
+        lean_s = ""
+        if lean is not None:
+            lean_s = f" · live_lean={lean}"
+            if lean_src and lean_src != "env":
+                lean_s += f"({lean_src})"
         lines.append(
             f"- **Cost & trust:** commercial={day2.get('overall_est')}/10 "
             f"ok={day2.get('commercial_ok')} · cost p50={p50_s}/PR "

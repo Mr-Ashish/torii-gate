@@ -5319,3 +5319,34 @@ Status cost/trust beat had cost/eval but not time-to-signal p50. Highest ROI: so
 
 ### SHA
 `b7f625715b715b7065848b20ce82b270be85bc22`
+
+## 2026-08-02 — QUIETER_DEMO_SEED path-to-value install vault
+
+### Papers / posts
+- Loop Engineering: path-to-value must work before first production event.
+- Customer quieter chart blocked on local_runs_n=0 until a real PR lands.
+- Status live_lean=False on laptop misled buyers (Modal default is lean-on).
+
+### Insight
+Remaining product gap after STATUS_TTS_WORKFLOW is not F-stack: install → quieter
+must show a working vault offline. Highest ROI: labeled demo packs (demo=true)
+seeded by bootstrap/install; trajectory prefers organic/hub; status separates
+demo vs organic. live_lean reports product_default when env unset.
+
+### Feature shipped (QUIETER_DEMO_SEED)
+- quieter bootstrap --demo seeds demo-early-001 + demo-late-001
+- install-torii.sh seed_runs_vault calls bootstrap --demo
+- collect marks demo · window_source_rows honesty
+- status: local_demo_n · local_organic_n · organic_needed
+- torii status: live_lean product_default · merge beat demo/organic counts
+- QUIETER.md §0 path-to-value table
+
+### Metric
+- quieter status local_runs_n=2 bootstrap_needed=False organic_needed=True
+- status --text live_lean=True(product_default)
+- pytest tests/test_quieter_over_time.py 8 passed
+- Live Modal e2e this fire
+
+### SHA
+`76e86c835ce74b9427488a0f1f8eddd80266fa44`
+

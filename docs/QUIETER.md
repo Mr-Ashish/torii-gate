@@ -10,17 +10,20 @@ install pack → require status check torii/gate → review PRs → quieter char
 
 ## 0. Customer vault bootstrap
 
-Install stamps **`.torii/runs/README.md`**. After the first reviews, slim packs land under `.torii/runs/{trace_id}/` on **your** repo via **FS workspace write** (`TORII_LOCAL_FS_PUBLISH=1`, default) even when git push of `.torii` is off (`TORII_LOCAL_PUBLISH=0`). Optional commit/push still available when tokens allow. Hub dogfood is optional.
+Install stamps **`.torii/runs/README.md`** and **two labeled demo packs** (`demo-early-001` · `demo-late-001`, `demo: true`) so `quieter -- status` works **offline** before the first PR. After real reviews, slim organic packs land under `.torii/runs/{trace_id}/` via **FS workspace write** (`TORII_LOCAL_FS_PUBLISH=1`, default) even when git push of `.torii` is off (`TORII_LOCAL_PUBLISH=0`). Hub dogfood is optional.
 
-| Empty vault | Ready vault |
-|-------------|-------------|
-| `local_runs_n=0` · follow install + require `torii/gate` | `local_runs_n≥1` · quieter chart from your PRs |
+| State | What status shows |
+|-------|-------------------|
+| Empty vault | `local_runs_n=0` · `bootstrap_needed` · run `quieter -- bootstrap --demo` |
+| Demo only | `local_demo_n≥1` · chart works · `organic_needed` · require **`torii/gate`** |
+| Organic | `local_organic_n≥1` · quieter chart from **your** PRs |
+
+Honesty: demo packs prove the vault path; trajectory prefers organic/hub rows when present (`trajectory_source=measured|demo`).
 
 ```bash
-python3 scripts/torii.py quieter -- bootstrap   # ensure .torii/runs README exists
-python3 scripts/torii.py quieter -- status      # local_runs_n + getting_quieter
+python3 scripts/torii.py quieter -- bootstrap --demo   # README + labeled demos
+python3 scripts/torii.py quieter -- status             # local_runs_n · demo · organic
 ```
-
 ## 1. Install on your repo
 
 ```bash

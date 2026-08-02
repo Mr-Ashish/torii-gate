@@ -129,6 +129,52 @@ class QuieterOverTimeTests(unittest.TestCase):
         data = json.loads(r.stdout)
         self.assertTrue(data.get("fixture_pass"))
 
+    def test_bootstrap_demo_hermetic(self):
+        """Install path-to-value: demo packs seed local_runs without organic PRs."""
+        sys.path.insert(0, str(ROOT / "scripts"))
+        import quieter_over_time as q  # type: ignore
+
+        with tempfile.TemporaryDirectory(prefix="torii-demo-") as td:
+            fake = Path(td)
+            seed = q.seed_demo_local_runs(fake, force=True)
+            self.assertTrue(seed.get("seeded"), seed)
+            self.assertEqual(len(seed.get("wrote") or []), 2)
+            rows = q.collect_dogfood_rows(fake / ".torii" / "runs", vault_kind="local_runs")
+            self.assertGreaterEqual(len(rows), 2)
+            self.assertTrue(all(r.get("demo") for r in rows))
+            traj, src = q.window_source_rows(rows)
+            self.assertEqual(src, "demo")
+            self.assertEqual(len(traj), len(rows))
+            win = q.split_windows(traj)
+            self.assertTrue(win.get("getting_quieter") or (win.get("all") or {}).get("n", 0) >= 2)
+
+    def test_trajectory_prefers_organic_over_demo(self):
+        sys.path.insert(0, str(ROOT / "scripts"))
+        import quieter_over_time as q  # type: ignore
+
+        rows = [
+            {
+                "trace_id": "demo-early-001",
+                "demo": True,
+                "vault": "local_runs",
+                "verdict": "APPROVE",
+                "path_evidence": 0.2,
+                "tool_call_turns": 0,
+            },
+            {
+                "trace_id": "organic-1",
+                "demo": False,
+                "vault": "local_runs",
+                "verdict": "REQUEST_CHANGES",
+                "path_evidence": 0.9,
+                "tool_call_turns": 4,
+            },
+        ]
+        traj, src = q.window_source_rows(rows)
+        self.assertEqual(src, "measured")
+        self.assertEqual(len(traj), 1)
+        self.assertEqual(traj[0]["trace_id"], "organic-1")
+
 
 if __name__ == "__main__":
     unittest.main()

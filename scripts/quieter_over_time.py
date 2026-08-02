@@ -10,7 +10,7 @@ Tools-as-code (no new F-compound loop):
   - chart: docs/benchmarks/quieter-over-time.md (hub) and/or .torii/quieter-over-time.md
 
 Commands:
-  report | fixture | status | bootstrap
+  report | fixture | status | bootstrap [--demo]
 """
 
 from __future__ import annotations
@@ -34,7 +34,9 @@ CUSTOMER_OUT_MD = Path(".torii/quieter-over-time.md")
 CUSTOMER_OUT_JSON = Path(".torii/quieter-over-time.json")
 BUYER_DOC = Path("docs/QUIETER.md")
 LOCAL_RUNS = Path(".torii/runs")
-
+# Install path-to-value: two labeled demo packs so quieter chart works before first PR
+DEMO_EARLY_ID = "demo-early-001"
+DEMO_LATE_ID = "demo-late-001"
 
 def _root() -> Path:
     env = (os.environ.get("TORII_ROOT") or "").strip()
@@ -164,6 +166,12 @@ def collect_dogfood_rows(vroot: Path, *, vault_kind: str = "hub_traces") -> list
         usage = _safe_json(d / "hermes-usage.json")
         timings = _safe_json(d / "timings.json")
         meta = _safe_json(d / "meta.json")
+        is_demo = bool(
+            (meta or {}).get("demo")
+            or (summary or {}).get("demo")
+            or str((meta or {}).get("source") or "").startswith("install-demo")
+            or d.name.startswith("demo-")
+        )
 
         repo = str(
             summary.get("repo")
@@ -279,11 +287,16 @@ def collect_dogfood_rows(vroot: Path, *, vault_kind: str = "hub_traces") -> list
                 "certificate_id": (cert or {}).get("certificate_id"),
                 "demoted": demoted,
                 "weak_approve": weak_approve,
+                "demo": is_demo,
                 "block": summary.get("block") if "block" in summary else (cert or {}).get("block"),
                 "host": str(
                     summary.get("host")
                     or meta.get("host")
-                    or ("local_pack" if local_pack else ("modal" if "modal" in name_l else "local"))
+                    or (
+                        "demo"
+                        if is_demo
+                        else ("local_pack" if local_pack else ("modal" if "modal" in name_l else "local"))
+                    )
                 ),
                 "model": str(summary.get("model") or meta.get("model") or (usage or {}).get("model") or ""),
                 "vault": vault_kind,
@@ -495,19 +508,38 @@ def tool_use_quality(rows: list[dict[str, Any]]) -> dict[str, Any]:
     }
 
 
+def window_source_rows(rows: list[dict[str, Any]]) -> tuple[list[dict[str, Any]], str]:
+    """Prefer organic/hub for quiet trajectory; fall back to labeled demo only.
+
+    Honesty: install-demo packs prove the vault path works; they do not claim
+    customer PR quieter-over-time when real dogfood/hub rows exist.
+    """
+    organic = [r for r in rows if not r.get("demo")]
+    if len(organic) >= 1:
+        return organic, "measured"
+    demos = [r for r in rows if r.get("demo")]
+    if demos:
+        return demos, "demo"
+    return rows, "measured"
+
+
 def build_report(root: Path) -> dict[str, Any]:
     rows = collect_all_rows(root)
-    windows = split_windows(rows)
+    traj_rows, traj_source = window_source_rows(rows)
+    windows = split_windows(traj_rows)
+    windows["trajectory_source"] = traj_source
     own = own_repo_required_check(root)
-    tools_q = tool_use_quality(rows)
+    tools_q = tool_use_quality(traj_rows if traj_rows else rows)
     late = windows.get("late") or {}
     all_w = windows.get("all") or {}
     vaults = [{"kind": k, "path": str(p)} for k, p in vault_dirs(root)]
     local_n = sum(1 for r in rows if r.get("vault") == "local_runs")
+    local_demo_n = sum(1 for r in rows if r.get("vault") == "local_runs" and r.get("demo"))
+    local_organic_n = local_n - local_demo_n
     hub_n = sum(1 for r in rows if r.get("vault") == "hub_traces")
 
     n_rows = int(all_w.get("n") or 0)
-    # quieter_ok: own-repo surface ready AND (measured trajectory OR hub legacy)
+    # quieter_ok: own-repo surface ready AND (measured trajectory OR hub legacy OR demo vault)
     quieter_ok = bool(
         own.get("ok")
         and n_rows >= 1
@@ -531,9 +563,12 @@ def build_report(root: Path) -> dict[str, Any]:
         "dim_lift": "stricter-and-quieter path measured tools-as-code on own repo",
         "required_check": "torii/gate",
         "own_repo": own,
-        "dogfood_n": len(rows),
+        "dogfood_n": len(traj_rows),
         "local_runs_n": local_n,
+        "local_demo_n": local_demo_n,
+        "local_organic_n": local_organic_n,
         "hub_traces_n": hub_n,
+        "trajectory_source": traj_source,
         "vaults": vaults,
         "windows": windows,
         "tool_use_quality": tools_q,
@@ -548,7 +583,6 @@ def build_report(root: Path) -> dict[str, Any]:
             "buyer_doc": str(BUYER_DOC),
         },
     }
-
 
 def render_markdown(report: dict[str, Any]) -> str:
     own = report.get("own_repo") or {}
@@ -807,14 +841,137 @@ def cmd_fixture(args: argparse.Namespace) -> int:
     return 0 if fixture_pass else 1
 
 
+def seed_demo_local_runs(root: Path, *, force: bool = False) -> dict[str, Any]:
+    """Write two labeled install-demo slim packs (early weak → late strong).
+
+    Path-to-value: after install, quieter -- status shows local_runs_n≥1 and an
+    offline chart works without waiting for the first real PR. Packs carry
+    demo=true so organic quieter claims stay honest.
+    """
+    runs = root / LOCAL_RUNS
+    runs.mkdir(parents=True, exist_ok=True)
+    # Skip if organic (non-demo) local packs already present unless force
+    organic = []
+    for d in runs.iterdir() if runs.is_dir() else []:
+        if not d.is_dir() or d.name.startswith("."):
+            continue
+        meta = _safe_json(d / "meta.json")
+        if meta.get("demo") or d.name.startswith("demo-"):
+            continue
+        organic.append(d.name)
+    if organic and not force:
+        return {
+            "seeded": False,
+            "reason": "organic_local_runs_present",
+            "organic_n": len(organic),
+            "wrote": [],
+        }
+
+    packs = [
+        (
+            DEMO_EARLY_ID,
+            {
+                "repo": "acme/app",
+                "pr": "101",
+                "verdict": "APPROVE",
+                "elapsed_s": 120,
+                "host": "demo",
+                "demo": True,
+                "source": "install-demo",
+                "path_evidence_score": 0.2,
+                "tool_call_turns": 0,
+                "cost_usd": 0.01,
+            },
+            (
+                "**Verdict:** APPROVE\n"
+                "tool_call_turns: 0\n"
+                "path_evidence: 0.2\n"
+                "repo: acme/app\n"
+                "PR: 101\n"
+                "demo: true\n"
+                "source: install-demo (early / noisy)\n"
+            ),
+            (
+                "# Demo review (early)\n\n"
+                "**Verdict:** APPROVE\n\n"
+                "_Install demo only — weak path evidence, zero tools. "
+                "Not a customer PR._\n"
+            ),
+        ),
+        (
+            DEMO_LATE_ID,
+            {
+                "repo": "acme/app",
+                "pr": "102",
+                "verdict": "REQUEST_CHANGES",
+                "elapsed_s": 95,
+                "host": "demo",
+                "demo": True,
+                "source": "install-demo",
+                "path_evidence_score": 0.9,
+                "tool_call_turns": 4,
+                "cost_usd": 0.012,
+            },
+            (
+                "**Verdict:** REQUEST_CHANGES\n"
+                "tool_call_turns: 4\n"
+                "path_evidence: 0.9\n"
+                "repo: acme/app\n"
+                "PR: 102\n"
+                "demo: true\n"
+                "source: install-demo (late / quieter)\n"
+            ),
+            (
+                "# Demo review (late)\n\n"
+                "**Verdict:** REQUEST_CHANGES\n\n"
+                "_Install demo only — path-evidenced finding, tools used. "
+                "Not a customer PR._\n"
+            ),
+        ),
+    ]
+    wrote: list[str] = []
+    for tid, meta, summary_md, review_md in packs:
+        d = runs / tid
+        if d.is_dir() and not force:
+            # already seeded
+            continue
+        d.mkdir(parents=True, exist_ok=True)
+        (d / "meta.json").write_text(json.dumps(meta, indent=2) + "\n", encoding="utf-8")
+        (d / "summary.md").write_text(summary_md, encoding="utf-8")
+        (d / "review.md").write_text(review_md, encoding="utf-8")
+        wrote.append(tid)
+    return {
+        "seeded": bool(wrote) or all((runs / t).is_dir() for t in (DEMO_EARLY_ID, DEMO_LATE_ID)),
+        "reason": "ok" if wrote else "already_present",
+        "wrote": wrote,
+        "demo_ids": [DEMO_EARLY_ID, DEMO_LATE_ID],
+    }
+
+
 def cmd_status(args: argparse.Namespace) -> int:
     root = _root()
     report = build_report(root)
     win = report.get("windows") or {}
     own = report.get("own_repo") or {}
     local_n = int(report.get("local_runs_n") or 0)
+    local_demo_n = int(report.get("local_demo_n") or 0)
+    local_organic_n = int(report.get("local_organic_n") or 0)
     runs_readme = (root / LOCAL_RUNS / "README.md").is_file()
+    # Vault empty only when neither demo nor organic packs exist
     bootstrap_needed = local_n < 1
+    organic_needed = local_organic_n < 1
+    if bootstrap_needed:
+        hint = (
+            "quieter -- bootstrap --demo  →  require torii/gate  →  "
+            "@torii review  →  .torii/runs fills"
+        )
+    elif organic_needed:
+        hint = (
+            f"demo vault only (local_demo_n={local_demo_n}) · "
+            "require torii/gate → @torii review for organic quieter"
+        )
+    else:
+        hint = "local vault has organic runs · quieter chart ready"
     slim = {
         "feature": FEATURE,
         "quieter_ok": report.get("quieter_ok"),
@@ -823,18 +980,18 @@ def cmd_status(args: argparse.Namespace) -> int:
         "pack_surface_ok": own.get("pack_surface_ok"),
         "dogfood_n": report.get("dogfood_n"),
         "local_runs_n": local_n,
+        "local_demo_n": local_demo_n,
+        "local_organic_n": local_organic_n,
         "hub_traces_n": report.get("hub_traces_n"),
+        "trajectory_source": report.get("trajectory_source"),
         "quiet_score_all": (win.get("all") or {}).get("quiet_score"),
         "delta_quiet_score": win.get("delta_quiet_score"),
         "getting_quieter": win.get("getting_quieter"),
         "tool_use_quality_ok": (report.get("tool_use_quality") or {}).get("quality_ok"),
         "customer_vault_readme": runs_readme,
         "bootstrap_needed": bootstrap_needed,
-        "bootstrap_hint": (
-            "require torii/gate → @torii review → .torii/runs fills → quieter -- report"
-            if bootstrap_needed
-            else "local vault has runs · quieter chart ready"
-        ),
+        "organic_needed": organic_needed,
+        "bootstrap_hint": hint,
         "at": report.get("at"),
     }
     print(json.dumps(slim, indent=2))
@@ -842,7 +999,7 @@ def cmd_status(args: argparse.Namespace) -> int:
 
 
 def cmd_bootstrap(args: argparse.Namespace) -> int:
-    """Ensure customer .torii/runs vault + README exist (install-equivalent)."""
+    """Ensure customer .torii/runs vault + README (+ optional demo packs)."""
     root = _root()
     runs = root / LOCAL_RUNS
     runs.mkdir(parents=True, exist_ok=True)
@@ -856,28 +1013,50 @@ def cmd_bootstrap(args: argparse.Namespace) -> int:
             "# Torii run vault (customer quieter path)\n\n"
             "Slim packs land here after each gate review: "
             "`{trace_id}/meta.json` · `summary.md` · `review.md`.\n\n"
+            "Install seeds **labeled demo** packs (`demo-*-001`, `demo: true`) so "
+            "`quieter -- status` works offline; replace with organic packs after "
+            "`torii/gate` reviews.\n\n"
             "```bash\n"
             "python3 scripts/torii.py quieter -- status\n"
             "python3 scripts/torii.py quieter -- report\n"
+            "python3 scripts/torii.py quieter -- bootstrap --demo\n"
             "```\n\n"
-            "First fill: require **torii/gate** · `@torii review this pr` · re-check status.\n"
+            "First organic fill: require **torii/gate** · `@torii review this pr` · "
+            "re-check status (`local_organic_n`).\n"
             "Docs: docs/QUIETER.md\n",
             encoding="utf-8",
         )
         wrote = True
+    # Default: seed demo packs on bootstrap (path-to-value). --no-demo skips.
+    seed: dict[str, Any] = {"seeded": False, "wrote": [], "reason": "skipped"}
+    want_demo = not getattr(args, "no_demo", False)
+    if want_demo or getattr(args, "demo", False):
+        seed = seed_demo_local_runs(root, force=bool(getattr(args, "force", False)))
     try:
         runs_rel = str(runs.relative_to(root))
         readme_rel = str(readme.relative_to(root))
     except ValueError:
         runs_rel = str(runs)
         readme_rel = str(readme)
+    demo_n = sum(
+        1
+        for d in runs.iterdir()
+        if d.is_dir() and (d.name.startswith("demo-") or (_safe_json(d / "meta.json") or {}).get("demo"))
+    )
     out = {
         "feature": FEATURE,
         "bootstrap_ok": True,
         "runs_dir": runs_rel,
         "readme": readme_rel,
         "wrote_readme": wrote,
-        "one_liner": "Customer quieter vault ready — require torii/gate and run a review",
+        "demo_seed": seed,
+        "local_demo_n": demo_n,
+        "one_liner": (
+            "Customer quieter vault ready — demo packs prove path; "
+            "require torii/gate for organic quieter"
+            if demo_n
+            else "Customer quieter vault ready — require torii/gate and run a review"
+        ),
         "at": _now(),
     }
     print(json.dumps(out, indent=2))
@@ -899,8 +1078,22 @@ def main(argv: list[str] | None = None) -> int:
     s = sub.add_parser("status", help="Short JSON status")
     s.set_defaults(func=cmd_status)
 
-    b = sub.add_parser("bootstrap", help="Seed .torii/runs README (customer vault)")
-    b.add_argument("--force", action="store_true", help="Overwrite README")
+    b = sub.add_parser(
+        "bootstrap",
+        help="Seed .torii/runs README + labeled demo packs (path-to-value)",
+    )
+    b.add_argument("--force", action="store_true", help="Overwrite README / re-seed demo")
+    b.add_argument(
+        "--demo",
+        action="store_true",
+        default=True,
+        help="Seed labeled demo packs (default on)",
+    )
+    b.add_argument(
+        "--no-demo",
+        action="store_true",
+        help="README only — skip install-demo packs",
+    )
     b.set_defaults(func=cmd_bootstrap)
 
     args = p.parse_args(argv)

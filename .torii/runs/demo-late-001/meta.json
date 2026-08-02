@@ -1,0 +1,12 @@
+{
+  "repo": "acme/app",
+  "pr": "102",
+  "verdict": "REQUEST_CHANGES",
+  "elapsed_s": 95,
+  "host": "demo",
+  "demo": true,
+  "source": "install-demo",
+  "path_evidence_score": 0.9,
+  "tool_call_turns": 4,
+  "cost_usd": 0.012
+}

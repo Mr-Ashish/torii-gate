@@ -507,21 +507,20 @@ EOF
   log "OK   $mem_file"
 }
 
-# Customer quieter vault bootstrap: .torii/runs/ README (fills after first reviews)
+# Customer quieter vault bootstrap: .torii/runs/ README + labeled demo packs
 seed_runs_vault() {
   local runs_dir="$DEST/.torii/runs"
   local readme="$runs_dir/README.md"
   if [[ "$DRY_RUN" == "1" ]]; then
-    log "DRY  seed $readme"
+    log "DRY  seed $readme (+ demo packs)"
     return 0
   fi
   mkdir -p "$runs_dir"
   touch "$runs_dir/.gitkeep"
   if [[ -e "$readme" && "$FORCE" != "1" ]]; then
-    log "exists (skip, use --force): $readme"
-    return 0
-  fi
-  cat >"$readme" <<'EOF'
+    log "exists (skip readme, use --force): $readme"
+  else
+    cat >"$readme" <<'EOF'
 # Torii run vault (customer quieter path)
 
 Each review lands a slim pack here after the gate runs:
@@ -532,6 +531,10 @@ Each review lands a slim pack here after the gate runs:
 .torii/runs/{trace_id}/review.md
 ```
 
+Install seeds **labeled demo** packs (`demo-*-001`, meta `demo: true`) so
+`quieter -- status` works offline. Organic packs replace the demo story after
+you require **`torii/gate`** and run real reviews.
+
 ## Measure quieter over time (no hub clone)
 
 ```bash
@@ -540,16 +543,27 @@ python3 scripts/torii.py quieter -- report
 # → .torii/quieter-over-time.md
 ```
 
-## First fill
+## First organic fill
 
 1. Require status check **`torii/gate`** on the default branch  
 2. `@torii review this pr` on a real PR  
-3. Re-run `quieter -- status` — `local_runs_n` should rise  
+3. Re-run `quieter -- status` — `local_organic_n` should rise  
 
 Docs: `docs/QUIETER.md` · install path: `docs/INSTALL.md`.  
-Do not hand-edit run packs — the gate writes them.
+Do not hand-edit run packs — the gate writes them (demo packs are install-only).
 EOF
-  log "OK   $readme (customer quieter vault)"
+    log "OK   $readme (customer quieter vault)"
+  fi
+  # Path-to-value: seed demo packs via quieter bootstrap (TORII_ROOT = DEST when scripts present)
+  if [[ -f "$DEST/scripts/quieter_over_time.py" ]]; then
+    local force_flag=()
+    [[ "$FORCE" == "1" ]] && force_flag=(--force)
+    if TORII_ROOT="$DEST" python3 "$DEST/scripts/quieter_over_time.py" bootstrap --demo "${force_flag[@]}" >/dev/null 2>&1; then
+      log "OK   .torii/runs demo packs (install-demo · quieter path-to-value)"
+    else
+      log "warn: quieter demo seed skipped (run: python3 scripts/torii.py quieter -- bootstrap --demo)"
+    fi
+  fi
 }
 
 seed_local_memory
