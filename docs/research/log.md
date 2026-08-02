@@ -5422,5 +5422,5 @@ on Modal, fixture fails closed without it, day-2 status shows model= pin.
 - Live Modal e2e this fire (default model, no --model override)
 
 ### SHA
-`a59befdac1ffbaf52cd983cdf2e4c046e5b5deac`
+`82efec6e6a8e81a90df0a968b14fdb327185ec23`
 
