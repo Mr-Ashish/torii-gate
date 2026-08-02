@@ -198,6 +198,9 @@ def build_readiness(root: Path) -> dict[str, Any]:
     pe = _soft_json(root, "public_eval.py", ["status"], timeout=30)
     commercial = _soft_json(root, "commercial_scorecard.py", ["status"], timeout=90)
     tools = _soft_json(root, "tool_use_quality.py", ["status"], timeout=30)
+    # vs SAST / AI-review (buyer objection path — paste into partner threads)
+    dvs = _soft_json(root, "diff_vs_sast.py", ["status"], timeout=20)
+    dvs_m = dvs.get("measured") if isinstance(dvs.get("measured"), dict) else {}
 
     # Core honesty (pre-revenue / 0 paid) — not full fixture (proof packet may refresh later)
     dchecks = docs.get("checks") if isinstance(docs.get("checks"), dict) else {}
@@ -264,6 +267,12 @@ def build_readiness(root: Path) -> dict[str, Any]:
             "overall_est": commercial.get("overall_est"),
             "tool_use_rate": tools.get("tool_use_rate"),
             "tool_use_ok": tools.get("tool_use_ok") or tools.get("quality_ok"),
+            # Diff vs SAST (docs/DIFF.md) — measured labeled TP / recall, not slogans
+            "diff_vs_sast_ok": dvs.get("diff_vs_sast_ok"),
+            "diff_labeled_tp": dvs_m.get("labeled_tp"),
+            "diff_good_recall": dvs_m.get("good_recall_mean"),
+            "diff_weak_fp_proxy": dvs_m.get("weak_recall_mean"),
+            "diff_one_liner": dvs.get("one_liner"),
         },
         "docs": {
             "ok_n": docs.get("ok_n"),
@@ -342,6 +351,10 @@ def render_proof_packet(ready: dict[str, Any]) -> str:
             f"| Local vault | organic={m.get('local_organic_n')} · demo={m.get('local_demo_n')} |",
             f"| Tool-use rate | **{tool_s}** · ok={m.get('tool_use_ok')} |",
             f"| Public eval | ok={m.get('public_eval_ok')} · fresh={m.get('public_eval_freshness_ok')} · model=`{m.get('public_eval_model') or '—'}` |",
+            f"| vs SAST / AI review | labeled_tp=**{m.get('diff_labeled_tp') if m.get('diff_labeled_tp') is not None else '—'}** · "
+            f"good_recall={m.get('diff_good_recall') if m.get('diff_good_recall') is not None else '—'} · "
+            f"weak_fp={m.get('diff_weak_fp_proxy') if m.get('diff_weak_fp_proxy') is not None else '—'} · "
+            f"[DIFF.md](DIFF.md) |",
             "",
             "Audit: [cost/PR dashboard](ops/cost-pr-dashboard.md) · "
             "[golden-path metrics](benchmarks/golden-path-metrics.md) · "

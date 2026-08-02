@@ -5541,3 +5541,25 @@ beat so design partners see differentiation without a second doc open.
 
 ### SHA
 `bdeef8e948c5e25705b3e58656b6c4d82c72238b`
+
+## 2026-08-02 — PILOT_PROOF_GTM_APPLY conversion surface
+
+### Papers / posts
+- GTM conversion: partners need vs-SAST numbers on the proof one-pager, not buried in status only.
+- Growth beat must show apply path + GTM pack without opening three docs.
+
+### Insight
+Highest ROI for dims 11+3+2: soft-peek diff_vs_sast into pilot readiness measured; render vs SAST row in PILOT-PROOF; status growth `apply=design-partner issue · gtm=docs/GTM.md`.
+
+### Feature shipped (PILOT_PROOF_GTM_APPLY)
+- pilot_surface measured: diff_labeled_tp · good_recall · weak_fp
+- PILOT-PROOF.md table row vs SAST / AI review
+- growth beat: apply= + gtm=
+
+### Metric
+- proof: labeled_tp=**18** · good_recall=1.0 · weak_fp=0.0
+- growth: apply=design-partner issue · gtm=docs/GTM.md
+- Live Modal e2e this fire
+
+### SHA
+`PENDING`

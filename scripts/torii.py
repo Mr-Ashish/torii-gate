@@ -924,9 +924,19 @@ def render_status_text(payload: dict[str, Any], *, verbose: bool = False) -> str
             price_s = " · open_core=$0"
             if day2.get("pricing_pre_revenue"):
                 price_s += " pre-revenue"
+        # GTM conversion: design-partner apply + GTM pack on growth beat
+        apply_u = str(day2.get("pilot_apply_url") or "")
+        apply_s = ""
+        if "design-partner" in apply_u:
+            apply_s = " · apply=design-partner issue"
+        elif apply_u:
+            apply_s = " · apply=url"
+        gtm_s = ""
+        if day2.get("pilot_readiness_ok") or day2.get("pilot_proof_packet_ok"):
+            gtm_s = " · gtm=docs/GTM.md"
         lines.append(
             f"- **Growth:** pilot readiness={day2.get('pilot_readiness_ok')} ({pilot_r})"
-            f"{proof_s} · "
+            f"{proof_s}{apply_s}{gtm_s} · "
             f"self-evolve active={day2.get('self_evolve_active_n')}"
             f"{sev_pend_s} "
             f"dual_gate_safe={day2.get('self_evolve_dual_gate_safe')} · "
